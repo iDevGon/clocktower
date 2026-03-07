@@ -32,5 +32,95 @@
         "organizeImports": "on"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["apps/server/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useNodejsImportProtocol": "error",
+            "noDefaultExport": "error"
+          },
+          "suspicious": {
+            "noConsole": "off",
+            "noExplicitAny": "warn"
+          },
+          "correctness": {
+            "noUnusedVariables": "error",
+            "noUnusedImports": "error"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/player/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": "warn",
+            "useHookAtTopLevel": "error",
+            "noUnusedVariables": "error",
+            "noUnusedImports": "error"
+          },
+          "suspicious": {
+            "noConsole": "warn",
+            "noExplicitAny": "warn"
+          },
+          "style": {
+            "noNonNullAssertion": "warn"
+          },
+          "complexity": {
+            "noForEach": "warn"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/storyteller/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": "warn",
+            "useHookAtTopLevel": "error",
+            "noUnusedVariables": "error",
+            "noUnusedImports": "error"
+          },
+          "suspicious": {
+            "noConsole": "warn",
+            "noExplicitAny": "warn"
+          },
+          "style": {
+            "noNonNullAssertion": "warn"
+          },
+          "complexity": {
+            "noForEach": "warn"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/shared/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedVariables": "error",
+            "noUnusedImports": "error"
+          },
+          "suspicious": {
+            "noConsole": "error",
+            "noExplicitAny": "error"
+          },
+          "style": {
+            "noDefaultExport": "error",
+            "useNodejsImportProtocol": "error",
+            "noNonNullAssertion": "error"
+          },
+          "complexity": {
+            "noForEach": "error"
+          }
+        }
+      }
+    }
+  ]
 }
