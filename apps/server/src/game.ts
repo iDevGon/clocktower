@@ -1,25 +1,49 @@
-import { randomUUID } from "crypto";
-import type { GameState, Player, Phase, Nomination, Role } from "@clocktower/shared";
+import { randomUUID } from 'node:crypto';
+import type {
+  DaySubPhase,
+  GameState,
+  Nomination,
+  Phase,
+  Player,
+  Role,
+} from '@clocktower/shared';
+import { getRoleById } from '@clocktower/shared';
 
 export class GameManager {
   private state: GameState = {
-    id: "",
-    phase: "setup",
+    id: '',
+    phase: 'setup',
+    daySubPhase: null,
     day: 0,
     players: [],
     nominations: [],
+    started: false,
   };
 
   create(): string {
     const id = randomUUID().slice(0, 8);
     this.state = {
       id,
-      phase: "setup",
+      phase: 'setup',
+      daySubPhase: null,
       day: 0,
       players: [],
       nominations: [],
+      started: false,
     };
     return id;
+  }
+
+  reset(): void {
+    this.state = {
+      id: '',
+      phase: 'setup',
+      daySubPhase: null,
+      day: 0,
+      players: [],
+      nominations: [],
+      started: false,
+    };
   }
 
   getState(): GameState {
@@ -31,39 +55,66 @@ export class GameManager {
   }
 
   addPlayer(name: string): Player | null {
-    if (this.state.phase !== "setup") return null;
+    if (this.state.started) return null;
 
     const player: Player = {
       id: randomUUID().slice(0, 8),
       name,
       isAlive: true,
-      isNominated: false,
+      hasNominatedToday: false,
+      deadVoteUsed: false,
     };
     this.state.players.push(player);
     return player;
   }
 
+  clearPlayers(): void {
+    this.state.players = [];
+  }
+
+  start(): { success: boolean; error?: string } {
+    if (this.state.started)
+      return { success: false, error: '이미 게임이 시작되었습니다' };
+    if (this.state.players.length < 5)
+      return { success: false, error: '최소 5명의 플레이어가 필요합니다' };
+    if (!this.state.players.every((p) => p.role))
+      return { success: false, error: '모든 플레이어에게 역할을 배정해주세요' };
+
+    this.state.started = true;
+    this.state.phase = 'night';
+    this.state.day = 1;
+    return { success: true };
+  }
+
   setPhase(phase: Phase): void {
     this.state.phase = phase;
-    if (phase === "night") {
+    this.state.daySubPhase = null;
+    if (phase === 'night') {
       this.state.nominations = [];
-      this.state.players.forEach((p) => (p.isNominated = false));
+      for (const p of this.state.players) {
+        p.hasNominatedToday = false;
+      }
     }
-    if (phase === "day") {
+    if (phase === 'day') {
       this.state.day++;
+      this.state.daySubPhase = 'whisper';
     }
+  }
+
+  setDaySubPhase(subPhase: DaySubPhase): void {
+    this.state.daySubPhase = subPhase;
   }
 
   assignRole(playerId: string, roleId: string): void {
     const player = this.getPlayer(playerId);
     if (!player) return;
 
-    // TODO: Load roles from a role registry
-    const role: Role = {
+    const registeredRole = getRoleById(roleId);
+    const role: Role = registeredRole ?? {
       id: roleId,
       name: roleId,
-      team: "townsfolk",
-      ability: "",
+      team: 'townsfolk',
+      ability: '',
     };
     player.role = role;
   }
@@ -78,9 +129,23 @@ export class GameManager {
     if (player) player.isAlive = true;
   }
 
-  nominate(nominatorId: string, nomineeId: string): void {
+  nominate(
+    nominatorId: string,
+    nomineeId: string,
+  ): { success: boolean; error?: string } {
+    const nominator = this.getPlayer(nominatorId);
     const nominee = this.getPlayer(nomineeId);
-    if (nominee) nominee.isNominated = true;
+
+    if (!nominator || !nominee)
+      return { success: false, error: '플레이어를 찾을 수 없습니다' };
+    if (!nominator.isAlive)
+      return { success: false, error: '사망한 플레이어는 지목할 수 없습니다' };
+    if (nominator.hasNominatedToday)
+      return { success: false, error: '이미 오늘 지목을 사용했습니다' };
+    if (nominatorId === nomineeId)
+      return { success: false, error: '자기 자신은 지목할 수 없습니다' };
+
+    nominator.hasNominatedToday = true;
 
     const nomination: Nomination = {
       nominatorId,
@@ -88,16 +153,44 @@ export class GameManager {
       votes: {},
     };
     this.state.nominations.push(nomination);
+    return { success: true };
   }
 
-  castVote(playerId: string, guilty: boolean): void {
+  castVote(
+    playerId: string,
+    guilty: boolean,
+  ): { success: boolean; error?: string } {
+    const player = this.getPlayer(playerId);
+    if (!player)
+      return { success: false, error: '플레이어를 찾을 수 없습니다' };
+
+    if (!player.isAlive) {
+      if (player.deadVoteUsed)
+        return {
+          success: false,
+          error: '사망한 플레이어는 게임당 한 번만 투표할 수 있습니다',
+        };
+      player.deadVoteUsed = true;
+    }
+
     const current = this.state.nominations[this.state.nominations.length - 1];
     if (current) {
       current.votes[playerId] = guilty;
     }
+    return { success: true };
   }
 
-  closeVote(): { nomineeId: string; guilty: boolean; votes: Record<string, boolean> } | null {
+  returnToNomination(): void {
+    this.state.phase = 'day';
+    this.state.daySubPhase = 'nomination';
+  }
+
+  closeVote(): {
+    nomineeId: string;
+    nomineeName: string;
+    guilty: boolean;
+    votes: Record<string, boolean>;
+  } | null {
     const current = this.state.nominations[this.state.nominations.length - 1];
     if (!current) return null;
 
@@ -105,8 +198,11 @@ export class GameManager {
     const guiltyVotes = Object.values(current.votes).filter(Boolean).length;
     const guilty = guiltyVotes >= Math.ceil(alivePlayers / 2);
 
+    const nominee = this.getPlayer(current.nomineeId);
+
     return {
       nomineeId: current.nomineeId,
+      nomineeName: nominee?.name ?? current.nomineeId,
       guilty,
       votes: current.votes,
     };
