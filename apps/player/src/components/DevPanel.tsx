@@ -2,8 +2,8 @@ import type { Phase, Role } from '@clocktower/shared';
 import { TROUBLE_BREWING_ROLES } from '@clocktower/shared';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { styles } from './DevPanel.styles';
 import { usePlayerStore } from '../stores/playerStore';
+import { styles } from './DevPanel.styles';
 
 interface DevPanelProps {
   currentPhase: Phase;
@@ -42,10 +42,7 @@ export function DevPanel({ currentPhase, role }: DevPanelProps) {
 
   return (
     <View style={styles.devPanel}>
-      <Pressable
-        onPress={() => setDevOpen((v) => !v)}
-        style={styles.devToggle}
-      >
+      <Pressable onPress={() => setDevOpen((v) => !v)} style={styles.devToggle}>
         <Text style={styles.devToggleText}>
           {devOpen ? 'DEV 닫기' : 'DEV 열기'}
         </Text>
@@ -107,4 +104,3 @@ export function DevPanel({ currentPhase, role }: DevPanelProps) {
     </View>
   );
 }
-

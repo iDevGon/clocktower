@@ -30,4 +30,3 @@ export function PlayerList({ players, onPlayerPress }: PlayerListProps) {
     />
   );
 }
-

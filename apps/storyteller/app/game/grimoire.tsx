@@ -1,11 +1,5 @@
 import { useRouter } from 'expo-router';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { DaySubPhaseBar } from '../../src/components/DaySubPhaseBar';
 import {
   NightActionLog,
@@ -167,10 +161,9 @@ export default function GrimoireScreen() {
           onActivateRole={setActiveNightRole}
         />
       )}
-      {gameState.phase === 'day' &&
-        gameState.daySubPhase === 'whisper' && (
-          <WhisperStatusPanel whispers={activeWhispers} />
-        )}
+      {gameState.phase === 'day' && gameState.daySubPhase === 'whisper' && (
+        <WhisperStatusPanel whispers={activeWhispers} />
+      )}
       {hasActiveVote && currentNomination && (
         <VotePanel
           nomination={currentNomination}
@@ -182,4 +175,3 @@ export default function GrimoireScreen() {
     </View>
   );
 }
-

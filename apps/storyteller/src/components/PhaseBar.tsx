@@ -53,4 +53,3 @@ export function PhaseBar({ currentPhase, onSetPhase }: PhaseBarProps) {
     </View>
   );
 }
-

@@ -51,4 +51,3 @@ export function PlayerToken({ player, onPress }: PlayerTokenProps) {
     </Pressable>
   );
 }
-

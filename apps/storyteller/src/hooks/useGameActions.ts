@@ -1,4 +1,8 @@
-import type { DaySubPhase, NightFeedbackPayload, Phase } from '@clocktower/shared';
+import type {
+  DaySubPhase,
+  NightFeedbackPayload,
+  Phase,
+} from '@clocktower/shared';
 import { useCallback } from 'react';
 import { useConnectionStore } from '../stores/connectionStore';
 

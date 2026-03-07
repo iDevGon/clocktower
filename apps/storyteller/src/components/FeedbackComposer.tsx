@@ -1,8 +1,4 @@
-import type {
-  NightFeedbackPayload,
-  Player,
-  Team,
-} from '@clocktower/shared';
+import type { NightFeedbackPayload, Player, Team } from '@clocktower/shared';
 import { TROUBLE_BREWING_ROLES } from '@clocktower/shared';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';

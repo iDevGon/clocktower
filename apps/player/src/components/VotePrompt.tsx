@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
-import { styles } from './VotePrompt.styles';
 import { useGameActions } from '../hooks/useGameActions';
 import { usePlayerStore } from '../stores/playerStore';
+import { styles } from './VotePrompt.styles';
 
 interface VotePromptProps {
   nominatorName: string;
@@ -56,4 +56,3 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
     </View>
   );
 }
-

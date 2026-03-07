@@ -8,7 +8,11 @@ interface VotePanelProps {
   onCloseVote: () => void;
 }
 
-export function VotePanel({ nomination, players, onCloseVote }: VotePanelProps) {
+export function VotePanel({
+  nomination,
+  players,
+  onCloseVote,
+}: VotePanelProps) {
   const voteCount = Object.values(nomination.votes).length;
   const guiltyCount = Object.values(nomination.votes).filter(Boolean).length;
 
@@ -26,7 +30,8 @@ export function VotePanel({ nomination, players, onCloseVote }: VotePanelProps) 
         </Text>
       </View>
       <Text style={styles.votePanelCount}>
-        투표: {voteCount}명 (찬성 {guiltyCount} / 반대 {voteCount - guiltyCount})
+        투표: {voteCount}명 (찬성 {guiltyCount} / 반대 {voteCount - guiltyCount}
+        )
       </Text>
       <Pressable onPress={onCloseVote} style={styles.closeVoteButton}>
         <Text style={styles.closeVoteText}>투표 종료</Text>
@@ -34,4 +39,3 @@ export function VotePanel({ nomination, players, onCloseVote }: VotePanelProps) 
     </View>
   );
 }
-

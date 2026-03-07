@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { styles } from './WhisperPlayerList.styles';
 import { useWhisperStore } from '../stores/whisperStore';
+import { styles } from './WhisperPlayerList.styles';
 
 interface PlayerItem {
   id: string;
@@ -90,4 +90,3 @@ export function WhisperPlayerList({
     </View>
   );
 }
-

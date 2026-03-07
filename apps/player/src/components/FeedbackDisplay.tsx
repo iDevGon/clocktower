@@ -11,7 +11,9 @@ const TEAM_COLORS: Record<Team, string> = {
 
 export function FeedbackDisplay({
   feedback,
-}: { feedback: NightFeedbackPayload }) {
+}: {
+  feedback: NightFeedbackPayload;
+}) {
   switch (feedback.type) {
     case 'number':
       return (

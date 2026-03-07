@@ -3,7 +3,10 @@ import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
 import type { WhisperTracker } from '../whisper.js';
 
-function getPlayerIdFromSocket(socket: { id: string; rooms: Set<string> }): string | undefined {
+function getPlayerIdFromSocket(socket: {
+  id: string;
+  rooms: Set<string>;
+}): string | undefined {
   const rooms = Array.from(socket.rooms);
   return rooms.find((r) => r !== socket.id);
 }

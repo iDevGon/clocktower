@@ -1,5 +1,12 @@
 import type { PlayerInfo } from '@clocktower/shared';
-import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  FlatList,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 interface NominateModalProps {
   visible: boolean;

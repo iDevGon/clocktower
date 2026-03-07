@@ -25,7 +25,6 @@ export function attachListeners(socket: AppSocket) {
             hasNominatedToday: res.hasNominatedToday ?? false,
             deadVoteUsed: res.deadVoteUsed ?? false,
           });
-          console.log('Auto-rejoined game');
         }
       });
     }

@@ -103,11 +103,9 @@ export function registerStorytellerHandlers(
             roleName: p.role?.name ?? '???',
             team: p.role?.team ?? ('townsfolk' as const),
           }));
-          playerIo
-            .to(spyPlayer.id)
-            .emit('night:feedback', {
-              feedback: { type: 'grimoire', entries },
-            });
+          playerIo.to(spyPlayer.id).emit('night:feedback', {
+            feedback: { type: 'grimoire', entries },
+          });
         }
       }
     });

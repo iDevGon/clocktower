@@ -9,10 +9,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { styles } from './WhisperChat.styles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlayerStore } from '../stores/playerStore';
 import { useWhisperStore } from '../stores/whisperStore';
+import { styles } from './WhisperChat.styles';
 
 interface WhisperChatProps {
   partnerId: string;
@@ -136,4 +136,3 @@ export function WhisperChat({
     </KeyboardAvoidingView>
   );
 }
-
