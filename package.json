@@ -1,0 +1,25 @@
+{
+  "name": "clocktower",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "dev:server": "pnpm --filter @clocktower/server dev",
+    "dev:storyteller": "pnpm --filter @clocktower/storyteller dev",
+    "dev:player": "pnpm --filter @clocktower/player dev",
+    "build": "pnpm -r build",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write ."
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.6"
+  }
+}

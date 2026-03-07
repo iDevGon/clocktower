@@ -1,0 +1,26 @@
+{
+  "name": "@clocktower/storyteller",
+  "version": "0.0.1",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "expo": "~55.0.5",
+    "expo-status-bar": "~55.0.4",
+    "react": "19.2.0",
+    "react-native": "0.83.2",
+    "nativewind": "^4.1.0",
+    "socket.io-client": "^4.8.0",
+    "@clocktower/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~5.9.2",
+    "tailwindcss": "^3.4.0"
+  },
+  "private": true
+}
