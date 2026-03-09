@@ -36,7 +36,28 @@ export const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   headerRight: {
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  feedbackHistoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1e2030',
+    borderWidth: 1,
+    borderColor: '#3a3a50',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    gap: 4,
+  },
+  feedbackHistoryIcon: {
+    fontSize: 16,
+  },
+  feedbackHistoryCount: {
+    color: '#8090c0',
+    fontSize: 12,
+    fontWeight: '700',
   },
   playerLabelDead: {
     color: '#8b3030',

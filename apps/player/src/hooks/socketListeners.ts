@@ -46,12 +46,33 @@ export function attachListeners(socket: AppSocket) {
   });
 
   socket.on('game:phase', (phase) => {
+    const prev = usePlayerStore.getState();
     usePlayerStore.getState().set({
       currentPhase: phase,
       nomination: null,
       nightProgress: null,
       nightFeedback: null,
-      ...(phase === 'night' ? { hasNominatedToday: false } : {}),
+      ...(phase === 'night'
+        ? { hasNominatedToday: false, nightCount: prev.nightCount + 1 }
+        : {}),
+      // 새 게임 시작 (setup): 역할/상태 초기화, 피드백 히스토리 리셋
+      ...(phase === 'setup'
+        ? {
+            role: null,
+            evilInfo: null,
+            drunkAs: null,
+            isAlive: true,
+            hasNominatedToday: false,
+            deadVoteUsed: false,
+            nightActionSubmitted: false,
+            nightCount: 0,
+            feedbackHistory: [],
+            gameResult: null,
+            justDied: false,
+            slayerUsed: false,
+            voteResult: null,
+          }
+        : {}),
     });
   });
 
@@ -94,7 +115,9 @@ export function attachListeners(socket: AppSocket) {
   });
 
   socket.on('night:feedback', ({ feedback }) => {
+    const { nightCount, addFeedback } = usePlayerStore.getState();
     usePlayerStore.getState().set({ nightFeedback: feedback });
+    addFeedback(nightCount, feedback);
   });
 
   socket.on('role:assign', ({ roleId, drunkAs }) => {

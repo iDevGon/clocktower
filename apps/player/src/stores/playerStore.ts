@@ -37,6 +37,13 @@ export interface EvilInfo {
   bluffRoles?: { id: string; name: string }[];
 }
 
+export interface FeedbackHistoryEntry {
+  day: number;
+  phase: 'night';
+  feedback: NightFeedbackPayload;
+  timestamp: number;
+}
+
 interface PlayerState {
   playerId: string;
   playerName: string;
@@ -54,11 +61,14 @@ interface PlayerState {
   nightActionSubmitted: boolean;
   drunkAs: string | null;
   nightFeedback: NightFeedbackPayload | null;
+  feedbackHistory: FeedbackHistoryEntry[];
+  nightCount: number;
   gamePlayers: PlayerInfo[];
   gameResult: GameResult | null;
   justDied: boolean;
   slayerUsed: boolean;
   set: (partial: Partial<PlayerState>) => void;
+  addFeedback: (day: number, feedback: NightFeedbackPayload) => void;
   reset: () => void;
 }
 
@@ -79,6 +89,8 @@ const initialState = {
   nightActionSubmitted: false,
   drunkAs: null,
   nightFeedback: null,
+  feedbackHistory: [],
+  nightCount: 0,
   gamePlayers: [],
   gameResult: null,
   justDied: false,
@@ -90,6 +102,13 @@ export const usePlayerStore = create<PlayerState>()(
     (set) => ({
       ...initialState,
       set: (partial) => set(partial),
+      addFeedback: (day, feedback) =>
+        set((s) => ({
+          feedbackHistory: [
+            ...s.feedbackHistory,
+            { day, phase: 'night' as const, feedback, timestamp: Date.now() },
+          ],
+        })),
       reset: () => set(initialState),
     }),
     {

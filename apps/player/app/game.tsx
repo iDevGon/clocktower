@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { DeadVignette } from '../src/components/DeadVignette';
 import { DeathOverlay } from '../src/components/DeathOverlay';
+import { FeedbackHistoryModal } from '../src/components/FeedbackHistoryModal';
 import { GameEndOverlay } from '../src/components/GameEndOverlay';
 import { NominateModal } from '../src/components/NominateModal';
 import {
@@ -75,6 +76,8 @@ export default function GameScreen() {
   } | null>(null);
   const [nominateModalVisible, setNominateModalVisible] = useState(false);
   const [slayerModalVisible, setSlayerModalVisible] = useState(false);
+  const [feedbackHistoryVisible, setFeedbackHistoryVisible] = useState(false);
+  const feedbackHistory = usePlayerStore((s) => s.feedbackHistory);
   const totalUnread = useWhisperStore((s) =>
     Object.values(s.unreadCounts).reduce((a, b) => a + b, 0),
   );
@@ -127,6 +130,17 @@ export default function GameScreen() {
             </Text>
           </View>
           <View style={styles.headerRight}>
+            {feedbackHistory.length > 0 && currentPhase !== 'setup' && (
+              <Pressable
+                onPress={() => setFeedbackHistoryVisible(true)}
+                style={styles.feedbackHistoryButton}
+              >
+                <Text style={styles.feedbackHistoryIcon}>📜</Text>
+                <Text style={styles.feedbackHistoryCount}>
+                  {feedbackHistory.length}
+                </Text>
+              </Pressable>
+            )}
             {!isAlive && (
               <Text style={styles.deadSkull}>💀</Text>
             )}
@@ -266,6 +280,12 @@ export default function GameScreen() {
         players={gamePlayers.filter((p) => p.isAlive && p.id !== playerId)}
         onNominate={handleSlayer}
         onClose={() => setSlayerModalVisible(false)}
+      />
+
+      <FeedbackHistoryModal
+        visible={feedbackHistoryVisible}
+        history={feedbackHistory}
+        onClose={() => setFeedbackHistoryVisible(false)}
       />
     </View>
   );
