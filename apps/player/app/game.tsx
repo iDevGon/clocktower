@@ -1,7 +1,10 @@
+import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
-import { DevPanel } from '../src/components/DevPanel';
+import { useEffect, useState } from 'react';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { DeadVignette } from '../src/components/DeadVignette';
+import { DeathOverlay } from '../src/components/DeathOverlay';
+import { GameEndOverlay } from '../src/components/GameEndOverlay';
 import { NominateModal } from '../src/components/NominateModal';
 import {
   DiscussionPhase,
@@ -13,9 +16,11 @@ import {
 } from '../src/components/PhaseContent';
 import { PhaseIndicator } from '../src/components/PhaseIndicator';
 import { RoleCard } from '../src/components/RoleCard';
+import { VeiledRoleCard } from '../src/components/VeiledRoleCard';
 import { VotePrompt } from '../src/components/VotePrompt';
 import { VoteResult } from '../src/components/VoteResult';
 import { WhisperModal } from '../src/components/WhisperModal';
+import { WhisperToast } from '../src/components/WhisperToast';
 import { useGameActions } from '../src/hooks/useGameActions';
 import { usePlayerStore } from '../src/stores/playerStore';
 import { useWhisperStore } from '../src/stores/whisperStore';
@@ -28,6 +33,7 @@ const DAY_SUB_PHASE_LABELS: Record<string, string> = {
 };
 
 export default function GameScreen() {
+  const router = useRouter();
   const {
     playerName,
     playerId,
@@ -42,15 +48,42 @@ export default function GameScreen() {
     nightFeedback,
     hasNominatedToday,
     gamePlayers,
+    gameResult,
+    justDied,
+    slayerUsed,
+    evilInfo,
   } = usePlayerStore();
-  const { submitNightAction, sendWhisper, nominatePlayer } = useGameActions();
+  const dismissDeath = usePlayerStore((s) => s.set);
+  const { submitNightAction, sendWhisper, nominatePlayer, useSlayer } =
+    useGameActions();
+
+  useEffect(() => {
+    if (!playerId) {
+      router.replace('/');
+    }
+  }, [playerId, router]);
+
+  useEffect(() => {
+    setWhisperModalVisible(false);
+    setWhisperInitialTarget(null);
+  }, [currentPhase, daySubPhase]);
+  const [gameEndDismissed, setGameEndDismissed] = useState(false);
   const [whisperModalVisible, setWhisperModalVisible] = useState(false);
+  const [whisperInitialTarget, setWhisperInitialTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [nominateModalVisible, setNominateModalVisible] = useState(false);
+  const [slayerModalVisible, setSlayerModalVisible] = useState(false);
   const totalUnread = useWhisperStore((s) =>
     Object.values(s.unreadCounts).reduce((a, b) => a + b, 0),
   );
 
-  const isMyTurn = role != null && nightProgress?.activeRoleId === role.id;
+  const drunkAs = usePlayerStore((s) => s.drunkAs);
+  const isMyTurn =
+    role != null &&
+    (nightProgress?.activeRoleId === role.id ||
+      (drunkAs != null && nightProgress?.activeRoleId === drunkAs));
 
   const handleNominate = async (nomineeId: string) => {
     setNominateModalVisible(false);
@@ -60,25 +93,42 @@ export default function GameScreen() {
     }
   };
 
+  const handleSlayer = async (targetId: string) => {
+    setSlayerModalVisible(false);
+    const result = await useSlayer(targetId);
+    if (!result.success) {
+      Alert.alert('사냥꾼 실패', result.error ?? '사용할 수 없습니다');
+    }
+  };
+
+  const isSlayerRole = role?.id === 'slayer';
+  const canUseSlayer =
+    isSlayerRole && isAlive && !slayerUsed && currentPhase === 'day';
+
   const nominatablePlayers = gamePlayers.filter(
     (p) => p.isAlive && p.id !== playerId,
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, !isAlive && styles.containerDead]}>
       <StatusBar style="light" />
 
-      <View style={styles.header}>
+      {/* Persistent red vignette when dead */}
+      {!isAlive && <DeadVignette />}
+
+      <View style={[styles.header, !isAlive && styles.headerDead]}>
         <View style={styles.headerRow}>
           <View>
-            <Text style={styles.playerLabel}>플레이어</Text>
-            <Text style={styles.playerName}>{playerName}</Text>
+            <Text style={[styles.playerLabel, !isAlive && styles.playerLabelDead]}>
+              {!isAlive ? '사망' : '플레이어'}
+            </Text>
+            <Text style={[styles.playerName, !isAlive && styles.playerNameDead]}>
+              {playerName}
+            </Text>
           </View>
           <View style={styles.headerRight}>
             {!isAlive && (
-              <View style={styles.deadBadge}>
-                <Text style={styles.deadText}>사망</Text>
-              </View>
+              <Text style={styles.deadSkull}>💀</Text>
             )}
           </View>
         </View>
@@ -105,6 +155,7 @@ export default function GameScreen() {
           visible={currentPhase === 'night'}
           nightProgress={nightProgress}
           role={role}
+          drunkAs={drunkAs}
           isMyTurn={isMyTurn}
           playerId={playerId}
           nightActionSubmitted={nightActionSubmitted}
@@ -146,18 +197,61 @@ export default function GameScreen() {
 
         <EndedPhase
           visible={currentPhase === 'ended'}
-          hasVoteResult={!!voteResult}
+          gameResult={gameResult}
         />
 
-        {role && <RoleCard role={role} />}
+        {canUseSlayer && (
+          <View style={{ alignItems: 'center', marginVertical: 12 }}>
+            <Pressable
+              onPress={() => setSlayerModalVisible(true)}
+              style={{
+                backgroundColor: '#b85c5c',
+                paddingHorizontal: 24,
+                paddingVertical: 12,
+                borderRadius: 8,
+              }}
+            >
+              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>
+                사냥꾼 능력 사용
+              </Text>
+            </Pressable>
+          </View>
+        )}
 
-        {__DEV__ && <DevPanel currentPhase={currentPhase} role={role} />}
+        {role && currentPhase !== 'setup' && (
+          <RoleCard role={role} evilInfo={evilInfo} />
+        )}
+        {role && currentPhase === 'setup' && <VeiledRoleCard />}
+
       </ScrollView>
+
+      {justDied && (
+        <DeathOverlay onDismiss={() => dismissDeath({ justDied: false })} />
+      )}
+
+      {currentPhase === 'ended' && gameResult && role && !gameEndDismissed && (
+        <GameEndOverlay
+          gameResult={gameResult}
+          myTeam={role.team}
+          onDismiss={() => setGameEndDismissed(true)}
+        />
+      )}
+
+      <WhisperToast
+        onNavigate={(id, name) => {
+          setWhisperInitialTarget({ id, name });
+          setWhisperModalVisible(true);
+        }}
+      />
 
       <WhisperModal
         visible={whisperModalVisible}
-        onClose={() => setWhisperModalVisible(false)}
+        onClose={() => {
+          setWhisperModalVisible(false);
+          setWhisperInitialTarget(null);
+        }}
         onSend={sendWhisper}
+        initialTarget={whisperInitialTarget}
       />
 
       <NominateModal
@@ -165,6 +259,13 @@ export default function GameScreen() {
         players={nominatablePlayers}
         onNominate={handleNominate}
         onClose={() => setNominateModalVisible(false)}
+      />
+
+      <NominateModal
+        visible={slayerModalVisible}
+        players={gamePlayers.filter((p) => p.isAlive && p.id !== playerId)}
+        onNominate={handleSlayer}
+        onClose={() => setSlayerModalVisible(false)}
       />
     </View>
   );

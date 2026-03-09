@@ -56,9 +56,6 @@ export const styles = StyleSheet.create({
     fontSize: 16,
   },
   ipInput: {
-    flex: 2,
-  },
-  codeInput: {
     flex: 1,
   },
   scanButton: {

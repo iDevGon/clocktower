@@ -16,9 +16,10 @@ import { usePlayerStore } from '../src/stores/playerStore';
 import { styles } from '../src/styles/index.styles';
 
 export default function JoinScreen() {
-  const [serverIp, setServerIp] = useState('');
-  const [gameCode, setGameCode] = useState('');
-  const [playerName, setPlayerName] = useState('');
+  const savedServerUrl = useConnectionStore((s) => s.serverUrl);
+  const [serverIp, setServerIp] = useState(savedServerUrl ?? '');
+  const savedPlayerName = usePlayerStore((s) => s.playerName);
+  const [playerName, setPlayerName] = useState(savedPlayerName ?? '');
   const [error, setError] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
@@ -30,15 +31,15 @@ export default function JoinScreen() {
   // 이전 세션 정보가 있으면 자동 재접속 시도
   useEffect(() => {
     const tryRejoin = async () => {
-      const { serverUrl, gameCode: savedCode } = useConnectionStore.getState();
+      const { serverUrl } = useConnectionStore.getState();
       const { playerId } = usePlayerStore.getState();
-      if (!serverUrl || !savedCode || !playerId) return;
+      if (!serverUrl || !playerId) return;
 
       setIsJoining(true);
       try {
         useConnectionStore.getState().set({ serverUrl });
         await connect();
-        const success = await rejoinGame(playerId, savedCode);
+        const success = await rejoinGame(playerId);
         if (success) {
           router.replace('/game');
           return;
@@ -54,15 +55,10 @@ export default function JoinScreen() {
 
   const handleJoin = async () => {
     const trimmedIp = serverIp.trim();
-    const trimmedCode = gameCode.trim();
     const trimmedName = playerName.trim();
 
     if (!trimmedIp) {
       setError('서버 IP를 입력하세요');
-      return;
-    }
-    if (!trimmedCode) {
-      setError('게임 코드를 입력하세요');
       return;
     }
     if (!trimmedName) {
@@ -80,12 +76,12 @@ export default function JoinScreen() {
 
     try {
       await connect();
-      const success = await joinGame(trimmedName, trimmedCode);
-      if (success) {
+      const result = await joinGame(trimmedName);
+      if (result.success) {
         usePlayerStore.getState().set({ playerName: trimmedName });
         router.replace('/game');
       } else {
-        setError('게임 코드가 올바르지 않거나 게임에 참가할 수 없습니다.');
+        setError(result.error ?? '게임에 참가할 수 없습니다.');
       }
     } catch (err) {
       setError(
@@ -115,11 +111,12 @@ export default function JoinScreen() {
         setServerIp(parsed.server);
         useConnectionStore.getState().set({ serverUrl: parsed.server });
       }
-      if (parsed.code) {
-        setGameCode(parsed.code);
-      }
     } catch {
-      setError('유효하지 않은 QR 코드입니다.');
+      // JSON이 아니면 서버 URL로 직접 사용
+      const trimmed = result.data.trim();
+      if (trimmed) {
+        setServerIp(trimmed);
+      }
     }
   };
 
@@ -141,7 +138,7 @@ export default function JoinScreen() {
 
       <View style={styles.form}>
         <View>
-          <Text style={styles.label}>서버 IP / 게임 코드</Text>
+          <Text style={styles.label}>서버 IP</Text>
           <View style={styles.row}>
             <TextInput
               style={[styles.input, styles.ipInput]}
@@ -152,15 +149,6 @@ export default function JoinScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
-            />
-            <TextInput
-              style={[styles.input, styles.codeInput]}
-              placeholder="코드"
-              placeholderTextColor="#5c5a58"
-              value={gameCode}
-              onChangeText={setGameCode}
-              autoCapitalize="none"
-              autoCorrect={false}
             />
             <Pressable
               style={({ pressed }) => [

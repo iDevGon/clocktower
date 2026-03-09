@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native';
 export const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
+    alignSelf: 'stretch' as const,
     paddingVertical: 16,
   },
   myTurnBanner: {
@@ -24,6 +25,12 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingHorizontal: 8,
+    alignSelf: 'stretch',
+  },
+  progressBarScroll: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 8,
   },
   stepWrapper: {
     alignItems: 'center',
@@ -34,6 +41,18 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     justifyContent: 'center',
+  },
+  dotContainer: {
+    width: 14,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeGlow: {
+    position: 'absolute',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
   },
   dot: {
     width: 10,
@@ -65,6 +84,9 @@ export const styles = StyleSheet.create({
     flex: 1,
     height: 2,
     backgroundColor: '#2e2e34',
+  },
+  lineHidden: {
+    backgroundColor: 'transparent',
   },
   linePast: {
     backgroundColor: '#5c5a58',

@@ -1,5 +1,7 @@
 import type { Role, Team } from '@clocktower/shared';
 import { StyleSheet, Text, View } from 'react-native';
+import { AbilityText } from './AbilityText';
+import type { EvilInfo } from '../stores/playerStore';
 
 const TEAM_STYLES: Record<
   Team,
@@ -17,9 +19,10 @@ const TEAM_STYLES: Record<
 
 interface RoleCardProps {
   role: Role;
+  evilInfo?: EvilInfo | null;
 }
 
-export function RoleCard({ role }: RoleCardProps) {
+export function RoleCard({ role, evilInfo }: RoleCardProps) {
   const teamStyle = TEAM_STYLES[role.team];
 
   return (
@@ -29,7 +32,49 @@ export function RoleCard({ role }: RoleCardProps) {
       </Text>
       <Text style={styles.roleName}>{role.name}</Text>
       <View style={styles.divider} />
-      <Text style={styles.ability}>{role.ability}</Text>
+      <AbilityText text={role.ability} style={styles.ability} />
+
+      {evilInfo && role.team === 'demon' && (
+        <View style={styles.evilInfoSection}>
+          <View style={styles.divider} />
+          {evilInfo.minionNames && evilInfo.minionNames.length > 0 && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>하수인</Text>
+              <Text style={styles.infoValue}>
+                {evilInfo.minionNames.join(', ')}
+              </Text>
+            </View>
+          )}
+          {evilInfo.bluffRoles && evilInfo.bluffRoles.length > 0 && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>블러프</Text>
+              <Text style={styles.infoValue}>
+                {evilInfo.bluffRoles.map((r) => r.name).join(', ')}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {evilInfo && role.team === 'minion' && (
+        <View style={styles.evilInfoSection}>
+          <View style={styles.divider} />
+          {evilInfo.demonName && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>악마</Text>
+              <Text style={styles.infoValue}>{evilInfo.demonName}</Text>
+            </View>
+          )}
+          {evilInfo.otherMinionNames && evilInfo.otherMinionNames.length > 0 && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>다른 하수인</Text>
+              <Text style={styles.infoValue}>
+                {evilInfo.otherMinionNames.join(', ')}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -63,5 +108,23 @@ const styles = StyleSheet.create({
     color: '#b8b6b2',
     fontSize: 14,
     lineHeight: 20,
+  },
+  evilInfoSection: {
+    marginTop: 12,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    marginBottom: 6,
+  },
+  infoLabel: {
+    color: '#b85c5c',
+    fontSize: 13,
+    fontWeight: '600',
+    width: 80,
+  },
+  infoValue: {
+    color: '#d0ccc8',
+    fontSize: 13,
+    flex: 1,
   },
 });

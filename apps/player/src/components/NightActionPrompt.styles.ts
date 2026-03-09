@@ -129,9 +129,44 @@ export const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 6,
   },
+  grimoireRowDead: {
+    backgroundColor: '#1a1218',
+    opacity: 0.7,
+  },
+  grimoireNameCol: {
+    flex: 1,
+    marginRight: 8,
+  },
+  grimoireNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  grimoireDeadIcon: {
+    fontSize: 12,
+  },
   grimoireName: {
     color: '#e0ddd8',
     fontSize: 14,
+  },
+  grimoireNameDead: {
+    color: '#8a7070',
+    textDecorationLine: 'line-through',
+  },
+  grimoireStatusRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 3,
+  },
+  grimoireStatus: {
+    fontSize: 10,
+    color: '#c48850',
+    fontWeight: '600',
+    backgroundColor: 'rgba(196,136,80,0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+    overflow: 'hidden',
   },
   grimoireRole: {
     fontSize: 13,

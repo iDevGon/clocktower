@@ -1,21 +1,77 @@
 import type { Role } from '@clocktower/shared';
 import { getRoleById } from '@clocktower/shared';
 import { useEffect, useRef } from 'react';
-import { Animated, Text, Vibration, View } from 'react-native';
+import { Animated, ScrollView, Text, Vibration, View, useWindowDimensions } from 'react-native';
 import { styles } from './NightProgress.styles';
+
+function ActiveGlow({ isMine }: { isMine: boolean }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const opacity = useRef(new Animated.Value(0.6)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(scale, {
+            toValue: 2.4,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(scale, {
+            toValue: 1,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 0.6,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [scale, opacity]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.activeGlow,
+        {
+          backgroundColor: isMine ? '#c4a050' : '#8090c0',
+          transform: [{ scale }],
+          opacity,
+        },
+      ]}
+    />
+  );
+}
 
 interface NightProgressProps {
   activeRoleId: string | null;
   order: string[];
   myRole: Role | null;
+  drunkAs?: string | null;
 }
 
 export function NightProgress({
   activeRoleId,
   order,
   myRole,
+  drunkAs,
 }: NightProgressProps) {
-  const isMyTurn = myRole != null && activeRoleId === myRole.id;
+  const isMyTurn =
+    myRole != null &&
+    (activeRoleId === myRole.id ||
+      (drunkAs != null && activeRoleId === drunkAs));
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -46,6 +102,53 @@ export function NightProgress({
   }, [isMyTurn, pulseAnim]);
 
   const activeIndex = activeRoleId ? order.indexOf(activeRoleId) : -1;
+  const { width: screenWidth } = useWindowDimensions();
+  const MIN_STEP_WIDTH = 48;
+  const barPadding = 16; // paddingHorizontal 8 * 2
+  const naturalStepWidth = (screenWidth - barPadding) / Math.max(order.length, 1);
+  const needsScroll = naturalStepWidth < MIN_STEP_WIDTH;
+  const stepWidth = needsScroll ? MIN_STEP_WIDTH : undefined;
+
+  const barContent = order.map((roleId, index) => {
+    const role = getRoleById(roleId);
+    const isActive = roleId === activeRoleId;
+    const isPast = activeIndex >= 0 && index < activeIndex;
+    const isMine = myRole?.id === roleId || (drunkAs != null && drunkAs === roleId);
+    const isFirst = index === 0;
+    const isLast = index === order.length - 1;
+
+    return (
+      <View key={roleId} style={[styles.stepWrapper, stepWidth != null && { width: stepWidth, flex: undefined }]}>
+        <View style={styles.stepRow}>
+          <View style={[styles.line, isFirst ? styles.lineHidden : (isPast && styles.linePast)]} />
+          <View style={styles.dotContainer}>
+            {isActive && <ActiveGlow isMine={isMine} />}
+            <View
+              style={[
+                styles.dot,
+                isPast && styles.dotPast,
+                isActive && styles.dotActive,
+                isMine && !isActive && styles.dotMine,
+                isMine && isActive && styles.dotMyActive,
+              ]}
+            />
+          </View>
+          <View style={[styles.line, isLast ? styles.lineHidden : (isPast && styles.linePast)]} />
+        </View>
+        <Text
+          style={[
+            styles.roleName,
+            isPast && styles.roleNamePast,
+            isActive && styles.roleNameActive,
+            isMine && styles.roleNameMine,
+          ]}
+          numberOfLines={1}
+        >
+          {isMine ? (role?.name ?? roleId) : '???'}
+        </Text>
+      </View>
+    );
+  });
 
   return (
     <View style={styles.container}>
@@ -55,44 +158,19 @@ export function NightProgress({
         </Animated.View>
       )}
 
-      <View style={styles.progressBar}>
-        {order.map((roleId, index) => {
-          const role = getRoleById(roleId);
-          const isActive = roleId === activeRoleId;
-          const isPast = activeIndex >= 0 && index < activeIndex;
-          const isMine = myRole?.id === roleId;
-
-          return (
-            <View key={roleId} style={styles.stepWrapper}>
-              <View style={styles.stepRow}>
-                <View
-                  style={[
-                    styles.dot,
-                    isPast && styles.dotPast,
-                    isActive && styles.dotActive,
-                    isMine && !isActive && styles.dotMine,
-                    isMine && isActive && styles.dotMyActive,
-                  ]}
-                />
-                {index < order.length - 1 && (
-                  <View style={[styles.line, isPast && styles.linePast]} />
-                )}
-              </View>
-              <Text
-                style={[
-                  styles.roleName,
-                  isPast && styles.roleNamePast,
-                  isActive && styles.roleNameActive,
-                  isMine && styles.roleNameMine,
-                ]}
-                numberOfLines={1}
-              >
-                {isMine ? (role?.name ?? roleId) : '???'}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
+      {needsScroll ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.progressBarScroll}
+        >
+          {barContent}
+        </ScrollView>
+      ) : (
+        <View style={styles.progressBar}>
+          {barContent}
+        </View>
+      )}
     </View>
   );
 }

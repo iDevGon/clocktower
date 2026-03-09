@@ -1,4 +1,8 @@
-import type { NightFeedbackPayload, Team } from '@clocktower/shared';
+import {
+  PLAYER_STATUS_LABELS,
+  type NightFeedbackPayload,
+  type Team,
+} from '@clocktower/shared';
 import { Text, View } from 'react-native';
 import { styles } from './NightActionPrompt.styles';
 
@@ -46,11 +50,12 @@ export function FeedbackDisplay({
         <View style={styles.feedbackBanner}>
           <Text style={styles.feedbackLabel}>진행자 안내</Text>
           <Text style={styles.feedbackPlayersText}>
-            <Text style={styles.feedbackHighlight}>
-              {feedback.playerNames.join(
-                '</Text>과(와) <Text style={styles.feedbackHighlight}>',
-              )}
-            </Text>
+            {feedback.playerNames.map((name, i) => (
+              <Text key={name}>
+                {i > 0 && '과(와) '}
+                <Text style={styles.feedbackHighlight}>{name}</Text>
+              </Text>
+            ))}
           </Text>
           <Text style={styles.feedbackRoleText}>
             중 한 명이{' '}
@@ -66,18 +71,55 @@ export function FeedbackDisplay({
           <Text style={styles.feedbackBig}>{feedback.roleName}</Text>
         </View>
       );
+    case 'no_match':
+      return (
+        <View style={styles.feedbackBanner}>
+          <Text style={styles.feedbackLabel}>진행자 안내</Text>
+          <Text style={styles.feedbackBig}>{feedback.message}</Text>
+        </View>
+      );
     case 'grimoire':
       return (
         <View style={styles.feedbackBanner}>
           <Text style={styles.feedbackLabel}>마법서</Text>
           <View style={styles.grimoireList}>
             {feedback.entries.map((entry) => (
-              <View key={entry.name} style={styles.grimoireRow}>
-                <Text style={styles.grimoireName}>{entry.name}</Text>
+              <View
+                key={entry.name}
+                style={[
+                  styles.grimoireRow,
+                  !entry.isAlive && styles.grimoireRowDead,
+                ]}
+              >
+                <View style={styles.grimoireNameCol}>
+                  <View style={styles.grimoireNameRow}>
+                    {!entry.isAlive && (
+                      <Text style={styles.grimoireDeadIcon}>💀</Text>
+                    )}
+                    <Text
+                      style={[
+                        styles.grimoireName,
+                        !entry.isAlive && styles.grimoireNameDead,
+                      ]}
+                    >
+                      {entry.name}
+                    </Text>
+                  </View>
+                  {entry.statuses.length > 0 && (
+                    <View style={styles.grimoireStatusRow}>
+                      {entry.statuses.map((status) => (
+                        <Text key={status} style={styles.grimoireStatus}>
+                          {PLAYER_STATUS_LABELS[status]}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+                </View>
                 <Text
                   style={[
                     styles.grimoireRole,
                     { color: TEAM_COLORS[entry.team] },
+                    !entry.isAlive && { opacity: 0.5 },
                   ]}
                 >
                   {entry.roleName}

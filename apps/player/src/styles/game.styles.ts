@@ -5,12 +5,19 @@ export const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#121214',
   },
+  containerDead: {
+    backgroundColor: '#140a0a',
+  },
   header: {
     paddingTop: 64,
     paddingHorizontal: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderColor: '#2e2e34',
+  },
+  headerDead: {
+    borderColor: 'rgba(139,20,20,0.4)',
+    backgroundColor: 'rgba(30,8,8,0.6)',
   },
   headerRow: {
     flexDirection: 'row',
@@ -31,19 +38,14 @@ export const styles = StyleSheet.create({
   headerRight: {
     alignItems: 'flex-end',
   },
-  deadBadge: {
-    backgroundColor: '#242428',
-    borderRadius: 9999,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: '#943c3c',
+  playerLabelDead: {
+    color: '#8b3030',
   },
-  deadText: {
-    color: '#b85c5c',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
+  playerNameDead: {
+    color: '#c08080',
+  },
+  deadSkull: {
+    fontSize: 28,
   },
   scrollView: {
     flex: 1,

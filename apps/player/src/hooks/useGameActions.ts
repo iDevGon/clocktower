@@ -26,6 +26,26 @@ export function useGameActions() {
     }
   }, []);
 
+  const useSlayer = useCallback(
+    (targetId: string): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        const socket = useConnectionStore.getState().socket;
+        if (!socket || !socket.connected) {
+          resolve({ success: false, error: '연결되어 있지 않습니다' });
+          return;
+        }
+
+        socket.emit('slayer:use', { targetId }, (res) => {
+          if (res.success) {
+            usePlayerStore.getState().set({ slayerUsed: true });
+          }
+          resolve(res);
+        });
+      });
+    },
+    [],
+  );
+
   const nominatePlayer = useCallback(
     (nomineeId: string): Promise<{ success: boolean; error?: string }> => {
       return new Promise((resolve) => {
@@ -46,5 +66,5 @@ export function useGameActions() {
     [],
   );
 
-  return { castVote, submitNightAction, sendWhisper, nominatePlayer };
+  return { castVote, submitNightAction, sendWhisper, nominatePlayer, useSlayer };
 }
