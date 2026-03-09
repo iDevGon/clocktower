@@ -1,10 +1,11 @@
 import {
+  NIGHT_FEEDBACK,
   PLAYER_STATUS_LABELS,
   type PlayerStatus,
   getRoleById,
 } from '@clocktower/shared';
 import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import {
   ActionModal,
@@ -58,6 +59,7 @@ export default function GrimoireScreen() {
     kill: rawKill,
     revive: rawRevive,
     resetGame,
+    restartGame,
     castVoteForPlayer,
     closeVote: rawCloseVote,
     setActiveNightRole: rawSetActiveNightRole,
@@ -319,6 +321,49 @@ export default function GrimoireScreen() {
     ]);
   };
 
+  // Night feedback overlay state
+  const [feedbackCollapsed, setFeedbackCollapsed] = useState(false);
+  const [feedbackSentForRole, setFeedbackSentForRole] = useState<string | null>(null);
+  const [nightElapsed, setNightElapsed] = useState(0);
+  const nightTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Track elapsed time per active night role
+  useEffect(() => {
+    if (nightTimerRef.current) clearInterval(nightTimerRef.current);
+    setNightElapsed(0);
+    if (activeNightRoleId) {
+      nightTimerRef.current = setInterval(() => {
+        setNightElapsed((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (nightTimerRef.current) clearInterval(nightTimerRef.current);
+    };
+  }, [activeNightRoleId]);
+
+  // Auto-expand feedback and reset sent state when active role changes
+  useEffect(() => {
+    if (activeNightRoleId) {
+      setFeedbackCollapsed(false);
+      setFeedbackSentForRole(null);
+    }
+  }, [activeNightRoleId]);
+
+  const isFeedbackSent = feedbackSentForRole === activeNightRoleId;
+
+  // Check if current role has feedback to show
+  const hasNightFeedback = useMemo(() => {
+    if (!activeNightRoleId) return false;
+    const fbDef = NIGHT_FEEDBACK[activeNightRoleId];
+    if (!fbDef || fbDef.type === 'none' || fbDef.type === 'grimoire') return false;
+    const target = gameState?.players.find(
+      (p) =>
+        p.role?.id === activeNightRoleId ||
+        (p.role?.id === 'drunk' && p.drunkAs === activeNightRoleId),
+    );
+    return !!target;
+  }, [activeNightRoleId, gameState?.players]);
+
   const [areaSize, setAreaSize] = useState({ width: 0, height: 0 });
   const tokenPositions = useGameStore((s) => s.tokenPositions);
 
@@ -360,6 +405,16 @@ export default function GrimoireScreen() {
     },
     [],
   );
+
+  const butlerMasterNames = useMemo(() => {
+    if (!gameState?.butlerMasters) return {};
+    const names: Record<string, string> = {};
+    for (const [butlerId, masterId] of Object.entries(gameState.butlerMasters)) {
+      const master = gameState.players.find((p) => p.id === masterId);
+      if (master) names[butlerId] = master.name;
+    }
+    return names;
+  }, [gameState?.butlerMasters, gameState?.players]);
 
   const currentNomination = gameState?.nominations?.length
     ? gameState.nominations[gameState.nominations.length - 1]
@@ -445,6 +500,7 @@ export default function GrimoireScreen() {
                 player={player}
                 statuses={playerStatuses[player.id]}
                 highlighted={player.id === executedPlayerId}
+                butlerMasterName={butlerMasterNames[player.id]}
                 tokenSize={dynamicTokenSize}
                 initialX={pos.x}
                 initialY={pos.y}
@@ -470,33 +526,78 @@ export default function GrimoireScreen() {
         />
       )}
       {gameState.phase === 'night' && (
-        <NightFeedbackPanel
-          activeRoleId={activeNightRoleId}
-          players={gameState.players}
-          onSendFeedback={sendNightFeedback}
-        />
-      )}
-      {gameState.phase === 'night' && (
-        <NightOrderPanel
-          day={gameState.day}
-          activeRoleIds={gameState.players
-            .flatMap((p) => {
-              if (p.role?.id === 'drunk' && p.drunkAs) return [p.drunkAs];
-              return p.role?.id ? [p.role.id] : [];
-            })}
-          skippedRoleIds={skippedNightRoles}
-          activeNightRoleId={activeNightRoleId}
-          onActivateRole={setActiveNightRole}
-          onNightComplete={() => {
-            showModal('밤이 끝났습니다', [
-              {
-                text: '낮으로 전환',
-                onPress: () => handleSetPhase('day'),
-              },
-              { text: '계속 진행', style: 'cancel' },
-            ]);
-          }}
-        />
+        <View>
+          {/* Floating timer - always visible above overlay */}
+          {hasNightFeedback && activeNightRoleId && (() => {
+            const role = getRoleById(activeNightRoleId);
+            const m = Math.floor(nightElapsed / 60);
+            const sec = nightElapsed % 60;
+            return (
+              <View style={styles.nightFloatingTimer}>
+                <Text style={styles.nightFloatingTimerRole}>
+                  {role?.name ?? activeNightRoleId}
+                </Text>
+                <Text style={styles.nightFloatingTimerTime}>
+                  {m}:{sec.toString().padStart(2, '0')}
+                </Text>
+                {isFeedbackSent ? (
+                  <View style={styles.nightFeedbackSentBadge}>
+                    <Text style={styles.nightFeedbackSentText}>피드백 전송됨</Text>
+                  </View>
+                ) : (
+                  <Pressable
+                    onPress={() => setFeedbackCollapsed((prev) => !prev)}
+                    style={styles.nightFeedbackToggle}
+                  >
+                    <Text style={styles.nightFeedbackToggleText}>
+                      {feedbackCollapsed ? '피드백 ▲' : '피드백 ▼'}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            );
+          })()}
+
+          {/* NightOrderPanel + NightFeedbackPanel overlay container */}
+          <View style={{ position: 'relative' }}>
+            <NightOrderPanel
+              day={gameState.day}
+              activeRoleIds={gameState.players
+                .flatMap((p) => {
+                  if (p.role?.id === 'drunk' && p.drunkAs) return [p.drunkAs];
+                  return p.role?.id ? [p.role.id] : [];
+                })}
+              skippedRoleIds={skippedNightRoles}
+              activeNightRoleId={activeNightRoleId}
+              onActivateRole={setActiveNightRole}
+              onNightComplete={() => {
+                showModal('밤이 끝났습니다', [
+                  {
+                    text: '낮으로 전환',
+                    onPress: () => handleSetPhase('day'),
+                  },
+                  { text: '계속 진행', style: 'cancel' },
+                ]);
+              }}
+            />
+
+            {/* Feedback overlay - covers NightOrderPanel */}
+            {hasNightFeedback && !feedbackCollapsed && !isFeedbackSent && (
+              <View style={styles.nightFeedbackOverlay}>
+                <NightFeedbackPanel
+                  activeRoleId={activeNightRoleId}
+                  players={gameState.players}
+                  nightActions={nightActions}
+                  onSendFeedback={(playerId, fb) => {
+                    sendNightFeedback(playerId, fb);
+                    setFeedbackSentForRole(activeNightRoleId);
+                    setFeedbackCollapsed(true);
+                  }}
+                />
+              </View>
+            )}
+          </View>
+        </View>
       )}
       {hasActiveVote && currentNomination && (
         <VotePanel
@@ -570,8 +671,23 @@ export default function GrimoireScreen() {
               },
               { text: '취소', style: 'cancel' },
             ]);
+          } else if (gameState.phase === 'ended') {
+            showModal('새 게임을 시작하시겠습니까?', [
+              {
+                text: '새 게임 시작',
+                onPress: async () => {
+                  useGameStore.getState().reset();
+                  useLogStore.getState().clearLogs();
+                  try {
+                    await restartGame();
+                    router.replace('/game/lobby');
+                  } catch {}
+                },
+              },
+              { text: '취소', style: 'cancel' },
+            ]);
           } else {
-            // vote/ended 등에서는 바로 밤으로
+            // vote 등에서는 바로 밤으로
             handleSetPhase('night');
           }
         }}

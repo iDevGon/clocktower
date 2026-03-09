@@ -43,4 +43,28 @@ export const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: '700',
   },
+  tooltipOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  tooltipBox: {
+    backgroundColor: '#1e1e24',
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    maxWidth: 280,
+  },
+  tooltipTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  tooltipDesc: {
+    color: '#c0c0c8',
+    fontSize: 13,
+    lineHeight: 19,
+  },
 });

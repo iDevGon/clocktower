@@ -24,13 +24,13 @@ export const styles = StyleSheet.create({
   progressBar: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
     alignSelf: 'stretch',
   },
   progressBarScroll: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
   },
   stepWrapper: {
     alignItems: 'center',

@@ -98,6 +98,19 @@ export function useGameActions() {
 
   const resetGame = useCallback(() => socket?.emit('game:reset'), [socket]);
 
+  const restartGame = useCallback(
+    () =>
+      new Promise<string>((resolve, reject) => {
+        const s = getSocket();
+        if (!s) return reject(new Error('Not connected'));
+        s.emit('game:restart', (res: { success: boolean; gameId?: string }) => {
+          if (res.success && res.gameId) resolve(res.gameId);
+          else reject(new Error('게임 재시작 실패'));
+        });
+      }),
+    [],
+  );
+
   const sendNightFeedback = useCallback(
     (playerId: string, feedback: NightFeedbackPayload) =>
       socket?.emit('night:sendFeedback', { playerId, feedback }),
@@ -125,6 +138,7 @@ export function useGameActions() {
     [socket],
   );
 
+
   return {
     createGame,
     startGame,
@@ -138,6 +152,7 @@ export function useGameActions() {
     castVoteForPlayer,
     closeVote,
     resetGame,
+    restartGame,
     sendNightFeedback,
     setActiveNightRole,
     addDummyPlayers,

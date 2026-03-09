@@ -119,6 +119,16 @@ export function NightActionLog({
                 <Text style={styles.actionPlayer}>{action.playerName}</Text>
                 <Text style={styles.actionArrow}>→</Text>
                 <Text style={styles.actionTarget}>{targetNames}</Text>
+                {action.fortuneTellerResult !== undefined && (
+                  <Text style={[styles.sentBadge, {
+                    backgroundColor: action.fortuneTellerResult
+                      ? 'rgba(106,176,76,0.2)'
+                      : 'rgba(184,92,92,0.2)',
+                    color: action.fortuneTellerResult ? '#6ab04c' : '#b85c5c',
+                  }]}>
+                    {action.fortuneTellerResult ? '예' : '아니오'}
+                  </Text>
+                )}
                 {isSent && <Text style={styles.sentBadge}>전송됨</Text>}
               </View>
               {hasTargets && actionConfig && (

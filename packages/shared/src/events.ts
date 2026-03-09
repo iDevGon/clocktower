@@ -132,6 +132,9 @@ export interface StorytellerToServerEvents {
   'vote:castForPlayer': (data: { playerId: string; guilty: boolean }) => void;
   'vote:close': () => void;
   'game:reset': () => void;
+  'game:restart': (
+    callback: (res: { success: boolean; gameId?: string }) => void,
+  ) => void;
   'night:setActiveRole': (roleId: string | null) => void;
   'night:sendFeedback': (data: {
     playerId: string;

@@ -29,6 +29,7 @@ export interface GameState {
   players: Player[];
   nominations: Nomination[];
   started: boolean;
+  butlerMasters?: Record<string, string>;
 }
 
 export interface Nomination {
@@ -50,6 +51,8 @@ export interface NightAction {
   playerName: string;
   roleId: string;
   targets: string[];
+  /** 점쟁이 판정 결과: 선택된 2명 중 악마/Red Herring 포함 여부 */
+  fortuneTellerResult?: boolean;
 }
 
 export interface PlayerInfo {
@@ -107,6 +110,13 @@ export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
   drunk: '#e67e22',
   protected: '#2ecc71',
   cursed: '#8e44ad',
+};
+
+export const PLAYER_STATUS_DESCRIPTIONS: Record<PlayerStatus, string> = {
+  poisoned: '독살자에 의해 중독됨. 이 플레이어의 능력은 오늘 밤과 내일 낮 동안 무효화됩니다.',
+  drunk: '주정뱅이. 본인은 자신의 역할을 모르며, 능력이 무효화됩니다.',
+  protected: '수도승에 의해 보호됨. 이 플레이어는 오늘 밤 악마에게 죽지 않습니다.',
+  cursed: '점쟁이의 저주. 점쟁이에게 악마로 감지됩니다.',
 };
 
 export type WinningTeam = 'good' | 'evil';

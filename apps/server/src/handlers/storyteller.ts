@@ -92,6 +92,16 @@ export function registerStorytellerHandlers(
       storytellerIo.emit('game:state', game.getState());
     });
 
+    socket.on('game:restart', (callback) => {
+      const newId = game.restart();
+      clearPushTokens();
+      // 플레이어에게 새 게임 상태 전송 (플레이어 목록 유지, 역할/상태 초기화)
+      playerIo.emit('game:phase', 'setup');
+      playerIo.emit('game:state', game.getState());
+      storytellerIo.emit('game:state', game.getState());
+      callback({ success: true, gameId: newId });
+    });
+
     socket.on('game:create', (callback) => {
       game.create();
       storytellerIo.emit('game:state', game.getState());
@@ -276,6 +286,8 @@ export function registerStorytellerHandlers(
         }
       }
       sendEvilInfo(playerIo, game);
+      // 점쟁이가 배정되면 Red Herring 자동 지정
+      game.assignFortuneTellerRedHerring();
       storytellerIo.emit('game:state', game.getState());
       callback({ success: true });
     });
@@ -345,8 +357,10 @@ export function registerStorytellerHandlers(
       const updatedState = game.getState();
       if (updatedState.players.every((p) => p.role)) {
         sendEvilInfo(playerIo, game);
+        // 점쟁이가 배정되면 Red Herring 자동 지정
+        game.assignFortuneTellerRedHerring();
       }
-      storytellerIo.emit('game:state', updatedState);
+      storytellerIo.emit('game:state', game.getState());
     });
 
     socket.on('game:kill', (playerId) => {

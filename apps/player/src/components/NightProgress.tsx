@@ -104,7 +104,7 @@ export function NightProgress({
   const activeIndex = activeRoleId ? order.indexOf(activeRoleId) : -1;
   const { width: screenWidth } = useWindowDimensions();
   const MIN_STEP_WIDTH = 48;
-  const barPadding = 16; // paddingHorizontal 8 * 2
+  const barPadding = 32; // paddingHorizontal 16 * 2
   const naturalStepWidth = (screenWidth - barPadding) / Math.max(order.length, 1);
   const needsScroll = naturalStepWidth < MIN_STEP_WIDTH;
   const stepWidth = needsScroll ? MIN_STEP_WIDTH : undefined;
@@ -120,7 +120,7 @@ export function NightProgress({
     return (
       <View key={roleId} style={[styles.stepWrapper, stepWidth != null && { width: stepWidth, flex: undefined }]}>
         <View style={styles.stepRow}>
-          <View style={[styles.line, isFirst ? styles.lineHidden : (isPast && styles.linePast)]} />
+          <View style={[styles.line, isFirst ? styles.lineHidden : ((isPast || isActive) && styles.linePast)]} />
           <View style={styles.dotContainer}>
             {isActive && <ActiveGlow isMine={isMine} />}
             <View

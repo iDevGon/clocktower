@@ -126,25 +126,29 @@ function PlayersAndRoleFeedback({
   };
 
   // 선택된 플레이어의 역할에 따른 힌트 하이라이트 계산
-  const { realRoleIds, hasSelectedDrunk, hasTeamMatchPlayer } = useMemo(() => {
-    if (selectedPlayers.length === 0) return { realRoleIds: new Set<string>(), hasSelectedDrunk: false, hasTeamMatchPlayer: false };
+  // 주정뱅이는 drunkAs 역할로 등록됨 (본인은 취한 줄 모름)
+  const { realRoleIds, hasTeamMatchPlayer } = useMemo(() => {
+    if (selectedPlayers.length === 0) return { realRoleIds: new Set<string>(), hasTeamMatchPlayer: false };
     const selected = players.filter((p) => selectedPlayers.includes(p.name));
     const real = new Set<string>();
-    let drunk = false;
     let teamMatch = false;
     for (const p of selected) {
-      if (p.role?.id === 'drunk') {
-        drunk = true;
+      if (p.role?.id === 'drunk' && p.drunkAs) {
+        // 주정뱅이는 drunkAs 역할로 등록됨
+        if (roles.some((r) => r.id === p.drunkAs)) {
+          real.add(p.drunkAs);
+          teamMatch = true;
+        }
       } else if (p.role && roles.some((r) => r.id === p.role?.id)) {
         real.add(p.role.id);
         teamMatch = true;
       }
     }
-    return { realRoleIds: real, hasSelectedDrunk: drunk, hasTeamMatchPlayer: teamMatch };
+    return { realRoleIds: real, hasTeamMatchPlayer: teamMatch };
   }, [selectedPlayers, players, roles]);
 
-  // 거짓 정보를 줘야 하는 경우: 능력 사용자가 주정뱅이이거나, 선택한 플레이어 중 주정뱅이가 있을 때
-  const shouldGiveFalseInfo = isDrunkUser || hasSelectedDrunk;
+  // 거짓 정보를 줘야 하는 경우: 능력 사용자가 주정뱅이일 때만
+  const shouldGiveFalseInfo = isDrunkUser ?? false;
 
   const highlightedRoleIds = useMemo(() => {
     if (selectedPlayers.length === 0) return new Set<string>();
@@ -217,12 +221,19 @@ function PlayersAndRoleFeedback({
           <Pressable
             key={r.id}
             onPress={() => {
-              // 거짓 정보를 줘야 하는데 진짜 직업을 선택하면 경고
-              if (shouldGiveFalseInfo && realRoleIds.has(r.id)) {
+              if (isDrunkUser && realRoleIds.has(r.id)) {
+                // 능력 사용자가 주정뱅이인데 진짜 직업을 선택하면 경고
                 setPendingRoleName(r.name);
                 setWarningVisible(true);
                 return;
               }
+              if (!isDrunkUser && selectedPlayers.length === 2 && hasTeamMatchPlayer && !realRoleIds.has(r.id)) {
+                // 정상 능력 사용자인데 부정확한 직업을 선택하면 경고
+                setPendingRoleName(r.name);
+                setWarningVisible(true);
+                return;
+              }
+              setNoneSelected(false);
               setSelectedRole(r.name);
             }}
             style={[
@@ -274,11 +285,13 @@ function PlayersAndRoleFeedback({
       >
         <View style={styles.drunkModalOverlay}>
           <View style={styles.drunkModalContent}>
-            <Text style={styles.drunkModalTitle}>⚠️ 진짜 직업 선택</Text>
+            <Text style={styles.drunkModalTitle}>
+              {isDrunkUser ? '⚠️ 진짜 직업 선택' : '⚠️ 잘못된 직업 선택'}
+            </Text>
             <Text style={styles.drunkModalMessage}>
-              선택한 직업은 해당 플레이어의 실제 직업입니다.{'\n'}
-              거짓 정보를 제공해야 하는 상황입니다.{'\n'}
-              그래도 선택하시겠습니까?
+              {isDrunkUser
+                ? `선택한 직업은 해당 플레이어의 실제 직업입니다.\n거짓 정보를 제공해야 하는 상황입니다.\n그래도 선택하시겠습니까?`
+                : `선택한 직업은 해당 플레이어들의 실제 직업과 일치하지 않습니다.\n정확한 정보를 제공해야 하는 상황입니다.\n그래도 선택하시겠습니까?`}
             </Text>
             <View style={styles.drunkModalButtons}>
               <Pressable
@@ -293,6 +306,7 @@ function PlayersAndRoleFeedback({
               <Pressable
                 style={styles.drunkModalConfirm}
                 onPress={() => {
+                  setNoneSelected(false);
                   setSelectedRole(pendingRoleName);
                   setPendingRoleName(null);
                   setWarningVisible(false);

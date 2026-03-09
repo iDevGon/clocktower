@@ -180,11 +180,18 @@ export function registerPlayerHandlers(
             player.role.id === 'drunk' && player.drunkAs
               ? player.drunkAs
               : player.role.id;
+          // 점쟁이 판정: 선택된 2명 중 악마/Red Herring 포함 여부
+          const fortuneTellerResult =
+            (reportRoleId === 'fortune_teller')
+              ? game.judgeFortuneTeller(targets)
+              : undefined;
+
           storytellerIo.emit('night:actionReceived', {
             playerId,
             playerName: player.name,
             roleId: reportRoleId,
             targets,
+            fortuneTellerResult,
           });
           console.log(
             `Night action: ${player.name}(${player.role.name}) -> [${targets.join(', ')}]`,

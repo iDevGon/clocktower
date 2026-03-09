@@ -42,6 +42,8 @@ export class GameManager {
   // 현재 활성 밤 역할 및 순서 (재접속 시 복원용)
   private currentNightRoleId: string | null = null;
   private currentNightOrder: string[] = [];
+  // 점쟁이 Red Herring (악마로 감지되는 선한 플레이어)
+  private fortuneTellerRedHerring: string | null = null;
 
   create(): string {
     const id = randomUUID().slice(0, 8);
@@ -62,6 +64,7 @@ export class GameManager {
     this.pendingNightKills = [];
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
+    this.fortuneTellerRedHerring = null;
     return id;
   }
 
@@ -75,6 +78,35 @@ export class GameManager {
       nominations: [],
       started: false,
     };
+    this.clearInternalState();
+  }
+
+  /** 플레이어를 유지한 채 게임만 초기화 (새 게임 시작용) */
+  restart(): string {
+    const id = randomUUID().slice(0, 8);
+    const players = this.state.players.map((p) => ({
+      ...p,
+      role: undefined,
+      drunkAs: undefined,
+      isAlive: true,
+      hasNominatedToday: false,
+      deadVoteUsed: false,
+      statuses: [],
+    }));
+    this.state = {
+      id,
+      phase: 'setup',
+      daySubPhase: null,
+      day: 0,
+      players,
+      nominations: [],
+      started: false,
+    };
+    this.clearInternalState();
+    return id;
+  }
+
+  private clearInternalState(): void {
     this.butlerMasters.clear();
     this.nightActionTargets.clear();
     this.slayerUsed.clear();
@@ -83,10 +115,19 @@ export class GameManager {
     this.pendingNightKills = [];
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
+    this.fortuneTellerRedHerring = null;
   }
 
   getState(): GameState {
-    return { ...this.state };
+    const butlerMasters: Record<string, string> = {};
+    for (const [butlerId, masterId] of this.butlerMasters) {
+      butlerMasters[butlerId] = masterId;
+    }
+    return {
+      ...this.state,
+      butlerMasters:
+        Object.keys(butlerMasters).length > 0 ? butlerMasters : undefined,
+    };
   }
 
   getPlayer(playerId: string): Player | undefined {
@@ -218,6 +259,73 @@ export class GameManager {
 
   getNightProgress(): { activeRoleId: string | null; order: string[] } {
     return { activeRoleId: this.currentNightRoleId, order: this.currentNightOrder };
+  }
+
+  // ── 점쟁이 Red Herring ──
+
+  /**
+   * 점쟁이가 게임에 있을 때, 선한 플레이어 1명을 Red Herring으로 지정합니다.
+   * Red Herring은 점쟁이에게 악마로 감지되며 'cursed' 상태가 부여됩니다.
+   */
+  assignFortuneTellerRedHerring(): string | null {
+    // 기존 red herring의 cursed 상태 제거
+    if (this.fortuneTellerRedHerring) {
+      const prev = this.getPlayer(this.fortuneTellerRedHerring);
+      if (prev) {
+        prev.statuses = prev.statuses.filter((s) => s !== 'cursed');
+      }
+      this.fortuneTellerRedHerring = null;
+    }
+
+    // 점쟁이 찾기 (주정뱅이가 점쟁이인 척하는 경우 제외)
+    const fortuneTeller = this.state.players.find(
+      (p) => p.role?.id === 'fortune_teller',
+    );
+    if (!fortuneTeller) return null;
+
+    // 선한 플레이어 중 점쟁이 본인을 제외한 후보
+    const candidates = this.state.players.filter(
+      (p) =>
+        p.id !== fortuneTeller.id &&
+        (p.role?.team === 'townsfolk' || p.role?.team === 'outsider'),
+    );
+    if (candidates.length === 0) return null;
+
+    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+    this.fortuneTellerRedHerring = chosen.id;
+    if (!chosen.statuses.includes('cursed')) {
+      chosen.statuses.push('cursed');
+    }
+    return chosen.id;
+  }
+
+  getRedHerringId(): string | null {
+    return this.fortuneTellerRedHerring;
+  }
+
+  /**
+   * 점쟁이 판정: 선택된 2명 중 악마 또는 red herring이 포함되어 있으면 true.
+   * 점쟁이가 중독/취함이면 결과를 반전합니다.
+   */
+  judgeFortuneTeller(targets: string[]): boolean {
+    const fortuneTeller = this.state.players.find(
+      (p) => p.role?.id === 'fortune_teller',
+    );
+
+    const hasDemonOrRedHerring = targets.some((targetId) => {
+      const target = this.getPlayer(targetId);
+      if (!target) return false;
+      if (target.role?.team === 'demon') return true;
+      if (targetId === this.fortuneTellerRedHerring) return true;
+      return false;
+    });
+
+    // 중독/취함 상태면 결과 반전
+    if (fortuneTeller && isPoisonedOrDrunk(fortuneTeller)) {
+      return !hasDemonOrRedHerring;
+    }
+
+    return hasDemonOrRedHerring;
   }
 
   // ── 집사 주인 관리 ──

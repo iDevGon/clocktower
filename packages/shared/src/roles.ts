@@ -45,7 +45,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     id: 'chef',
     name: '요리사',
     team: 'townsfolk',
-    ability: '게임 시작 시, 악한 플레이어 쌍이 몇 개인지 알게 됩니다.',
+    ability: '게임 시작 시, 서로 이웃한 악한 플레이어 쌍이 몇 개인지 알게 됩니다.',
   },
   {
     id: 'empath',

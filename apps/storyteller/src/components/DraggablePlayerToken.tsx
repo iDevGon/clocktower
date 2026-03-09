@@ -14,6 +14,7 @@ interface DraggablePlayerTokenProps {
   player: Player;
   statuses?: PlayerStatus[];
   highlighted?: boolean;
+  butlerMasterName?: string;
   tokenSize?: number;
   initialX: number;
   initialY: number;
@@ -25,6 +26,7 @@ export function DraggablePlayerToken({
   player,
   statuses,
   highlighted,
+  butlerMasterName,
   tokenSize: tokenSizeProp,
   initialX,
   initialY,
@@ -84,7 +86,7 @@ export function DraggablePlayerToken({
   return (
     <GestureDetector gesture={composed}>
       <Animated.View style={animatedStyle}>
-        <PlayerToken player={player} statuses={statuses} highlighted={highlighted} size={tokenSize} />
+        <PlayerToken player={player} statuses={statuses} highlighted={highlighted} butlerMasterName={butlerMasterName} size={tokenSize} />
       </Animated.View>
     </GestureDetector>
   );

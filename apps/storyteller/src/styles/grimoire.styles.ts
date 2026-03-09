@@ -119,6 +119,65 @@ export function createGrimoireStyles(scale: number) {
       color: '#908e8a',
       fontSize: s(12),
     },
+
+    /* ---- Night feedback overlay ---- */
+    nightFloatingTimer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: s(10),
+      backgroundColor: '#101014',
+      borderTopWidth: 1,
+      borderColor: '#1e1e24',
+      paddingHorizontal: s(14),
+      paddingVertical: s(6),
+    },
+    nightFloatingTimerRole: {
+      color: '#8090c0',
+      fontSize: s(13),
+      fontWeight: '700',
+    },
+    nightFloatingTimerTime: {
+      color: '#c0c8e0',
+      fontSize: s(14),
+      fontWeight: '700',
+      fontVariant: ['tabular-nums' as const],
+    },
+    nightFeedbackToggle: {
+      backgroundColor: '#1a1a28',
+      paddingHorizontal: s(10),
+      paddingVertical: s(4),
+      borderRadius: s(6),
+      borderWidth: 1,
+      borderColor: '#2a2a3a',
+    },
+    nightFeedbackToggleText: {
+      color: '#8090c0',
+      fontSize: s(11),
+      fontWeight: '600',
+    },
+    nightFeedbackSentBadge: {
+      backgroundColor: '#1a2a1a',
+      paddingHorizontal: s(10),
+      paddingVertical: s(4),
+      borderRadius: s(6),
+      borderWidth: 1,
+      borderColor: '#2a4a2a',
+    },
+    nightFeedbackSentText: {
+      color: '#4a8a4a',
+      fontSize: s(11),
+      fontWeight: '600',
+    },
+    nightFeedbackOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 10,
+      backgroundColor: '#101014',
+    },
   });
 }
 
