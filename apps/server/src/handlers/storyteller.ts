@@ -1,14 +1,65 @@
 import {
+  TROUBLE_BREWING_ROLES,
   distributeRoles,
   FIRST_NIGHT_ORDER,
   OTHER_NIGHT_ORDER,
+  getRoleById,
 } from '@clocktower/shared';
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
+import {
+  clearPushTokens,
+  sendPushNotification,
+  sendPushToAll,
+} from '../pushNotifications.js';
 import type { WhisperTracker } from '../whisper.js';
 
 function getNightOrder(day: number): string[] {
   return day <= 1 ? FIRST_NIGHT_ORDER : OTHER_NIGHT_ORDER;
+}
+
+/**
+ * 악한 팀에게 정보 전송:
+ * - 악마: 하수인 이름 + 블러프용 선한 역할 3개
+ * - 하수인: 악마 이름 + 다른 하수인 이름
+ */
+function sendEvilInfo(
+  playerIo: import('socket.io').Namespace,
+  game: GameManager,
+): void {
+  const state = game.getState();
+  const assignedRoleIds = new Set(
+    state.players.map((p) => p.role?.id).filter(Boolean),
+  );
+
+  // 게임에 없는 선한 역할 중 3개를 블러프용으로 선택
+  const notInPlayGood = TROUBLE_BREWING_ROLES.filter(
+    (r) =>
+      (r.team === 'townsfolk' || r.team === 'outsider') &&
+      !assignedRoleIds.has(r.id),
+  );
+  const shuffled = [...notInPlayGood].sort(() => Math.random() - 0.5);
+  const bluffRoles = shuffled.slice(0, 3).map((r) => ({ id: r.id, name: r.name }));
+
+  const demons = state.players.filter((p) => p.role?.team === 'demon');
+  const minions = state.players.filter((p) => p.role?.team === 'minion');
+
+  // 악마에게 전송
+  for (const demon of demons) {
+    playerIo.to(demon.id).emit('evil:info', {
+      minionNames: minions.map((m) => m.name),
+      bluffRoles,
+    });
+  }
+
+  // 하수인에게 전송
+  for (const minion of minions) {
+    const otherMinions = minions.filter((m) => m.id !== minion.id);
+    playerIo.to(minion.id).emit('evil:info', {
+      demonName: demons[0]?.name,
+      otherMinionNames: otherMinions.map((m) => m.name),
+    });
+  }
 }
 
 function getPlayerInfoList(game: GameManager) {
@@ -36,13 +87,15 @@ export function registerStorytellerHandlers(
 
     socket.on('game:reset', () => {
       game.reset();
+      clearPushTokens();
       playerIo.emit('game:state', game.getState());
       storytellerIo.emit('game:state', game.getState());
     });
 
     socket.on('game:create', (callback) => {
-      const gameId = game.create();
-      callback({ success: true, gameId });
+      game.create();
+      storytellerIo.emit('game:state', game.getState());
+      callback({ success: true });
     });
 
     socket.on('game:start', (callback) => {
@@ -55,6 +108,7 @@ export function registerStorytellerHandlers(
       playerIo.emit('game:phase', 'night');
       const order = getNightOrder(state.day);
       const players = getPlayerInfoList(game);
+      game.setNightProgress(null, order);
       playerIo.emit('night:activeRole', { roleId: null, order, players });
       storytellerIo.emit('game:state', state);
       callback({ success: true });
@@ -67,12 +121,26 @@ export function registerStorytellerHandlers(
         const state = game.getState();
         const order = getNightOrder(state.day);
         const players = getPlayerInfoList(game);
+        game.setNightProgress(null, order);
         playerIo.emit('night:activeRole', { roleId: null, order, players });
+        const allIds = state.players.map((p) => p.id);
+        sendPushToAll(allIds, '🌙 밤이 되었습니다', '눈을 감으세요...');
       }
       if (phase === 'day') {
+        // 밤 중 사망한 플레이어들 알림
+        const pendingKills = game.flushPendingNightKills();
+        for (const killId of pendingKills) {
+          const killed = game.getPlayer(killId);
+          if (killed) {
+            playerIo.emit('game:playerUpdate', killed);
+          }
+        }
         playerIo.emit('game:state', game.getState());
         playerIo.emit('day:subPhase', 'whisper');
         whisperTracker.clear();
+        const state = game.getState();
+        const allIds = state.players.map((p) => p.id);
+        sendPushToAll(allIds, '☀️ 낮이 되었습니다', '토론을 시작하세요!');
       }
       storytellerIo.emit('game:state', game.getState());
     });
@@ -92,7 +160,35 @@ export function registerStorytellerHandlers(
       const state = game.getState();
       const order = getNightOrder(state.day);
       const players = getPlayerInfoList(game);
+      game.setNightProgress(roleId, order);
       playerIo.emit('night:activeRole', { roleId, order, players });
+
+      // Push notification to the active role's player
+      if (roleId) {
+        const activePlayer = state.players.find((p) => p.role?.id === roleId);
+        if (activePlayer) {
+          const role = getRoleById(roleId);
+          const roleName = role?.name ?? roleId;
+          sendPushNotification(
+            activePlayer.id,
+            '🌙 당신의 차례입니다',
+            `${roleName}, 행동을 수행하세요`,
+          );
+        }
+        // 주정뱅이: 가짜 역할의 차례에 알림 전송
+        const drunkPlayer = state.players.find(
+          (p) => p.role?.id === 'drunk' && p.drunkAs === roleId,
+        );
+        if (drunkPlayer) {
+          const role = getRoleById(roleId);
+          const roleName = role?.name ?? roleId;
+          sendPushNotification(
+            drunkPlayer.id,
+            '🌙 당신의 차례입니다',
+            `${roleName}, 행동을 수행하세요`,
+          );
+        }
+      }
 
       // Spy: automatically send grimoire
       if (roleId === 'spy') {
@@ -102,12 +198,18 @@ export function registerStorytellerHandlers(
             name: p.name,
             roleName: p.role?.name ?? '???',
             team: p.role?.team ?? ('townsfolk' as const),
+            isAlive: p.isAlive,
+            statuses: p.statuses ?? [],
           }));
           playerIo.to(spyPlayer.id).emit('night:feedback', {
             feedback: { type: 'grimoire', entries },
           });
         }
       }
+    });
+
+    socket.on('player:setStatuses', ({ playerId, statuses }) => {
+      game.setPlayerStatuses(playerId, statuses);
     });
 
     socket.on('game:addDummyPlayers', (count) => {
@@ -127,6 +229,11 @@ export function registerStorytellerHandlers(
         '마이크',
         '낸시',
         '올리버',
+        '페니',
+        '퀸',
+        '로버트',
+        '수잔',
+        '토마스',
       ];
       const existing = game.getState().players.length;
       for (let i = 0; i < count && existing + i < names.length; i++) {
@@ -147,39 +254,138 @@ export function registerStorytellerHandlers(
       if (!result) {
         callback({
           success: false,
-          error: `${playerIds.length}명은 지원하지 않습니다 (5~15명)`,
+          error: `${playerIds.length}명은 지원하지 않습니다 (5~20명)`,
         });
         return;
       }
-      for (const { playerId, role } of result.assignments) {
-        game.assignRole(playerId, role.id);
-        playerIo.to(playerId).emit('role:assign', {
-          roleId: role.id,
-          roleName: role.name,
-        });
+      for (const { playerId, role, drunkAs } of result.assignments) {
+        game.assignRole(playerId, role.id, drunkAs);
+        if (role.id === 'drunk' && drunkAs) {
+          // 주정뱅이에게는 가짜 마을주민 역할을 전송
+          const fakeRole = getRoleById(drunkAs);
+          playerIo.to(playerId).emit('role:assign', {
+            roleId: drunkAs,
+            roleName: fakeRole?.name ?? drunkAs,
+            drunkAs,
+          });
+        } else {
+          playerIo.to(playerId).emit('role:assign', {
+            roleId: role.id,
+            roleName: role.name,
+          });
+        }
       }
+      sendEvilInfo(playerIo, game);
       storytellerIo.emit('game:state', game.getState());
       callback({ success: true });
     });
 
-    socket.on('game:assignRole', ({ playerId, roleId }) => {
-      game.assignRole(playerId, roleId);
-      const player = game.getPlayer(playerId);
-      if (player?.role) {
-        playerIo.to(playerId).emit('role:assign', {
-          roleId: player.role.id,
-          roleName: player.role.name,
-        });
+    socket.on('game:assignRole', ({ playerId, roleId, drunkAs }) => {
+      // 이미 다른 플레이어가 같은 역할을 갖고 있으면 스왑
+      const state = game.getState();
+      const currentPlayer = state.players.find((p) => p.id === playerId);
+      const existingOwner = state.players.find(
+        (p) => p.id !== playerId && p.role?.id === roleId,
+      );
+
+      if (existingOwner && currentPlayer) {
+        // 스왑: 기존 소유자에게 현재 플레이어의 역할을 부여
+        const oldRole = currentPlayer.role;
+        if (oldRole) {
+          game.assignRole(existingOwner.id, oldRole.id);
+          playerIo.to(existingOwner.id).emit('role:assign', {
+            roleId: oldRole.id,
+            roleName: oldRole.name,
+          });
+        } else {
+          // 현재 플레이어에게 역할이 없으면 기존 소유자의 역할을 해제
+          game.unassignRole(existingOwner.id);
+        }
       }
-      storytellerIo.emit('game:state', game.getState());
+
+      if (roleId === 'drunk') {
+        // 수동 주정뱅이 배정: 스토리텔러가 가짜 역할을 지정하거나, 없으면 랜덤 선택
+        let fakeRoleId = drunkAs;
+        if (!fakeRoleId) {
+          const freshState = game.getState();
+          const assignedRoleIds = freshState.players
+            .filter((p) => p.id !== playerId)
+            .map((p) => p.role?.id)
+            .filter(Boolean);
+          const availableTownsfolk = TROUBLE_BREWING_ROLES.filter(
+            (r) => r.team === 'townsfolk' && !assignedRoleIds.includes(r.id),
+          );
+          fakeRoleId =
+            availableTownsfolk.length > 0
+              ? availableTownsfolk[
+                  Math.floor(Math.random() * availableTownsfolk.length)
+                ].id
+              : undefined;
+        }
+        game.assignRole(playerId, roleId, fakeRoleId);
+        if (fakeRoleId) {
+          const fakeRole = getRoleById(fakeRoleId);
+          playerIo.to(playerId).emit('role:assign', {
+            roleId: fakeRoleId,
+            roleName: fakeRole?.name ?? fakeRoleId,
+            drunkAs: fakeRoleId,
+          });
+        }
+      } else {
+        game.assignRole(playerId, roleId);
+        const player = game.getPlayer(playerId);
+        if (player?.role) {
+          playerIo.to(playerId).emit('role:assign', {
+            roleId: player.role.id,
+            roleName: player.role.name,
+          });
+        }
+      }
+      // 모든 플레이어에게 역할이 배정되면 악한 팀 정보 전송
+      const updatedState = game.getState();
+      if (updatedState.players.every((p) => p.role)) {
+        sendEvilInfo(playerIo, game);
+      }
+      storytellerIo.emit('game:state', updatedState);
     });
 
     socket.on('game:kill', (playerId) => {
-      game.kill(playerId);
-      storytellerIo.emit('game:state', game.getState());
       const killedPlayer = game.getPlayer(playerId);
-      if (killedPlayer) {
-        playerIo.emit('game:playerUpdate', killedPlayer);
+      const isNight = game.getState().phase === 'night';
+
+      // 임프 자해 감지: 사망 처리 전에 체크
+      const isImpSelfKill =
+        killedPlayer?.role?.id === 'imp' && isNight;
+
+      game.kill(playerId);
+
+      // 임프 자해 → 하수인 승계
+      if (isImpSelfKill) {
+        const promoted = game.handleImpSelfKill(playerId);
+        if (promoted) {
+          console.log(
+            `Imp self-kill: ${promoted.name} promoted to Imp`,
+          );
+          storytellerIo.emit('game:state', game.getState());
+        }
+      }
+
+      storytellerIo.emit('game:state', game.getState());
+
+      // 승리 조건 체크
+      const winResult = game.checkWinCondition();
+      if (winResult) {
+        playerIo.emit('game:end', winResult);
+        playerIo.emit('game:phase', 'ended');
+        storytellerIo.emit('game:end', winResult);
+        storytellerIo.emit('game:state', game.getState());
+      } else if (killedPlayer) {
+        if (isNight) {
+          // 밤 중 사망: 낮 전환 시까지 플레이어 알림 보류
+          game.addPendingNightKill(playerId);
+        } else {
+          playerIo.emit('game:playerUpdate', game.getPlayer(playerId)!);
+        }
       }
     });
 
@@ -196,6 +402,34 @@ export function registerStorytellerHandlers(
       const result = game.nominate(nominatorId, nomineeId);
       if (!result.success) return;
 
+      // 성녀(Virgin) 트리거: 지명자가 마을주민이면 즉시 처형
+      if (result.virginKill) {
+        const virgin = game.getPlayer(nomineeId);
+        const nominator = game.getPlayer(nominatorId);
+        game.kill(result.virginKill);
+        game.markExecution();
+        playerIo.emit('virgin:triggered', {
+          virginName: virgin?.name ?? nomineeId,
+          nominatorName: nominator?.name ?? nominatorId,
+          nominatorId,
+        });
+        const killedNominator = game.getPlayer(result.virginKill);
+        if (killedNominator) {
+          playerIo.emit('game:playerUpdate', killedNominator);
+        }
+        storytellerIo.emit('game:state', game.getState());
+
+        // 성녀 트리거 후 승리 조건 체크
+        const winResult = game.checkWinCondition();
+        if (winResult) {
+          playerIo.emit('game:end', winResult);
+          playerIo.emit('game:phase', 'ended');
+          storytellerIo.emit('game:end', winResult);
+          storytellerIo.emit('game:state', game.getState());
+        }
+        return;
+      }
+
       game.setPhase('vote');
       const nominator = game.getPlayer(nominatorId);
       const nominee = game.getPlayer(nomineeId);
@@ -207,16 +441,53 @@ export function registerStorytellerHandlers(
         nomineeName: nominee?.name ?? nomineeId,
       });
       storytellerIo.emit('game:state', game.getState());
+
+      const state = game.getState();
+      const allIds = state.players.map((p) => p.id);
+      sendPushToAll(
+        allIds,
+        '⚖️ 투표가 시작되었습니다',
+        `${nominator?.name ?? '???'}이(가) ${nominee?.name ?? '???'}을(를) 지목했습니다`,
+      );
+    });
+
+    socket.on('vote:castForPlayer', ({ playerId, guilty }) => {
+      // 스토리텔러가 대리 투표할 때는 집사 제한 무시
+      const result = game.castVote(playerId, guilty, true);
+      if (result.success) {
+        storytellerIo.emit('game:state', game.getState());
+      }
     });
 
     socket.on('vote:close', () => {
       const result = game.closeVote();
       if (result) {
+        if (result.guilty) {
+          game.kill(result.nomineeId);
+          game.markExecution();
+          const killedPlayer = game.getPlayer(result.nomineeId);
+          if (killedPlayer) {
+            playerIo.emit('game:playerUpdate', killedPlayer);
+          }
+        }
         playerIo.emit('vote:result', result);
-        game.returnToNomination();
-        playerIo.emit('game:phase', 'day');
-        playerIo.emit('day:subPhase', 'nomination');
-        storytellerIo.emit('game:state', game.getState());
+
+        // 처형 후 승리 조건 체크
+        const executedRoleId = result.guilty
+          ? game.getPlayer(result.nomineeId)?.role?.id
+          : undefined;
+        const winResult = game.checkWinCondition(executedRoleId);
+        if (winResult) {
+          playerIo.emit('game:end', winResult);
+          playerIo.emit('game:phase', 'ended');
+          storytellerIo.emit('game:end', winResult);
+          storytellerIo.emit('game:state', game.getState());
+        } else {
+          game.returnToNomination();
+          playerIo.emit('game:phase', 'day');
+          playerIo.emit('day:subPhase', 'nomination');
+          storytellerIo.emit('game:state', game.getState());
+        }
       }
     });
 

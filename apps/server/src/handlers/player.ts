@@ -1,6 +1,8 @@
 import type { WhisperMessage } from '@clocktower/shared';
+import { getRoleById } from '@clocktower/shared';
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
+import { registerPushToken } from '../pushNotifications.js';
 import type { WhisperTracker } from '../whisper.js';
 
 function getPlayerIdFromSocket(socket: {
@@ -18,10 +20,14 @@ export function registerPlayerHandlers(
   whisperTracker: WhisperTracker,
 ): void {
   playerIo.on('connection', (socket) => {
-    socket.on('game:join', ({ playerName, gameCode }, callback) => {
+    socket.on('game:join', ({ playerName }, callback) => {
       const state = game.getState();
-      if (!state.id || state.id !== gameCode) {
-        callback({ success: false });
+      if (!state.id) {
+        callback({ success: false, error: '게임이 생성되지 않았습니다' });
+        return;
+      }
+      if (state.started) {
+        callback({ success: false, error: '게임이 이미 진행 중입니다' });
         return;
       }
       const player = game.addPlayer(playerName);
@@ -31,13 +37,13 @@ export function registerPlayerHandlers(
         storytellerIo.emit('game:state', game.getState());
         console.log(`Player joined: ${playerName}`);
       } else {
-        callback({ success: false });
+        callback({ success: false, error: '참가할 수 없습니다' });
       }
     });
 
-    socket.on('game:rejoin', ({ playerId, gameCode }, callback) => {
+    socket.on('game:rejoin', ({ playerId }, callback) => {
       const state = game.getState();
-      if (!state.id || state.id !== gameCode) {
+      if (!state.id) {
         callback({ success: false });
         return;
       }
@@ -47,15 +53,39 @@ export function registerPlayerHandlers(
         return;
       }
       socket.join(player.id);
+      // 주정뱅이에게는 가짜 역할 ID를 전송
+      const roleIdForPlayer =
+        player.role?.id === 'drunk' && player.drunkAs
+          ? player.drunkAs
+          : player.role?.id;
+
+      // 밤 페이즈일 때 진행 상태 포함
+      let nightProgress: {
+        activeRoleId: string | null;
+        order: string[];
+        players: { id: string; name: string; isAlive: boolean }[];
+      } | undefined;
+      if (state.phase === 'night') {
+        const np = game.getNightProgress();
+        const players = state.players.map((p) => ({
+          id: p.id,
+          name: p.name,
+          isAlive: p.isAlive,
+        }));
+        nightProgress = { ...np, players };
+      }
+
       callback({
         success: true,
         playerName: player.name,
-        roleId: player.role?.id,
+        roleId: roleIdForPlayer,
+        drunkAs: player.drunkAs ?? undefined,
         phase: state.phase,
         isAlive: player.isAlive,
         daySubPhase: state.daySubPhase,
         hasNominatedToday: player.hasNominatedToday,
         deadVoteUsed: player.deadVoteUsed,
+        nightProgress,
       });
       console.log(`Player rejoined: ${player.name}`);
     });
@@ -80,6 +110,34 @@ export function registerPlayerHandlers(
       }
 
       callback({ success: true });
+
+      // 성녀(Virgin) 트리거
+      if (result.virginKill) {
+        const virgin = game.getPlayer(nomineeId);
+        const nominator = game.getPlayer(playerId);
+        game.kill(result.virginKill);
+        game.markExecution();
+        playerIo.emit('virgin:triggered', {
+          virginName: virgin?.name ?? nomineeId,
+          nominatorName: nominator?.name ?? playerId,
+          nominatorId: playerId,
+        });
+        const killedNominator = game.getPlayer(result.virginKill);
+        if (killedNominator) {
+          playerIo.emit('game:playerUpdate', killedNominator);
+        }
+        storytellerIo.emit('game:state', game.getState());
+
+        // 성녀 트리거 후 승리 조건 체크
+        const winResult = game.checkWinCondition();
+        if (winResult) {
+          playerIo.emit('game:end', winResult);
+          playerIo.emit('game:phase', 'ended');
+          storytellerIo.emit('game:end', winResult);
+          storytellerIo.emit('game:state', game.getState());
+        }
+        return;
+      }
 
       game.setPhase('vote');
       const nominator = game.getPlayer(playerId);
@@ -109,10 +167,23 @@ export function registerPlayerHandlers(
       if (playerId) {
         const player = game.getPlayer(playerId);
         if (player?.role) {
+          // 밤 행동 타깃 기록 (임프 자해 감지용)
+          game.recordNightAction(playerId, targets);
+
+          // 집사(Butler) 주인 선택 저장
+          if (player.role.id === 'butler' && targets.length > 0) {
+            game.setButlerMaster(playerId, targets[0]);
+          }
+
+          // 주정뱅이는 가짜 역할 ID로 행동을 보고
+          const reportRoleId =
+            player.role.id === 'drunk' && player.drunkAs
+              ? player.drunkAs
+              : player.role.id;
           storytellerIo.emit('night:actionReceived', {
             playerId,
             playerName: player.name,
-            roleId: player.role.id,
+            roleId: reportRoleId,
             targets,
           });
           console.log(
@@ -120,6 +191,85 @@ export function registerPlayerHandlers(
           );
         }
       }
+    });
+
+    // 사냥꾼(Slayer) 능력 사용
+    socket.on('slayer:use', ({ targetId }, callback) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+
+      const player = game.getPlayer(playerId);
+      if (!player) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+
+      const state = game.getState();
+      if (state.phase !== 'day') {
+        callback({ success: false, error: '낮에만 사용할 수 있습니다' });
+        return;
+      }
+
+      // 실제 역할이 slayer이거나 주정뱅이가 slayer인 척하는 경우
+      const isSlayer = player.role?.id === 'slayer';
+      const isDrunkAsSlayer =
+        player.role?.id === 'drunk' && player.drunkAs === 'slayer';
+      if (!isSlayer && !isDrunkAsSlayer) {
+        callback({ success: false, error: '사냥꾼만 사용할 수 있습니다' });
+        return;
+      }
+
+      if (game.isSlayerUsed(playerId)) {
+        callback({
+          success: false,
+          error: '이미 사냥꾼 능력을 사용했습니다',
+        });
+        return;
+      }
+
+      const target = game.getPlayer(targetId);
+      if (!target || !target.isAlive) {
+        callback({
+          success: false,
+          error: '대상 플레이어를 찾을 수 없습니다',
+        });
+        return;
+      }
+
+      game.markSlayerUsed(playerId);
+      callback({ success: true });
+
+      // 모든 플레이어와 스토리텔러에게 선언 알림
+      playerIo.emit('slayer:declared', {
+        slayerName: player.name,
+        targetName: target.name,
+        targetId,
+      });
+      storytellerIo.emit('slayer:declared' as string, {
+        slayerName: player.name,
+        targetName: target.name,
+        targetId,
+      });
+
+      // 실제 사냥꾼이고 대상이 악마면 자동 사망 (중독 상태면 무효)
+      if (isSlayer && !player.statuses.includes('poisoned') && target.role?.team === 'demon') {
+        game.kill(targetId);
+        playerIo.emit('game:playerUpdate', game.getPlayer(targetId)!);
+        storytellerIo.emit('game:state', game.getState());
+
+        const winResult = game.checkWinCondition();
+        if (winResult) {
+          playerIo.emit('game:end', winResult);
+          playerIo.emit('game:phase', 'ended');
+          storytellerIo.emit('game:end', winResult);
+          storytellerIo.emit('game:state', game.getState());
+        }
+      }
+
+      console.log(`Slayer: ${player.name} -> ${target.name}`);
     });
 
     socket.on('whisper:send', ({ toId, message }) => {
@@ -150,6 +300,13 @@ export function registerPlayerHandlers(
 
       whisperTracker.update(whisperMsg);
       console.log(`Whisper: ${fromPlayer.name} -> ${toPlayer.name}`);
+    });
+
+    socket.on('push:register', ({ token }) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (playerId) {
+        registerPushToken(playerId, token);
+      }
     });
 
     socket.on('disconnect', () => {
