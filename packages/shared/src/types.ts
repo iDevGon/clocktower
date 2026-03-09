@@ -14,9 +14,11 @@ export interface Player {
   id: string;
   name: string;
   role?: Role;
+  drunkAs?: string;
   isAlive: boolean;
   hasNominatedToday: boolean;
   deadVoteUsed: boolean;
+  statuses: PlayerStatus[];
 }
 
 export interface GameState {
@@ -67,17 +69,59 @@ export type FeedbackType =
 export interface NightFeedbackDef {
   type: FeedbackType;
   roleTeamFilter?: Team;
+  allowNone?: boolean;
 }
 
 export type NightFeedbackPayload =
   | { type: 'number'; value: number }
   | { type: 'yes_no'; value: boolean }
   | { type: 'players_and_role'; playerNames: string[]; roleName: string }
+  | { type: 'no_match'; message: string }
   | { type: 'role'; roleName: string }
   | {
       type: 'grimoire';
-      entries: { name: string; roleName: string; team: Team }[];
+      entries: {
+        name: string;
+        roleName: string;
+        team: Team;
+        isAlive: boolean;
+        statuses: PlayerStatus[];
+      }[];
     };
+
+export type PlayerStatus =
+  | 'poisoned'
+  | 'drunk'
+  | 'protected'
+  | 'cursed';
+
+export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
+  poisoned: '중독',
+  drunk: '취함',
+  protected: '보호',
+  cursed: '저주',
+};
+
+export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
+  poisoned: '#9b59b6',
+  drunk: '#e67e22',
+  protected: '#2ecc71',
+  cursed: '#8e44ad',
+};
+
+export type WinningTeam = 'good' | 'evil';
+
+export interface GameResult {
+  winningTeam: WinningTeam;
+  reason: string;
+  players: {
+    id: string;
+    name: string;
+    role: Role;
+    isAlive: boolean;
+    team: Team;
+  }[];
+}
 
 export interface WhisperMessage {
   id: string;
