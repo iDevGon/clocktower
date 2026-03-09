@@ -1,15 +1,9 @@
 import { useEffect } from 'react';
-import {
-  Dimensions,
-  StyleSheet,
-  Text,
-  Vibration,
-  View,
-} from 'react-native';
+import { Dimensions, StyleSheet, Text, Vibration, View } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
   FadeIn,
-  cancelAnimation,
   interpolate,
   runOnJS,
   useAnimatedStyle,
@@ -42,11 +36,7 @@ function SkullIcon() {
     opacity: interpolate(scale.value, [0, 0.3, 1], [0, 0.6, 1]),
   }));
 
-  return (
-    <Animated.Text style={[s.skullText, style]}>
-      💀
-    </Animated.Text>
-  );
+  return <Animated.Text style={[s.skullText, style]}>💀</Animated.Text>;
 }
 
 // ── Blood drip ──
@@ -138,11 +128,15 @@ export function DeathOverlay({ onDismiss }: DeathOverlayProps) {
     // Auto-dismiss: fade out then call onDismiss
     fadeOut.value = withDelay(
       AUTO_DISMISS_MS,
-      withTiming(0, { duration: FADE_OUT_MS, easing: Easing.in(Easing.quad) }, (finished) => {
-        if (finished) {
-          runOnJS(onDismiss)();
-        }
-      }),
+      withTiming(
+        0,
+        { duration: FADE_OUT_MS, easing: Easing.in(Easing.quad) },
+        (finished) => {
+          if (finished) {
+            runOnJS(onDismiss)();
+          }
+        },
+      ),
     );
 
     return () => cancelAnimation(fadeOut);
@@ -187,9 +181,7 @@ export function DeathOverlay({ onDismiss }: DeathOverlayProps) {
           entering={FadeIn.delay(1200).duration(600)}
           style={s.subtitle}
         >
-          투표권이{' '}
-          <Text style={s.subtitleEmphasis}>단 1회</Text>
-          {' '}남아있습니다
+          투표권이 <Text style={s.subtitleEmphasis}>단 1회</Text> 남아있습니다
         </Animated.Text>
         <Animated.Text
           entering={FadeIn.delay(1500).duration(600)}

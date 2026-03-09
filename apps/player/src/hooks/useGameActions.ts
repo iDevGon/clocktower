@@ -66,5 +66,11 @@ export function useGameActions() {
     [],
   );
 
-  return { castVote, submitNightAction, sendWhisper, nominatePlayer, useSlayer };
+  return {
+    castVote,
+    submitNightAction,
+    sendWhisper,
+    nominatePlayer,
+    useSlayer,
+  };
 }

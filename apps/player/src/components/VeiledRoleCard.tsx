@@ -145,7 +145,9 @@ export function VeiledRoleCard() {
           </Animated.Text>
 
           <View style={styles.sealContainer}>
-            <Animated.View style={[styles.sealGlow, { opacity: glowOpacity }]} />
+            <Animated.View
+              style={[styles.sealGlow, { opacity: glowOpacity }]}
+            />
             <View style={styles.seal}>
               <Text style={styles.sealIcon}>&#x2726;</Text>
             </View>

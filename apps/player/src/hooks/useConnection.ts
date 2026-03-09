@@ -80,47 +80,44 @@ export function useConnection() {
     [],
   );
 
-  const rejoinGame = useCallback(
-    (playerId: string): Promise<boolean> => {
-      return new Promise((resolve) => {
-        const socket = useConnectionStore.getState().socket;
-        if (!socket || !socket.connected) {
-          resolve(false);
-          return;
-        }
+  const rejoinGame = useCallback((playerId: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const socket = useConnectionStore.getState().socket;
+      if (!socket || !socket.connected) {
+        resolve(false);
+        return;
+      }
 
-        const timeout = setTimeout(() => resolve(false), 5000);
+      const timeout = setTimeout(() => resolve(false), 5000);
 
-        socket.emit('game:rejoin', { playerId }, async (res) => {
-          clearTimeout(timeout);
-          if (res.success && res.playerName) {
-            usePlayerStore.getState().set({
-              playerId,
-              playerName: res.playerName,
-              role: res.roleId ? (getRoleById(res.roleId) ?? null) : null,
-              drunkAs: res.drunkAs ?? null,
-              currentPhase: res.phase ?? 'setup',
-              isAlive: res.isAlive ?? true,
-              daySubPhase: res.daySubPhase ?? null,
-              hasNominatedToday: res.hasNominatedToday ?? false,
-              deadVoteUsed: res.deadVoteUsed ?? false,
-              nightProgress: res.nightProgress ?? null,
-            });
+      socket.emit('game:rejoin', { playerId }, async (res) => {
+        clearTimeout(timeout);
+        if (res.success && res.playerName) {
+          usePlayerStore.getState().set({
+            playerId,
+            playerName: res.playerName,
+            role: res.roleId ? (getRoleById(res.roleId) ?? null) : null,
+            drunkAs: res.drunkAs ?? null,
+            currentPhase: res.phase ?? 'setup',
+            isAlive: res.isAlive ?? true,
+            daySubPhase: res.daySubPhase ?? null,
+            hasNominatedToday: res.hasNominatedToday ?? false,
+            deadVoteUsed: res.deadVoteUsed ?? false,
+            nightProgress: res.nightProgress ?? null,
+          });
 
-            const token = await registerForPushNotifications();
-            if (token) {
-              socket.emit('push:register', { token });
-            }
-
-            resolve(true);
-          } else {
-            resolve(false);
+          const token = await registerForPushNotifications();
+          if (token) {
+            socket.emit('push:register', { token });
           }
-        });
+
+          resolve(true);
+        } else {
+          resolve(false);
+        }
       });
-    },
-    [],
-  );
+    });
+  }, []);
 
   return { connect, joinGame, rejoinGame };
 }

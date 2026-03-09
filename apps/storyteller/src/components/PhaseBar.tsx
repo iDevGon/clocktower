@@ -2,7 +2,7 @@ import type { Phase } from '@clocktower/shared';
 import { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
-import { PHASE_COLORS, createPhaseBarStyles } from './PhaseBar.styles';
+import { createPhaseBarStyles, PHASE_COLORS } from './PhaseBar.styles';
 
 /** Stepper navigation order: 밤 → 낮 cycles, with 종료 as terminal */
 const STEPPER_ORDER: Phase[] = ['night', 'day'];
@@ -29,7 +29,11 @@ interface PhaseBarProps {
   onConfirmNext?: () => void;
 }
 
-export function PhaseBar({ currentPhase, onSetPhase, onConfirmNext }: PhaseBarProps) {
+export function PhaseBar({
+  currentPhase,
+  onSetPhase,
+  onConfirmNext,
+}: PhaseBarProps) {
   const { fontSize, device } = useResponsive();
   const scale = fontSize.md / 12;
   const styles = useMemo(
@@ -68,7 +72,8 @@ export function PhaseBar({ currentPhase, onSetPhase, onConfirmNext }: PhaseBarPr
   };
 
   const canPrev = isInStepper && stepperIndex > 0;
-  const canNext = isInStepper || currentPhase === 'vote' || currentPhase === 'ended';
+  const canNext =
+    isInStepper || currentPhase === 'vote' || currentPhase === 'ended';
 
   return (
     <View style={styles.container}>
@@ -110,9 +115,7 @@ export function PhaseBar({ currentPhase, onSetPhase, onConfirmNext }: PhaseBarPr
             { backgroundColor: colors.bg, borderColor: colors.border },
           ]}
         >
-          <View
-            style={[styles.phaseDot, { backgroundColor: colors.dot }]}
-          />
+          <View style={[styles.phaseDot, { backgroundColor: colors.dot }]} />
           <Text style={[styles.phaseLabel, { color: colors.text }]}>
             {PHASE_LABELS[currentPhase] ?? currentPhase}
           </Text>

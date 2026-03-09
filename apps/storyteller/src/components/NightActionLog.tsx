@@ -69,10 +69,7 @@ export function NightActionLog({
     setExpandedIndex(null);
   };
 
-  const handleTargetAction = (
-    targetId: string,
-    config: TargetActionConfig,
-  ) => {
+  const handleTargetAction = (targetId: string, config: TargetActionConfig) => {
     if (config.isKill) {
       onKill?.(targetId);
     } else if (config.status) {
@@ -120,12 +117,19 @@ export function NightActionLog({
                 <Text style={styles.actionArrow}>→</Text>
                 <Text style={styles.actionTarget}>{targetNames}</Text>
                 {action.fortuneTellerResult !== undefined && (
-                  <Text style={[styles.sentBadge, {
-                    backgroundColor: action.fortuneTellerResult
-                      ? 'rgba(106,176,76,0.2)'
-                      : 'rgba(184,92,92,0.2)',
-                    color: action.fortuneTellerResult ? '#6ab04c' : '#b85c5c',
-                  }]}>
+                  <Text
+                    style={[
+                      styles.sentBadge,
+                      {
+                        backgroundColor: action.fortuneTellerResult
+                          ? 'rgba(106,176,76,0.2)'
+                          : 'rgba(184,92,92,0.2)',
+                        color: action.fortuneTellerResult
+                          ? '#6ab04c'
+                          : '#b85c5c',
+                      },
+                    ]}
+                  >
                     {action.fortuneTellerResult ? '예' : '아니오'}
                   </Text>
                 )}
@@ -141,10 +145,7 @@ export function NightActionLog({
 
                     if (isProtected) {
                       return (
-                        <View
-                          key={targetId}
-                          style={styles.protectedBadge}
-                        >
+                        <View key={targetId} style={styles.protectedBadge}>
                           <Text style={styles.protectedText}>
                             {getPlayerName(targetId)} 보호됨!
                           </Text>

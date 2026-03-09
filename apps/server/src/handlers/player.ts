@@ -1,5 +1,4 @@
 import type { WhisperMessage } from '@clocktower/shared';
-import { getRoleById } from '@clocktower/shared';
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
 import { registerPushToken } from '../pushNotifications.js';
@@ -60,11 +59,13 @@ export function registerPlayerHandlers(
           : player.role?.id;
 
       // 밤 페이즈일 때 진행 상태 포함
-      let nightProgress: {
-        activeRoleId: string | null;
-        order: string[];
-        players: { id: string; name: string; isAlive: boolean }[];
-      } | undefined;
+      let nightProgress:
+        | {
+            activeRoleId: string | null;
+            order: string[];
+            players: { id: string; name: string; isAlive: boolean }[];
+          }
+        | undefined;
       if (state.phase === 'night') {
         const np = game.getNightProgress();
         const players = state.players.map((p) => ({
@@ -182,7 +183,7 @@ export function registerPlayerHandlers(
               : player.role.id;
           // 점쟁이 판정: 선택된 2명 중 악마/Red Herring 포함 여부
           const fortuneTellerResult =
-            (reportRoleId === 'fortune_teller')
+            reportRoleId === 'fortune_teller'
               ? game.judgeFortuneTeller(targets)
               : undefined;
 
@@ -262,9 +263,14 @@ export function registerPlayerHandlers(
       });
 
       // 실제 사냥꾼이고 대상이 악마면 자동 사망 (중독 상태면 무효)
-      if (isSlayer && !player.statuses.includes('poisoned') && target.role?.team === 'demon') {
+      if (
+        isSlayer &&
+        !player.statuses.includes('poisoned') &&
+        target.role?.team === 'demon'
+      ) {
         game.kill(targetId);
-        playerIo.emit('game:playerUpdate', game.getPlayer(targetId)!);
+        const killedTarget = game.getPlayer(targetId);
+        if (killedTarget) playerIo.emit('game:playerUpdate', killedTarget);
         storytellerIo.emit('game:state', game.getState());
 
         const winResult = game.checkWinCondition();

@@ -10,9 +10,9 @@ import {
 } from 'react-native';
 import { QRScannerModal } from '../src/components/QRScannerModal';
 import { useGameActions } from '../src/hooks/useGameActions';
+import { useResponsive } from '../src/hooks/useResponsive';
 import { useSocketConnection } from '../src/hooks/useSocketConnection';
 import { useConnectionStore } from '../src/stores/connectionStore';
-import { useResponsive } from '../src/hooks/useResponsive';
 import { useGameStore } from '../src/stores/gameStore';
 import { createIndexStyles } from '../src/styles/index.styles';
 

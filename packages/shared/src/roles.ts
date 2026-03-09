@@ -1,4 +1,4 @@
-import type { NightActionDef, NightFeedbackDef, Role } from './types';
+import type { Edition, NightActionDef, NightFeedbackDef, Role } from './types';
 
 // 밤 행동이 있는 전체 역할 (순서대로)
 export const ALL_NIGHT_ROLES: string[] = [
@@ -45,7 +45,8 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     id: 'chef',
     name: '요리사',
     team: 'townsfolk',
-    ability: '게임 시작 시, 서로 이웃한 악한 플레이어 쌍이 몇 개인지 알게 됩니다.',
+    ability:
+      '게임 시작 시, 서로 이웃한 악한 플레이어 쌍이 몇 개인지 알게 됩니다.',
   },
   {
     id: 'empath',
@@ -174,6 +175,22 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
   },
 ];
 
+export const EDITIONS: Edition[] = [
+  {
+    id: 'trouble_brewing',
+    name: 'Trouble Brewing',
+    description: '입문자용 에디션. 21개 역할.',
+  },
+];
+
+export const EDITION_ROLES: Record<string, Role[]> = {
+  trouble_brewing: TROUBLE_BREWING_ROLES,
+};
+
+export function getRolesForEdition(editionId: string): Role[] {
+  return EDITION_ROLES[editionId] ?? TROUBLE_BREWING_ROLES;
+}
+
 export const ROLES_BY_ID = new Map(TROUBLE_BREWING_ROLES.map((r) => [r.id, r]));
 
 // 첫째 밤 진행 순서
@@ -243,29 +260,61 @@ export interface RoleDistribution {
   assignments: { playerId: string; role: Role; drunkAs?: string }[];
 }
 
+export interface DistributeOptions {
+  excludedRoleIds?: string[];
+  editionId?: string;
+}
+
 /**
  * 플레이어 수에 맞게 역할을 자동 배분합니다.
  * 남작이 포함되면 외지인 +2, 마을주민 -2 적용.
  */
-export function distributeRoles(playerIds: string[]): RoleDistribution | null {
+export function distributeRoles(
+  playerIds: string[],
+  options?: DistributeOptions,
+): RoleDistribution | null {
   const count = playerIds.length;
   const dist = ROLE_DISTRIBUTION[count];
   if (!dist) return null;
 
   let [townsfolkCount, outsiderCount, minionCount, demonCount] = dist;
 
-  const townsfolk = TROUBLE_BREWING_ROLES.filter((r) => r.team === 'townsfolk');
-  const outsiders = TROUBLE_BREWING_ROLES.filter((r) => r.team === 'outsider');
-  const minions = TROUBLE_BREWING_ROLES.filter((r) => r.team === 'minion');
-  const demons = TROUBLE_BREWING_ROLES.filter((r) => r.team === 'demon');
+  const excluded = new Set(options?.excludedRoleIds ?? []);
+  const allRoles = getRolesForEdition(options?.editionId ?? 'trouble_brewing');
+
+  const townsfolk = allRoles.filter(
+    (r) => r.team === 'townsfolk' && !excluded.has(r.id),
+  );
+  const outsiders = allRoles.filter(
+    (r) => r.team === 'outsider' && !excluded.has(r.id),
+  );
+  const minions = allRoles.filter(
+    (r) => r.team === 'minion' && !excluded.has(r.id),
+  );
+  const demons = allRoles.filter(
+    (r) => r.team === 'demon' && !excluded.has(r.id),
+  );
+
+  // 제외 후 역할이 부족하면 배분 불가
+  if (
+    townsfolk.length < townsfolkCount ||
+    outsiders.length < outsiderCount ||
+    demons.length < demonCount ||
+    minions.length < minionCount
+  ) {
+    return null;
+  }
 
   // 하수인 랜덤 선택 (마을주민이 부족한 경우 남작 필수 포함)
-  const baron = minions.find((r) => r.id === 'baron')!;
+  const baron = minions.find((r) => r.id === 'baron');
   const otherMinions = minions.filter((r) => r.id !== 'baron');
-  const forceIncludeBaron = townsfolkCount > townsfolk.length;
+  const forceIncludeBaron = townsfolkCount > townsfolk.length && !!baron;
   let selectedMinions: Role[];
-  if (forceIncludeBaron) {
-    selectedMinions = [baron, ...shuffle(otherMinions).slice(0, minionCount - 1)];
+  if (forceIncludeBaron && baron) {
+    selectedMinions = [
+      baron,
+      ...shuffle(otherMinions).slice(0, minionCount - 1),
+    ];
   } else {
     selectedMinions = shuffle(minions).slice(0, minionCount);
   }
@@ -296,7 +345,7 @@ export function distributeRoles(playerIds: string[]): RoleDistribution | null {
     }
   }
 
-  const allRoles = shuffle([
+  const shuffledRoles = shuffle([
     ...selectedTownsfolk,
     ...selectedOutsiders,
     ...selectedMinions,
@@ -308,8 +357,8 @@ export function distributeRoles(playerIds: string[]): RoleDistribution | null {
   return {
     assignments: shuffledPlayerIds.map((playerId, i) => ({
       playerId,
-      role: allRoles[i],
-      ...(allRoles[i].id === 'drunk' && drunkFakeRoleId
+      role: shuffledRoles[i],
+      ...(shuffledRoles[i].id === 'drunk' && drunkFakeRoleId
         ? { drunkAs: drunkFakeRoleId }
         : {}),
     })),
@@ -391,7 +440,11 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
 
 export const NIGHT_FEEDBACK: Record<string, NightFeedbackDef> = {
   washerwoman: { type: 'players_and_role', roleTeamFilter: 'townsfolk' },
-  librarian: { type: 'players_and_role', roleTeamFilter: 'outsider', allowNone: true },
+  librarian: {
+    type: 'players_and_role',
+    roleTeamFilter: 'outsider',
+    allowNone: true,
+  },
   investigator: { type: 'players_and_role', roleTeamFilter: 'minion' },
   chef: { type: 'number' },
   empath: { type: 'number' },

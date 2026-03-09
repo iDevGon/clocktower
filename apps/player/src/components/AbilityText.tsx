@@ -1,12 +1,12 @@
-import { useState, useCallback, useRef } from 'react';
+import { useCallback, useState } from 'react';
 import {
-  Text,
-  Pressable,
-  View,
-  StyleSheet,
   Dimensions,
-  type TextStyle,
   Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  type TextStyle,
+  View,
 } from 'react-native';
 
 /** *로 표시된 키워드와 그 설명 */
@@ -33,25 +33,31 @@ export function AbilityText({ text, style }: AbilityTextProps) {
     y: number;
   } | null>(null);
 
-  const handlePress = useCallback((keyword: string, event: { nativeEvent: { pageX: number; pageY: number } }) => {
-    const description = GLOSSARY[keyword];
-    if (!description) return;
+  const handlePress = useCallback(
+    (
+      keyword: string,
+      event: { nativeEvent: { pageX: number; pageY: number } },
+    ) => {
+      const description = GLOSSARY[keyword];
+      if (!description) return;
 
-    const screenWidth = Dimensions.get('window').width;
-    const centerX = event.nativeEvent.pageX;
+      const screenWidth = Dimensions.get('window').width;
+      const centerX = event.nativeEvent.pageX;
 
-    const halfTooltip = TOOLTIP_MAX_WIDTH / 2;
-    const clampedX = Math.max(
-      SCREEN_PADDING + halfTooltip,
-      Math.min(centerX, screenWidth - SCREEN_PADDING - halfTooltip),
-    );
+      const halfTooltip = TOOLTIP_MAX_WIDTH / 2;
+      const clampedX = Math.max(
+        SCREEN_PADDING + halfTooltip,
+        Math.min(centerX, screenWidth - SCREEN_PADDING - halfTooltip),
+      );
 
-    setTooltip({
-      text: description,
-      x: clampedX,
-      y: event.nativeEvent.pageY,
-    });
-  }, []);
+      setTooltip({
+        text: description,
+        x: clampedX,
+        y: event.nativeEvent.pageY,
+      });
+    },
+    [],
+  );
 
   const dismissTooltip = useCallback(() => {
     setTooltip(null);
@@ -123,7 +129,10 @@ function parseAbilityText(text: string): ParsedPart[] {
     const word = match[1];
 
     if (match.index > lastIndex) {
-      parts.push({ isKeyword: false, text: text.slice(lastIndex, match.index) });
+      parts.push({
+        isKeyword: false,
+        text: text.slice(lastIndex, match.index),
+      });
     }
 
     if (GLOSSARY[fullMatch]) {

@@ -1,7 +1,14 @@
 import type { Role } from '@clocktower/shared';
 import { getRoleById } from '@clocktower/shared';
 import { useEffect, useRef } from 'react';
-import { Animated, ScrollView, Text, Vibration, View, useWindowDimensions } from 'react-native';
+import {
+  Animated,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  Vibration,
+  View,
+} from 'react-native';
 import { styles } from './NightProgress.styles';
 
 function ActiveGlow({ isMine }: { isMine: boolean }) {
@@ -105,7 +112,8 @@ export function NightProgress({
   const { width: screenWidth } = useWindowDimensions();
   const MIN_STEP_WIDTH = 48;
   const barPadding = 32; // paddingHorizontal 16 * 2
-  const naturalStepWidth = (screenWidth - barPadding) / Math.max(order.length, 1);
+  const naturalStepWidth =
+    (screenWidth - barPadding) / Math.max(order.length, 1);
   const needsScroll = naturalStepWidth < MIN_STEP_WIDTH;
   const stepWidth = needsScroll ? MIN_STEP_WIDTH : undefined;
 
@@ -113,14 +121,28 @@ export function NightProgress({
     const role = getRoleById(roleId);
     const isActive = roleId === activeRoleId;
     const isPast = activeIndex >= 0 && index < activeIndex;
-    const isMine = myRole?.id === roleId || (drunkAs != null && drunkAs === roleId);
+    const isMine =
+      myRole?.id === roleId || (drunkAs != null && drunkAs === roleId);
     const isFirst = index === 0;
     const isLast = index === order.length - 1;
 
     return (
-      <View key={roleId} style={[styles.stepWrapper, stepWidth != null && { width: stepWidth, flex: undefined }]}>
+      <View
+        key={roleId}
+        style={[
+          styles.stepWrapper,
+          stepWidth != null && { width: stepWidth, flex: undefined },
+        ]}
+      >
         <View style={styles.stepRow}>
-          <View style={[styles.line, isFirst ? styles.lineHidden : ((isPast || isActive) && styles.linePast)]} />
+          <View
+            style={[
+              styles.line,
+              isFirst
+                ? styles.lineHidden
+                : (isPast || isActive) && styles.linePast,
+            ]}
+          />
           <View style={styles.dotContainer}>
             {isActive && <ActiveGlow isMine={isMine} />}
             <View
@@ -133,7 +155,12 @@ export function NightProgress({
               ]}
             />
           </View>
-          <View style={[styles.line, isLast ? styles.lineHidden : (isPast && styles.linePast)]} />
+          <View
+            style={[
+              styles.line,
+              isLast ? styles.lineHidden : isPast && styles.linePast,
+            ]}
+          />
         </View>
         <Text
           style={[
@@ -167,9 +194,7 @@ export function NightProgress({
           {barContent}
         </ScrollView>
       ) : (
-        <View style={styles.progressBar}>
-          {barContent}
-        </View>
+        <View style={styles.progressBar}>{barContent}</View>
       )}
     </View>
   );

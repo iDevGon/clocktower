@@ -1,15 +1,15 @@
 import {
   FIRST_NIGHT_ORDER,
-  OTHER_NIGHT_ORDER,
   getRoleById,
+  OTHER_NIGHT_ORDER,
 } from '@clocktower/shared';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
 import { AbilityText } from './AbilityText';
 import {
-  TEAM_COLORS,
   createNightOrderPanelStyles,
+  TEAM_COLORS,
 } from './NightOrderPanel.styles';
 
 const TEAM_LABELS: Record<string, string> = {
@@ -88,7 +88,8 @@ export function NightOrderPanel({
       }
       const chipW = chipWidths.current[activeIndex] ?? 60;
       // Center the chip
-      const padding = scale * (device === 'desktop' ? 24 : device === 'tablet' ? 20 : 12);
+      const padding =
+        scale * (device === 'desktop' ? 24 : device === 'tablet' ? 20 : 12);
       scrollRef.current.scrollTo({
         x: Math.max(0, offset - padding + chipW / 2 - 100),
         animated: true,
@@ -128,7 +129,9 @@ export function NightOrderPanel({
   const activeRole =
     activeIndex !== null ? getRoleById(order[activeIndex]) : null;
   const activeTeam = activeRole?.team ?? 'townsfolk';
-  const teamColor = TEAM_COLORS[activeTeam as keyof typeof TEAM_COLORS] ?? TEAM_COLORS.townsfolk;
+  const teamColor =
+    TEAM_COLORS[activeTeam as keyof typeof TEAM_COLORS] ??
+    TEAM_COLORS.townsfolk;
   const isInGame =
     activeIndex !== null ? activeRoleIds.includes(order[activeIndex]) : false;
   const isSkipped =
@@ -142,7 +145,9 @@ export function NightOrderPanel({
         {order.map((roleId, index) => {
           const role = getRoleById(roleId);
           const team = role?.team ?? 'townsfolk';
-          const tc = TEAM_COLORS[team as keyof typeof TEAM_COLORS] ?? TEAM_COLORS.townsfolk;
+          const tc =
+            TEAM_COLORS[team as keyof typeof TEAM_COLORS] ??
+            TEAM_COLORS.townsfolk;
           const isPast = activeIndex !== null && index < activeIndex;
           const isCurrent = activeIndex === index;
 
@@ -194,25 +199,16 @@ export function NightOrderPanel({
               <View style={styles.activeCardHeader}>
                 <View style={styles.activeCardLeft}>
                   <View
-                    style={[
-                      styles.teamDot,
-                      { backgroundColor: teamColor.dot },
-                    ]}
+                    style={[styles.teamDot, { backgroundColor: teamColor.dot }]}
                   />
                   <View>
                     <Text
-                      style={[
-                        styles.activeRoleName,
-                        { color: teamColor.text },
-                      ]}
+                      style={[styles.activeRoleName, { color: teamColor.text }]}
                     >
                       {activeRole.name}
                     </Text>
                     <Text
-                      style={[
-                        styles.activeRoleTeam,
-                        { color: teamColor.text },
-                      ]}
+                      style={[styles.activeRoleTeam, { color: teamColor.text }]}
                     >
                       {TEAM_LABELS[activeTeam] ?? activeTeam}
                     </Text>
@@ -236,10 +232,7 @@ export function NightOrderPanel({
               )}
               {isActiveAbsent ? (
                 <View
-                  style={[
-                    styles.inGameBadge,
-                    { backgroundColor: '#ffffff08' },
-                  ]}
+                  style={[styles.inGameBadge, { backgroundColor: '#ffffff08' }]}
                 >
                   <Text style={[styles.inGameBadgeText, { color: '#c0a060' }]}>
                     이 직업은 게임에 없지만, 플레이어들은 알 수 없습니다.{'\n'}
@@ -254,10 +247,7 @@ export function NightOrderPanel({
                   ]}
                 >
                   <Text
-                    style={[
-                      styles.inGameBadgeText,
-                      { color: teamColor.text },
-                    ]}
+                    style={[styles.inGameBadgeText, { color: teamColor.text }]}
                   >
                     게임에 존재
                   </Text>
@@ -265,9 +255,7 @@ export function NightOrderPanel({
               )}
             </>
           ) : (
-            <Text style={styles.idleText}>
-              다음을 눌러 밤을 시작하세요
-            </Text>
+            <Text style={styles.idleText}>다음을 눌러 밤을 시작하세요</Text>
           )}
         </View>
 
@@ -299,7 +287,9 @@ export function NightOrderPanel({
         {order.map((roleId, index) => {
           const role = getRoleById(roleId);
           const team = role?.team ?? 'townsfolk';
-          const tc = TEAM_COLORS[team as keyof typeof TEAM_COLORS] ?? TEAM_COLORS.townsfolk;
+          const tc =
+            TEAM_COLORS[team as keyof typeof TEAM_COLORS] ??
+            TEAM_COLORS.townsfolk;
           const isActive = activeIndex === index;
           const isPast = activeIndex !== null && index < activeIndex;
           const isChipInGame = activeRoleIds.includes(roleId);
@@ -326,10 +316,7 @@ export function NightOrderPanel({
               <Text
                 style={[
                   styles.roleChipName,
-                  isActive && [
-                    styles.roleChipNameActive,
-                    { color: tc.text },
-                  ],
+                  isActive && [styles.roleChipNameActive, { color: tc.text }],
                   isPast && styles.roleChipNamePast,
                 ]}
               >

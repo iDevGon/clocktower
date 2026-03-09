@@ -13,7 +13,12 @@ interface WhisperModalProps {
   initialTarget?: { id: string; name: string } | null;
 }
 
-export function WhisperModal({ visible, onClose, onSend, initialTarget }: WhisperModalProps) {
+export function WhisperModal({
+  visible,
+  onClose,
+  onSend,
+  initialTarget,
+}: WhisperModalProps) {
   const [whisperTarget, setWhisperTarget] = useState<{
     id: string;
     name: string;
@@ -66,9 +71,7 @@ export function WhisperModal({ visible, onClose, onSend, initialTarget }: Whispe
             onClose={handleClose}
           />
         )}
-        <WhisperToast
-          onNavigate={(id, name) => handleSelectPlayer(id, name)}
-        />
+        <WhisperToast onNavigate={(id, name) => handleSelectPlayer(id, name)} />
       </View>
     </Modal>
   );

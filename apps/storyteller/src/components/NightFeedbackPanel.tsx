@@ -1,4 +1,8 @@
-import type { NightAction, NightFeedbackPayload, Player } from '@clocktower/shared';
+import type {
+  NightAction,
+  NightFeedbackPayload,
+  Player,
+} from '@clocktower/shared';
 import { getRoleById, NIGHT_FEEDBACK } from '@clocktower/shared';
 import { useMemo, useState } from 'react';
 import { Platform, ScrollView, Text, View } from 'react-native';
@@ -82,7 +86,8 @@ export function NightFeedbackPanel({
   const role = getRoleById(activeRoleId);
   const team = role?.team ?? 'townsfolk';
   const cardColors = TEAM_CARD_COLORS[team] ?? FALLBACK_CARD_COLORS;
-  const teamColor = TEAM_COLORS[team as keyof typeof TEAM_COLORS] ?? TEAM_COLORS.townsfolk;
+  const teamColor =
+    TEAM_COLORS[team as keyof typeof TEAM_COLORS] ?? TEAM_COLORS.townsfolk;
 
   if (sent === activeRoleId) {
     return (
@@ -101,10 +106,11 @@ export function NightFeedbackPanel({
     <ScrollView
       style={[
         { flex: 1 },
-        Platform.OS === 'web' && ({
-          scrollbarWidth: 'thin',
-          scrollbarColor: '#2a2a34 transparent',
-        } as any),
+        Platform.OS === 'web' &&
+          ({
+            scrollbarWidth: 'thin',
+            scrollbarColor: '#2a2a34 transparent',
+          } as Record<string, string>),
       ]}
     >
       <AnimatedBorderCard
@@ -116,12 +122,7 @@ export function NightFeedbackPanel({
         borderWidth={1.5}
       >
         <View style={{ padding: scale * 12 }}>
-          <Text
-            style={[
-              styles.feedbackPanelTitle,
-              { color: teamColor.text },
-            ]}
-          >
+          <Text style={[styles.feedbackPanelTitle, { color: teamColor.text }]}>
             {role?.name ?? activeRoleId} → {targetPlayer.name}
           </Text>
 
@@ -146,27 +147,50 @@ export function NightFeedbackPanel({
             </View>
           )}
 
-          {activeRoleId === 'fortune_teller' && (() => {
-            const ftAction = nightActions?.find((a) => a.roleId === 'fortune_teller');
-            if (!ftAction || ftAction.fortuneTellerResult === undefined) return null;
-            const targetNames = ftAction.targets
-              .map((id) => players.find((p) => p.id === id)?.name ?? id)
-              .join(', ');
-            const isPoisoned = targetPlayer.statuses.includes('poisoned');
-            return (
-              <View style={[styles.drunkBanner, {
-                backgroundColor: ftAction.fortuneTellerResult ? 'rgba(106,176,76,0.15)' : 'rgba(184,92,92,0.15)',
-                borderColor: ftAction.fortuneTellerResult ? '#6ab04c' : '#b85c5c',
-              }]}>
-                <Text style={[styles.drunkBannerText, {
-                  color: ftAction.fortuneTellerResult ? '#6ab04c' : '#b85c5c',
-                }]}>
-                  {targetNames} → {ftAction.fortuneTellerResult ? '예 (악마/저주 포함)' : '아니오'}
-                  {isPoisoned ? ' (중독 반전 적용됨)' : ''}
-                </Text>
-              </View>
-            );
-          })()}
+          {activeRoleId === 'fortune_teller' &&
+            (() => {
+              const ftAction = nightActions?.find(
+                (a) => a.roleId === 'fortune_teller',
+              );
+              if (!ftAction || ftAction.fortuneTellerResult === undefined)
+                return null;
+              const targetNames = ftAction.targets
+                .map((id) => players.find((p) => p.id === id)?.name ?? id)
+                .join(', ');
+              const isPoisoned = targetPlayer.statuses.includes('poisoned');
+              return (
+                <View
+                  style={[
+                    styles.drunkBanner,
+                    {
+                      backgroundColor: ftAction.fortuneTellerResult
+                        ? 'rgba(106,176,76,0.15)'
+                        : 'rgba(184,92,92,0.15)',
+                      borderColor: ftAction.fortuneTellerResult
+                        ? '#6ab04c'
+                        : '#b85c5c',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.drunkBannerText,
+                      {
+                        color: ftAction.fortuneTellerResult
+                          ? '#6ab04c'
+                          : '#b85c5c',
+                      },
+                    ]}
+                  >
+                    {targetNames} →{' '}
+                    {ftAction.fortuneTellerResult
+                      ? '예 (악마/저주 포함)'
+                      : '아니오'}
+                    {isPoisoned ? ' (중독 반전 적용됨)' : ''}
+                  </Text>
+                </View>
+              );
+            })()}
 
           <FeedbackComposer
             feedbackDef={feedbackDef}

@@ -1,10 +1,10 @@
 import {
+  getRoleById,
   PLAYER_STATUS_COLORS,
   PLAYER_STATUS_DESCRIPTIONS,
   PLAYER_STATUS_LABELS,
   type Player,
   type PlayerStatus,
-  getRoleById,
 } from '@clocktower/shared';
 import { useCallback, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
@@ -151,22 +151,34 @@ export function PlayerToken({
             style={styles.tooltipOverlay}
             onPress={() => setTooltipStatus(null)}
           >
-            <View style={[styles.tooltipBox, {
-              borderColor: tooltipStatus === 'butler_master' as string
-                ? '#2c3e50'
-                : PLAYER_STATUS_COLORS[tooltipStatus],
-            }]}>
-              <Text style={[styles.tooltipTitle, {
-                color: tooltipStatus === 'butler_master' as string
-                  ? '#5a8aaa'
-                  : PLAYER_STATUS_COLORS[tooltipStatus],
-              }]}>
-                {tooltipStatus === 'butler_master' as string
+            <View
+              style={[
+                styles.tooltipBox,
+                {
+                  borderColor:
+                    tooltipStatus === ('butler_master' as string)
+                      ? '#2c3e50'
+                      : PLAYER_STATUS_COLORS[tooltipStatus],
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tooltipTitle,
+                  {
+                    color:
+                      tooltipStatus === ('butler_master' as string)
+                        ? '#5a8aaa'
+                        : PLAYER_STATUS_COLORS[tooltipStatus],
+                  },
+                ]}
+              >
+                {tooltipStatus === ('butler_master' as string)
                   ? `주인: ${butlerMasterName}`
                   : PLAYER_STATUS_LABELS[tooltipStatus]}
               </Text>
               <Text style={styles.tooltipDesc}>
-                {tooltipStatus === 'butler_master' as string
+                {tooltipStatus === ('butler_master' as string)
                   ? '집사의 주인. 이 주인이 투표해야만 집사도 투표할 수 있습니다.'
                   : PLAYER_STATUS_DESCRIPTIONS[tooltipStatus]}
               </Text>

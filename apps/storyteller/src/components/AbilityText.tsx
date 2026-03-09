@@ -1,12 +1,12 @@
-import { useState, useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
-  Text,
-  Pressable,
-  View,
-  StyleSheet,
   Dimensions,
-  type TextStyle,
   Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  type TextStyle,
+  View,
 } from 'react-native';
 
 /** *로 표시된 키워드와 그 설명 */
@@ -75,7 +75,9 @@ export function AbilityText({ text, style }: AbilityTextProps) {
               style={styles.keywordWrapper}
             >
               <Pressable
-                onPress={() => handlePress(part.raw, keywordRefs.current[`${i}`])}
+                onPress={() =>
+                  handlePress(part.raw, keywordRefs.current[`${i}`])
+                }
                 hitSlop={4}
               >
                 <Text style={[styles.base, style, styles.keyword]}>
@@ -135,7 +137,10 @@ function parseAbilityText(text: string): ParsedPart[] {
     const word = match[1];
 
     if (match.index > lastIndex) {
-      parts.push({ isKeyword: false, text: text.slice(lastIndex, match.index) });
+      parts.push({
+        isKeyword: false,
+        text: text.slice(lastIndex, match.index),
+      });
     }
 
     if (GLOSSARY[fullMatch]) {

@@ -55,8 +55,12 @@ export default function GameScreen() {
     evilInfo,
   } = usePlayerStore();
   const dismissDeath = usePlayerStore((s) => s.set);
-  const { submitNightAction, sendWhisper, nominatePlayer, useSlayer } =
-    useGameActions();
+  const {
+    submitNightAction,
+    sendWhisper,
+    nominatePlayer,
+    useSlayer: activateSlayer,
+  } = useGameActions();
 
   useEffect(() => {
     if (!playerId) {
@@ -67,7 +71,7 @@ export default function GameScreen() {
   useEffect(() => {
     setWhisperModalVisible(false);
     setWhisperInitialTarget(null);
-  }, [currentPhase, daySubPhase]);
+  }, []);
   const [gameEndDismissed, setGameEndDismissed] = useState(false);
   const [whisperModalVisible, setWhisperModalVisible] = useState(false);
   const [whisperInitialTarget, setWhisperInitialTarget] = useState<{
@@ -98,7 +102,7 @@ export default function GameScreen() {
 
   const handleSlayer = async (targetId: string) => {
     setSlayerModalVisible(false);
-    const result = await useSlayer(targetId);
+    const result = await activateSlayer(targetId);
     if (!result.success) {
       Alert.alert('사냥꾼 실패', result.error ?? '사용할 수 없습니다');
     }
@@ -122,10 +126,14 @@ export default function GameScreen() {
       <View style={[styles.header, !isAlive && styles.headerDead]}>
         <View style={styles.headerRow}>
           <View>
-            <Text style={[styles.playerLabel, !isAlive && styles.playerLabelDead]}>
+            <Text
+              style={[styles.playerLabel, !isAlive && styles.playerLabelDead]}
+            >
               {!isAlive ? '사망' : '플레이어'}
             </Text>
-            <Text style={[styles.playerName, !isAlive && styles.playerNameDead]}>
+            <Text
+              style={[styles.playerName, !isAlive && styles.playerNameDead]}
+            >
               {playerName}
             </Text>
           </View>
@@ -141,9 +149,7 @@ export default function GameScreen() {
                 </Text>
               </Pressable>
             )}
-            {!isAlive && (
-              <Text style={styles.deadSkull}>💀</Text>
-            )}
+            {!isAlive && <Text style={styles.deadSkull}>💀</Text>}
           </View>
         </View>
       </View>
@@ -236,7 +242,6 @@ export default function GameScreen() {
           <RoleCard role={role} evilInfo={evilInfo} />
         )}
         {role && currentPhase === 'setup' && <VeiledRoleCard />}
-
       </ScrollView>
 
       {justDied && (

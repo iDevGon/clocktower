@@ -41,12 +41,13 @@ export function useGameActions() {
   );
 
   const distributeRoles = useCallback(
-    () =>
+    (options?: { excludedRoleIds?: string[]; editionId?: string }) =>
       new Promise<void>((resolve, reject) => {
         const s = getSocket();
         if (!s) return reject(new Error('Not connected'));
         s.emit(
           'game:distributeRoles',
+          options ?? {},
           (res: { success: boolean; error?: string }) => {
             if (res.success) resolve();
             else reject(new Error(res.error ?? '직업 배분 실패'));
@@ -137,7 +138,6 @@ export function useGameActions() {
       socket?.emit('player:setStatuses', { playerId, statuses }),
     [socket],
   );
-
 
   return {
     createGame,

@@ -1,9 +1,9 @@
 import {
-  TROUBLE_BREWING_ROLES,
   distributeRoles,
   FIRST_NIGHT_ORDER,
-  OTHER_NIGHT_ORDER,
   getRoleById,
+  OTHER_NIGHT_ORDER,
+  TROUBLE_BREWING_ROLES,
 } from '@clocktower/shared';
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
@@ -39,7 +39,9 @@ function sendEvilInfo(
       !assignedRoleIds.has(r.id),
   );
   const shuffled = [...notInPlayGood].sort(() => Math.random() - 0.5);
-  const bluffRoles = shuffled.slice(0, 3).map((r) => ({ id: r.id, name: r.name }));
+  const bluffRoles = shuffled
+    .slice(0, 3)
+    .map((r) => ({ id: r.id, name: r.name }));
 
   const demons = state.players.filter((p) => p.role?.team === 'demon');
   const minions = state.players.filter((p) => p.role?.team === 'minion');
@@ -257,14 +259,18 @@ export function registerStorytellerHandlers(
       storytellerIo.emit('game:state', game.getState());
     });
 
-    socket.on('game:distributeRoles', (callback) => {
+    socket.on('game:distributeRoles', (options, callback) => {
       const state = game.getState();
       const playerIds = state.players.map((p) => p.id);
-      const result = distributeRoles(playerIds);
+      const result = distributeRoles(playerIds, options);
       if (!result) {
+        const hasExcluded =
+          options.excludedRoleIds && options.excludedRoleIds.length > 0;
         callback({
           success: false,
-          error: `${playerIds.length}명은 지원하지 않습니다 (5~20명)`,
+          error: hasExcluded
+            ? `역할 배분 불가: 제외된 역할이 너무 많거나 플레이어 수(${playerIds.length}명)가 맞지 않습니다`
+            : `${playerIds.length}명은 지원하지 않습니다 (5~20명)`,
         });
         return;
       }
@@ -368,8 +374,7 @@ export function registerStorytellerHandlers(
       const isNight = game.getState().phase === 'night';
 
       // 임프 자해 감지: 사망 처리 전에 체크
-      const isImpSelfKill =
-        killedPlayer?.role?.id === 'imp' && isNight;
+      const isImpSelfKill = killedPlayer?.role?.id === 'imp' && isNight;
 
       game.kill(playerId);
 
@@ -377,9 +382,7 @@ export function registerStorytellerHandlers(
       if (isImpSelfKill) {
         const promoted = game.handleImpSelfKill(playerId);
         if (promoted) {
-          console.log(
-            `Imp self-kill: ${promoted.name} promoted to Imp`,
-          );
+          console.log(`Imp self-kill: ${promoted.name} promoted to Imp`);
           storytellerIo.emit('game:state', game.getState());
         }
       }
@@ -398,7 +401,8 @@ export function registerStorytellerHandlers(
           // 밤 중 사망: 낮 전환 시까지 플레이어 알림 보류
           game.addPendingNightKill(playerId);
         } else {
-          playerIo.emit('game:playerUpdate', game.getPlayer(playerId)!);
+          const updatedPlayer = game.getPlayer(playerId);
+          if (updatedPlayer) playerIo.emit('game:playerUpdate', updatedPlayer);
         }
       }
     });

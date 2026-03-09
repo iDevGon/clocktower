@@ -1,8 +1,18 @@
 import { StyleSheet } from 'react-native';
 
 const TEAM_COLORS = {
-  townsfolk: { bg: '#1a2540', border: '#3a5a8a', text: '#6a9fd8', dot: '#5a8ec8' },
-  outsider: { bg: '#1a2a2a', border: '#2a5a5a', text: '#5ab8a0', dot: '#4aa890' },
+  townsfolk: {
+    bg: '#1a2540',
+    border: '#3a5a8a',
+    text: '#6a9fd8',
+    dot: '#5a8ec8',
+  },
+  outsider: {
+    bg: '#1a2a2a',
+    border: '#2a5a5a',
+    text: '#5ab8a0',
+    dot: '#4aa890',
+  },
   minion: { bg: '#2a1a18', border: '#6a3a28', text: '#d08050', dot: '#c07040' },
   demon: { bg: '#2a1418', border: '#6a2830', text: '#d04858', dot: '#c03848' },
 } as const;

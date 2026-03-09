@@ -1,12 +1,22 @@
-import type { Player } from '@clocktower/shared';
+import type { Player, Team } from '@clocktower/shared';
 import {
+  EDITIONS,
   getRoleById,
+  getRolesForEdition,
   ROLE_DISTRIBUTION,
   TROUBLE_BREWING_ROLES,
 } from '@clocktower/shared';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Alert, FlatList, Modal, Pressable, Text, View } from 'react-native';
+import {
+  Alert,
+  FlatList,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { AbilityText } from '../../src/components/AbilityText';
 import { useGameActions } from '../../src/hooks/useGameActions';
@@ -30,9 +40,28 @@ export default function LobbyScreen() {
     removeDummyPlayers,
   } = useGameActions();
   const [distributing, setDistributing] = useState(false);
+  const [selectedEditionId, setSelectedEditionId] = useState('trouble_brewing');
+  const [excludedRoleIds, setExcludedRoleIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [showExcludeModal, setShowExcludeModal] = useState(false);
 
   // 주정뱅이 가짜 역할 변경 모달 상태
   const [drunkModalPlayer, setDrunkModalPlayer] = useState<Player | null>(null);
+
+  const editionRoles = useMemo(
+    () => getRolesForEdition(selectedEditionId),
+    [selectedEditionId],
+  );
+
+  const toggleExcludedRole = useCallback((roleId: string) => {
+    setExcludedRoleIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(roleId)) next.delete(roleId);
+      else next.add(roleId);
+      return next;
+    });
+  }, []);
 
   const handleStartGame = async () => {
     try {
@@ -66,7 +95,11 @@ export default function LobbyScreen() {
   const doDistribute = async () => {
     setDistributing(true);
     try {
-      await distributeRoles();
+      await distributeRoles({
+        excludedRoleIds:
+          excludedRoleIds.size > 0 ? [...excludedRoleIds] : undefined,
+        editionId: selectedEditionId,
+      });
     } catch (e) {
       Alert.alert('오류', e instanceof Error ? e.message : '알 수 없는 오류');
     } finally {
@@ -160,6 +193,75 @@ export default function LobbyScreen() {
         )}
       </View>
       <View style={styles.distributeContainer}>
+        {/* 에디션 선택 */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: s(8),
+            gap: s(8),
+          }}
+        >
+          <Text style={{ color: '#908e8a', fontSize: s(13) }}>에디션:</Text>
+          {EDITIONS.map((edition) => (
+            <Pressable
+              key={edition.id}
+              onPress={() => {
+                setSelectedEditionId(edition.id);
+                setExcludedRoleIds(new Set());
+              }}
+              style={{
+                paddingVertical: s(6),
+                paddingHorizontal: s(12),
+                borderRadius: 6,
+                backgroundColor:
+                  selectedEditionId === edition.id ? '#2a3a5c' : '#242428',
+                borderWidth: 1,
+                borderColor:
+                  selectedEditionId === edition.id ? '#4a6a9c' : '#3a3a3e',
+              }}
+            >
+              <Text
+                style={{
+                  color:
+                    selectedEditionId === edition.id ? '#8ab4f8' : '#706e6a',
+                  fontSize: s(13),
+                  fontWeight: '600',
+                }}
+              >
+                {edition.name}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* 직업 제외 버튼 */}
+        <Pressable
+          onPress={() => setShowExcludeModal(true)}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingVertical: s(8),
+            marginBottom: s(8),
+            borderRadius: 6,
+            backgroundColor: pressed ? '#2a2a30' : '#1e1e22',
+            borderWidth: 1,
+            borderColor: excludedRoleIds.size > 0 ? '#c47070' : '#3a3a3e',
+          })}
+        >
+          <Text
+            style={{
+              color: excludedRoleIds.size > 0 ? '#c47070' : '#908e8a',
+              fontSize: s(13),
+              fontWeight: '600',
+            }}
+          >
+            직업 제외 설정
+            {excludedRoleIds.size > 0 ? ` (${excludedRoleIds.size}개)` : ''}
+          </Text>
+        </Pressable>
+
         <Pressable
           onPress={handleDistributeRoles}
           disabled={distributing}
@@ -452,6 +554,213 @@ export default function LobbyScreen() {
                 }}
               >
                 닫기
+              </Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+      {/* 직업 제외 설정 모달 */}
+      <Modal
+        visible={showExcludeModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowExcludeModal(false)}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+          onPress={() => setShowExcludeModal(false)}
+        >
+          <Pressable
+            style={{
+              backgroundColor: '#1e1e22',
+              borderRadius: 12,
+              width: '90%',
+              maxHeight: '80%',
+              borderWidth: 2,
+              borderColor: '#4a4a5a',
+            }}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View
+              style={{
+                paddingHorizontal: s(16),
+                paddingTop: s(16),
+                paddingBottom: s(12),
+                borderBottomWidth: 1,
+                borderBottomColor: '#3a3a42',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Text
+                style={{
+                  color: '#e0ddd8',
+                  fontSize: s(18),
+                  fontWeight: '700',
+                }}
+              >
+                직업 제외 설정
+              </Text>
+              {excludedRoleIds.size > 0 && (
+                <Pressable
+                  onPress={() => setExcludedRoleIds(new Set())}
+                  style={{
+                    paddingVertical: s(4),
+                    paddingHorizontal: s(10),
+                    borderRadius: 4,
+                    backgroundColor: '#3a2020',
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: '#c47070',
+                      fontSize: s(12),
+                      fontWeight: '600',
+                    }}
+                  >
+                    초기화
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+            <ScrollView
+              contentContainerStyle={{
+                paddingHorizontal: s(12),
+                paddingVertical: s(8),
+              }}
+            >
+              {(
+                [
+                  {
+                    team: 'townsfolk' as Team,
+                    label: '마을주민',
+                    color: '#7090c4',
+                  },
+                  {
+                    team: 'outsider' as Team,
+                    label: '외지인',
+                    color: '#50a090',
+                  },
+                  { team: 'minion' as Team, label: '하수인', color: '#c48850' },
+                  { team: 'demon' as Team, label: '악마', color: '#b85c5c' },
+                ] as const
+              ).map(({ team, label, color }) => {
+                const teamRoles = editionRoles.filter((r) => r.team === team);
+                if (teamRoles.length === 0) return null;
+                return (
+                  <View key={team} style={{ marginBottom: s(12) }}>
+                    <Text
+                      style={{
+                        color,
+                        fontSize: s(14),
+                        fontWeight: '700',
+                        marginBottom: s(6),
+                      }}
+                    >
+                      {label}
+                    </Text>
+                    {teamRoles.map((role) => {
+                      const isExcluded = excludedRoleIds.has(role.id);
+                      return (
+                        <Pressable
+                          key={role.id}
+                          onPress={() => toggleExcludedRole(role.id)}
+                          style={({ pressed }) => ({
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingVertical: s(8),
+                            paddingHorizontal: s(10),
+                            marginBottom: s(2),
+                            borderRadius: 6,
+                            backgroundColor: isExcluded
+                              ? '#2a1a1a'
+                              : pressed
+                                ? '#2a2a30'
+                                : '#252528',
+                          })}
+                        >
+                          <View
+                            style={{
+                              width: s(18),
+                              height: s(18),
+                              borderRadius: 4,
+                              borderWidth: 2,
+                              borderColor: isExcluded ? '#c47070' : '#5a5a5e',
+                              backgroundColor: isExcluded
+                                ? '#c47070'
+                                : 'transparent',
+                              marginRight: s(10),
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            {isExcluded && (
+                              <Text
+                                style={{
+                                  color: '#1e1e22',
+                                  fontSize: s(12),
+                                  fontWeight: '900',
+                                  lineHeight: s(14),
+                                }}
+                              >
+                                ✕
+                              </Text>
+                            )}
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text
+                              style={{
+                                color: isExcluded ? '#706060' : '#e0ddd8',
+                                fontSize: s(14),
+                                fontWeight: '600',
+                                textDecorationLine: isExcluded
+                                  ? 'line-through'
+                                  : 'none',
+                              }}
+                            >
+                              {role.name}
+                            </Text>
+                            <Text
+                              style={{
+                                color: isExcluded ? '#504848' : '#787674',
+                                fontSize: s(11),
+                                lineHeight: s(15),
+                              }}
+                              numberOfLines={2}
+                            >
+                              {role.ability}
+                            </Text>
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                );
+              })}
+            </ScrollView>
+            <Pressable
+              style={{
+                paddingVertical: s(14),
+                borderTopWidth: 1,
+                borderTopColor: '#3a3a42',
+              }}
+              onPress={() => setShowExcludeModal(false)}
+            >
+              <Text
+                style={{
+                  color: '#7070c4',
+                  fontSize: s(15),
+                  fontWeight: '600',
+                  textAlign: 'center',
+                }}
+              >
+                완료
               </Text>
             </Pressable>
           </Pressable>

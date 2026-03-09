@@ -1,6 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View, type LayoutChangeEvent, type ViewStyle } from 'react-native';
+import {
+  type LayoutChangeEvent,
+  StyleSheet,
+  View,
+  type ViewStyle,
+} from 'react-native';
 import Animated, {
   Easing,
   type SharedValue,
@@ -58,8 +63,8 @@ function useEdgeBeamStyle(
     const eS = edgeStart;
     const eE = edgeStart + edgeLen;
 
-    let visStart = Math.max(beamTail, eS);
-    let visEnd = Math.min(beamHead, eE);
+    const visStart = Math.max(beamTail, eS);
+    const visEnd = Math.min(beamHead, eE);
 
     let visStart2 = -1;
     let visEnd2 = -1;
@@ -159,8 +164,20 @@ export function AnimatedBorderCard({
   const beamLen = perimeter * 0.1;
 
   const topStyle = useEdgeBeamStyle(progress, 'top', size.w, size.h, beamLen);
-  const rightStyle = useEdgeBeamStyle(progress, 'right', size.w, size.h, beamLen);
-  const bottomStyle = useEdgeBeamStyle(progress, 'bottom', size.w, size.h, beamLen);
+  const rightStyle = useEdgeBeamStyle(
+    progress,
+    'right',
+    size.w,
+    size.h,
+    beamLen,
+  );
+  const bottomStyle = useEdgeBeamStyle(
+    progress,
+    'bottom',
+    size.w,
+    size.h,
+    beamLen,
+  );
   const leftStyle = useEdgeBeamStyle(progress, 'left', size.w, size.h, beamLen);
 
   const glowOpacity = useSharedValue(0.2);

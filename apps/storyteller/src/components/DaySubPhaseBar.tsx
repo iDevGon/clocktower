@@ -3,8 +3,8 @@ import { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
 import {
-  SUB_PHASE_COLORS,
   createDaySubPhaseBarStyles,
+  SUB_PHASE_COLORS,
 } from './DaySubPhaseBar.styles';
 
 const DAY_SUB_PHASES: { label: string; value: DaySubPhase }[] = [
@@ -54,9 +54,8 @@ export function DaySubPhaseBar({
       <View style={styles.progressBar}>
         {DAY_SUB_PHASES.map((phase, index) => {
           const pc =
-            SUB_PHASE_COLORS[
-              phase.value as keyof typeof SUB_PHASE_COLORS
-            ] ?? SUB_PHASE_COLORS.whisper;
+            SUB_PHASE_COLORS[phase.value as keyof typeof SUB_PHASE_COLORS] ??
+            SUB_PHASE_COLORS.whisper;
           const isCurrent = index === currentIndex;
           const isPast = currentIndex >= 0 && index < currentIndex;
 
@@ -99,9 +98,7 @@ export function DaySubPhaseBar({
             { backgroundColor: colors.bg, borderColor: colors.border },
           ]}
         >
-          <View
-            style={[styles.subPhaseDot, { backgroundColor: colors.dot }]}
-          />
+          <View style={[styles.subPhaseDot, { backgroundColor: colors.dot }]} />
           <Text style={[styles.subPhaseLabel, { color: colors.text }]}>
             {active?.label ?? '밀담'}
           </Text>
@@ -126,9 +123,8 @@ export function DaySubPhaseBar({
       <View style={styles.chipList}>
         {DAY_SUB_PHASES.map((phase, index) => {
           const pc =
-            SUB_PHASE_COLORS[
-              phase.value as keyof typeof SUB_PHASE_COLORS
-            ] ?? SUB_PHASE_COLORS.whisper;
+            SUB_PHASE_COLORS[phase.value as keyof typeof SUB_PHASE_COLORS] ??
+            SUB_PHASE_COLORS.whisper;
           const isActive = index === currentIndex;
           const isPast = currentIndex >= 0 && index < currentIndex;
 

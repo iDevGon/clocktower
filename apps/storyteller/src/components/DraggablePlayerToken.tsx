@@ -86,7 +86,13 @@ export function DraggablePlayerToken({
   return (
     <GestureDetector gesture={composed}>
       <Animated.View style={animatedStyle}>
-        <PlayerToken player={player} statuses={statuses} highlighted={highlighted} butlerMasterName={butlerMasterName} size={tokenSize} />
+        <PlayerToken
+          player={player}
+          statuses={statuses}
+          highlighted={highlighted}
+          butlerMasterName={butlerMasterName}
+          size={tokenSize}
+        />
       </Animated.View>
     </GestureDetector>
   );

@@ -38,8 +38,8 @@ export function VotePanel({
         </Text>
       </View>
       <Text style={styles.votePanelCount}>
-        투표: {voteCount}명 (찬성 {guiltyCount} / 반대{' '}
-        {voteCount - guiltyCount})
+        투표: {voteCount}명 (찬성 {guiltyCount} / 반대 {voteCount - guiltyCount}
+        )
       </Text>
 
       {onCastVote && (

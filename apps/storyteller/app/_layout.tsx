@@ -20,7 +20,12 @@ export default function RootLayout() {
   }, [gameId, serverUrl, isConnected, connect]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, ...(Platform.OS === 'web' ? { userSelect: 'none' as const } : {}) }}>
+    <GestureHandlerRootView
+      style={{
+        flex: 1,
+        ...(Platform.OS === 'web' ? { userSelect: 'none' as const } : {}),
+      }}
+    >
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: '#1a1a1e' },

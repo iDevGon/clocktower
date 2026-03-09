@@ -1,5 +1,12 @@
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import type { FeedbackHistoryEntry } from '../stores/playerStore';
-import { Modal, Pressable, ScrollView, Text, View, StyleSheet } from 'react-native';
 import { FeedbackDisplay } from './FeedbackDisplay';
 
 interface FeedbackHistoryModalProps {
@@ -34,9 +41,15 @@ export function FeedbackHistoryModal({
               <Text style={styles.emptyText}>아직 받은 정보가 없습니다</Text>
             </View>
           ) : (
-            <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
-              {[...history].reverse().map((entry, i) => (
-                <View key={`${entry.day}-${entry.timestamp}`} style={styles.entry}>
+            <ScrollView
+              style={styles.list}
+              contentContainerStyle={styles.listContent}
+            >
+              {[...history].reverse().map((entry) => (
+                <View
+                  key={`${entry.day}-${entry.timestamp}`}
+                  style={styles.entry}
+                >
                   <Text style={styles.dayLabel}>{entry.day}일차 밤</Text>
                   <FeedbackDisplay feedback={entry.feedback} />
                 </View>

@@ -1,8 +1,8 @@
 import {
+  getRoleById,
   NIGHT_FEEDBACK,
   PLAYER_STATUS_LABELS,
   type PlayerStatus,
-  getRoleById,
 } from '@clocktower/shared';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -42,7 +42,7 @@ const PHASE_LABELS: Record<string, string> = {
 };
 
 export default function GrimoireScreen() {
-  const { fontSize, spacing } = useResponsive();
+  const { fontSize } = useResponsive();
   const scale = fontSize.md / 12;
   const styles = useMemo(() => createGrimoireStyles(scale), [scale]);
 
@@ -64,7 +64,6 @@ export default function GrimoireScreen() {
     closeVote: rawCloseVote,
     setActiveNightRole: rawSetActiveNightRole,
     sendNightFeedback,
-    nominate: rawNominate,
     createGame,
     setPlayerStatuses: syncPlayerStatuses,
   } = useGameActions();
@@ -123,7 +122,8 @@ export default function GrimoireScreen() {
       const nomineeName = getPlayerName(nom.nomineeId);
       const guiltyCount = Object.values(nom.votes).filter(Boolean).length;
       const totalVotes = Object.keys(nom.votes).length;
-      const alivePlayers = gameState?.players.filter((p) => p.isAlive).length ?? 0;
+      const alivePlayers =
+        gameState?.players.filter((p) => p.isAlive).length ?? 0;
       const isGuilty = guiltyCount >= Math.ceil(alivePlayers / 2);
       addLog(
         getDay(),
@@ -323,7 +323,9 @@ export default function GrimoireScreen() {
 
   // Night feedback overlay state
   const [feedbackCollapsed, setFeedbackCollapsed] = useState(false);
-  const [feedbackSentForRole, setFeedbackSentForRole] = useState<string | null>(null);
+  const [feedbackSentForRole, setFeedbackSentForRole] = useState<string | null>(
+    null,
+  );
   const [nightElapsed, setNightElapsed] = useState(0);
   const nightTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -355,7 +357,8 @@ export default function GrimoireScreen() {
   const hasNightFeedback = useMemo(() => {
     if (!activeNightRoleId) return false;
     const fbDef = NIGHT_FEEDBACK[activeNightRoleId];
-    if (!fbDef || fbDef.type === 'none' || fbDef.type === 'grimoire') return false;
+    if (!fbDef || fbDef.type === 'none' || fbDef.type === 'grimoire')
+      return false;
     const target = gameState?.players.find(
       (p) =>
         p.role?.id === activeNightRoleId ||
@@ -375,7 +378,9 @@ export default function GrimoireScreen() {
     // 원형 배치 시 토큰이 겹치지 않도록: 둘레 = 2πr, 토큰 간격 = 둘레/N
     const radius = minDim / 2 - 10;
     const circumference = 2 * Math.PI * radius;
-    const fitSize = Math.floor(circumference / Math.max(playerCount, 5) * 0.85);
+    const fitSize = Math.floor(
+      (circumference / Math.max(playerCount, 5)) * 0.85,
+    );
     // 영역 높이가 작으면 추가로 축소
     const heightFit = Math.floor(minDim * 0.35);
     return Math.max(40, Math.min(defaultTokenSize, fitSize, heightFit));
@@ -409,7 +414,9 @@ export default function GrimoireScreen() {
   const butlerMasterNames = useMemo(() => {
     if (!gameState?.butlerMasters) return {};
     const names: Record<string, string> = {};
-    for (const [butlerId, masterId] of Object.entries(gameState.butlerMasters)) {
+    for (const [butlerId, masterId] of Object.entries(
+      gameState.butlerMasters,
+    )) {
       const master = gameState.players.find((p) => p.id === masterId);
       if (master) names[butlerId] = master.name;
     }
@@ -423,7 +430,7 @@ export default function GrimoireScreen() {
   const hasActiveVote = gameState?.phase === 'vote' && !!currentNomination;
 
   const executedPlayer = executedPlayerId
-    ? gameState?.players.find((p) => p.id === executedPlayerId) ?? null
+    ? (gameState?.players.find((p) => p.id === executedPlayerId) ?? null)
     : null;
 
   const skippedNightRoles = useMemo(() => {
@@ -438,20 +445,17 @@ export default function GrimoireScreen() {
       <View style={styles.topBar}>
         <Text style={styles.dayText}>{gameState.day}일차</Text>
         <View style={styles.topBarRight}>
-          {gameState.phase === 'day' &&
-            gameState.daySubPhase === 'whisper' && (
-              <Pressable
-                onPress={() => router.push('/game/whispers')}
-                style={styles.whisperButton}
-              >
-                <Text style={styles.whisperButtonText}>
-                  밀담{' '}
-                  {activeWhispers.length > 0
-                    ? `(${activeWhispers.length})`
-                    : ''}
-                </Text>
-              </Pressable>
-            )}
+          {gameState.phase === 'day' && gameState.daySubPhase === 'whisper' && (
+            <Pressable
+              onPress={() => router.push('/game/whispers')}
+              style={styles.whisperButton}
+            >
+              <Text style={styles.whisperButtonText}>
+                밀담{' '}
+                {activeWhispers.length > 0 ? `(${activeWhispers.length})` : ''}
+              </Text>
+            </Pressable>
+          )}
           {gameState.phase === 'day' &&
             gameState.daySubPhase === 'nomination' && (
               <Pressable
@@ -528,45 +532,48 @@ export default function GrimoireScreen() {
       {gameState.phase === 'night' && (
         <View>
           {/* Floating timer - always visible above overlay */}
-          {hasNightFeedback && activeNightRoleId && (() => {
-            const role = getRoleById(activeNightRoleId);
-            const m = Math.floor(nightElapsed / 60);
-            const sec = nightElapsed % 60;
-            return (
-              <View style={styles.nightFloatingTimer}>
-                <Text style={styles.nightFloatingTimerRole}>
-                  {role?.name ?? activeNightRoleId}
-                </Text>
-                <Text style={styles.nightFloatingTimerTime}>
-                  {m}:{sec.toString().padStart(2, '0')}
-                </Text>
-                {isFeedbackSent ? (
-                  <View style={styles.nightFeedbackSentBadge}>
-                    <Text style={styles.nightFeedbackSentText}>피드백 전송됨</Text>
-                  </View>
-                ) : (
-                  <Pressable
-                    onPress={() => setFeedbackCollapsed((prev) => !prev)}
-                    style={styles.nightFeedbackToggle}
-                  >
-                    <Text style={styles.nightFeedbackToggleText}>
-                      {feedbackCollapsed ? '피드백 ▲' : '피드백 ▼'}
-                    </Text>
-                  </Pressable>
-                )}
-              </View>
-            );
-          })()}
+          {hasNightFeedback &&
+            activeNightRoleId &&
+            (() => {
+              const role = getRoleById(activeNightRoleId);
+              const m = Math.floor(nightElapsed / 60);
+              const sec = nightElapsed % 60;
+              return (
+                <View style={styles.nightFloatingTimer}>
+                  <Text style={styles.nightFloatingTimerRole}>
+                    {role?.name ?? activeNightRoleId}
+                  </Text>
+                  <Text style={styles.nightFloatingTimerTime}>
+                    {m}:{sec.toString().padStart(2, '0')}
+                  </Text>
+                  {isFeedbackSent ? (
+                    <View style={styles.nightFeedbackSentBadge}>
+                      <Text style={styles.nightFeedbackSentText}>
+                        피드백 전송됨
+                      </Text>
+                    </View>
+                  ) : (
+                    <Pressable
+                      onPress={() => setFeedbackCollapsed((prev) => !prev)}
+                      style={styles.nightFeedbackToggle}
+                    >
+                      <Text style={styles.nightFeedbackToggleText}>
+                        {feedbackCollapsed ? '피드백 ▲' : '피드백 ▼'}
+                      </Text>
+                    </Pressable>
+                  )}
+                </View>
+              );
+            })()}
 
           {/* NightOrderPanel + NightFeedbackPanel overlay container */}
           <View style={{ position: 'relative' }}>
             <NightOrderPanel
               day={gameState.day}
-              activeRoleIds={gameState.players
-                .flatMap((p) => {
-                  if (p.role?.id === 'drunk' && p.drunkAs) return [p.drunkAs];
-                  return p.role?.id ? [p.role.id] : [];
-                })}
+              activeRoleIds={gameState.players.flatMap((p) => {
+                if (p.role?.id === 'drunk' && p.drunkAs) return [p.drunkAs];
+                return p.role?.id ? [p.role.id] : [];
+              })}
               skippedRoleIds={skippedNightRoles}
               activeNightRoleId={activeNightRoleId}
               onActivateRole={setActiveNightRole}
@@ -638,8 +645,7 @@ export default function GrimoireScreen() {
         >
           <Text
             style={{
-              color:
-                gameResult.winningTeam === 'good' ? '#5dade2' : '#e74c3c',
+              color: gameResult.winningTeam === 'good' ? '#5dade2' : '#e74c3c',
               fontSize: fontSize.lg,
               fontWeight: '700',
             }}

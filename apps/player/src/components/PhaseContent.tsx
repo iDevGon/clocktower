@@ -1,4 +1,8 @@
-import type { GameResult, NightFeedbackPayload, Role } from '@clocktower/shared';
+import type {
+  GameResult,
+  NightFeedbackPayload,
+  Role,
+} from '@clocktower/shared';
 import { Pressable, Text, View } from 'react-native';
 import type { NightProgress as NightProgressData } from '../stores/playerStore';
 import { styles } from '../styles/game.styles';

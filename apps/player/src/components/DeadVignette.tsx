@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { Dimensions, StyleSheet } from 'react-native';
 import Animated, {
-  Easing,
   cancelAnimation,
+  Easing,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
@@ -52,32 +52,117 @@ export function DeadVignette() {
     <>
       {/* Top edge — stacked layers for gradient-like falloff */}
       <Animated.View style={[s.edgeTop, topStyle]} pointerEvents="none">
-        <Animated.View style={[s.gradLayer, { top: 0, height: '40%', backgroundColor: 'rgba(80,10,10,0.9)' }]} />
-        <Animated.View style={[s.gradLayer, { top: '40%', height: '30%', backgroundColor: 'rgba(50,8,8,0.5)' }]} />
-        <Animated.View style={[s.gradLayer, { top: '70%', height: '30%', backgroundColor: 'rgba(30,5,5,0.2)' }]} />
+        <Animated.View
+          style={[
+            s.gradLayer,
+            { top: 0, height: '40%', backgroundColor: 'rgba(80,10,10,0.9)' },
+          ]}
+        />
+        <Animated.View
+          style={[
+            s.gradLayer,
+            { top: '40%', height: '30%', backgroundColor: 'rgba(50,8,8,0.5)' },
+          ]}
+        />
+        <Animated.View
+          style={[
+            s.gradLayer,
+            { top: '70%', height: '30%', backgroundColor: 'rgba(30,5,5,0.2)' },
+          ]}
+        />
       </Animated.View>
 
       {/* Bottom edge */}
       <Animated.View style={[s.edgeBottom, bottomStyle]} pointerEvents="none">
-        <Animated.View style={[s.gradLayer, { bottom: 0, height: '40%', backgroundColor: 'rgba(60,8,8,0.85)' }]} />
-        <Animated.View style={[s.gradLayer, { bottom: '40%', height: '30%', backgroundColor: 'rgba(40,6,6,0.45)' }]} />
-        <Animated.View style={[s.gradLayer, { bottom: '70%', height: '30%', backgroundColor: 'rgba(25,4,4,0.15)' }]} />
+        <Animated.View
+          style={[
+            s.gradLayer,
+            { bottom: 0, height: '40%', backgroundColor: 'rgba(60,8,8,0.85)' },
+          ]}
+        />
+        <Animated.View
+          style={[
+            s.gradLayer,
+            {
+              bottom: '40%',
+              height: '30%',
+              backgroundColor: 'rgba(40,6,6,0.45)',
+            },
+          ]}
+        />
+        <Animated.View
+          style={[
+            s.gradLayer,
+            {
+              bottom: '70%',
+              height: '30%',
+              backgroundColor: 'rgba(25,4,4,0.15)',
+            },
+          ]}
+        />
       </Animated.View>
 
       {/* Left edge */}
       <Animated.View style={[s.edgeLeft, sideStyle]} pointerEvents="none">
-        <Animated.View style={[s.gradLayer, { left: 0, width: '50%', top: 0, bottom: 0, backgroundColor: 'rgba(60,8,8,0.7)' }]} />
-        <Animated.View style={[s.gradLayer, { left: '50%', width: '50%', top: 0, bottom: 0, backgroundColor: 'rgba(30,5,5,0.2)' }]} />
+        <Animated.View
+          style={[
+            s.gradLayer,
+            {
+              left: 0,
+              width: '50%',
+              top: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(60,8,8,0.7)',
+            },
+          ]}
+        />
+        <Animated.View
+          style={[
+            s.gradLayer,
+            {
+              left: '50%',
+              width: '50%',
+              top: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(30,5,5,0.2)',
+            },
+          ]}
+        />
       </Animated.View>
 
       {/* Right edge */}
       <Animated.View style={[s.edgeRight, sideStyle]} pointerEvents="none">
-        <Animated.View style={[s.gradLayer, { right: 0, width: '50%', top: 0, bottom: 0, backgroundColor: 'rgba(60,8,8,0.7)' }]} />
-        <Animated.View style={[s.gradLayer, { right: '50%', width: '50%', top: 0, bottom: 0, backgroundColor: 'rgba(30,5,5,0.2)' }]} />
+        <Animated.View
+          style={[
+            s.gradLayer,
+            {
+              right: 0,
+              width: '50%',
+              top: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(60,8,8,0.7)',
+            },
+          ]}
+        />
+        <Animated.View
+          style={[
+            s.gradLayer,
+            {
+              right: '50%',
+              width: '50%',
+              top: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(30,5,5,0.2)',
+            },
+          ]}
+        />
       </Animated.View>
 
       {/* Thin red inner border */}
-      <Animated.View style={[s.innerBorder, borderStyle]} pointerEvents="none" />
+      <Animated.View
+        style={[s.innerBorder, borderStyle]}
+        pointerEvents="none"
+      />
     </>
   );
 }

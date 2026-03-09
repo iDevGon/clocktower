@@ -1,5 +1,5 @@
 import type { GameResult, Team } from '@clocktower/shared';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import {
   Dimensions,
   Pressable,
@@ -9,9 +9,9 @@ import {
   View,
 } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
   FadeIn,
-  cancelAnimation,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
@@ -46,7 +46,10 @@ function BloodDrip({ index }: { index: number }) {
   useEffect(() => {
     progress.value = withDelay(
       delay,
-      withTiming(1, { duration: 2800 + (index % 3) * 600, easing: Easing.in(Easing.quad) }),
+      withTiming(1, {
+        duration: 2800 + (index % 3) * 600,
+        easing: Easing.in(Easing.quad),
+      }),
     );
     return () => cancelAnimation(progress);
   }, [progress, delay, index]);
@@ -78,7 +81,7 @@ function BloodPool({ index }: { index: number }) {
   const progress = useSharedValue(0);
   const x = ((index * 53 + 7) % 100) * (SCREEN_WIDTH / 100);
   const poolWidth = 20 + (index % 4) * 15;
-  const delay = 1800 + (index * 300) % 1500;
+  const delay = 1800 + ((index * 300) % 1500);
 
   useEffect(() => {
     progress.value = withDelay(
@@ -116,7 +119,7 @@ function VictoryParticle({ index }: { index: number }) {
   const progress = useSharedValue(0);
   const startX = ((index * 41 + 17) % 100) * (SCREEN_WIDTH / 100);
   const startY = SCREEN_HEIGHT * 0.7 + (index % 5) * 40;
-  const driftX = ((index % 2 === 0 ? 1 : -1) * (10 + (index % 7) * 8));
+  const driftX = (index % 2 === 0 ? 1 : -1) * (10 + (index % 7) * 8);
   const size = 3 + (index % 4) * 2;
   const delay = (index * 120) % 3000;
   const duration = 3000 + (index % 4) * 800;
@@ -136,7 +139,13 @@ function VictoryParticle({ index }: { index: number }) {
   const style = useAnimatedStyle(() => ({
     transform: [
       { translateY: interpolate(progress.value, [0, 1], [0, -startY * 0.8]) },
-      { translateX: interpolate(progress.value, [0, 0.5, 1], [0, driftX, driftX * 1.5]) },
+      {
+        translateX: interpolate(
+          progress.value,
+          [0, 0.5, 1],
+          [0, driftX, driftX * 1.5],
+        ),
+      },
       { scale: interpolate(progress.value, [0, 0.3, 0.7, 1], [0, 1.2, 1, 0]) },
     ],
     opacity: interpolate(progress.value, [0, 0.15, 0.6, 1], [0, 1, 0.8, 0]),
@@ -226,11 +235,7 @@ function DefeatPulse() {
 
   return (
     <Animated.View
-      style={[
-        StyleSheet.absoluteFill,
-        { backgroundColor: '#1a0000' },
-        style,
-      ]}
+      style={[StyleSheet.absoluteFill, { backgroundColor: '#1a0000' }, style]}
     />
   );
 }
@@ -276,12 +281,7 @@ function PlayerRow({
       style={s.playerRow}
     >
       <View style={s.playerNameCol}>
-        <Text
-          style={[
-            s.playerName,
-            !player.isAlive && { opacity: 0.4 },
-          ]}
-        >
+        <Text style={[s.playerName, !player.isAlive && { opacity: 0.4 }]}>
           {player.name}
           {!player.isAlive ? ' (사망)' : ''}
         </Text>
@@ -290,7 +290,9 @@ function PlayerRow({
         <Text style={[s.playerRole, { color: teamColor }]}>
           {player.role.name}
         </Text>
-        <Text style={[s.playerTeam, { color: isVictory ? '#6a7a8a' : '#6a4444' }]}>
+        <Text
+          style={[s.playerTeam, { color: isVictory ? '#6a7a8a' : '#6a4444' }]}
+        >
           {TEAM_LABELS[player.team] ?? player.team}
         </Text>
       </View>
@@ -306,7 +308,11 @@ interface GameEndOverlayProps {
   onDismiss: () => void;
 }
 
-export function GameEndOverlay({ gameResult, myTeam, onDismiss }: GameEndOverlayProps) {
+export function GameEndOverlay({
+  gameResult,
+  myTeam,
+  onDismiss,
+}: GameEndOverlayProps) {
   const myTeamIsGood = isGoodTeam(myTeam);
   const goodWon = gameResult.winningTeam === 'good';
   const isVictory = myTeamIsGood === goodWon;
@@ -452,12 +458,7 @@ export function GameEndOverlay({ gameResult, myTeam, onDismiss }: GameEndOverlay
         </Animated.View>
 
         {gameResult.players.map((p, i) => (
-          <PlayerRow
-            key={p.id}
-            player={p}
-            index={i}
-            isVictory={isVictory}
-          />
+          <PlayerRow key={p.id} player={p} index={i} isVictory={isVictory} />
         ))}
 
         {/* Confirm button */}

@@ -120,7 +120,8 @@ export function ActionModal({
                   <Text
                     style={[
                       ms.optionText,
-                      option.style === 'destructive' && ms.optionTextDestructive,
+                      option.style === 'destructive' &&
+                        ms.optionTextDestructive,
                     ]}
                   >
                     {option.text}

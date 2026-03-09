@@ -1,6 +1,6 @@
 import {
-  PLAYER_STATUS_LABELS,
   type NightFeedbackPayload,
+  PLAYER_STATUS_LABELS,
   type Team,
 } from '@clocktower/shared';
 import { Text, View } from 'react-native';

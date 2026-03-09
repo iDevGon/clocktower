@@ -128,7 +128,8 @@ function PlayersAndRoleFeedback({
   // 선택된 플레이어의 역할에 따른 힌트 하이라이트 계산
   // 주정뱅이는 drunkAs 역할로 등록됨 (본인은 취한 줄 모름)
   const { realRoleIds, hasTeamMatchPlayer } = useMemo(() => {
-    if (selectedPlayers.length === 0) return { realRoleIds: new Set<string>(), hasTeamMatchPlayer: false };
+    if (selectedPlayers.length === 0)
+      return { realRoleIds: new Set<string>(), hasTeamMatchPlayer: false };
     const selected = players.filter((p) => selectedPlayers.includes(p.name));
     const real = new Set<string>();
     let teamMatch = false;
@@ -154,7 +155,9 @@ function PlayersAndRoleFeedback({
     if (selectedPlayers.length === 0) return new Set<string>();
     if (shouldGiveFalseInfo) {
       // 거짓 정보: 실제 역할이 아닌 역할들을 하이라이트
-      return new Set(roles.filter((r) => !realRoleIds.has(r.id)).map((r) => r.id));
+      return new Set(
+        roles.filter((r) => !realRoleIds.has(r.id)).map((r) => r.id),
+      );
     }
     // 정상: 실제 역할을 하이라이트
     return realRoleIds;
@@ -166,16 +169,27 @@ function PlayersAndRoleFeedback({
     if (shouldGiveFalseInfo || selectedPlayers.length === 0) return roles;
     if (hasTeamMatchPlayer) return roles.filter((r) => realRoleIds.has(r.id));
     return roles;
-  }, [shouldGiveFalseInfo, selectedPlayers.length, roles, realRoleIds, hasTeamMatchPlayer]);
+  }, [
+    shouldGiveFalseInfo,
+    selectedPlayers.length,
+    roles,
+    realRoleIds,
+    hasTeamMatchPlayer,
+  ]);
 
   // 정상 피드백에서 역할이 하나뿐이면 자동 선택
   useEffect(() => {
-    if (!shouldGiveFalseInfo && selectedPlayers.length === 2 && displayedRoles.length === 1) {
+    if (
+      !shouldGiveFalseInfo &&
+      selectedPlayers.length === 2 &&
+      displayedRoles.length === 1
+    ) {
       setSelectedRole(displayedRoles[0].name);
     }
   }, [shouldGiveFalseInfo, selectedPlayers.length, displayedRoles]);
 
-  const canSend = noneSelected || (selectedPlayers.length === 2 && selectedRole);
+  const canSend =
+    noneSelected || (selectedPlayers.length === 2 && selectedRole);
 
   return (
     <View style={styles.composerVertical}>
@@ -196,7 +210,8 @@ function PlayersAndRoleFeedback({
                 selectedPlayers.includes(p.name) && styles.chipTextSelected,
               ]}
             >
-              {p.name}{p.role ? ` (${p.role.name})` : ''}
+              {p.name}
+              {p.role ? ` (${p.role.name})` : ''}
             </Text>
           </Pressable>
         ))}
@@ -214,7 +229,11 @@ function PlayersAndRoleFeedback({
             }}
             style={[styles.chip, noneSelected && styles.chipSelected]}
           >
-            <Text style={[styles.chipText, noneSelected && styles.chipTextSelected]}>외지인 없음</Text>
+            <Text
+              style={[styles.chipText, noneSelected && styles.chipTextSelected]}
+            >
+              외지인 없음
+            </Text>
           </Pressable>
         )}
         {displayedRoles.map((r) => (
@@ -227,7 +246,12 @@ function PlayersAndRoleFeedback({
                 setWarningVisible(true);
                 return;
               }
-              if (!isDrunkUser && selectedPlayers.length === 2 && hasTeamMatchPlayer && !realRoleIds.has(r.id)) {
+              if (
+                !isDrunkUser &&
+                selectedPlayers.length === 2 &&
+                hasTeamMatchPlayer &&
+                !realRoleIds.has(r.id)
+              ) {
                 // 정상 능력 사용자인데 부정확한 직업을 선택하면 경고
                 setPendingRoleName(r.name);
                 setWarningVisible(true);

@@ -64,7 +64,9 @@ export default function AssignRoleScreen() {
 
   const handleRandomAssign = useCallback(() => {
     if (!playerId) return;
-    const unassignedRoles = TROUBLE_BREWING_ROLES.filter((r) => !roleOwnerMap.has(r.id));
+    const unassignedRoles = TROUBLE_BREWING_ROLES.filter(
+      (r) => !roleOwnerMap.has(r.id),
+    );
     if (unassignedRoles.length === 0) return;
     const randomRole =
       unassignedRoles[Math.floor(Math.random() * unassignedRoles.length)];
@@ -72,7 +74,8 @@ export default function AssignRoleScreen() {
       // 주정뱅이가 랜덤 선택된 경우 가짜 역할도 랜덤 배정
       const townsfolk = unassignedRoles.filter((r) => r.team === 'townsfolk');
       if (townsfolk.length > 0) {
-        const fakeRole = townsfolk[Math.floor(Math.random() * townsfolk.length)];
+        const fakeRole =
+          townsfolk[Math.floor(Math.random() * townsfolk.length)];
         assignRole(playerId, 'drunk', fakeRole.id);
       } else {
         assignRole(playerId, 'drunk');
@@ -146,7 +149,12 @@ export default function AssignRoleScreen() {
               ]}
             >
               <View style={styles.roleHeader}>
-                <Text style={[styles.roleName, ownerName && styles.roleNameAssigned]}>
+                <Text
+                  style={[
+                    styles.roleName,
+                    ownerName && styles.roleNameAssigned,
+                  ]}
+                >
                   {item.name}
                 </Text>
                 {ownerName ? (

@@ -13,7 +13,9 @@ import { getRoleById } from '@clocktower/shared';
 
 /** 플레이어가 중독 또는 취함 상태인지 확인 (능력 무효화 판정용) */
 function isPoisonedOrDrunk(player: Player): boolean {
-  return player.statuses.includes('poisoned') || player.statuses.includes('drunk');
+  return (
+    player.statuses.includes('poisoned') || player.statuses.includes('drunk')
+  );
 }
 
 export class GameManager {
@@ -258,7 +260,10 @@ export class GameManager {
   }
 
   getNightProgress(): { activeRoleId: string | null; order: string[] } {
-    return { activeRoleId: this.currentNightRoleId, order: this.currentNightOrder };
+    return {
+      activeRoleId: this.currentNightRoleId,
+      order: this.currentNightOrder,
+    };
   }
 
   // ── 점쟁이 Red Herring ──
@@ -429,7 +434,11 @@ export class GameManager {
     }
 
     // 집사 투표 제한: 주인이 투표해야만 투표 가능 (중독된 집사는 제한 없음)
-    if (!bypassButlerCheck && player.role?.id === 'butler' && !isPoisonedOrDrunk(player)) {
+    if (
+      !bypassButlerCheck &&
+      player.role?.id === 'butler' &&
+      !isPoisonedOrDrunk(player)
+    ) {
       const masterId = this.butlerMasters.get(playerId);
       if (masterId) {
         const current =
@@ -498,7 +507,12 @@ export class GameManager {
         players: this.state.players.map((p) => ({
           id: p.id,
           name: p.name,
-          role: p.role ?? { id: 'unknown', name: '???', team: 'townsfolk', ability: '' },
+          role: p.role ?? {
+            id: 'unknown',
+            name: '???',
+            team: 'townsfolk',
+            ability: '',
+          },
           isAlive: p.isAlive,
           team: p.role?.team ?? 'townsfolk',
         })),

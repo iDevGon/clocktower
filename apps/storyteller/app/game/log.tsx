@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useResponsive } from '../../src/hooks/useResponsive';
-import { useLogStore, type GameLogEntry } from '../../src/stores/logStore';
+import { type GameLogEntry, useLogStore } from '../../src/stores/logStore';
 
 const PHASE_COLORS: Record<string, string> = {
   setup: '#908e8a',
@@ -110,7 +110,9 @@ export default function LogScreen() {
         <FlatList
           data={reversed}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <LogItem item={item} logStyles={logStyles} />}
+          renderItem={({ item }) => (
+            <LogItem item={item} logStyles={logStyles} />
+          )}
           contentContainerStyle={logStyles.list}
         />
       )}

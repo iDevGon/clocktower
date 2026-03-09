@@ -1,7 +1,7 @@
 import type { Role, Team } from '@clocktower/shared';
 import { StyleSheet, Text, View } from 'react-native';
-import { AbilityText } from './AbilityText';
 import type { EvilInfo } from '../stores/playerStore';
+import { AbilityText } from './AbilityText';
 
 const TEAM_STYLES: Record<
   Team,
@@ -65,14 +65,15 @@ export function RoleCard({ role, evilInfo }: RoleCardProps) {
               <Text style={styles.infoValue}>{evilInfo.demonName}</Text>
             </View>
           )}
-          {evilInfo.otherMinionNames && evilInfo.otherMinionNames.length > 0 && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>다른 하수인</Text>
-              <Text style={styles.infoValue}>
-                {evilInfo.otherMinionNames.join(', ')}
-              </Text>
-            </View>
-          )}
+          {evilInfo.otherMinionNames &&
+            evilInfo.otherMinionNames.length > 0 && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>다른 하수인</Text>
+                <Text style={styles.infoValue}>
+                  {evilInfo.otherMinionNames.join(', ')}
+                </Text>
+              </View>
+            )}
         </View>
       )}
     </View>
