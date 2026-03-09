@@ -2,6 +2,7 @@ import type {
   DaySubPhase,
   NightFeedbackPayload,
   Phase,
+  PlayerStatus,
 } from '@clocktower/shared';
 import { useCallback } from 'react';
 import { useConnectionStore } from '../stores/connectionStore';
@@ -15,11 +16,11 @@ export function useGameActions() {
 
   const createGame = useCallback(
     () =>
-      new Promise<string>((resolve, reject) => {
+      new Promise<void>((resolve, reject) => {
         const s = getSocket();
         if (!s) return reject(new Error('Not connected'));
-        s.emit('game:create', (res: { success: boolean; gameId?: string }) => {
-          if (res.success && res.gameId) resolve(res.gameId);
+        s.emit('game:create', (res: { success: boolean }) => {
+          if (res.success) resolve();
           else reject(new Error('Failed to create game'));
         });
       }),
@@ -66,8 +67,8 @@ export function useGameActions() {
   );
 
   const assignRole = useCallback(
-    (playerId: string, roleId: string) =>
-      socket?.emit('game:assignRole', { playerId, roleId }),
+    (playerId: string, roleId: string, drunkAs?: string) =>
+      socket?.emit('game:assignRole', { playerId, roleId, drunkAs }),
     [socket],
   );
 
@@ -84,6 +85,12 @@ export function useGameActions() {
   const nominate = useCallback(
     (nominatorId: string, nomineeId: string) =>
       socket?.emit('vote:nominate', { nominatorId, nomineeId }),
+    [socket],
+  );
+
+  const castVoteForPlayer = useCallback(
+    (playerId: string, guilty: boolean) =>
+      socket?.emit('vote:castForPlayer', { playerId, guilty }),
     [socket],
   );
 
@@ -112,6 +119,12 @@ export function useGameActions() {
     [socket],
   );
 
+  const setPlayerStatuses = useCallback(
+    (playerId: string, statuses: PlayerStatus[]) =>
+      socket?.emit('player:setStatuses', { playerId, statuses }),
+    [socket],
+  );
+
   return {
     createGame,
     startGame,
@@ -122,11 +135,13 @@ export function useGameActions() {
     kill,
     revive,
     nominate,
+    castVoteForPlayer,
     closeVote,
     resetGame,
     sendNightFeedback,
     setActiveNightRole,
     addDummyPlayers,
     removeDummyPlayers,
+    setPlayerStatuses,
   };
 }

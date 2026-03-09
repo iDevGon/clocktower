@@ -14,8 +14,7 @@ export default function GameLayout() {
       <Stack.Screen
         name="grimoire"
         options={{
-          title: '마법서',
-          headerBackVisible: false,
+          headerShown: false,
           gestureEnabled: false,
         }}
       />
@@ -26,6 +25,14 @@ export default function GameLayout() {
       <Stack.Screen
         name="nominate"
         options={{ title: '지목', presentation: 'modal' }}
+      />
+      <Stack.Screen
+        name="whispers"
+        options={{ title: '밀담 현황', presentation: 'modal' }}
+      />
+      <Stack.Screen
+        name="log"
+        options={{ title: '게임 로그', presentation: 'modal' }}
       />
     </Stack>
   );

@@ -1,55 +1,166 @@
 import type { Phase } from '@clocktower/shared';
+import { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { styles } from './PhaseBar.styles';
+import { useResponsive } from '../hooks/useResponsive';
+import { PHASE_COLORS, createPhaseBarStyles } from './PhaseBar.styles';
 
-const PHASES: { label: string; value: Phase }[] = [
+/** Stepper navigation order: 밤 → 낮 cycles, with 종료 as terminal */
+const STEPPER_ORDER: Phase[] = ['night', 'day'];
+
+/** All phases shown as chips for direct access */
+const ALL_PHASES: { label: string; value: Phase }[] = [
   { label: '밤', value: 'night' },
   { label: '낮', value: 'day' },
   { label: '투표', value: 'vote' },
   { label: '종료', value: 'ended' },
 ];
 
-const PHASE_BG_COLORS: Record<Phase, string> = {
-  setup: '#242428',
-  night: '#1e2038',
-  day: '#302820',
-  vote: '#301c22',
-  ended: '#242428',
+const PHASE_LABELS: Record<Phase, string> = {
+  setup: '준비',
+  night: '밤',
+  day: '낮',
+  vote: '투표',
+  ended: '종료',
 };
 
 interface PhaseBarProps {
   currentPhase: Phase;
   onSetPhase: (phase: Phase) => void;
+  onConfirmNext?: () => void;
 }
 
-export function PhaseBar({ currentPhase, onSetPhase }: PhaseBarProps) {
+export function PhaseBar({ currentPhase, onSetPhase, onConfirmNext }: PhaseBarProps) {
+  const { fontSize, device } = useResponsive();
+  const scale = fontSize.md / 12;
+  const styles = useMemo(
+    () => createPhaseBarStyles(scale, device),
+    [scale, device],
+  );
+
+  const colors =
+    PHASE_COLORS[currentPhase as keyof typeof PHASE_COLORS] ??
+    PHASE_COLORS.night;
+
+  const stepperIndex = STEPPER_ORDER.indexOf(currentPhase);
+  const isInStepper = stepperIndex >= 0;
+
+  const handlePrev = () => {
+    if (!isInStepper || stepperIndex <= 0) return;
+    onSetPhase(STEPPER_ORDER[stepperIndex - 1]);
+  };
+
+  const handleNext = () => {
+    if (isInStepper) {
+      const nextIndex = (stepperIndex + 1) % STEPPER_ORDER.length;
+      if (onConfirmNext) {
+        onConfirmNext();
+      } else {
+        onSetPhase(STEPPER_ORDER[nextIndex]);
+      }
+    } else {
+      // vote/ended → stepper의 첫 단계(밤)로
+      if (onConfirmNext) {
+        onConfirmNext();
+      } else {
+        onSetPhase(STEPPER_ORDER[0]);
+      }
+    }
+  };
+
+  const canPrev = isInStepper && stepperIndex > 0;
+  const canNext = isInStepper || currentPhase === 'vote' || currentPhase === 'ended';
+
   return (
-    <View style={styles.bar}>
-      {PHASES.map(({ label, value }) => {
-        const isActive = currentPhase === value;
-        return (
-          <Pressable
-            key={value}
-            onPress={() => onSetPhase(value)}
-            style={[
-              styles.button,
-              {
-                backgroundColor: isActive ? PHASE_BG_COLORS[value] : '#1a1a1e',
-              },
-              isActive && styles.activeButton,
-            ]}
-          >
-            <Text
+    <View style={styles.container}>
+      {/* Progress bar */}
+      <View style={styles.progressBar}>
+        {ALL_PHASES.map((phase) => {
+          const pc =
+            PHASE_COLORS[phase.value as keyof typeof PHASE_COLORS] ??
+            PHASE_COLORS.night;
+          const isCurrent = phase.value === currentPhase;
+
+          return (
+            <View
+              key={phase.value}
               style={[
-                styles.label,
-                { color: isActive ? '#e0ddd8' : '#5c5a58' },
+                styles.progressSegment,
+                { backgroundColor: isCurrent ? pc.dot : '#1e1e28' },
+              ]}
+            />
+          );
+        })}
+      </View>
+
+      {/* Stepper */}
+      <View style={styles.stepper}>
+        <Pressable
+          onPress={handlePrev}
+          style={[styles.navButton, !canPrev && styles.navButtonDisabled]}
+          disabled={!canPrev}
+        >
+          <Text style={[styles.navButtonText, { color: colors.text }]}>
+            {'‹'}
+          </Text>
+        </Pressable>
+
+        <View
+          style={[
+            styles.activeCard,
+            { backgroundColor: colors.bg, borderColor: colors.border },
+          ]}
+        >
+          <View
+            style={[styles.phaseDot, { backgroundColor: colors.dot }]}
+          />
+          <Text style={[styles.phaseLabel, { color: colors.text }]}>
+            {PHASE_LABELS[currentPhase] ?? currentPhase}
+          </Text>
+        </View>
+
+        <Pressable
+          onPress={handleNext}
+          style={[styles.navButton, !canNext && styles.navButtonDisabled]}
+          disabled={!canNext}
+        >
+          <Text style={[styles.navButtonText, { color: colors.text }]}>
+            {'›'}
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* Phase chips */}
+      <View style={styles.chipList}>
+        {ALL_PHASES.map((phase) => {
+          const pc =
+            PHASE_COLORS[phase.value as keyof typeof PHASE_COLORS] ??
+            PHASE_COLORS.night;
+          const isActive = phase.value === currentPhase;
+
+          return (
+            <Pressable
+              key={phase.value}
+              onPress={() => onSetPhase(phase.value)}
+              style={[
+                styles.chip,
+                isActive && [
+                  styles.chipActive,
+                  { borderColor: pc.border, backgroundColor: pc.bg },
+                ],
               ]}
             >
-              {label}
-            </Text>
-          </Pressable>
-        );
-      })}
+              <Text
+                style={[
+                  styles.chipText,
+                  isActive && [styles.chipTextActive, { color: pc.text }],
+                ]}
+              >
+                {phase.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }

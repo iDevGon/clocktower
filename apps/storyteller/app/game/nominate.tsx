@@ -1,13 +1,17 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { PlayerList } from '../../src/components/PlayerList';
 import { useGameActions } from '../../src/hooks/useGameActions';
+import { useResponsive } from '../../src/hooks/useResponsive';
 import { useGameStore } from '../../src/stores/gameStore';
-import { styles } from '../../src/styles/nominate.styles';
+import { createNominateStyles } from '../../src/styles/nominate.styles';
 
 export default function NominateScreen() {
   const router = useRouter();
+  const { fontSize } = useResponsive();
+  const scale = fontSize.md / 12;
+  const styles = useMemo(() => createNominateStyles(scale), [scale]);
   const players = useGameStore((s) => s.gameState?.players ?? []);
   const { nominate } = useGameActions();
   const [nominatorId, setNominatorId] = useState<string | null>(null);

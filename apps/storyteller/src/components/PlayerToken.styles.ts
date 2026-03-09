@@ -4,8 +4,6 @@ export const styles = StyleSheet.create({
   token: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 80,
-    height: 80,
     borderRadius: 9999,
     borderWidth: 2,
   },
@@ -25,5 +23,24 @@ export const styles = StyleSheet.create({
     color: '#b85c5c',
     fontSize: 10,
     fontWeight: 'bold',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 2,
+    marginTop: 2,
+    position: 'absolute',
+    bottom: -8,
+  },
+  statusBadge: {
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  statusText: {
+    color: '#ffffff',
+    fontSize: 8,
+    fontWeight: '700',
   },
 });

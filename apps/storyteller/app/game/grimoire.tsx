@@ -1,46 +1,213 @@
+import {
+  PLAYER_STATUS_LABELS,
+  type PlayerStatus,
+  getRoleById,
+} from '@clocktower/shared';
 import { useRouter } from 'expo-router';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
+import {
+  ActionModal,
+  type ActionModalOption,
+} from '../../src/components/ActionModal';
 import { DaySubPhaseBar } from '../../src/components/DaySubPhaseBar';
+import { DraggablePlayerToken } from '../../src/components/DraggablePlayerToken';
 import {
   NightActionLog,
   NightFeedbackPanel,
 } from '../../src/components/NightActionLog';
 import { NightOrderPanel } from '../../src/components/NightOrderPanel';
 import { PhaseBar } from '../../src/components/PhaseBar';
-import { PlayerToken } from '../../src/components/PlayerToken';
 import { VotePanel } from '../../src/components/VotePanel';
-import { WhisperStatusPanel } from '../../src/components/WhisperStatusPanel';
 import { useGameActions } from '../../src/hooks/useGameActions';
+import { useResponsive } from '../../src/hooks/useResponsive';
+import { useConnectionStore } from '../../src/stores/connectionStore';
 import { useGameStore } from '../../src/stores/gameStore';
-import { styles } from '../../src/styles/grimoire.styles';
+import { useLogStore } from '../../src/stores/logStore';
+import { createGrimoireStyles } from '../../src/styles/grimoire.styles';
+
+const ALL_STATUSES: PlayerStatus[] = [
+  'poisoned',
+  'drunk',
+  'protected',
+  'cursed',
+];
+
+const PHASE_LABELS: Record<string, string> = {
+  night: '밤',
+  day: '낮',
+  vote: '투표',
+  ended: '종료',
+};
 
 export default function GrimoireScreen() {
+  const { fontSize, spacing } = useResponsive();
+  const scale = fontSize.md / 12;
+  const styles = useMemo(() => createGrimoireStyles(scale), [scale]);
+
   const router = useRouter();
   const gameState = useGameStore((s) => s.gameState);
   const nightActions = useGameStore((s) => s.nightActions);
   const activeWhispers = useGameStore((s) => s.activeWhispers);
   const activeNightRoleId = useGameStore((s) => s.activeNightRoleId);
+  const playerStatuses = useGameStore((s) => s.playerStatuses);
+  const addLog = useLogStore((s) => s.addLog);
   const {
     setPhase,
     setDaySubPhase,
-    kill,
-    revive,
+    kill: rawKill,
+    revive: rawRevive,
     resetGame,
-    closeVote,
+    castVoteForPlayer,
+    closeVote: rawCloseVote,
     setActiveNightRole: rawSetActiveNightRole,
     sendNightFeedback,
+    nominate: rawNominate,
+    createGame,
+    setPlayerStatuses: syncPlayerStatuses,
   } = useGameActions();
+
+  // Execution highlight state
+  const gameResult = useGameStore((s) => s.gameResult);
+  const executedPlayerId = useGameStore((s) => s.lastExecutedPlayerId);
+  const setExecutedPlayerId = useGameStore((s) => s.setLastExecutedPlayerId);
+
+  // Modal state
+  const [modal, setModal] = useState<{
+    visible: boolean;
+    title: string;
+    options: ActionModalOption[];
+  }>({ visible: false, title: '', options: [] });
+
+  const showModal = (title: string, options: ActionModalOption[]) =>
+    setModal({ visible: true, title, options });
+  const closeModal = () => setModal((m) => ({ ...m, visible: false }));
+
+  const getDay = () => useGameStore.getState().gameState?.day ?? 0;
+  const getPhase = () => useGameStore.getState().gameState?.phase ?? 'setup';
+  const getPlayerName = (id: string) =>
+    gameState?.players.find((p) => p.id === id)?.name ?? id;
+
+  const kill = (playerId: string) => {
+    rawKill(playerId);
+    addLog(getDay(), getPhase(), `${getPlayerName(playerId)} 사망`);
+  };
+
+  const setPlayerStatus = (playerId: string, status: PlayerStatus) => {
+    const store = useGameStore.getState();
+    const current = playerStatuses[playerId] ?? [];
+    if (!current.includes(status)) {
+      store.addPlayerStatus(playerId, status);
+      syncPlayerStatuses(playerId, [...current, status]);
+    }
+    addLog(
+      getDay(),
+      getPhase(),
+      `${getPlayerName(playerId)} ${PLAYER_STATUS_LABELS[status]}`,
+    );
+  };
+
+  const revive = (playerId: string) => {
+    rawRevive(playerId);
+    addLog(getDay(), getPhase(), `${getPlayerName(playerId)} 부활`);
+  };
+
+  const closeVote = () => {
+    const nom = gameState?.nominations?.length
+      ? gameState.nominations[gameState.nominations.length - 1]
+      : null;
+    rawCloseVote();
+    if (nom) {
+      const nomineeName = getPlayerName(nom.nomineeId);
+      const guiltyCount = Object.values(nom.votes).filter(Boolean).length;
+      const totalVotes = Object.keys(nom.votes).length;
+      const alivePlayers = gameState?.players.filter((p) => p.isAlive).length ?? 0;
+      const isGuilty = guiltyCount >= Math.ceil(alivePlayers / 2);
+      addLog(
+        getDay(),
+        'vote',
+        `${nomineeName} 투표 종료 (유죄 ${guiltyCount}/${totalVotes})`,
+      );
+      if (isGuilty) {
+        setExecutedPlayerId(nom.nomineeId);
+      }
+    }
+  };
 
   const setActiveNightRole = (roleId: string | null) => {
     rawSetActiveNightRole(roleId);
     useGameStore.getState().setActiveNightRoleId(roleId);
+    if (roleId) {
+      const role = getRoleById(roleId);
+      addLog(getDay(), 'night', `${role?.name ?? roleId} 활성화`);
+    }
   };
 
   const handleSetPhase = (phase: Parameters<typeof setPhase>[0]) => {
     if (phase === 'night') {
       useGameStore.getState().clearNightActions();
     }
+    if (phase === 'day') {
+      setExecutedPlayerId(null);
+    }
+    // 종료 상태에서 다른 페이즈로 전환 시 결과 초기화
+    if (gameState?.phase === 'ended' && phase !== 'ended') {
+      useGameStore.getState().setGameResult(null);
+    }
     setPhase(phase);
+    addLog(
+      phase === 'day' ? getDay() + 1 : getDay(),
+      phase,
+      `${PHASE_LABELS[phase] ?? phase} 페이즈로 전환`,
+    );
+  };
+
+  const handleStatusMenu = (playerId: string, playerName: string) => {
+    const current = playerStatuses[playerId] ?? [];
+    const store = useGameStore.getState();
+
+    const statusOptions: ActionModalOption[] = ALL_STATUSES.map((status) => {
+      const hasStatus = current.includes(status);
+      return {
+        text: `${hasStatus ? '✓ ' : ''}${PLAYER_STATUS_LABELS[status]}`,
+        onPress: () => {
+          if (hasStatus) {
+            store.removePlayerStatus(playerId, status);
+            const updated = current.filter((st) => st !== status);
+            syncPlayerStatuses(playerId, updated);
+            addLog(
+              getDay(),
+              getPhase(),
+              `${playerName} 상태 제거: ${PLAYER_STATUS_LABELS[status]}`,
+            );
+          } else {
+            store.addPlayerStatus(playerId, status);
+            const updated = [...current, status];
+            syncPlayerStatuses(playerId, updated);
+            addLog(
+              getDay(),
+              getPhase(),
+              `${playerName} 상태 부여: ${PLAYER_STATUS_LABELS[status]}`,
+            );
+          }
+        },
+      };
+    });
+
+    if (current.length > 0) {
+      statusOptions.push({
+        text: '모두 제거',
+        style: 'destructive',
+        onPress: () => {
+          store.clearPlayerStatuses(playerId);
+          syncPlayerStatuses(playerId, []);
+          addLog(getDay(), getPhase(), `${playerName} 모든 상태 제거`);
+        },
+      });
+    }
+
+    statusOptions.push({ text: '닫기', style: 'cancel' });
+    showModal(`${playerName} 상태`, statusOptions);
   };
 
   const handlePlayerPress = (
@@ -48,7 +215,7 @@ export default function GrimoireScreen() {
     playerName: string,
     isAlive: boolean,
   ) => {
-    const actions = isAlive
+    const options: ActionModalOption[] = isAlive
       ? [
           {
             text: '역할 배정',
@@ -59,40 +226,155 @@ export default function GrimoireScreen() {
               }),
           },
           {
+            text: '상태 관리',
+            onPress: () => handleStatusMenu(playerId, playerName),
+          },
+          {
             text: '사망 처리',
-            style: 'destructive' as const,
+            style: 'destructive',
             onPress: () => kill(playerId),
           },
-          { text: '취소', style: 'cancel' as const },
+          { text: '취소', style: 'cancel' },
         ]
       : [
           { text: '부활', onPress: () => revive(playerId) },
-          { text: '취소', style: 'cancel' as const },
+          {
+            text: '상태 관리',
+            onPress: () => handleStatusMenu(playerId, playerName),
+          },
+          { text: '취소', style: 'cancel' },
         ];
 
-    Alert.alert(playerName, undefined, actions);
+    showModal(playerName, options);
   };
 
-  const handleReset = () => {
-    Alert.alert('게임 초기화', '정말 게임을 초기화하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
+  const handleResetGame = () => {
+    showModal('게임 초기화', [
       {
-        text: '초기화',
+        text: '새 게임 시작',
+        style: 'destructive',
+        onPress: async () => {
+          resetGame();
+          useGameStore.getState().reset();
+          useLogStore.getState().clearLogs();
+          try {
+            await createGame();
+            router.replace('/game/lobby');
+          } catch {
+            router.replace('/');
+          }
+        },
+      },
+      { text: '취소', style: 'cancel' },
+    ]);
+  };
+
+  const handleDisconnect = () => {
+    showModal('서버 연결 해제', [
+      {
+        text: '연결 해제',
         style: 'destructive',
         onPress: () => {
           resetGame();
           useGameStore.getState().reset();
+          useLogStore.getState().clearLogs();
+          const { socket } = useConnectionStore.getState();
+          if (socket) socket.disconnect();
+          useConnectionStore.setState({
+            socket: null,
+            isConnected: false,
+            serverUrl: null,
+          });
           router.replace('/');
         },
       },
+      { text: '취소', style: 'cancel' },
     ]);
   };
+
+  const handleMenu = () => {
+    showModal('메뉴', [
+      {
+        text: '게임 로그',
+        onPress: () => router.push('/game/log'),
+      },
+      {
+        text: '토큰 위치 초기화',
+        onPress: () => {
+          useGameStore.getState().clearTokenPositions();
+          addLog(getDay(), getPhase(), '토큰 위치 초기화');
+        },
+      },
+      {
+        text: '게임 초기화',
+        style: 'destructive',
+        onPress: () => handleResetGame(),
+      },
+      {
+        text: '서버 연결 해제',
+        style: 'destructive',
+        onPress: () => handleDisconnect(),
+      },
+      { text: '닫기', style: 'cancel' },
+    ]);
+  };
+
+  const [areaSize, setAreaSize] = useState({ width: 0, height: 0 });
+  const tokenPositions = useGameStore((s) => s.tokenPositions);
+
+  const { tokenSize: defaultTokenSize } = useResponsive();
+  const dynamicTokenSize = useMemo(() => {
+    if (areaSize.width === 0 || areaSize.height === 0) return defaultTokenSize;
+    const playerCount = gameState?.players.length ?? 1;
+    const minDim = Math.min(areaSize.width, areaSize.height);
+    // 원형 배치 시 토큰이 겹치지 않도록: 둘레 = 2πr, 토큰 간격 = 둘레/N
+    const radius = minDim / 2 - 10;
+    const circumference = 2 * Math.PI * radius;
+    const fitSize = Math.floor(circumference / Math.max(playerCount, 5) * 0.85);
+    // 영역 높이가 작으면 추가로 축소
+    const heightFit = Math.floor(minDim * 0.35);
+    return Math.max(40, Math.min(defaultTokenSize, fitSize, heightFit));
+  }, [areaSize, defaultTokenSize, gameState?.players.length]);
+
+  const getTokenPosition = useCallback(
+    (playerId: string, index: number, total: number) => {
+      const saved = tokenPositions[playerId];
+      if (saved) return saved;
+
+      // Default: arrange in a circle
+      const centerX = areaSize.width / 2;
+      const centerY = areaSize.height / 2;
+      const radius = Math.min(centerX, centerY) - dynamicTokenSize * 0.6;
+      const angle = (index / total) * 2 * Math.PI - Math.PI / 2;
+      return {
+        x: centerX + radius * Math.cos(angle),
+        y: centerY + radius * Math.sin(angle),
+      };
+    },
+    [tokenPositions, areaSize, dynamicTokenSize],
+  );
+
+  const handlePositionChange = useCallback(
+    (playerId: string, x: number, y: number) => {
+      useGameStore.getState().setTokenPosition(playerId, { x, y });
+    },
+    [],
+  );
 
   const currentNomination = gameState?.nominations?.length
     ? gameState.nominations[gameState.nominations.length - 1]
     : null;
 
   const hasActiveVote = gameState?.phase === 'vote' && !!currentNomination;
+
+  const executedPlayer = executedPlayerId
+    ? gameState?.players.find((p) => p.id === executedPlayerId) ?? null
+    : null;
+
+  const skippedNightRoles = useMemo(() => {
+    if (!executedPlayerId) return ['undertaker'];
+    return [];
+  }, [executedPlayerId]);
 
   if (!gameState) return null;
 
@@ -102,6 +384,20 @@ export default function GrimoireScreen() {
         <Text style={styles.dayText}>{gameState.day}일차</Text>
         <View style={styles.topBarRight}>
           {gameState.phase === 'day' &&
+            gameState.daySubPhase === 'whisper' && (
+              <Pressable
+                onPress={() => router.push('/game/whispers')}
+                style={styles.whisperButton}
+              >
+                <Text style={styles.whisperButtonText}>
+                  밀담{' '}
+                  {activeWhispers.length > 0
+                    ? `(${activeWhispers.length})`
+                    : ''}
+                </Text>
+              </Pressable>
+            )}
+          {gameState.phase === 'day' &&
             gameState.daySubPhase === 'nomination' && (
               <Pressable
                 onPress={() => router.push('/game/nominate')}
@@ -110,8 +406,14 @@ export default function GrimoireScreen() {
                 <Text style={styles.nominateText}>지목 (수동)</Text>
               </Pressable>
             )}
-          <Pressable onPress={handleReset} style={styles.resetButton}>
-            <Text style={styles.resetText}>초기화</Text>
+          <Pressable
+            onPress={() => router.push('/game/log')}
+            style={styles.logButton}
+          >
+            <Text style={styles.logText}>로그</Text>
+          </Pressable>
+          <Pressable onPress={handleMenu} style={styles.menuButton}>
+            <Text style={styles.menuText}>메뉴</Text>
           </Pressable>
         </View>
       </View>
@@ -123,26 +425,48 @@ export default function GrimoireScreen() {
         />
       )}
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        style={styles.scrollView}
+      <View
+        style={styles.tokenArea}
+        onLayout={(e) => {
+          const { width, height } = e.nativeEvent.layout;
+          setAreaSize({ width, height });
+        }}
       >
-        {gameState.players.map((player) => (
-          <PlayerToken
-            key={player.id}
-            player={player}
-            onPress={() =>
-              handlePlayerPress(player.id, player.name, player.isAlive)
-            }
-          />
-        ))}
-      </ScrollView>
+        {areaSize.width > 0 &&
+          gameState.players.map((player, index) => {
+            const pos = getTokenPosition(
+              player.id,
+              index,
+              gameState.players.length,
+            );
+            return (
+              <DraggablePlayerToken
+                key={player.id}
+                player={player}
+                statuses={playerStatuses[player.id]}
+                highlighted={player.id === executedPlayerId}
+                tokenSize={dynamicTokenSize}
+                initialX={pos.x}
+                initialY={pos.y}
+                onPress={() =>
+                  handlePlayerPress(player.id, player.name, player.isAlive)
+                }
+                onPositionChange={(x, y) =>
+                  handlePositionChange(player.id, x, y)
+                }
+              />
+            );
+          })}
+      </View>
 
       {gameState.phase === 'night' && nightActions.length > 0 && (
         <NightActionLog
           actions={nightActions}
           players={gameState.players}
+          playerStatuses={playerStatuses}
           onSendFeedback={sendNightFeedback}
+          onKill={kill}
+          onSetStatus={setPlayerStatus}
         />
       )}
       {gameState.phase === 'night' && (
@@ -156,22 +480,109 @@ export default function GrimoireScreen() {
         <NightOrderPanel
           day={gameState.day}
           activeRoleIds={gameState.players
-            .map((p) => p.role?.id)
-            .filter((id): id is string => !!id)}
+            .flatMap((p) => {
+              if (p.role?.id === 'drunk' && p.drunkAs) return [p.drunkAs];
+              return p.role?.id ? [p.role.id] : [];
+            })}
+          skippedRoleIds={skippedNightRoles}
+          activeNightRoleId={activeNightRoleId}
           onActivateRole={setActiveNightRole}
+          onNightComplete={() => {
+            showModal('밤이 끝났습니다', [
+              {
+                text: '낮으로 전환',
+                onPress: () => handleSetPhase('day'),
+              },
+              { text: '계속 진행', style: 'cancel' },
+            ]);
+          }}
         />
-      )}
-      {gameState.phase === 'day' && gameState.daySubPhase === 'whisper' && (
-        <WhisperStatusPanel whispers={activeWhispers} />
       )}
       {hasActiveVote && currentNomination && (
         <VotePanel
           nomination={currentNomination}
           players={gameState.players}
           onCloseVote={closeVote}
+          onCastVote={castVoteForPlayer}
         />
       )}
-      <PhaseBar currentPhase={gameState.phase} onSetPhase={handleSetPhase} />
+      {executedPlayer && (
+        <View style={styles.executionBanner}>
+          <View style={styles.executionBannerContent}>
+            <Text style={styles.executionBannerLabel}>오늘 처형</Text>
+            <Text style={styles.executionBannerRole}>
+              {executedPlayer.role?.name ?? '역할 미배정'}
+            </Text>
+            <Text style={styles.executionBannerName}>
+              {executedPlayer.name}
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => setExecutedPlayerId(null)}
+            style={styles.executionBannerDismiss}
+          >
+            <Text style={styles.executionBannerDismissText}>닫기</Text>
+          </Pressable>
+        </View>
+      )}
+      {gameState.phase === 'ended' && gameResult && (
+        <View
+          style={{
+            backgroundColor:
+              gameResult.winningTeam === 'good' ? '#1a3a5c' : '#4a1a1a',
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            alignItems: 'center',
+          }}
+        >
+          <Text
+            style={{
+              color:
+                gameResult.winningTeam === 'good' ? '#5dade2' : '#e74c3c',
+              fontSize: fontSize.lg,
+              fontWeight: '700',
+            }}
+          >
+            {gameResult.winningTeam === 'good'
+              ? '선한 팀 승리!'
+              : '악한 팀 승리!'}
+          </Text>
+          <Text
+            style={{
+              color: '#aaa',
+              fontSize: fontSize.sm,
+              marginTop: 4,
+            }}
+          >
+            {gameResult.reason}
+          </Text>
+        </View>
+      )}
+      <PhaseBar
+        currentPhase={gameState.phase}
+        onSetPhase={handleSetPhase}
+        onConfirmNext={() => {
+          if (gameState.phase === 'day') {
+            showModal('다음 날 밤으로 진행', [
+              {
+                text: '밤으로 전환',
+                onPress: () => handleSetPhase('night'),
+              },
+              { text: '취소', style: 'cancel' },
+            ]);
+          } else {
+            // vote/ended 등에서는 바로 밤으로
+            handleSetPhase('night');
+          }
+        }}
+      />
+
+      <ActionModal
+        visible={modal.visible}
+        title={modal.title}
+        options={modal.options}
+        onClose={closeModal}
+      />
     </View>
   );
 }

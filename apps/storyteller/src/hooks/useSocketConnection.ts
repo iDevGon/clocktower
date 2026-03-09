@@ -1,8 +1,9 @@
-import type { NightAction } from '@clocktower/shared';
+import { type GameResult, type NightAction, getRoleById } from '@clocktower/shared';
 import { useCallback } from 'react';
 import { io } from 'socket.io-client';
 import { useConnectionStore } from '../stores/connectionStore';
 import { useGameStore } from '../stores/gameStore';
+import { useLogStore } from '../stores/logStore';
 
 export function useSocketConnection() {
   const { setSocket, setConnected } = useConnectionStore();
@@ -36,8 +37,23 @@ export function useSocketConnection() {
 
         newSocket.on('disconnect', () => setConnected(false));
         newSocket.on('game:state', setGameState);
+        newSocket.on('game:end', (result: GameResult) => {
+          useGameStore.getState().setGameResult(result);
+        });
         newSocket.on('night:actionReceived', (action: NightAction) => {
           useGameStore.getState().addNightAction(action);
+          const role = getRoleById(action.roleId);
+          const gs = useGameStore.getState().gameState;
+          const targetNames = action.targets
+            .map(
+              (tid) => gs?.players.find((p) => p.id === tid)?.name ?? tid,
+            )
+            .join(', ');
+          useLogStore.getState().addLog(
+            gs?.day ?? 0,
+            'night',
+            `${role?.name ?? action.roleId}(${action.playerName}) → ${targetNames || '(대상 없음)'}`,
+          );
         });
         newSocket.on(
           'whisper:activeChats',

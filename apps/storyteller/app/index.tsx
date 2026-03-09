@@ -1,6 +1,6 @@
 import { useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -12,10 +12,15 @@ import { QRScannerModal } from '../src/components/QRScannerModal';
 import { useGameActions } from '../src/hooks/useGameActions';
 import { useSocketConnection } from '../src/hooks/useSocketConnection';
 import { useConnectionStore } from '../src/stores/connectionStore';
+import { useResponsive } from '../src/hooks/useResponsive';
 import { useGameStore } from '../src/stores/gameStore';
-import { styles } from '../src/styles/index.styles';
+import { createIndexStyles } from '../src/styles/index.styles';
 
 export default function HomeScreen() {
+  const { fontSize } = useResponsive();
+  const scale = fontSize.md / 12;
+  const styles = useMemo(() => createIndexStyles(scale), [scale]);
+
   const [serverIp, setServerIp] = useState('');
   const [error, setError] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
@@ -61,16 +66,7 @@ export default function HomeScreen() {
     setIsConnecting(true);
     try {
       await connect(url);
-      const gameId = await createGame();
-      useGameStore.getState().setGameState({
-        id: gameId,
-        phase: 'setup',
-        daySubPhase: null,
-        day: 0,
-        players: [],
-        nominations: [],
-        started: false,
-      });
+      await createGame();
       router.push('/game/lobby');
     } catch (err) {
       setError(err instanceof Error ? err.message : '연결에 실패했습니다.');

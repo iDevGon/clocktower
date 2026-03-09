@@ -1,58 +1,126 @@
 import { StyleSheet } from 'react-native';
 
-export const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#121214',
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderColor: '#2e2e34',
-  },
-  dayText: {
-    color: '#908e8a',
-    fontSize: 14,
-  },
-  nominateButton: {
-    backgroundColor: '#943c3c',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  nominateText: {
-    color: '#e0ddd8',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  topBarRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  resetButton: {
-    backgroundColor: '#2e2e34',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  resetText: {
-    color: '#b85c5c',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 16,
-    padding: 16,
-  },
-});
+export function createGrimoireStyles(scale: number) {
+  const s = (v: number) => Math.round(v * scale);
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#121214',
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: s(16),
+      paddingVertical: s(12),
+      borderBottomWidth: 1,
+      borderColor: '#2e2e34',
+      zIndex: 200,
+    },
+    dayText: {
+      color: '#908e8a',
+      fontSize: s(14),
+    },
+    nominateButton: {
+      backgroundColor: '#943c3c',
+      paddingHorizontal: s(16),
+      paddingVertical: s(8),
+      borderRadius: 8,
+    },
+    nominateText: {
+      color: '#e0ddd8',
+      fontSize: s(14),
+      fontWeight: '600',
+    },
+    topBarRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: s(12),
+    },
+    whisperButton: {
+      backgroundColor: '#1a2618',
+      paddingHorizontal: s(12),
+      paddingVertical: s(8),
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#2a3d2a',
+    },
+    whisperButtonText: {
+      color: '#6a8a6a',
+      fontSize: s(13),
+      fontWeight: '600',
+    },
+    logButton: {
+      backgroundColor: '#1e2038',
+      paddingHorizontal: s(12),
+      paddingVertical: s(8),
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#3a3a52',
+    },
+    logText: {
+      color: '#8090c0',
+      fontSize: s(13),
+      fontWeight: '600',
+    },
+    menuButton: {
+      backgroundColor: '#2a2a30',
+      paddingHorizontal: s(12),
+      paddingVertical: s(8),
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#4a4a52',
+    },
+    menuText: {
+      color: '#e0ddd8',
+      fontSize: s(13),
+      fontWeight: '600',
+    },
+    tokenArea: {
+      flex: 1,
+      position: 'relative',
+    },
+    executionBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: '#2a1a0a',
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderColor: '#f5c542',
+      paddingHorizontal: s(16),
+      paddingVertical: s(10),
+    },
+    executionBannerContent: {
+      flex: 1,
+    },
+    executionBannerLabel: {
+      color: '#f5c542',
+      fontSize: s(11),
+      fontWeight: '700',
+    },
+    executionBannerRole: {
+      color: '#e0ddd8',
+      fontSize: s(16),
+      fontWeight: '700',
+      marginTop: s(2),
+    },
+    executionBannerName: {
+      color: '#908e8a',
+      fontSize: s(12),
+      marginTop: s(2),
+    },
+    executionBannerDismiss: {
+      paddingHorizontal: s(12),
+      paddingVertical: s(6),
+    },
+    executionBannerDismissText: {
+      color: '#908e8a',
+      fontSize: s(12),
+    },
+  });
+}
+
+// Default for static imports
+export const styles = createGrimoireStyles(1);
