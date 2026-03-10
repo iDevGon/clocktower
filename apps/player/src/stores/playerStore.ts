@@ -1,5 +1,7 @@
 import type {
   DaySubPhase,
+  DeathReason,
+  ExecutionAnnouncement,
   GameResult,
   GameSettings,
   NightFeedbackPayload,
@@ -45,10 +47,9 @@ export interface FeedbackHistoryEntry {
   timestamp: number;
 }
 
-interface VoteTurn {
-  playerId: string;
-  playerName: string;
-  timeLimit: number;
+interface VoteClock {
+  startedAt: number;
+  durationMs: number;
 }
 
 interface PlayerState {
@@ -73,10 +74,19 @@ interface PlayerState {
   gamePlayers: PlayerInfo[];
   gameResult: GameResult | null;
   justDied: boolean;
+  deathReason: DeathReason | null;
+  executionAnnouncement: ExecutionAnnouncement | null;
+  executionHappenedToday: boolean;
   slayerUsed: boolean;
+  slayerFizzle: { slayerName: string; targetName: string } | null;
   gameSettings: GameSettings | null;
-  voteTurn: VoteTurn | null;
-  voteTimerMs: number | null;
+  voteClock: VoteClock | null;
+  voteOrder: {
+    nomineeId: string;
+    order: Array<{ id: string; name: string }>;
+    fullOrder?: Array<{ id: string; name: string; isAlive: boolean }>;
+  } | null;
+  votePreselections: Record<string, boolean | null>;
   set: (partial: Partial<PlayerState>) => void;
   addFeedback: (day: number, feedback: NightFeedbackPayload) => void;
   reset: () => void;
@@ -104,10 +114,19 @@ const initialState = {
   gamePlayers: [],
   gameResult: null,
   justDied: false,
+  deathReason: null as DeathReason | null,
+  executionAnnouncement: null as ExecutionAnnouncement | null,
+  executionHappenedToday: false,
   slayerUsed: false,
+  slayerFizzle: null as { slayerName: string; targetName: string } | null,
   gameSettings: null as GameSettings | null,
-  voteTurn: null as VoteTurn | null,
-  voteTimerMs: null as number | null,
+  voteClock: null as VoteClock | null,
+  voteOrder: null as {
+    nomineeId: string;
+    order: Array<{ id: string; name: string }>;
+    fullOrder?: Array<{ id: string; name: string; isAlive: boolean }>;
+  } | null,
+  votePreselections: {} as Record<string, boolean | null>,
 };
 
 export const usePlayerStore = create<PlayerState>()(

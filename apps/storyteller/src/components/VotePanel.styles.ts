@@ -39,6 +39,9 @@ export function createVotePanelStyles(scale: number) {
       alignItems: 'center',
       gap: s(4),
       minWidth: s(56),
+      paddingVertical: s(4),
+      paddingHorizontal: s(4),
+      borderRadius: s(6),
     },
     voterName: {
       color: '#e0ddd8',
@@ -93,6 +96,38 @@ export function createVotePanelStyles(scale: number) {
     votedInnocent: {
       color: '#7070c4',
       backgroundColor: '#14142a',
+    },
+    preselectedGuilty: {
+      color: '#e05050',
+      backgroundColor: '#2a141480',
+      fontStyle: 'italic',
+    },
+    preselectedInnocent: {
+      color: '#7070c4',
+      backgroundColor: '#14142a80',
+      fontStyle: 'italic',
+    },
+    timerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: s(10),
+      backgroundColor: '#12121a',
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: '#2a2a36',
+      paddingVertical: s(8),
+      paddingHorizontal: s(14),
+      marginBottom: s(12),
+    },
+    timerText: {
+      color: '#c0c8e0',
+      fontSize: s(16),
+      fontWeight: '800',
+      fontVariant: ['tabular-nums'] as const,
+    },
+    timerUrgent: {
+      color: '#e74c3c',
     },
     closeVoteButton: {
       backgroundColor: '#943c3c',

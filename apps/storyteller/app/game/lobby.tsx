@@ -1,4 +1,4 @@
-import type { Player, Team } from '@clocktower/shared';
+import type { GameSettings, Player, Team } from '@clocktower/shared';
 import {
   EDITIONS,
   getRoleById,
@@ -14,6 +14,7 @@ import {
   Modal,
   Pressable,
   ScrollView,
+  Switch,
   Text,
   View,
 } from 'react-native';
@@ -38,6 +39,7 @@ export default function LobbyScreen() {
     assignRole,
     addDummyPlayers,
     removeDummyPlayers,
+    setGameSettings,
   } = useGameActions();
   const [distributing, setDistributing] = useState(false);
   const [selectedEditionId, setSelectedEditionId] = useState('trouble_brewing');
@@ -363,6 +365,64 @@ export default function LobbyScreen() {
       </View>
 
       <View style={styles.footer}>
+        {gameState && (
+          <View
+            style={{
+              marginBottom: s(12),
+              paddingHorizontal: s(12),
+              gap: s(10),
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-around',
+                backgroundColor: '#1a1a1e',
+                borderRadius: 8,
+                paddingVertical: s(10),
+                paddingHorizontal: s(12),
+                borderWidth: 1,
+                borderColor: '#2a2a2e',
+              }}
+            >
+              <SettingToggle
+                label="채팅 밀담"
+                value={gameState.settings.whisperMode === 'chat'}
+                onValueChange={(val: boolean) =>
+                  setGameSettings({ whisperMode: val ? 'chat' : 'offline' })
+                }
+                scale={scale}
+              />
+              <View style={{ width: 1, backgroundColor: '#2e2e34' }} />
+              <SettingToggle
+                label="온라인 투표"
+                value={gameState.settings.votingMode === 'online'}
+                onValueChange={(val: boolean) =>
+                  setGameSettings({ votingMode: val ? 'online' : 'offline' })
+                }
+                scale={scale}
+              />
+            </View>
+            {gameState.settings.votingMode === 'online' && (
+              <View
+                style={{
+                  backgroundColor: '#1a1a1e',
+                  borderRadius: 8,
+                  paddingVertical: s(10),
+                  paddingHorizontal: s(12),
+                  borderWidth: 1,
+                  borderColor: '#2a2a2e',
+                }}
+              >
+                <ClockSpeedSetting
+                  value={gameState.settings.voteClockSeconds}
+                  onChange={(val: number) => setGameSettings({ voteClockSeconds: val })}
+                  scale={scale}
+                />
+              </View>
+            )}
+          </View>
+        )}
         <Pressable
           onPress={handleStartGame}
           disabled={!allRolesAssigned}
@@ -766,6 +826,83 @@ export default function LobbyScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+    </View>
+  );
+}
+
+function SettingToggle({
+  label,
+  value,
+  onValueChange,
+  scale,
+}: {
+  label: string;
+  value: boolean;
+  onValueChange: (val: boolean) => void;
+  scale: number;
+}) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Math.round(8 * scale) }}>
+      <Text
+        style={{
+          color: value ? '#e0ddd8' : '#5c5a58',
+          fontSize: Math.round(12 * scale),
+          fontWeight: '600',
+        }}
+      >
+        {label}
+      </Text>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: '#3a3a42', true: '#2a4a2a' }}
+        thumbColor={value ? '#2ecc71' : '#908e8a'}
+      />
+    </View>
+  );
+}
+
+function ClockSpeedSetting({
+  value,
+  onChange,
+  scale,
+}: {
+  value: number;
+  onChange: (val: number) => void;
+  scale: number;
+}) {
+  const s = (v: number) => Math.round(v * scale);
+  const options = [30, 45, 60, 90, 120];
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: s(6) }}>
+      <Text style={{ color: '#908e8a', fontSize: s(12), fontWeight: '600' }}>
+        투표시계
+      </Text>
+      {options.map((sec) => (
+        <Pressable
+          key={sec}
+          onPress={() => onChange(sec)}
+          style={{
+            paddingVertical: s(4),
+            paddingHorizontal: s(8),
+            borderRadius: 4,
+            backgroundColor: value === sec ? '#2a3a5c' : '#242428',
+            borderWidth: 1,
+            borderColor: value === sec ? '#4a6a9c' : '#3a3a3e',
+          }}
+        >
+          <Text
+            style={{
+              color: value === sec ? '#8ab4f8' : '#706e6a',
+              fontSize: s(11),
+              fontWeight: '600',
+            }}
+          >
+            {sec}초
+          </Text>
+        </Pressable>
+      ))}
     </View>
   );
 }

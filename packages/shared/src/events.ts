@@ -1,5 +1,6 @@
 import type {
   DaySubPhase,
+  ExecutionAnnouncement,
   GameResult,
   GameSettings,
   GameState,
@@ -49,6 +50,10 @@ export interface ServerToClientEvents {
     targetName: string;
     targetId: string;
   }) => void;
+  'slayer:noEffect': (data: {
+    slayerName: string;
+    targetName: string;
+  }) => void;
   'virgin:triggered': (data: {
     virginName: string;
     nominatorName: string;
@@ -73,14 +78,17 @@ export interface ServerToClientEvents {
     }>,
   ) => void;
   'game:settings': (settings: GameSettings) => void;
-  'vote:turn': (data: {
-    playerId: string;
-    playerName: string;
-    timeLimit: number;
+  'vote:clockStart': (data: { durationMs: number }) => void;
+  'vote:preselected': (data: { playerId: string; guilty: boolean | null }) => void;
+  'vote:confirmed': (data: { playerId: string; guilty: boolean }) => void;
+  'vote:order': (data: {
+    nomineeId: string;
+    order: Array<{ id: string; name: string }>;
+    fullOrder?: Array<{ id: string; name: string; isAlive: boolean }>;
   }) => void;
-  'vote:timer': (data: { remainingMs: number }) => void;
   'chat:receiveFromStoryteller': (message: StorytellerMessage) => void;
   'chat:receiveFromPlayer': (message: StorytellerMessage) => void;
+  'execution:announced': (data: ExecutionAnnouncement) => void;
 }
 
 export interface ClientToServerEvents {
@@ -112,6 +120,7 @@ export interface ClientToServerEvents {
     }) => void,
   ) => void;
   'vote:cast': (data: { guilty: boolean }) => void;
+  'vote:preselect': (data: { guilty: boolean | null }) => void;
   'night:action': (data: { targets: string[] }) => void;
   'slayer:use': (
     data: { targetId: string },

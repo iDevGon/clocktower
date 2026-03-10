@@ -58,7 +58,7 @@ export function attachListeners(socket: AppSocket) {
       nightProgress: null,
       nightFeedback: null,
       ...(phase === 'night'
-        ? { hasNominatedToday: false, nightCount: prev.nightCount + 1 }
+        ? { hasNominatedToday: false, executionHappenedToday: false, nightCount: prev.nightCount + 1 }
         : {}),
       // 새 게임 시작 (setup): 역할/상태 초기화, 피드백 히스토리 리셋
       ...(phase === 'setup'
@@ -74,6 +74,9 @@ export function attachListeners(socket: AppSocket) {
             feedbackHistory: [],
             gameResult: null,
             justDied: false,
+            deathReason: null,
+            executionAnnouncement: null,
+            executionHappenedToday: false,
             slayerUsed: false,
             voteResult: null,
           }
@@ -141,12 +144,20 @@ export function attachListeners(socket: AppSocket) {
       currentPhase: 'vote',
       hasVoted: false,
       voteResult: null,
+      votePreselections: {},
+      voteClock: null,
     });
     vibrateAlert();
   });
 
   socket.on('vote:result', (data) => {
-    usePlayerStore.getState().set({ voteResult: data, nomination: null });
+    usePlayerStore.getState().set({
+      voteResult: data,
+      nomination: null,
+      voteOrder: null,
+      voteClock: null,
+      votePreselections: {},
+    });
     setTimeout(() => {
       const current = usePlayerStore.getState();
       if (current.voteResult === data) {
@@ -161,13 +172,30 @@ export function attachListeners(socket: AppSocket) {
     }, 5000);
   });
 
+  socket.on('execution:announced', (data) => {
+    const state = usePlayerStore.getState();
+    if (data.executedId === state.playerId) {
+      // 본인이 처형당한 경우: deathReason만 설정 (사망 오버레이에 반영)
+      usePlayerStore.getState().set({ deathReason: data.reason, executionHappenedToday: true });
+    } else {
+      // 다른 플레이어가 처형된 경우: 처형 알림 오버레이 표시
+      usePlayerStore.getState().set({ executionAnnouncement: data, executionHappenedToday: true });
+    }
+  });
+
   socket.on('game:playerUpdate', (player) => {
     const state = usePlayerStore.getState();
     if (player.id === state.playerId) {
       const wasDeath = state.isAlive && !player.isAlive;
       usePlayerStore.getState().set({
         isAlive: player.isAlive,
-        ...(wasDeath ? { justDied: true } : {}),
+        ...(wasDeath
+          ? {
+              justDied: true,
+              // execution:announced가 먼저 왔으면 그 이유 유지, 아니면 night_kill
+              deathReason: state.deathReason ?? 'night_kill',
+            }
+          : {}),
       });
     }
     const updated = state.gamePlayers.map((p) =>
@@ -204,8 +232,16 @@ export function attachListeners(socket: AppSocket) {
     }
   });
 
+  socket.on('whisper:activeChats', (chats) => {
+    useWhisperStore.getState().setActiveWhispers(chats);
+  });
+
   socket.on('slayer:declared', () => {
     vibrateAlert();
+  });
+
+  socket.on('slayer:noEffect', (data) => {
+    usePlayerStore.getState().set({ slayerFizzle: data });
   });
 
   socket.on('virgin:triggered', () => {
@@ -216,18 +252,27 @@ export function attachListeners(socket: AppSocket) {
     usePlayerStore.getState().set({ gameSettings: settings });
   });
 
-  socket.on('vote:turn', (data) => {
-    usePlayerStore.getState().set({
-      voteTurn: data,
-      voteTimerMs: data.timeLimit,
-    });
-    const { playerId } = usePlayerStore.getState();
-    if (data.playerId === playerId) {
-      vibrateAlert();
-    }
+  socket.on('vote:order', (data) => {
+    usePlayerStore.getState().set({ voteOrder: data });
   });
 
-  socket.on('vote:timer', ({ remainingMs }) => {
-    usePlayerStore.getState().set({ voteTimerMs: remainingMs });
+  socket.on('vote:clockStart', ({ durationMs }) => {
+    usePlayerStore.getState().set({
+      voteClock: { startedAt: Date.now(), durationMs },
+    });
+  });
+
+  socket.on('vote:preselected', ({ playerId, guilty }) => {
+    const prev = usePlayerStore.getState().votePreselections;
+    usePlayerStore.getState().set({
+      votePreselections: { ...prev, [playerId]: guilty },
+    });
+  });
+
+  socket.on('vote:confirmed', ({ playerId, guilty }) => {
+    const prev = usePlayerStore.getState().votePreselections;
+    usePlayerStore.getState().set({
+      votePreselections: { ...prev, [playerId]: guilty },
+    });
   });
 }

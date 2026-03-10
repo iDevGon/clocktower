@@ -3,6 +3,7 @@ import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
 import { registerPushToken } from '../pushNotifications.js';
 import type { WhisperTracker } from '../whisper.js';
+import { startClockwiseVote } from './storyteller.js';
 
 function getPlayerIdFromSocket(socket: {
   id: string;
@@ -134,6 +135,12 @@ export function registerPlayerHandlers(
         });
         const killedNominator = game.getPlayer(result.virginKill);
         if (killedNominator) {
+          playerIo.emit('execution:announced', {
+            executedId: result.virginKill,
+            executedName: killedNominator.name,
+            reason: 'virgin',
+            detail: `${killedNominator.name}이(가) 성녀를 지목하여 처형되었습니다`,
+          });
           playerIo.emit('game:playerUpdate', killedNominator);
         }
         storytellerIo.emit('game:state', game.getState());
@@ -141,6 +148,7 @@ export function registerPlayerHandlers(
         // 성녀 트리거 후 승리 조건 체크
         const winResult = game.checkWinCondition();
         if (winResult) {
+          winResult.cause = 'virgin';
           playerIo.emit('game:end', winResult);
           playerIo.emit('game:phase', 'ended');
           storytellerIo.emit('game:end', winResult);
@@ -160,6 +168,11 @@ export function registerPlayerHandlers(
         nomineeName: nominee?.name ?? nomineeId,
       });
       storytellerIo.emit('game:state', game.getState());
+
+      // 시계방향 투표 시작 (온라인 투표 모드일 때)
+      if (game.getState().settings.votingMode === 'online') {
+        startClockwiseVote(game, playerIo, storytellerIo, nomineeId);
+      }
     });
 
     socket.on('vote:cast', ({ guilty }) => {
@@ -167,16 +180,27 @@ export function registerPlayerHandlers(
       if (!playerId) return;
 
       const state = game.getState();
-      // 오프라인 투표 모드에서는 플레이어 투표 차단
       if (state.settings.votingMode === 'offline') return;
 
+      // 오프라인 모드가 아닌 비-시계방향 투표 시 즉시 확정
       const result = game.castVote(playerId, guilty);
       if (result.success) {
         storytellerIo.emit('game:state', game.getState());
-        // 시계방향 투표: 현재 턴 타이머를 클리어하고 다음 턴으로
-        // (타이머가 존재하면 시계방향 모드)
-        game.clearVoteTimer();
       }
+    });
+
+    socket.on('vote:preselect', ({ guilty }) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) return;
+
+      // 이미 투표가 확정된 플레이어는 프리셀렉트 변경 불가
+      const current = game.getState().nominations.at(-1);
+      if (current && playerId in current.votes) return;
+
+      game.preselectVote(playerId, guilty);
+      // 모든 플레이어와 스토리텔러에게 프리셀렉트 알림
+      playerIo.emit('vote:preselected', { playerId, guilty });
+      storytellerIo.emit('vote:preselected' as string, { playerId, guilty });
     });
 
     socket.on('night:action', ({ targets }) => {
@@ -279,23 +303,45 @@ export function registerPlayerHandlers(
       });
 
       // 실제 사냥꾼이고 대상이 악마면 자동 사망 (중독 상태면 무효)
-      if (
+      const killCondition =
         isSlayer &&
         !player.statuses.includes('poisoned') &&
-        target.role?.team === 'demon'
-      ) {
+        target.role?.team === 'demon';
+
+      if (killCondition) {
         game.kill(targetId);
+        game.markExecution(); // 사냥꾼 처형은 처형으로 간주 → 더 이상 지목 불가
         const killedTarget = game.getPlayer(targetId);
-        if (killedTarget) playerIo.emit('game:playerUpdate', killedTarget);
+        if (killedTarget) {
+          playerIo.emit('execution:announced', {
+            executedId: targetId,
+            executedName: killedTarget.name,
+            reason: 'slayer',
+            detail: `${player.name}의 사냥꾼 능력으로 ${killedTarget.name}이(가) 사망했습니다`,
+          });
+          playerIo.emit('game:playerUpdate', killedTarget);
+        }
         storytellerIo.emit('game:state', game.getState());
 
         const winResult = game.checkWinCondition();
         if (winResult) {
+          winResult.cause = 'slayer';
+          winResult.reason = `사냥꾼 ${player.name}이(가) 악마를 처치했습니다`;
           playerIo.emit('game:end', winResult);
           playerIo.emit('game:phase', 'ended');
           storytellerIo.emit('game:end', winResult);
           storytellerIo.emit('game:state', game.getState());
         }
+      } else {
+        // 능력이 효과 없음 (중독/주정뱅이/대상이 악마가 아님)
+        playerIo.emit('slayer:noEffect', {
+          slayerName: player.name,
+          targetName: target.name,
+        });
+        storytellerIo.emit('slayer:noEffect' as string, {
+          slayerName: player.name,
+          targetName: target.name,
+        });
       }
 
       console.log(`Slayer: ${player.name} -> ${target.name}`);

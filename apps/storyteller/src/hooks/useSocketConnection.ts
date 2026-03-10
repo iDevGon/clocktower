@@ -76,16 +76,42 @@ export function useSocketConnection() {
         newSocket.on('slayer:declared', () => {
           // handled via game:state
         });
-        newSocket.on('vote:turn', () => {
-          // vote turn info is handled via storyteller's game:state
-        });
-        newSocket.on('vote:timer', () => {
-          // timer info is handled via storyteller's game:state
-        });
+        newSocket.on(
+          'vote:clockStart',
+          (data: { durationMs: number }) => {
+            useGameStore.getState().setVoteClock({
+              startedAt: Date.now(),
+              durationMs: data.durationMs,
+            });
+          },
+        );
+        newSocket.on(
+          'vote:preselected',
+          (data: { playerId: string; guilty: boolean | null }) => {
+            useGameStore.getState().setVotePreselection(data.playerId, data.guilty);
+          },
+        );
+        newSocket.on(
+          'vote:confirmed',
+          (data: { playerId: string; guilty: boolean }) => {
+            useGameStore.getState().setVoteConfirmed(data.playerId, data.guilty);
+          },
+        );
         newSocket.on(
           'chat:receiveFromPlayer' as string,
           (message: StorytellerMessage) => {
-            useGameStore.getState().addChatMessage(message);
+            const store = useGameStore.getState();
+            store.addChatMessage(message);
+            // 플레이어가 보낸 메시지이고 해당 채팅이 열려있지 않으면 토스트 표시
+            if (
+              !message.fromStoryteller &&
+              store.activeChatPlayerId !== message.playerId
+            ) {
+              store.showChatToast({
+                playerName: message.playerName,
+                message: message.message,
+              });
+            }
           },
         );
 

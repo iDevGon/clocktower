@@ -1,7 +1,8 @@
 import type { Nomination, Player } from '@clocktower/shared';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
+import { useGameStore } from '../stores/gameStore';
 import { createVotePanelStyles } from './VotePanel.styles';
 
 interface VotePanelProps {
@@ -21,13 +22,37 @@ export function VotePanel({
   const scale = fontSize.md / 12;
   const styles = useMemo(() => createVotePanelStyles(scale), [scale]);
 
-  const voteCount = Object.values(nomination.votes).length;
-  const guiltyCount = Object.values(nomination.votes).filter(Boolean).length;
+  const voteClock = useGameStore((s) => s.voteClock);
+  const votePreselections = useGameStore((s) => s.votePreselections);
+  const voteConfirmed = useGameStore((s) => s.voteConfirmed);
+
+  const [, forceUpdate] = useState(0);
+
+  // Re-render periodically to update timer
+  useEffect(() => {
+    if (!voteClock) return;
+    const interval = setInterval(() => forceUpdate((n) => n + 1), 200);
+    return () => clearInterval(interval);
+  }, [voteClock]);
+
+  const voteCount = Object.values(nomination.votes).length + Object.keys(voteConfirmed).length;
+  const guiltyCount =
+    Object.values(nomination.votes).filter(Boolean).length +
+    Object.values(voteConfirmed).filter(Boolean).length;
 
   const nominatorName =
     players.find((p) => p.id === nomination.nominatorId)?.name ?? '?';
   const nomineeName =
     players.find((p) => p.id === nomination.nomineeId)?.name ?? '?';
+
+  // Timer display
+  const remainingMs = voteClock
+    ? Math.max(0, voteClock.durationMs - (Date.now() - voteClock.startedAt))
+    : null;
+  const remainingSec = remainingMs != null ? Math.ceil(remainingMs / 1000) : null;
+  const isUrgent = voteClock && remainingMs != null
+    ? remainingMs < voteClock.durationMs * 0.15
+    : false;
 
   return (
     <View style={styles.votePanel}>
@@ -41,6 +66,18 @@ export function VotePanel({
         투표: {voteCount}명 (찬성 {guiltyCount} / 반대 {voteCount - guiltyCount}
         )
       </Text>
+      {voteClock && remainingSec != null && (
+        <View style={styles.timerRow}>
+          <Text
+            style={[
+              styles.timerText,
+              isUrgent && styles.timerUrgent,
+            ]}
+          >
+            {remainingSec}초
+          </Text>
+        </View>
+      )}
 
       {onCastVote && (
         <ScrollView
@@ -51,8 +88,14 @@ export function VotePanel({
           {players.map((player) => {
             const vote = nomination.votes[player.id];
             const hasVoted = vote !== undefined;
+            const confirmed = voteConfirmed[player.id];
+            const hasConfirmed = confirmed !== undefined;
+            const preselection = votePreselections[player.id];
             return (
-              <View key={player.id} style={styles.voterItem}>
+              <View
+                key={player.id}
+                style={styles.voterItem}
+              >
                 <Text
                   style={[
                     styles.voterName,
@@ -70,6 +113,26 @@ export function VotePanel({
                     ]}
                   >
                     {vote ? '찬성' : '반대'}
+                  </Text>
+                ) : hasConfirmed ? (
+                  <Text
+                    style={[
+                      styles.votedBadge,
+                      confirmed ? styles.votedGuilty : styles.votedInnocent,
+                    ]}
+                  >
+                    {confirmed ? '찬성' : '반대'}
+                  </Text>
+                ) : preselection != null ? (
+                  <Text
+                    style={[
+                      styles.votedBadge,
+                      preselection
+                        ? styles.preselectedGuilty
+                        : styles.preselectedInnocent,
+                    ]}
+                  >
+                    {preselection ? '찬성?' : '반대?'}
                   </Text>
                 ) : (
                   <View style={styles.voteButtons}>

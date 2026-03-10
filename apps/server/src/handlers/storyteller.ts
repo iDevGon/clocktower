@@ -72,9 +72,7 @@ function getPlayerInfoList(game: GameManager) {
   }));
 }
 
-const VOTE_TIME_LIMIT = 10_000; // 10초
-
-function startClockwiseVote(
+export function startClockwiseVote(
   game: GameManager,
   playerIo: import('socket.io').Namespace,
   storytellerIo: import('socket.io').Namespace,
@@ -83,51 +81,77 @@ function startClockwiseVote(
   const voteOrder = game.getClockwiseVoteOrder(nomineeId);
   if (voteOrder.length === 0) return;
 
-  let currentIndex = 0;
+  const fullOrder = game.getPlayerOrder();
+  const totalPlayers = fullOrder.length;
+  const durationMs = game.getSettings().voteClockSeconds * 1000;
 
-  function processNextVoter() {
-    if (currentIndex >= voteOrder.length) {
-      // 모든 투표 완료
-      game.clearVoteTimer();
-      return;
-    }
+  // 투표 순서를 플레이어에게 전송
+  const orderWithNames = voteOrder.map((id) => {
+    const p = game.getPlayer(id);
+    return { id, name: p?.name ?? id };
+  });
+  const fullOrderInfo = fullOrder.map((id) => {
+    const p = game.getPlayer(id);
+    return { id, name: p?.name ?? id, isAlive: p?.isAlive ?? false };
+  });
+  playerIo.emit('vote:order', { nomineeId, order: orderWithNames, fullOrder: fullOrderInfo });
 
-    const voterId = voteOrder[currentIndex];
-    const voter = game.getPlayer(voterId);
-    if (!voter) {
-      currentIndex++;
-      processNextVoter();
-      return;
-    }
+  // 시계 바늘 시작 알림
+  playerIo.emit('vote:clockStart', { durationMs });
+  storytellerIo.emit('vote:clockStart' as string, { durationMs });
 
-    // 현재 투표자 알림
-    playerIo.emit('vote:turn', {
-      playerId: voterId,
-      playerName: voter.name,
-      timeLimit: VOTE_TIME_LIMIT,
-    });
-
-    let remaining = VOTE_TIME_LIMIT;
-    const timer = setInterval(() => {
-      remaining -= 1000;
-      if (remaining > 0) {
-        playerIo.emit('vote:timer', { remainingMs: remaining });
-      }
-    }, 1000);
-
-    const timeout = setTimeout(() => {
-      clearInterval(timer);
-      // 시간 초과 = 기권 (not guilty)
-      game.castVote(voterId, false, true);
-      storytellerIo.emit('game:state', game.getState());
-      currentIndex++;
-      processNextVoter();
-    }, VOTE_TIME_LIMIT);
-
-    game.setVoteTimerRef(timer, timeout);
+  // 각 투표자의 확정 시점 계산 (nominee 기준 상대 각도 → 시간)
+  const nomineeFullIdx = fullOrder.indexOf(nomineeId);
+  const confirmTimes: Array<{ playerId: string; timeMs: number }> = [];
+  for (const voterId of voteOrder) {
+    const voterFullIdx = fullOrder.indexOf(voterId);
+    // nominee 기준 시계방향 상대 위치 (0 ~ N-1)
+    const offset = (voterFullIdx - nomineeFullIdx + totalPlayers) % totalPlayers;
+    // 확정 시점: 해당 위치를 지날 때 (offset/N 만큼 진행했을 때)
+    // offset=0인 nominee는 한 바퀴 끝에서 확정
+    const fraction = offset === 0 ? 1 : offset / totalPlayers;
+    confirmTimes.push({ playerId: voterId, timeMs: fraction * durationMs });
   }
+  // 확정 시점 순으로 정렬
+  confirmTimes.sort((a, b) => a.timeMs - b.timeMs);
 
-  processNextVoter();
+  let nextConfirmIdx = 0;
+  const startTime = Date.now();
+
+  const checkInterval = setInterval(() => {
+    const elapsed = Date.now() - startTime;
+
+    // 아직 확정되지 않은 투표자들 확인
+    while (nextConfirmIdx < confirmTimes.length) {
+      const next = confirmTimes[nextConfirmIdx];
+      if (elapsed >= next.timeMs) {
+        // 프리셀렉트된 값으로 확정 (없으면 반대)
+        const guilty = game.getPreselectedVote(next.playerId);
+        game.castVote(next.playerId, guilty, true);
+        playerIo.emit('vote:confirmed', { playerId: next.playerId, guilty });
+        storytellerIo.emit('vote:confirmed' as string, { playerId: next.playerId, guilty });
+        nextConfirmIdx++;
+      } else {
+        break;
+      }
+    }
+
+    // 모든 투표 완료 → 자동 종료
+    if (nextConfirmIdx >= confirmTimes.length || elapsed >= durationMs) {
+      clearInterval(checkInterval);
+      game.clearVoteTimer();
+      const result = game.closeVote();
+      if (result) {
+        playerIo.emit('vote:result', result);
+        game.returnToNomination();
+        playerIo.emit('game:phase', 'day');
+        playerIo.emit('day:subPhase', 'nomination');
+        storytellerIo.emit('game:state', game.getState());
+      }
+    }
+  }, 100);
+
+  game.setVoteClockInterval(checkInterval);
 }
 
 export function registerStorytellerHandlers(
@@ -185,6 +209,37 @@ export function registerStorytellerHandlers(
     });
 
     socket.on('game:setPhase', (phase) => {
+      // 밤 전환 시 → 최다 투표 후보 처형 실행
+      if (phase === 'night') {
+        const candidate = game.getExecutionCandidate();
+        if (candidate) {
+          game.kill(candidate.playerId);
+          game.markExecution();
+          const killedPlayer = game.getPlayer(candidate.playerId);
+          if (killedPlayer) {
+            // 처형 알림을 먼저 전송 (사망 알림보다 먼저)
+            playerIo.emit('execution:announced', {
+              executedId: candidate.playerId,
+              executedName: killedPlayer.name,
+              reason: 'execution',
+              detail: `${killedPlayer.name}이(가) 투표로 처형되었습니다`,
+            });
+            playerIo.emit('game:playerUpdate', killedPlayer);
+          }
+          // 처형 후 승리 조건 체크
+          const executedRoleId = killedPlayer?.role?.id;
+          const winResult = game.checkWinCondition(executedRoleId);
+          if (winResult) {
+            winResult.cause = 'execution';
+            playerIo.emit('game:end', winResult);
+            playerIo.emit('game:phase', 'ended');
+            storytellerIo.emit('game:end', winResult);
+            storytellerIo.emit('game:state', game.getState());
+            return;
+          }
+        }
+      }
+
       game.setPhase(phase);
       playerIo.emit('game:phase', phase);
       if (phase === 'night') {
@@ -503,6 +558,12 @@ export function registerStorytellerHandlers(
         });
         const killedNominator = game.getPlayer(result.virginKill);
         if (killedNominator) {
+          playerIo.emit('execution:announced', {
+            executedId: result.virginKill,
+            executedName: killedNominator.name,
+            reason: 'virgin',
+            detail: `${killedNominator.name}이(가) 성녀를 지목하여 처형되었습니다`,
+          });
           playerIo.emit('game:playerUpdate', killedNominator);
         }
         storytellerIo.emit('game:state', game.getState());
@@ -510,6 +571,7 @@ export function registerStorytellerHandlers(
         // 성녀 트리거 후 승리 조건 체크
         const winResult = game.checkWinCondition();
         if (winResult) {
+          winResult.cause = 'virgin';
           playerIo.emit('game:end', winResult);
           playerIo.emit('game:phase', 'ended');
           storytellerIo.emit('game:end', winResult);
@@ -545,42 +607,22 @@ export function registerStorytellerHandlers(
     });
 
     socket.on('vote:castForPlayer', ({ playerId, guilty }) => {
-      // 스토리텔러가 대리 투표할 때는 집사 제한 무시
-      const result = game.castVote(playerId, guilty, true);
-      if (result.success) {
-        storytellerIo.emit('game:state', game.getState());
-      }
+      // 시계방향 투표 중이면 프리셀렉트로 처리
+      game.preselectVote(playerId, guilty);
+      playerIo.emit('vote:preselected', { playerId, guilty });
+      storytellerIo.emit('vote:preselected' as string, { playerId, guilty });
     });
 
     socket.on('vote:close', () => {
       const result = game.closeVote();
       if (result) {
-        if (result.guilty) {
-          game.kill(result.nomineeId);
-          game.markExecution();
-          const killedPlayer = game.getPlayer(result.nomineeId);
-          if (killedPlayer) {
-            playerIo.emit('game:playerUpdate', killedPlayer);
-          }
-        }
         playerIo.emit('vote:result', result);
 
-        // 처형 후 승리 조건 체크
-        const executedRoleId = result.guilty
-          ? game.getPlayer(result.nomineeId)?.role?.id
-          : undefined;
-        const winResult = game.checkWinCondition(executedRoleId);
-        if (winResult) {
-          playerIo.emit('game:end', winResult);
-          playerIo.emit('game:phase', 'ended');
-          storytellerIo.emit('game:end', winResult);
-          storytellerIo.emit('game:state', game.getState());
-        } else {
-          game.returnToNomination();
-          playerIo.emit('game:phase', 'day');
-          playerIo.emit('day:subPhase', 'nomination');
-          storytellerIo.emit('game:state', game.getState());
-        }
+        // 투표 종료 후 → 지목 단계로 복귀 (처형은 밤 전환 시 수행)
+        game.returnToNomination();
+        playerIo.emit('game:phase', 'day');
+        playerIo.emit('day:subPhase', 'nomination');
+        storytellerIo.emit('game:state', game.getState());
       }
     });
 

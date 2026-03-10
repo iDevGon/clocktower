@@ -33,8 +33,9 @@ export class GameManager {
   };
 
   // 시계방향 투표 관련 상태
-  private voteTimer: ReturnType<typeof setInterval> | null = null;
-  private voteTimeout: ReturnType<typeof setTimeout> | null = null;
+  private voteClockInterval: ReturnType<typeof setInterval> | null = null;
+  // 투표 프리셀렉트 (토글): 시계 바늘이 지나갈 때 확정됨
+  private votePreselections = new Map<string, boolean>();
 
   // 집사의 주인 추적 (butlerPlayerId → masterPlayerId)
   private butlerMasters = new Map<string, string>();
@@ -46,6 +47,11 @@ export class GameManager {
   private virginTriggered = false;
   // 오늘 처형이 있었는지 (시장 승리 조건용)
   private executionToday = false;
+  // 오늘 최다 투표로 처형 대상이 된 플레이어 (투표 비교용)
+  private executionCandidate: {
+    playerId: string;
+    guiltyVotes: number;
+  } | null = null;
   // 밤 중 사망한 플레이어 (낮 전환 시 알림용)
   private pendingNightKills: string[] = [];
   // 현재 활성 밤 역할 및 순서 (재접속 시 복원용)
@@ -104,6 +110,7 @@ export class GameManager {
       drunkAs: undefined,
       isAlive: true,
       hasNominatedToday: false,
+      hasBeenNominatedToday: false,
       deadVoteUsed: false,
       statuses: [],
     }));
@@ -128,6 +135,7 @@ export class GameManager {
     this.slayerUsed.clear();
     this.virginTriggered = false;
     this.executionToday = false;
+    this.executionCandidate = null;
     this.pendingNightKills = [];
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
@@ -159,6 +167,7 @@ export class GameManager {
       name,
       isAlive: true,
       hasNominatedToday: false,
+      hasBeenNominatedToday: false,
       deadVoteUsed: false,
       statuses: [],
     };
@@ -193,9 +202,11 @@ export class GameManager {
       this.state.nominations = [];
       this.nightActionTargets.clear();
       this.executionToday = false;
+      this.executionCandidate = null;
       this.pendingNightKills = [];
       for (const p of this.state.players) {
         p.hasNominatedToday = false;
+        p.hasBeenNominatedToday = false;
         // 밤 시작 시 중독/보호 상태 자동 제거
         p.statuses = p.statuses.filter(
           (s) => s !== 'poisoned' && s !== 'protected',
@@ -401,10 +412,18 @@ export class GameManager {
       return { success: false, error: '사망한 플레이어는 지목할 수 없습니다' };
     if (nominator.hasNominatedToday)
       return { success: false, error: '이미 오늘 지목을 사용했습니다' };
+    if (nominee.hasBeenNominatedToday)
+      return {
+        success: false,
+        error: '이미 오늘 지목을 당한 플레이어입니다',
+      };
     if (nominatorId === nomineeId)
       return { success: false, error: '자기 자신은 지목할 수 없습니다' };
+    if (this.executionToday)
+      return { success: false, error: '오늘 이미 처형이 있었습니다' };
 
     nominator.hasNominatedToday = true;
+    nominee.hasBeenNominatedToday = true;
 
     // 성녀(Virgin) 트리거: 처음 지명당했을 때, 지명자가 마을주민이면 즉시 처형
     // 중독/취한 성녀는 능력이 무효화됨
@@ -589,7 +608,31 @@ export class GameManager {
 
     const alivePlayers = this.state.players.filter((p) => p.isAlive).length;
     const guiltyVotes = Object.values(current.votes).filter(Boolean).length;
-    const guilty = guiltyVotes >= Math.ceil(alivePlayers / 2);
+    const reachedMajority = guiltyVotes >= Math.ceil(alivePlayers / 2);
+
+    // 과반수를 넘겼고, 이전 최다 투표보다 많으면 처형 대상 교체
+    let guilty = false;
+    if (reachedMajority) {
+      if (
+        !this.executionCandidate ||
+        guiltyVotes > this.executionCandidate.guiltyVotes
+      ) {
+        this.executionCandidate = {
+          playerId: current.nomineeId,
+          guiltyVotes,
+        };
+        guilty = true;
+      }
+      // 동률이면 처형 없음 (기존 후보 유지하지 않음)
+      if (
+        this.executionCandidate &&
+        guiltyVotes === this.executionCandidate.guiltyVotes &&
+        this.executionCandidate.playerId !== current.nomineeId
+      ) {
+        this.executionCandidate = null;
+        guilty = false;
+      }
+    }
 
     const nominee = this.getPlayer(current.nomineeId);
 
@@ -601,6 +644,10 @@ export class GameManager {
       guilty,
       votes: current.votes,
     };
+  }
+
+  getExecutionCandidate(): { playerId: string; guiltyVotes: number } | null {
+    return this.executionCandidate;
   }
 
   // ── 게임 설정 ──
@@ -625,7 +672,7 @@ export class GameManager {
 
   /**
    * 시계방향 투표 순서 반환: 지명된 플레이어부터 시계방향으로 순서대로.
-   * playerOrder 기준으로 nomineeId 다음 위치부터 순회.
+   * 지목당한 플레이어 본인도 투표에 포함됨.
    */
   getClockwiseVoteOrder(nomineeId: string): string[] {
     const order = this.state.playerOrder;
@@ -635,7 +682,7 @@ export class GameManager {
     if (nomineeIndex === -1) return [];
 
     const result: string[] = [];
-    for (let i = 1; i < order.length; i++) {
+    for (let i = 0; i < order.length; i++) {
       const idx = (nomineeIndex + i) % order.length;
       const playerId = order[idx];
       const player = this.getPlayer(playerId);
@@ -649,22 +696,31 @@ export class GameManager {
   // ── 시계방향 투표 타이머 관리 ──
 
   clearVoteTimer(): void {
-    if (this.voteTimer) {
-      clearInterval(this.voteTimer);
-      this.voteTimer = null;
+    if (this.voteClockInterval) {
+      clearInterval(this.voteClockInterval);
+      this.voteClockInterval = null;
     }
-    if (this.voteTimeout) {
-      clearTimeout(this.voteTimeout);
-      this.voteTimeout = null;
+    this.votePreselections.clear();
+  }
+
+  setVoteClockInterval(interval: ReturnType<typeof setInterval>): void {
+    this.voteClockInterval = interval;
+  }
+
+  preselectVote(playerId: string, guilty: boolean | null): void {
+    if (guilty === null) {
+      this.votePreselections.delete(playerId);
+    } else {
+      this.votePreselections.set(playerId, guilty);
     }
   }
 
-  setVoteTimerRef(
-    timer: ReturnType<typeof setInterval> | null,
-    timeout: ReturnType<typeof setTimeout> | null,
-  ): void {
-    this.voteTimer = timer;
-    this.voteTimeout = timeout;
+  getPreselectedVote(playerId: string): boolean {
+    return this.votePreselections.get(playerId) ?? false;
+  }
+
+  clearPreselections(): void {
+    this.votePreselections.clear();
   }
 
   // ── 공감자(Empath) 이웃 계산 ──

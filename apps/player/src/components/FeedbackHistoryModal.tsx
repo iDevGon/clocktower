@@ -50,8 +50,13 @@ export function FeedbackHistoryModal({
                   key={`${entry.day}-${entry.timestamp}`}
                   style={styles.entry}
                 >
-                  <Text style={styles.dayLabel}>{entry.day}일차 밤</Text>
-                  <FeedbackDisplay feedback={entry.feedback} />
+                  <View style={styles.dayLabelRow}>
+                    <View style={styles.dayLabelDot} />
+                    <Text style={styles.dayLabel}>{entry.day}일차 밤</Text>
+                  </View>
+                  <View style={styles.feedbackWrapper}>
+                    <FeedbackDisplay feedback={entry.feedback} compact />
+                  </View>
                 </View>
               ))}
             </ScrollView>
@@ -72,8 +77,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1e',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    maxHeight: '80%',
-    minHeight: 200,
+    maxHeight: '85%',
+    minHeight: 300,
   },
   header: {
     flexDirection: 'row',
@@ -113,21 +118,28 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    gap: 12,
+    gap: 16,
   },
   entry: {
-    backgroundColor: '#121214',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#2e2e34',
-    overflow: 'hidden',
+    gap: 8,
+  },
+  dayLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dayLabelDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#8090c0',
   },
   dayLabel: {
     color: '#8090c0',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    paddingBottom: 4,
+  },
+  feedbackWrapper: {
+    marginLeft: 16,
   },
 });

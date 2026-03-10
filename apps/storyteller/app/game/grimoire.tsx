@@ -24,7 +24,9 @@ import {
 } from '../../src/components/NightActionLog';
 import { NightOrderPanel } from '../../src/components/NightOrderPanel';
 import { PhaseBar } from '../../src/components/PhaseBar';
+import { ChatToast } from '../../src/components/ChatToast';
 import { StorytellerChatModal } from '../../src/components/StorytellerChatModal';
+import { VoteClockHand } from '../../src/components/VoteClockHand';
 import { VotePanel } from '../../src/components/VotePanel';
 import { useGameActions } from '../../src/hooks/useGameActions';
 import { useResponsive } from '../../src/hooks/useResponsive';
@@ -85,6 +87,7 @@ export default function GrimoireScreen() {
   const gameResult = useGameStore((s) => s.gameResult);
   const executedPlayerId = useGameStore((s) => s.lastExecutedPlayerId);
   const setExecutedPlayerId = useGameStore((s) => s.setLastExecutedPlayerId);
+  const voteClock = useGameStore((s) => s.voteClock);
 
   // Modal state
   const [modal, setModal] = useState<{
@@ -131,6 +134,7 @@ export default function GrimoireScreen() {
       ? gameState.nominations[gameState.nominations.length - 1]
       : null;
     rawCloseVote();
+    useGameStore.getState().setVoteClock(null);
     if (nom) {
       const nomineeName = getPlayerName(nom.nomineeId);
       const guiltyCount = Object.values(nom.votes).filter(Boolean).length;
@@ -360,7 +364,7 @@ export default function GrimoireScreen() {
     null,
   );
   const chatUnreadCounts = useGameStore((s) => s.chatUnreadCounts);
-  const totalChatUnread = Object.values(chatUnreadCounts).reduce(
+  const totalChatUnread = Object.values(chatUnreadCounts).reduce<number>(
     (a, b) => a + b,
     0,
   );
@@ -522,6 +526,8 @@ export default function GrimoireScreen() {
         (p.role?.id === 'drunk' && p.drunkAs === 'empath'),
     );
     if (!empathPlayer) return new Set<string>();
+    // 주정뱅이면 하이라이트 비활성화
+    if (empathPlayer.role?.id === 'drunk') return new Set<string>();
 
     const order = playerOrder;
     const empathIndex = order.indexOf(empathPlayer.id);
@@ -564,6 +570,41 @@ export default function GrimoireScreen() {
       ).length ?? 0
     );
   }, [empathNeighborIds, gameState?.players]);
+
+  // 요리사(Chef) 인접 악한 쌍 계산
+  const { chefEvilPairIds, chefEvilPairCount } = useMemo(() => {
+    if (gameState?.phase !== 'night' || activeNightRoleId !== 'chef')
+      return { chefEvilPairIds: new Set<string>(), chefEvilPairCount: 0 };
+    // 주정뱅이면 하이라이트 비활성화
+    const chefPlayer = gameState.players.find(
+      (p) =>
+        p.role?.id === 'chef' ||
+        (p.role?.id === 'drunk' && p.drunkAs === 'chef'),
+    );
+    if (chefPlayer?.role?.id === 'drunk')
+      return { chefEvilPairIds: new Set<string>(), chefEvilPairCount: 0 };
+    const order = playerOrder;
+    if (order.length < 2)
+      return { chefEvilPairIds: new Set<string>(), chefEvilPairCount: 0 };
+
+    const isEvil = (id: string) => {
+      const p = gameState.players.find((pl) => pl.id === id);
+      return p?.role?.team === 'minion' || p?.role?.team === 'demon';
+    };
+
+    const pairIds = new Set<string>();
+    let count = 0;
+    for (let i = 0; i < order.length; i++) {
+      const curr = order[i];
+      const next = order[(i + 1) % order.length];
+      if (isEvil(curr) && isEvil(next)) {
+        pairIds.add(curr);
+        pairIds.add(next);
+        count++;
+      }
+    }
+    return { chefEvilPairIds: pairIds, chefEvilPairCount: count };
+  }, [gameState?.phase, gameState?.players, activeNightRoleId, playerOrder]);
 
   const butlerMasterNames = useMemo(() => {
     if (!gameState?.butlerMasters) return {};
@@ -677,7 +718,7 @@ export default function GrimoireScreen() {
                 player={player}
                 statuses={playerStatuses[player.id]}
                 highlighted={player.id === executedPlayerId}
-                empathNeighbor={empathNeighborIds.has(player.id)}
+                empathNeighbor={empathNeighborIds.has(player.id) || chefEvilPairIds.has(player.id)}
                 butlerMasterName={butlerMasterNames[player.id]}
                 tokenSize={dynamicTokenSize}
                 initialX={pos.x}
@@ -694,6 +735,28 @@ export default function GrimoireScreen() {
               />
             );
           })}
+
+        {/* Vote clock hand overlay */}
+        {hasActiveVote && voteClock && areaSize.width > 0 && (() => {
+          const nomination = gameState?.nominations[gameState.nominations.length - 1];
+          if (!nomination) return null;
+          const nomineeIndex = playerOrder.indexOf(nomination.nomineeId);
+          if (nomineeIndex < 0) return null;
+          const total = playerOrder.length || gameState?.players.length || 0;
+          if (total === 0) return null;
+          const cX = areaSize.width / 2;
+          const cY = areaSize.height / 2;
+          const r = Math.min(cX, cY) - dynamicTokenSize * 0.6;
+          return (
+            <VoteClockHand
+              nomineeIndex={nomineeIndex}
+              totalPlayers={total}
+              centerX={cX}
+              centerY={cY}
+              radius={r}
+            />
+          );
+        })()}
       </View>
 
       {gameState.phase === 'night' && nightActions.length > 0 && (
@@ -785,6 +848,29 @@ export default function GrimoireScreen() {
                                 p.role?.team === 'demon',
                             })),
                           evilCount: empathEvilCount,
+                        }
+                      : undefined
+                  }
+                  chefHint={
+                    activeNightRoleId === 'chef'
+                      ? {
+                          evilPairCount: chefEvilPairCount,
+                          evilPairNames: (() => {
+                            const order = playerOrder;
+                            const pairs: string[][] = [];
+                            for (let i = 0; i < order.length; i++) {
+                              const curr = order[i];
+                              const next = order[(i + 1) % order.length];
+                              const cp = gameState.players.find((p) => p.id === curr);
+                              const np = gameState.players.find((p) => p.id === next);
+                              const isEvil = (p: typeof cp) =>
+                                p?.role?.team === 'minion' || p?.role?.team === 'demon';
+                              if (isEvil(cp) && isEvil(np)) {
+                                pairs.push([cp?.name ?? '', np?.name ?? '']);
+                              }
+                            }
+                            return pairs;
+                          })(),
                         }
                       : undefined
                   }
@@ -934,6 +1020,60 @@ export default function GrimoireScreen() {
         </View>
       )}
 
+      {/* 요리사 인접 악한 쌍 힌트 */}
+      {chefEvilPairIds.size > 0 && (
+        <View
+          style={{
+            backgroundColor: '#2a1a0a',
+            borderTopWidth: 1,
+            borderColor: '#4a2a0a',
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          <Text
+            style={{
+              color: '#e67e22',
+              fontSize: fontSize.sm,
+              fontWeight: '600',
+            }}
+          >
+            인접 악한 쌍:
+          </Text>
+          <Text style={{ color: '#e0ddd8', fontSize: fontSize.sm }}>
+            {(() => {
+              const order = playerOrder;
+              const pairs: string[] = [];
+              for (let i = 0; i < order.length; i++) {
+                const curr = order[i];
+                const next = order[(i + 1) % order.length];
+                const cp = gameState.players.find((p) => p.id === curr);
+                const np = gameState.players.find((p) => p.id === next);
+                const isEvil = (p: typeof cp) =>
+                  p?.role?.team === 'minion' || p?.role?.team === 'demon';
+                if (isEvil(cp) && isEvil(np)) {
+                  pairs.push(`${cp?.name}-${np?.name}`);
+                }
+              }
+              return pairs.join(', ') || '없음';
+            })()}
+          </Text>
+          <Text
+            style={{
+              color: '#f5c542',
+              fontSize: fontSize.md,
+              fontWeight: '700',
+            }}
+          >
+            {chefEvilPairCount}쌍
+          </Text>
+        </View>
+      )}
+
       {/* 게임 설정 패널 */}
       {settingsVisible && (
         <View
@@ -988,24 +1128,24 @@ export default function GrimoireScreen() {
                     fontWeight: '600',
                   }}
                 >
-                  밀담 방식
+                  채팅 밀담
                 </Text>
                 <Text style={{ color: '#908e8a', fontSize: fontSize.sm }}>
                   {gameState.settings.whisperMode === 'chat'
-                    ? '앱 내 채팅'
-                    : '오프라인 (직접 대면)'}
+                    ? 'ON — 앱 내 채팅'
+                    : 'OFF — 직접 대면만'}
                 </Text>
               </View>
               <Switch
-                value={gameState.settings.whisperMode === 'offline'}
+                value={gameState.settings.whisperMode === 'chat'}
                 onValueChange={(val) =>
                   handleSettingsChange({
-                    whisperMode: val ? 'offline' : 'chat',
+                    whisperMode: val ? 'chat' : 'offline',
                   })
                 }
                 trackColor={{ false: '#3a3a42', true: '#2a4a2a' }}
                 thumbColor={
-                  gameState.settings.whisperMode === 'offline'
+                  gameState.settings.whisperMode === 'chat'
                     ? '#2ecc71'
                     : '#908e8a'
                 }
@@ -1028,24 +1168,24 @@ export default function GrimoireScreen() {
                     fontWeight: '600',
                   }}
                 >
-                  투표 방식
+                  온라인 투표
                 </Text>
                 <Text style={{ color: '#908e8a', fontSize: fontSize.sm }}>
                   {gameState.settings.votingMode === 'online'
-                    ? '온라인 (앱 내 투표)'
-                    : '오프라인 (직접 투표)'}
+                    ? 'ON — 앱 내 투표'
+                    : 'OFF — 직접 투표'}
                 </Text>
               </View>
               <Switch
-                value={gameState.settings.votingMode === 'offline'}
+                value={gameState.settings.votingMode === 'online'}
                 onValueChange={(val) =>
                   handleSettingsChange({
-                    votingMode: val ? 'offline' : 'online',
+                    votingMode: val ? 'online' : 'offline',
                   })
                 }
                 trackColor={{ false: '#3a3a42', true: '#2a4a2a' }}
                 thumbColor={
-                  gameState.settings.votingMode === 'offline'
+                  gameState.settings.votingMode === 'online'
                     ? '#2ecc71'
                     : '#908e8a'
                 }
@@ -1083,6 +1223,13 @@ export default function GrimoireScreen() {
         }}
         onSend={sendChatToPlayer}
         initialPlayerId={chatInitialPlayerId}
+      />
+
+      <ChatToast
+        onPress={() => {
+          setChatInitialPlayerId(null);
+          setChatModalVisible(true);
+        }}
       />
 
       <ActionModal

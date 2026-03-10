@@ -1,6 +1,8 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useGameActions } from '../hooks/useGameActions';
 import { usePlayerStore } from '../stores/playerStore';
+import { VoteClockRing } from './VoteClockRing';
 import { styles } from './VotePrompt.styles';
 
 interface VotePromptProps {
@@ -9,15 +11,55 @@ interface VotePromptProps {
 }
 
 export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
-  const { castVote } = useGameActions();
-  const hasVoted = usePlayerStore((s) => s.hasVoted);
+  const { preselectVote } = useGameActions();
   const playerId = usePlayerStore((s) => s.playerId);
-  const voteTurn = usePlayerStore((s) => s.voteTurn);
-  const voteTimerMs = usePlayerStore((s) => s.voteTimerMs);
+  const voteClock = usePlayerStore((s) => s.voteClock);
+  const voteOrder = usePlayerStore((s) => s.voteOrder);
+  const votePreselections = usePlayerStore((s) => s.votePreselections);
 
-  const isMyVoteTurn = voteTurn?.playerId === playerId;
-  const timerSeconds =
-    voteTimerMs != null ? Math.ceil(voteTimerMs / 1000) : null;
+  const [, forceUpdate] = useState(0);
+
+  // Periodic re-render to track hand position
+  useEffect(() => {
+    if (!voteClock) return;
+    const interval = setInterval(() => forceUpdate((n) => n + 1), 200);
+    return () => clearInterval(interval);
+  }, [voteClock]);
+
+  // Compute whether the hand has passed my position
+  const myVoteState = useMemo(() => {
+    if (!voteClock || !voteOrder?.fullOrder) {
+      return { canVote: false, hasPassed: false };
+    }
+
+    const fullOrder = voteOrder.fullOrder;
+    const totalPlayers = fullOrder.length;
+    const nomineeId = voteOrder.nomineeId;
+    const nomineeFullIdx = fullOrder.findIndex((p) => p.id === nomineeId);
+    const myFullIdx = fullOrder.findIndex((p) => p.id === playerId);
+
+    if (nomineeFullIdx < 0 || myFullIdx < 0) {
+      return { canVote: false, hasPassed: false };
+    }
+
+    const myOffset = (myFullIdx - nomineeFullIdx + totalPlayers) % totalPlayers;
+    // nominee confirms at 360 (end of rotation)
+    const myConfirmFraction = myOffset === 0 ? 1 : myOffset / totalPlayers;
+
+    const elapsed = Date.now() - voteClock.startedAt;
+    const progress = Math.min(elapsed / voteClock.durationMs, 1);
+
+    const hasPassed = progress >= myConfirmFraction;
+    return { canVote: !hasPassed, hasPassed };
+  }, [voteClock, voteOrder, playerId]);
+
+  const myPreselection = votePreselections[playerId] ?? null;
+
+  const handleToggle = (guilty: boolean) => {
+    if (!myVoteState.canVote) return;
+    const newValue = myPreselection === guilty ? null : guilty;
+    preselectVote(newValue);
+  };
 
   return (
     <View style={styles.card}>
@@ -29,77 +71,60 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
         {'(을)를 지목했습니다'}
       </Text>
 
-      {voteTurn && (
-        <View
-          style={{
-            backgroundColor: isMyVoteTurn ? '#2a1a0a' : '#1a1a2a',
-            padding: 8,
-            borderRadius: 6,
-            marginTop: 8,
-            alignItems: 'center',
-          }}
-        >
-          <Text
-            style={{
-              color: isMyVoteTurn ? '#f5c542' : '#8090c0',
-              fontSize: 13,
-              fontWeight: '600',
-            }}
-          >
-            {isMyVoteTurn
-              ? '지금 당신의 투표 차례입니다!'
-              : `${voteTurn.playerName}의 투표 차례`}
-          </Text>
-          {timerSeconds != null && (
-            <Text
-              style={{
-                color: timerSeconds <= 3 ? '#e74c3c' : '#c0c8e0',
-                fontSize: 18,
-                fontWeight: '700',
-                marginTop: 4,
-                fontVariant: ['tabular-nums'],
-              }}
-            >
-              {timerSeconds}초
-            </Text>
-          )}
-        </View>
-      )}
+      <VoteClockRing />
 
-      {hasVoted ? (
-        <View style={styles.votedContainer}>
-          <Text style={styles.votedText}>투표 완료</Text>
-          <Text style={styles.votedSubtext}>결과를 기다리는 중...</Text>
-        </View>
-      ) : isMyVoteTurn || !voteTurn ? (
+      {myVoteState.canVote ? (
         <>
-          <Text style={styles.description}>판결을 내리세요.</Text>
+          <Text style={styles.description}>
+            시계 바늘이 지나가기 전에 찬반을 선택하세요.
+          </Text>
           <View style={styles.buttonRow}>
             <Pressable
-              style={({ pressed }) => [
+              style={[
                 styles.guiltyButton,
-                pressed && styles.guiltyButtonPressed,
+                myPreselection === true && styles.guiltyButtonSelected,
               ]}
-              onPress={() => castVote(true)}
+              onPress={() => handleToggle(true)}
             >
-              <Text style={styles.guiltyText}>유죄</Text>
+              <Text
+                style={[
+                  styles.guiltyText,
+                  myPreselection === true && styles.guiltyTextSelected,
+                ]}
+              >
+                유죄
+              </Text>
             </Pressable>
 
             <Pressable
-              style={({ pressed }) => [
+              style={[
                 styles.innocentButton,
-                pressed && styles.innocentButtonPressed,
+                myPreselection === false && styles.innocentButtonSelected,
               ]}
-              onPress={() => castVote(false)}
+              onPress={() => handleToggle(false)}
             >
-              <Text style={styles.innocentText}>무죄</Text>
+              <Text
+                style={[
+                  styles.innocentText,
+                  myPreselection === false && styles.innocentTextSelected,
+                ]}
+              >
+                무죄
+              </Text>
             </Pressable>
           </View>
+          {myPreselection == null && (
+            <Text style={styles.noSelectionHint}>
+              미선택 시 무죄로 처리됩니다
+            </Text>
+          )}
         </>
       ) : (
         <View style={styles.votedContainer}>
           <Text style={styles.votedSubtext}>
-            다른 플레이어의 투표를 기다리는 중...
+            {myVoteState.hasPassed
+              ? '투표 완료. 결과를 기다리는 중...'
+              : '다른 플레이어의 투표를 기다리는 중...'}
           </Text>
         </View>
       )}

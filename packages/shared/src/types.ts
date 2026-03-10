@@ -17,6 +17,7 @@ export interface Player {
   drunkAs?: string;
   isAlive: boolean;
   hasNominatedToday: boolean;
+  hasBeenNominatedToday: boolean;
   deadVoteUsed: boolean;
   statuses: PlayerStatus[];
 }
@@ -124,6 +125,8 @@ export type WinningTeam = 'good' | 'evil';
 export interface GameResult {
   winningTeam: WinningTeam;
   reason: string;
+  /** 승리 원인 (특수 연출용) */
+  cause?: 'slayer' | 'execution' | 'virgin';
   players: {
     id: string;
     name: string;
@@ -146,11 +149,13 @@ export interface WhisperMessage {
 export interface GameSettings {
   whisperMode: 'chat' | 'offline';
   votingMode: 'online' | 'offline';
+  voteClockSeconds: number;
 }
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
   whisperMode: 'chat',
   votingMode: 'online',
+  voteClockSeconds: 60,
 };
 
 export interface StorytellerMessage {
@@ -160,6 +165,22 @@ export interface StorytellerMessage {
   message: string;
   fromStoryteller: boolean;
   timestamp: number;
+}
+
+export type DeathReason = 'execution' | 'virgin' | 'slayer' | 'night_kill';
+
+export const DEATH_REASON_LABELS: Record<DeathReason, string> = {
+  execution: '투표로 처형됨',
+  virgin: '성녀의 능력으로 처형됨',
+  slayer: '사냥꾼에게 처형됨',
+  night_kill: '밤에 사망함',
+};
+
+export interface ExecutionAnnouncement {
+  executedId: string;
+  executedName: string;
+  reason: DeathReason;
+  detail: string;
 }
 
 export interface Edition {

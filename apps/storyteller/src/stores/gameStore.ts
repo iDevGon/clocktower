@@ -30,17 +30,27 @@ interface GameStore {
   playerStatuses: Record<string, PlayerStatus[]>;
   tokenPositions: Record<string, TokenPosition>;
   lastExecutedPlayerId: string | null;
+  voteClock: { startedAt: number; durationMs: number } | null;
+  votePreselections: Record<string, boolean | null>;
+  voteConfirmed: Record<string, boolean>;
   gameResult: GameResult | null;
   playerOrder: string[];
   chatMessages: Record<string, StorytellerMessage[]>;
   chatUnreadCounts: Record<string, number>;
   activeChatPlayerId: string | null;
+  chatToast: { playerName: string; message: string } | null;
+  showChatToast: (toast: { playerName: string; message: string }) => void;
+  dismissChatToast: () => void;
   setGameState: (state: GameState) => void;
   addNightAction: (action: NightAction) => void;
   clearNightActions: () => void;
   setActiveNightRoleId: (roleId: string | null) => void;
   setActiveWhispers: (whispers: ActiveWhisper[]) => void;
   setLastExecutedPlayerId: (id: string | null) => void;
+  setVoteClock: (clock: { startedAt: number; durationMs: number } | null) => void;
+  setVotePreselection: (playerId: string, guilty: boolean | null) => void;
+  setVoteConfirmed: (playerId: string, guilty: boolean) => void;
+  clearVotePreselections: () => void;
   addPlayerStatus: (playerId: string, status: PlayerStatus) => void;
   removePlayerStatus: (playerId: string, status: PlayerStatus) => void;
   clearPlayerStatuses: (playerId: string) => void;
@@ -52,7 +62,6 @@ interface GameStore {
   addChatMessage: (message: StorytellerMessage) => void;
   setActiveChatPlayerId: (playerId: string | null) => void;
   clearChatUnread: (playerId: string) => void;
-  totalChatUnread: () => number;
   reset: () => void;
 }
 
@@ -67,11 +76,17 @@ export const useGameStore = create<GameStore>()(
       playerStatuses: {},
       tokenPositions: {},
       lastExecutedPlayerId: null,
+      voteClock: null,
+      votePreselections: {},
+      voteConfirmed: {},
       gameResult: null,
       playerOrder: [],
       chatMessages: {},
       chatUnreadCounts: {},
       activeChatPlayerId: null,
+      chatToast: null,
+      showChatToast: (toast) => set({ chatToast: toast }),
+      dismissChatToast: () => set({ chatToast: null }),
       setGameState: (state) => {
         // 서버 상태의 player.statuses를 playerStatuses 스토어에 동기화
         const synced: Record<string, PlayerStatus[]> = {};
@@ -91,6 +106,16 @@ export const useGameStore = create<GameStore>()(
       setActiveNightRoleId: (roleId) => set({ activeNightRoleId: roleId }),
       setActiveWhispers: (whispers) => set({ activeWhispers: whispers }),
       setLastExecutedPlayerId: (id) => set({ lastExecutedPlayerId: id }),
+      setVoteClock: (clock) => set({ voteClock: clock }),
+      setVotePreselection: (playerId, guilty) =>
+        set((s) => ({
+          votePreselections: { ...s.votePreselections, [playerId]: guilty },
+        })),
+      setVoteConfirmed: (playerId, guilty) =>
+        set((s) => ({
+          voteConfirmed: { ...s.voteConfirmed, [playerId]: guilty },
+        })),
+      clearVotePreselections: () => set({ votePreselections: {}, voteConfirmed: {} }),
       addPlayerStatus: (playerId, status) =>
         set((s) => {
           const current = s.playerStatuses[playerId] ?? [];
@@ -149,10 +174,6 @@ export const useGameStore = create<GameStore>()(
         set((s) => ({
           chatUnreadCounts: { ...s.chatUnreadCounts, [playerId]: 0 },
         })),
-      totalChatUnread: () => {
-        const s = useGameStore.getState();
-        return Object.values(s.chatUnreadCounts).reduce((a, b) => a + b, 0);
-      },
       setTokenPosition: (playerId, pos) =>
         set((s) => ({
           tokenPositions: { ...s.tokenPositions, [playerId]: pos },
@@ -185,11 +206,15 @@ export const useGameStore = create<GameStore>()(
           playerStatuses: {},
           tokenPositions: {},
           lastExecutedPlayerId: null,
+          voteClock: null,
+          votePreselections: {},
+          voteConfirmed: {},
           gameResult: null,
           playerOrder: [],
           chatMessages: {},
           chatUnreadCounts: {},
           activeChatPlayerId: null,
+          chatToast: null,
         }),
     }),
     {
