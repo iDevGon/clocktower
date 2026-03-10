@@ -17,12 +17,15 @@ import {
 } from '../src/components/PhaseContent';
 import { PhaseIndicator } from '../src/components/PhaseIndicator';
 import { RoleCard } from '../src/components/RoleCard';
+import { StorytellerChatModal } from '../src/components/StorytellerChatModal';
+import { StorytellerChatToast } from '../src/components/StorytellerChatToast';
 import { VeiledRoleCard } from '../src/components/VeiledRoleCard';
 import { VotePrompt } from '../src/components/VotePrompt';
 import { VoteResult } from '../src/components/VoteResult';
 import { WhisperModal } from '../src/components/WhisperModal';
 import { WhisperToast } from '../src/components/WhisperToast';
 import { useGameActions } from '../src/hooks/useGameActions';
+import { useChatStore } from '../src/stores/chatStore';
 import { usePlayerStore } from '../src/stores/playerStore';
 import { useWhisperStore } from '../src/stores/whisperStore';
 import { styles } from '../src/styles/game.styles';
@@ -58,6 +61,7 @@ export default function GameScreen() {
   const {
     submitNightAction,
     sendWhisper,
+    sendChatToStoryteller,
     nominatePlayer,
     useSlayer: activateSlayer,
   } = useGameActions();
@@ -81,7 +85,9 @@ export default function GameScreen() {
   const [nominateModalVisible, setNominateModalVisible] = useState(false);
   const [slayerModalVisible, setSlayerModalVisible] = useState(false);
   const [feedbackHistoryVisible, setFeedbackHistoryVisible] = useState(false);
+  const [chatModalVisible, setChatModalVisible] = useState(false);
   const feedbackHistory = usePlayerStore((s) => s.feedbackHistory);
+  const chatUnreadCount = useChatStore((s) => s.unreadCount);
   const totalUnread = useWhisperStore((s) =>
     Object.values(s.unreadCounts).reduce((a, b) => a + b, 0),
   );
@@ -138,6 +144,39 @@ export default function GameScreen() {
             </Text>
           </View>
           <View style={styles.headerRight}>
+            {currentPhase !== 'setup' && (
+              <Pressable
+                onPress={() => setChatModalVisible(true)}
+                style={styles.feedbackHistoryButton}
+              >
+                <Text style={styles.feedbackHistoryIcon}>💬</Text>
+                {chatUnreadCount > 0 && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      right: -4,
+                      backgroundColor: '#c44',
+                      borderRadius: 8,
+                      minWidth: 16,
+                      height: 16,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: '#fff',
+                        fontSize: 10,
+                        fontWeight: '700',
+                      }}
+                    >
+                      {chatUnreadCount}
+                    </Text>
+                  </View>
+                )}
+              </Pressable>
+            )}
             {feedbackHistory.length > 0 && currentPhase !== 'setup' && (
               <Pressable
                 onPress={() => setFeedbackHistoryVisible(true)}
@@ -292,6 +331,14 @@ export default function GameScreen() {
         history={feedbackHistory}
         onClose={() => setFeedbackHistoryVisible(false)}
       />
+
+      <StorytellerChatModal
+        visible={chatModalVisible}
+        onClose={() => setChatModalVisible(false)}
+        onSend={sendChatToStoryteller}
+      />
+
+      <StorytellerChatToast onPress={() => setChatModalVisible(true)} />
     </View>
   );
 }

@@ -141,6 +141,15 @@ export interface WhisperMessage {
   timestamp: number;
 }
 
+export interface StorytellerMessage {
+  id: string;
+  playerId: string;
+  playerName: string;
+  message: string;
+  fromStoryteller: boolean;
+  timestamp: number;
+}
+
 export interface Edition {
   id: string;
   name: string;

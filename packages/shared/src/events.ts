@@ -8,6 +8,7 @@ import type {
   Player,
   PlayerInfo,
   PlayerStatus,
+  StorytellerMessage,
   WhisperMessage,
 } from './types';
 
@@ -70,6 +71,8 @@ export interface ServerToClientEvents {
       player2Name: string;
     }>,
   ) => void;
+  'chat:receiveFromStoryteller': (message: StorytellerMessage) => void;
+  'chat:receiveFromPlayer': (message: StorytellerMessage) => void;
 }
 
 export interface ClientToServerEvents {
@@ -112,6 +115,7 @@ export interface ClientToServerEvents {
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
   'push:register': (data: { token: string }) => void;
+  'chat:sendToStoryteller': (data: { message: string }) => void;
 }
 
 export interface StorytellerToServerEvents {
@@ -150,4 +154,5 @@ export interface StorytellerToServerEvents {
     playerId: string;
     statuses: PlayerStatus[];
   }) => void;
+  'chat:sendToPlayer': (data: { playerId: string; message: string }) => void;
 }

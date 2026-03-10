@@ -315,6 +315,29 @@ export function registerPlayerHandlers(
       console.log(`Whisper: ${fromPlayer.name} -> ${toPlayer.name}`);
     });
 
+    socket.on('chat:sendToStoryteller', ({ message }) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) return;
+
+      const player = game.getPlayer(playerId);
+      if (!player) return;
+
+      const chatMsg = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        playerId,
+        playerName: player.name,
+        message,
+        fromStoryteller: false,
+        timestamp: Date.now(),
+      };
+
+      // Send to storyteller
+      storytellerIo.emit('chat:receiveFromPlayer' as string, chatMsg);
+      // Echo back to sender
+      playerIo.to(playerId).emit('chat:receiveFromStoryteller', chatMsg);
+      console.log(`Chat ${player.name} -> ST: ${message}`);
+    });
+
     socket.on('push:register', ({ token }) => {
       const playerId = getPlayerIdFromSocket(socket);
       if (playerId) {

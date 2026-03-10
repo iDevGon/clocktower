@@ -2,6 +2,7 @@ import {
   type GameResult,
   getRoleById,
   type NightAction,
+  type StorytellerMessage,
 } from '@clocktower/shared';
 import { useCallback } from 'react';
 import { io } from 'socket.io-client';
@@ -70,6 +71,12 @@ export function useSocketConnection() {
             }>,
           ) => {
             useGameStore.getState().setActiveWhispers(chats);
+          },
+        );
+        newSocket.on(
+          'chat:receiveFromPlayer' as string,
+          (message: StorytellerMessage) => {
+            useGameStore.getState().addChatMessage(message);
           },
         );
 

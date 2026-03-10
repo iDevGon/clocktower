@@ -19,6 +19,7 @@ import {
 } from '../../src/components/NightActionLog';
 import { NightOrderPanel } from '../../src/components/NightOrderPanel';
 import { PhaseBar } from '../../src/components/PhaseBar';
+import { StorytellerChatModal } from '../../src/components/StorytellerChatModal';
 import { VotePanel } from '../../src/components/VotePanel';
 import { useGameActions } from '../../src/hooks/useGameActions';
 import { useResponsive } from '../../src/hooks/useResponsive';
@@ -66,6 +67,7 @@ export default function GrimoireScreen() {
     sendNightFeedback,
     createGame,
     setPlayerStatuses: syncPlayerStatuses,
+    sendChatToPlayer,
   } = useGameActions();
 
   // Execution highlight state
@@ -217,6 +219,14 @@ export default function GrimoireScreen() {
     playerName: string,
     isAlive: boolean,
   ) => {
+    const chatOption: ActionModalOption = {
+      text: `채팅${(chatUnreadCounts[playerId] ?? 0) > 0 ? ` (${chatUnreadCounts[playerId]})` : ''}`,
+      onPress: () => {
+        setChatInitialPlayerId(playerId);
+        setChatModalVisible(true);
+      },
+    };
+
     const options: ActionModalOption[] = isAlive
       ? [
           {
@@ -231,6 +241,7 @@ export default function GrimoireScreen() {
             text: '상태 관리',
             onPress: () => handleStatusMenu(playerId, playerName),
           },
+          chatOption,
           {
             text: '사망 처리',
             style: 'destructive',
@@ -244,6 +255,7 @@ export default function GrimoireScreen() {
             text: '상태 관리',
             onPress: () => handleStatusMenu(playerId, playerName),
           },
+          chatOption,
           { text: '취소', style: 'cancel' },
         ];
 
@@ -320,6 +332,17 @@ export default function GrimoireScreen() {
       { text: '닫기', style: 'cancel' },
     ]);
   };
+
+  // Chat state
+  const [chatModalVisible, setChatModalVisible] = useState(false);
+  const [chatInitialPlayerId, setChatInitialPlayerId] = useState<string | null>(
+    null,
+  );
+  const chatUnreadCounts = useGameStore((s) => s.chatUnreadCounts);
+  const totalChatUnread = Object.values(chatUnreadCounts).reduce(
+    (a, b) => a + b,
+    0,
+  );
 
   // Night feedback overlay state
   const [feedbackCollapsed, setFeedbackCollapsed] = useState(false);
@@ -465,6 +488,17 @@ export default function GrimoireScreen() {
                 <Text style={styles.nominateText}>지목 (수동)</Text>
               </Pressable>
             )}
+          <Pressable
+            onPress={() => {
+              setChatInitialPlayerId(null);
+              setChatModalVisible(true);
+            }}
+            style={styles.logButton}
+          >
+            <Text style={styles.logText}>
+              채팅{totalChatUnread > 0 ? ` (${totalChatUnread})` : ''}
+            </Text>
+          </Pressable>
           <Pressable
             onPress={() => router.push('/game/log')}
             style={styles.logButton}
@@ -697,6 +731,16 @@ export default function GrimoireScreen() {
             handleSetPhase('night');
           }
         }}
+      />
+
+      <StorytellerChatModal
+        visible={chatModalVisible}
+        onClose={() => {
+          setChatModalVisible(false);
+          setChatInitialPlayerId(null);
+        }}
+        onSend={sendChatToPlayer}
+        initialPlayerId={chatInitialPlayerId}
       />
 
       <ActionModal
