@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type {
   DaySubPhase,
   GameResult,
+  GameSettings,
   GameState,
   Nomination,
   Phase,
@@ -9,7 +10,7 @@ import type {
   PlayerStatus,
   Role,
 } from '@clocktower/shared';
-import { getRoleById } from '@clocktower/shared';
+import { DEFAULT_GAME_SETTINGS, getRoleById } from '@clocktower/shared';
 
 /** 플레이어가 중독 또는 취함 상태인지 확인 (능력 무효화 판정용) */
 function isPoisonedOrDrunk(player: Player): boolean {
@@ -27,7 +28,13 @@ export class GameManager {
     players: [],
     nominations: [],
     started: false,
+    playerOrder: [],
+    settings: { ...DEFAULT_GAME_SETTINGS },
   };
+
+  // 시계방향 투표 관련 상태
+  private voteTimer: ReturnType<typeof setInterval> | null = null;
+  private voteTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // 집사의 주인 추적 (butlerPlayerId → masterPlayerId)
   private butlerMasters = new Map<string, string>();
@@ -57,6 +64,8 @@ export class GameManager {
       players: [],
       nominations: [],
       started: false,
+      playerOrder: [],
+      settings: { ...DEFAULT_GAME_SETTINGS },
     };
     this.butlerMasters.clear();
     this.nightActionTargets.clear();
@@ -67,6 +76,7 @@ export class GameManager {
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
     this.fortuneTellerRedHerring = null;
+    this.clearVoteTimer();
     return id;
   }
 
@@ -79,6 +89,8 @@ export class GameManager {
       players: [],
       nominations: [],
       started: false,
+      playerOrder: [],
+      settings: { ...DEFAULT_GAME_SETTINGS },
     };
     this.clearInternalState();
   }
@@ -103,6 +115,8 @@ export class GameManager {
       players,
       nominations: [],
       started: false,
+      playerOrder: players.map((p) => p.id),
+      settings: this.state.settings,
     };
     this.clearInternalState();
     return id;
@@ -118,6 +132,7 @@ export class GameManager {
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
     this.fortuneTellerRedHerring = null;
+    this.clearVoteTimer();
   }
 
   getState(): GameState {
@@ -148,11 +163,13 @@ export class GameManager {
       statuses: [],
     };
     this.state.players.push(player);
+    this.state.playerOrder.push(player.id);
     return player;
   }
 
   clearPlayers(): void {
     this.state.players = [];
+    this.state.playerOrder = [];
   }
 
   start(): { success: boolean; error?: string } {
@@ -576,11 +593,123 @@ export class GameManager {
 
     const nominee = this.getPlayer(current.nomineeId);
 
+    this.clearVoteTimer();
+
     return {
       nomineeId: current.nomineeId,
       nomineeName: nominee?.name ?? current.nomineeId,
       guilty,
       votes: current.votes,
     };
+  }
+
+  // ── 게임 설정 ──
+
+  getSettings(): GameSettings {
+    return this.state.settings;
+  }
+
+  setSettings(partial: Partial<GameSettings>): void {
+    this.state.settings = { ...this.state.settings, ...partial };
+  }
+
+  // ── 플레이어 순서 (시계방향) ──
+
+  getPlayerOrder(): string[] {
+    return this.state.playerOrder;
+  }
+
+  setPlayerOrder(order: string[]): void {
+    this.state.playerOrder = order;
+  }
+
+  /**
+   * 시계방향 투표 순서 반환: 지명된 플레이어부터 시계방향으로 순서대로.
+   * playerOrder 기준으로 nomineeId 다음 위치부터 순회.
+   */
+  getClockwiseVoteOrder(nomineeId: string): string[] {
+    const order = this.state.playerOrder;
+    if (order.length === 0) return [];
+
+    const nomineeIndex = order.indexOf(nomineeId);
+    if (nomineeIndex === -1) return [];
+
+    const result: string[] = [];
+    for (let i = 1; i < order.length; i++) {
+      const idx = (nomineeIndex + i) % order.length;
+      const playerId = order[idx];
+      const player = this.getPlayer(playerId);
+      if (player?.isAlive) {
+        result.push(playerId);
+      }
+    }
+    return result;
+  }
+
+  // ── 시계방향 투표 타이머 관리 ──
+
+  clearVoteTimer(): void {
+    if (this.voteTimer) {
+      clearInterval(this.voteTimer);
+      this.voteTimer = null;
+    }
+    if (this.voteTimeout) {
+      clearTimeout(this.voteTimeout);
+      this.voteTimeout = null;
+    }
+  }
+
+  setVoteTimerRef(
+    timer: ReturnType<typeof setInterval> | null,
+    timeout: ReturnType<typeof setTimeout> | null,
+  ): void {
+    this.voteTimer = timer;
+    this.voteTimeout = timeout;
+  }
+
+  // ── 공감자(Empath) 이웃 계산 ──
+
+  /**
+   * 공감자의 살아있는 양쪽 이웃을 찾고 악한 이웃 수를 계산합니다.
+   * playerOrder 기준으로 양 방향 가장 가까운 살아있는 플레이어를 반환합니다.
+   */
+  getEmpathNeighborInfo(empathPlayerId: string): {
+    neighbors: { id: string; name: string; isEvil: boolean }[];
+    evilCount: number;
+  } {
+    const order = this.state.playerOrder;
+    const empathIndex = order.indexOf(empathPlayerId);
+    if (empathIndex === -1) return { neighbors: [], evilCount: 0 };
+
+    const neighbors: { id: string; name: string; isEvil: boolean }[] = [];
+
+    // 시계방향 (오른쪽) 탐색
+    for (let i = 1; i < order.length; i++) {
+      const idx = (empathIndex + i) % order.length;
+      const player = this.getPlayer(order[idx]);
+      if (player?.isAlive) {
+        const isEvil =
+          player.role?.team === 'minion' || player.role?.team === 'demon';
+        neighbors.push({ id: player.id, name: player.name, isEvil });
+        break;
+      }
+    }
+
+    // 반시계방향 (왼쪽) 탐색
+    for (let i = 1; i < order.length; i++) {
+      const idx = (empathIndex - i + order.length) % order.length;
+      const player = this.getPlayer(order[idx]);
+      if (player?.isAlive) {
+        // 같은 플레이어가 양쪽 이웃일 수 있음 (2명만 살아있는 경우)
+        if (neighbors.length > 0 && neighbors[0].id === player.id) break;
+        const isEvil =
+          player.role?.team === 'minion' || player.role?.team === 'demon';
+        neighbors.push({ id: player.id, name: player.name, isEvil });
+        break;
+      }
+    }
+
+    const evilCount = neighbors.filter((n) => n.isEvil).length;
+    return { neighbors, evilCount };
   }
 }

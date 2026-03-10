@@ -46,10 +46,16 @@ const TEAM_CARD_COLORS: Record<
 
 const FALLBACK_CARD_COLORS = TEAM_CARD_COLORS.townsfolk;
 
+interface EmpathHint {
+  neighbors: { id: string; name: string; isEvil: boolean }[];
+  evilCount: number;
+}
+
 interface NightFeedbackPanelProps {
   activeRoleId: string | null;
   players: Player[];
   nightActions?: NightAction[];
+  empathHint?: EmpathHint;
   onSendFeedback: (playerId: string, feedback: NightFeedbackPayload) => void;
 }
 
@@ -57,6 +63,7 @@ export function NightFeedbackPanel({
   activeRoleId,
   players,
   nightActions,
+  empathHint,
   onSendFeedback,
 }: NightFeedbackPanelProps) {
   const { fontSize } = useResponsive();
@@ -191,6 +198,26 @@ export function NightFeedbackPanel({
                 </View>
               );
             })()}
+
+          {activeRoleId === 'empath' &&
+            empathHint &&
+            empathHint.neighbors.length > 0 && (
+              <View
+                style={[
+                  styles.drunkBanner,
+                  {
+                    backgroundColor: 'rgba(46,204,113,0.15)',
+                    borderColor: '#2ecc71',
+                  },
+                ]}
+              >
+                <Text style={[styles.drunkBannerText, { color: '#2ecc71' }]}>
+                  이웃: {empathHint.neighbors.map((n) => n.name).join(', ')} →
+                  악한 {empathHint.evilCount}명
+                  {isDrunk ? ' (주정뱅이 - 가짜 정보 제공)' : ''}
+                </Text>
+              </View>
+            )}
 
           <FeedbackComposer
             feedbackDef={feedbackDef}

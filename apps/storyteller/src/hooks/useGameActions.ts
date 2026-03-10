@@ -1,5 +1,6 @@
 import type {
   DaySubPhase,
+  GameSettings,
   NightFeedbackPayload,
   Phase,
   PlayerStatus,
@@ -139,6 +140,17 @@ export function useGameActions() {
     [socket],
   );
 
+  const setGameSettings = useCallback(
+    (settings: Partial<GameSettings>) =>
+      socket?.emit('game:setSettings', settings),
+    [socket],
+  );
+
+  const setPlayerOrder = useCallback(
+    (order: string[]) => socket?.emit('game:setPlayerOrder', order),
+    [socket],
+  );
+
   return {
     createGame,
     startGame,
@@ -158,5 +170,7 @@ export function useGameActions() {
     addDummyPlayers,
     removeDummyPlayers,
     setPlayerStatuses,
+    setGameSettings,
+    setPlayerOrder,
   };
 }

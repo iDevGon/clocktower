@@ -72,6 +72,15 @@ export function useSocketConnection() {
             useGameStore.getState().setActiveWhispers(chats);
           },
         );
+        newSocket.on('slayer:declared', () => {
+          // handled via game:state
+        });
+        newSocket.on('vote:turn', () => {
+          // vote turn info is handled via storyteller's game:state
+        });
+        newSocket.on('vote:timer', () => {
+          // timer info is handled via storyteller's game:state
+        });
 
         setSocket(newSocket);
         useConnectionStore.getState().setServerUrl(serverUrl);

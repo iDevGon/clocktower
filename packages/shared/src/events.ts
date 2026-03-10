@@ -1,6 +1,7 @@
 import type {
   DaySubPhase,
   GameResult,
+  GameSettings,
   GameState,
   NightAction,
   NightFeedbackPayload,
@@ -70,6 +71,13 @@ export interface ServerToClientEvents {
       player2Name: string;
     }>,
   ) => void;
+  'game:settings': (settings: GameSettings) => void;
+  'vote:turn': (data: {
+    playerId: string;
+    playerName: string;
+    timeLimit: number;
+  }) => void;
+  'vote:timer': (data: { remainingMs: number }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -150,4 +158,6 @@ export interface StorytellerToServerEvents {
     playerId: string;
     statuses: PlayerStatus[];
   }) => void;
+  'game:setSettings': (settings: Partial<GameSettings>) => void;
+  'game:setPlayerOrder': (order: string[]) => void;
 }

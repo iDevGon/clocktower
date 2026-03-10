@@ -53,6 +53,7 @@ export default function GameScreen() {
     justDied,
     slayerUsed,
     evilInfo,
+    gameSettings,
   } = usePlayerStore();
   const dismissDeath = usePlayerStore((s) => s.set);
   const {
@@ -186,6 +187,7 @@ export default function GameScreen() {
         <WhisperPhase
           visible={currentPhase === 'day' && daySubPhase === 'whisper'}
           totalUnread={totalUnread}
+          whisperMode={gameSettings?.whisperMode}
           onOpenWhisper={() => setWhisperModalVisible(true)}
         />
 
@@ -197,6 +199,7 @@ export default function GameScreen() {
           visible={currentPhase === 'day' && daySubPhase === 'nomination'}
           isAlive={isAlive}
           hasNominatedToday={hasNominatedToday}
+          votingMode={gameSettings?.votingMode}
           onOpenNominate={() => setNominateModalVisible(true)}
         />
 

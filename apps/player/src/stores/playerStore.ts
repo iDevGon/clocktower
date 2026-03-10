@@ -1,6 +1,7 @@
 import type {
   DaySubPhase,
   GameResult,
+  GameSettings,
   NightFeedbackPayload,
   Phase,
   PlayerInfo,
@@ -44,6 +45,12 @@ export interface FeedbackHistoryEntry {
   timestamp: number;
 }
 
+interface VoteTurn {
+  playerId: string;
+  playerName: string;
+  timeLimit: number;
+}
+
 interface PlayerState {
   playerId: string;
   playerName: string;
@@ -67,6 +74,9 @@ interface PlayerState {
   gameResult: GameResult | null;
   justDied: boolean;
   slayerUsed: boolean;
+  gameSettings: GameSettings | null;
+  voteTurn: VoteTurn | null;
+  voteTimerMs: number | null;
   set: (partial: Partial<PlayerState>) => void;
   addFeedback: (day: number, feedback: NightFeedbackPayload) => void;
   reset: () => void;
@@ -95,6 +105,9 @@ const initialState = {
   gameResult: null,
   justDied: false,
   slayerUsed: false,
+  gameSettings: null as GameSettings | null,
+  voteTurn: null as VoteTurn | null,
+  voteTimerMs: null as number | null,
 };
 
 export const usePlayerStore = create<PlayerState>()(

@@ -194,4 +194,23 @@ export function attachListeners(socket: AppSocket) {
   socket.on('virgin:triggered', () => {
     vibrateAlert();
   });
+
+  socket.on('game:settings', (settings) => {
+    usePlayerStore.getState().set({ gameSettings: settings });
+  });
+
+  socket.on('vote:turn', (data) => {
+    usePlayerStore.getState().set({
+      voteTurn: data,
+      voteTimerMs: data.timeLimit,
+    });
+    const { playerId } = usePlayerStore.getState();
+    if (data.playerId === playerId) {
+      vibrateAlert();
+    }
+  });
+
+  socket.on('vote:timer', ({ remainingMs }) => {
+    usePlayerStore.getState().set({ voteTimerMs: remainingMs });
+  });
 }

@@ -30,6 +30,7 @@ interface GameStore {
   tokenPositions: Record<string, TokenPosition>;
   lastExecutedPlayerId: string | null;
   gameResult: GameResult | null;
+  playerOrder: string[];
   setGameState: (state: GameState) => void;
   addNightAction: (action: NightAction) => void;
   clearNightActions: () => void;
@@ -42,6 +43,8 @@ interface GameStore {
   setGameResult: (result: GameResult | null) => void;
   setTokenPosition: (playerId: string, pos: TokenPosition) => void;
   clearTokenPositions: () => void;
+  setPlayerOrder: (order: string[]) => void;
+  swapPlayerOrder: (fromIndex: number, toIndex: number) => void;
   reset: () => void;
 }
 
@@ -57,6 +60,7 @@ export const useGameStore = create<GameStore>()(
       tokenPositions: {},
       lastExecutedPlayerId: null,
       gameResult: null,
+      playerOrder: [],
       setGameState: (state) => {
         // 서버 상태의 player.statuses를 playerStatuses 스토어에 동기화
         const synced: Record<string, PlayerStatus[]> = {};
@@ -67,6 +71,7 @@ export const useGameStore = create<GameStore>()(
           gameState: state,
           gameId: state.id,
           playerStatuses: synced,
+          playerOrder: state.playerOrder ?? [],
         });
       },
       addNightAction: (action) =>
@@ -107,6 +112,23 @@ export const useGameStore = create<GameStore>()(
           tokenPositions: { ...s.tokenPositions, [playerId]: pos },
         })),
       clearTokenPositions: () => set({ tokenPositions: {} }),
+      setPlayerOrder: (order) => set({ playerOrder: order }),
+      swapPlayerOrder: (fromIndex, toIndex) =>
+        set((s) => {
+          const order = [...s.playerOrder];
+          if (
+            fromIndex >= 0 &&
+            fromIndex < order.length &&
+            toIndex >= 0 &&
+            toIndex < order.length
+          ) {
+            [order[fromIndex], order[toIndex]] = [
+              order[toIndex],
+              order[fromIndex],
+            ];
+          }
+          return { playerOrder: order };
+        }),
       reset: () =>
         set({
           gameId: null,
@@ -118,6 +140,7 @@ export const useGameStore = create<GameStore>()(
           tokenPositions: {},
           lastExecutedPlayerId: null,
           gameResult: null,
+          playerOrder: [],
         }),
     }),
     {
@@ -130,6 +153,7 @@ export const useGameStore = create<GameStore>()(
         tokenPositions: state.tokenPositions,
         activeNightRoleId: state.activeNightRoleId,
         nightActions: state.nightActions,
+        playerOrder: state.playerOrder,
       }),
     },
   ),

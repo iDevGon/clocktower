@@ -1,4 +1,5 @@
 import {
+  type GameSettings,
   getRoleById,
   NIGHT_FEEDBACK,
   PLAYER_STATUS_LABELS,
@@ -6,13 +7,16 @@ import {
 } from '@clocktower/shared';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Switch, Text, View } from 'react-native';
 import {
   ActionModal,
   type ActionModalOption,
 } from '../../src/components/ActionModal';
 import { DaySubPhaseBar } from '../../src/components/DaySubPhaseBar';
-import { DraggablePlayerToken } from '../../src/components/DraggablePlayerToken';
+import {
+  type CircularPosition,
+  DraggablePlayerToken,
+} from '../../src/components/DraggablePlayerToken';
 import {
   NightActionLog,
   NightFeedbackPanel,
@@ -66,7 +70,13 @@ export default function GrimoireScreen() {
     sendNightFeedback,
     createGame,
     setPlayerStatuses: syncPlayerStatuses,
+    setGameSettings,
+    setPlayerOrder: syncPlayerOrder,
   } = useGameActions();
+
+  const playerOrder = useGameStore((s) => s.playerOrder);
+  const swapPlayerOrder = useGameStore((s) => s.swapPlayerOrder);
+  const [settingsVisible, setSettingsVisible] = useState(false);
 
   // Execution highlight state
   const gameResult = useGameStore((s) => s.gameResult);
@@ -301,6 +311,10 @@ export default function GrimoireScreen() {
         onPress: () => router.push('/game/log'),
       },
       {
+        text: '게임 설정',
+        onPress: () => setSettingsVisible(true),
+      },
+      {
         text: '토큰 위치 초기화',
         onPress: () => {
           useGameStore.getState().clearTokenPositions();
@@ -319,6 +333,10 @@ export default function GrimoireScreen() {
       },
       { text: '닫기', style: 'cancel' },
     ]);
+  };
+
+  const handleSettingsChange = (partial: Partial<GameSettings>) => {
+    setGameSettings(partial);
   };
 
   // Night feedback overlay state
@@ -368,7 +386,6 @@ export default function GrimoireScreen() {
   }, [activeNightRoleId, gameState?.players]);
 
   const [areaSize, setAreaSize] = useState({ width: 0, height: 0 });
-  const tokenPositions = useGameStore((s) => s.tokenPositions);
 
   const { tokenSize: defaultTokenSize } = useResponsive();
   const dynamicTokenSize = useMemo(() => {
@@ -386,30 +403,141 @@ export default function GrimoireScreen() {
     return Math.max(40, Math.min(defaultTokenSize, fitSize, heightFit));
   }, [areaSize, defaultTokenSize, gameState?.players.length]);
 
-  const getTokenPosition = useCallback(
-    (playerId: string, index: number, total: number) => {
-      const saved = tokenPositions[playerId];
-      if (saved) return saved;
+  // 원형 위치 계산 (playerOrder 기준)
+  const circularPositions = useMemo(() => {
+    if (areaSize.width === 0 || areaSize.height === 0) return [];
+    const total = playerOrder.length || gameState?.players.length || 0;
+    if (total === 0) return [];
+    const centerX = areaSize.width / 2;
+    const centerY = areaSize.height / 2;
+    const radius = Math.min(centerX, centerY) - dynamicTokenSize * 0.6;
+    const positions: CircularPosition[] = [];
+    for (let i = 0; i < total; i++) {
+      const angle = (i / total) * 2 * Math.PI - Math.PI / 2;
+      positions.push({
+        x: centerX + radius * Math.cos(angle),
+        y: centerY + radius * Math.sin(angle),
+        index: i,
+      });
+    }
+    return positions;
+  }, [
+    areaSize,
+    dynamicTokenSize,
+    playerOrder.length,
+    gameState?.players.length,
+  ]);
 
-      // Default: arrange in a circle
+  const getTokenPosition = useCallback(
+    (playerId: string, index: number, _total: number) => {
+      // playerOrder에서의 인덱스로 원형 위치 결정
+      const orderIndex = playerOrder.indexOf(playerId);
+      const effectiveIndex = orderIndex >= 0 ? orderIndex : index;
+
+      if (circularPositions.length > effectiveIndex) {
+        const pos = circularPositions[effectiveIndex];
+        return { x: pos.x, y: pos.y };
+      }
+
+      // 폴백: 원형 배치
       const centerX = areaSize.width / 2;
       const centerY = areaSize.height / 2;
+      const total = gameState?.players.length ?? 1;
       const radius = Math.min(centerX, centerY) - dynamicTokenSize * 0.6;
-      const angle = (index / total) * 2 * Math.PI - Math.PI / 2;
+      const angle = (effectiveIndex / total) * 2 * Math.PI - Math.PI / 2;
       return {
         x: centerX + radius * Math.cos(angle),
         y: centerY + radius * Math.sin(angle),
       };
     },
-    [tokenPositions, areaSize, dynamicTokenSize],
+    [
+      playerOrder,
+      circularPositions,
+      areaSize,
+      dynamicTokenSize,
+      gameState?.players.length,
+    ],
+  );
+
+  const handleSwap = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      swapPlayerOrder(fromIndex, toIndex);
+      const newOrder = [...playerOrder];
+      if (
+        fromIndex >= 0 &&
+        fromIndex < newOrder.length &&
+        toIndex >= 0 &&
+        toIndex < newOrder.length
+      ) {
+        [newOrder[fromIndex], newOrder[toIndex]] = [
+          newOrder[toIndex],
+          newOrder[fromIndex],
+        ];
+      }
+      syncPlayerOrder(newOrder);
+    },
+    [swapPlayerOrder, playerOrder, syncPlayerOrder],
   );
 
   const handlePositionChange = useCallback(
-    (playerId: string, x: number, y: number) => {
-      useGameStore.getState().setTokenPosition(playerId, { x, y });
+    (_playerId: string, _x: number, _y: number) => {
+      // 원형 레이아웃에서는 스냅/스왑만 사용하므로 자유 이동 비활성화
     },
     [],
   );
+
+  // 공감자(Empath) 이웃 하이라이트
+  const empathNeighborIds = useMemo(() => {
+    if (gameState?.phase !== 'night' || activeNightRoleId !== 'empath')
+      return new Set<string>();
+    const empathPlayer = gameState.players.find(
+      (p) =>
+        p.role?.id === 'empath' ||
+        (p.role?.id === 'drunk' && p.drunkAs === 'empath'),
+    );
+    if (!empathPlayer) return new Set<string>();
+
+    const order = playerOrder;
+    const empathIndex = order.indexOf(empathPlayer.id);
+    if (empathIndex === -1) return new Set<string>();
+
+    const neighbors = new Set<string>();
+
+    // 시계방향 탐색
+    for (let i = 1; i < order.length; i++) {
+      const idx = (empathIndex + i) % order.length;
+      const p = gameState.players.find((pl) => pl.id === order[idx]);
+      if (p?.isAlive) {
+        neighbors.add(p.id);
+        break;
+      }
+    }
+
+    // 반시계방향 탐색
+    for (let i = 1; i < order.length; i++) {
+      const idx = (empathIndex - i + order.length) % order.length;
+      const p = gameState.players.find((pl) => pl.id === order[idx]);
+      if (p?.isAlive) {
+        if (neighbors.has(p.id)) break; // 같은 플레이어 (2명만 생존)
+        neighbors.add(p.id);
+        break;
+      }
+    }
+
+    return neighbors;
+  }, [gameState?.phase, gameState?.players, activeNightRoleId, playerOrder]);
+
+  // 공감자 악한 이웃 수 계산
+  const empathEvilCount = useMemo(() => {
+    if (empathNeighborIds.size === 0) return 0;
+    return (
+      gameState?.players.filter(
+        (p) =>
+          empathNeighborIds.has(p.id) &&
+          (p.role?.team === 'minion' || p.role?.team === 'demon'),
+      ).length ?? 0
+    );
+  }, [empathNeighborIds, gameState?.players]);
 
   const butlerMasterNames = useMemo(() => {
     if (!gameState?.butlerMasters) return {};
@@ -493,6 +621,8 @@ export default function GrimoireScreen() {
       >
         {areaSize.width > 0 &&
           gameState.players.map((player, index) => {
+            const orderIndex = playerOrder.indexOf(player.id);
+            const effectiveIndex = orderIndex >= 0 ? orderIndex : index;
             const pos = getTokenPosition(
               player.id,
               index,
@@ -504,16 +634,20 @@ export default function GrimoireScreen() {
                 player={player}
                 statuses={playerStatuses[player.id]}
                 highlighted={player.id === executedPlayerId}
+                empathNeighbor={empathNeighborIds.has(player.id)}
                 butlerMasterName={butlerMasterNames[player.id]}
                 tokenSize={dynamicTokenSize}
                 initialX={pos.x}
                 initialY={pos.y}
+                circularPositions={circularPositions}
+                positionIndex={effectiveIndex}
                 onPress={() =>
                   handlePlayerPress(player.id, player.name, player.isAlive)
                 }
                 onPositionChange={(x, y) =>
                   handlePositionChange(player.id, x, y)
                 }
+                onSwap={handleSwap}
               />
             );
           })}
@@ -595,6 +729,22 @@ export default function GrimoireScreen() {
                   activeRoleId={activeNightRoleId}
                   players={gameState.players}
                   nightActions={nightActions}
+                  empathHint={
+                    activeNightRoleId === 'empath' && empathNeighborIds.size > 0
+                      ? {
+                          neighbors: gameState.players
+                            .filter((p) => empathNeighborIds.has(p.id))
+                            .map((p) => ({
+                              id: p.id,
+                              name: p.name,
+                              isEvil:
+                                p.role?.team === 'minion' ||
+                                p.role?.team === 'demon',
+                            })),
+                          evilCount: empathEvilCount,
+                        }
+                      : undefined
+                  }
                   onSendFeedback={(playerId, fb) => {
                     sendNightFeedback(playerId, fb);
                     setFeedbackSentForRole(activeNightRoleId);
@@ -698,6 +848,189 @@ export default function GrimoireScreen() {
           }
         }}
       />
+
+      {/* 공감자 이웃 정보 힌트 */}
+      {empathNeighborIds.size > 0 && (
+        <View
+          style={{
+            backgroundColor: '#1a2a1a',
+            borderTopWidth: 1,
+            borderColor: '#2a4a2a',
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          <Text
+            style={{
+              color: '#2ecc71',
+              fontSize: fontSize.sm,
+              fontWeight: '600',
+            }}
+          >
+            공감자 이웃:
+          </Text>
+          <Text style={{ color: '#e0ddd8', fontSize: fontSize.sm }}>
+            {gameState.players
+              .filter((p) => empathNeighborIds.has(p.id))
+              .map((p) => p.name)
+              .join(', ')}
+          </Text>
+          <Text
+            style={{
+              color: '#f5c542',
+              fontSize: fontSize.md,
+              fontWeight: '700',
+            }}
+          >
+            악한 {empathEvilCount}명
+          </Text>
+        </View>
+      )}
+
+      {/* 게임 설정 패널 */}
+      {settingsVisible && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            zIndex: 500,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: '#1e1e24',
+              borderRadius: 12,
+              padding: 24,
+              width: '80%',
+              maxWidth: 400,
+              borderWidth: 1,
+              borderColor: '#3a3a42',
+            }}
+          >
+            <Text
+              style={{
+                color: '#e0ddd8',
+                fontSize: fontSize.lg,
+                fontWeight: '700',
+                marginBottom: 20,
+                textAlign: 'center',
+              }}
+            >
+              게임 설정
+            </Text>
+
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 16,
+              }}
+            >
+              <View>
+                <Text
+                  style={{
+                    color: '#e0ddd8',
+                    fontSize: fontSize.md,
+                    fontWeight: '600',
+                  }}
+                >
+                  밀담 방식
+                </Text>
+                <Text style={{ color: '#908e8a', fontSize: fontSize.sm }}>
+                  {gameState.settings.whisperMode === 'chat'
+                    ? '앱 내 채팅'
+                    : '오프라인 (직접 대면)'}
+                </Text>
+              </View>
+              <Switch
+                value={gameState.settings.whisperMode === 'offline'}
+                onValueChange={(val) =>
+                  handleSettingsChange({
+                    whisperMode: val ? 'offline' : 'chat',
+                  })
+                }
+                trackColor={{ false: '#3a3a42', true: '#2a4a2a' }}
+                thumbColor={
+                  gameState.settings.whisperMode === 'offline'
+                    ? '#2ecc71'
+                    : '#908e8a'
+                }
+              />
+            </View>
+
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 24,
+              }}
+            >
+              <View>
+                <Text
+                  style={{
+                    color: '#e0ddd8',
+                    fontSize: fontSize.md,
+                    fontWeight: '600',
+                  }}
+                >
+                  투표 방식
+                </Text>
+                <Text style={{ color: '#908e8a', fontSize: fontSize.sm }}>
+                  {gameState.settings.votingMode === 'online'
+                    ? '온라인 (앱 내 투표)'
+                    : '오프라인 (직접 투표)'}
+                </Text>
+              </View>
+              <Switch
+                value={gameState.settings.votingMode === 'offline'}
+                onValueChange={(val) =>
+                  handleSettingsChange({
+                    votingMode: val ? 'offline' : 'online',
+                  })
+                }
+                trackColor={{ false: '#3a3a42', true: '#2a4a2a' }}
+                thumbColor={
+                  gameState.settings.votingMode === 'offline'
+                    ? '#2ecc71'
+                    : '#908e8a'
+                }
+              />
+            </View>
+
+            <Pressable
+              onPress={() => setSettingsVisible(false)}
+              style={{
+                backgroundColor: '#2a2a34',
+                paddingVertical: 12,
+                borderRadius: 8,
+                alignItems: 'center',
+              }}
+            >
+              <Text
+                style={{
+                  color: '#e0ddd8',
+                  fontSize: fontSize.md,
+                  fontWeight: '600',
+                }}
+              >
+                닫기
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
 
       <ActionModal
         visible={modal.visible}

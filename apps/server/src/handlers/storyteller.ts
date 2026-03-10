@@ -72,6 +72,64 @@ function getPlayerInfoList(game: GameManager) {
   }));
 }
 
+const VOTE_TIME_LIMIT = 10_000; // 10초
+
+function startClockwiseVote(
+  game: GameManager,
+  playerIo: import('socket.io').Namespace,
+  storytellerIo: import('socket.io').Namespace,
+  nomineeId: string,
+): void {
+  const voteOrder = game.getClockwiseVoteOrder(nomineeId);
+  if (voteOrder.length === 0) return;
+
+  let currentIndex = 0;
+
+  function processNextVoter() {
+    if (currentIndex >= voteOrder.length) {
+      // 모든 투표 완료
+      game.clearVoteTimer();
+      return;
+    }
+
+    const voterId = voteOrder[currentIndex];
+    const voter = game.getPlayer(voterId);
+    if (!voter) {
+      currentIndex++;
+      processNextVoter();
+      return;
+    }
+
+    // 현재 투표자 알림
+    playerIo.emit('vote:turn', {
+      playerId: voterId,
+      playerName: voter.name,
+      timeLimit: VOTE_TIME_LIMIT,
+    });
+
+    let remaining = VOTE_TIME_LIMIT;
+    const timer = setInterval(() => {
+      remaining -= 1000;
+      if (remaining > 0) {
+        playerIo.emit('vote:timer', { remainingMs: remaining });
+      }
+    }, 1000);
+
+    const timeout = setTimeout(() => {
+      clearInterval(timer);
+      // 시간 초과 = 기권 (not guilty)
+      game.castVote(voterId, false, true);
+      storytellerIo.emit('game:state', game.getState());
+      currentIndex++;
+      processNextVoter();
+    }, VOTE_TIME_LIMIT);
+
+    game.setVoteTimerRef(timer, timeout);
+  }
+
+  processNextVoter();
+}
+
 export function registerStorytellerHandlers(
   storytellerIo: Namespace,
   playerIo: Namespace,
@@ -222,6 +280,18 @@ export function registerStorytellerHandlers(
 
     socket.on('player:setStatuses', ({ playerId, statuses }) => {
       game.setPlayerStatuses(playerId, statuses);
+    });
+
+    socket.on('game:setSettings', (settings) => {
+      game.setSettings(settings);
+      const newSettings = game.getSettings();
+      playerIo.emit('game:settings', newSettings);
+      storytellerIo.emit('game:state', game.getState());
+    });
+
+    socket.on('game:setPlayerOrder', (order) => {
+      game.setPlayerOrder(order);
+      storytellerIo.emit('game:state', game.getState());
     });
 
     socket.on('game:addDummyPlayers', (count) => {
@@ -467,6 +537,11 @@ export function registerStorytellerHandlers(
         '⚖️ 투표가 시작되었습니다',
         `${nominator?.name ?? '???'}이(가) ${nominee?.name ?? '???'}을(를) 지목했습니다`,
       );
+
+      // 시계방향 투표 시작 (온라인 투표 모드일 때만)
+      if (state.settings.votingMode === 'online') {
+        startClockwiseVote(game, playerIo, storytellerIo, nomineeId);
+      }
     });
 
     socket.on('vote:castForPlayer', ({ playerId, guilty }) => {

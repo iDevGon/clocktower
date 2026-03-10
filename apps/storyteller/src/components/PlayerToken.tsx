@@ -30,6 +30,7 @@ interface PlayerTokenProps {
   statuses?: PlayerStatus[];
   size?: number;
   highlighted?: boolean;
+  empathNeighbor?: boolean;
   butlerMasterName?: string;
   onPress?: () => void;
 }
@@ -39,6 +40,7 @@ export function PlayerToken({
   statuses,
   size,
   highlighted,
+  empathNeighbor,
   butlerMasterName,
   onPress,
 }: PlayerTokenProps) {
@@ -70,15 +72,23 @@ export function PlayerToken({
           {
             width: s,
             height: s,
-            borderColor: highlighted ? '#f5c542' : borderColor,
-            borderWidth: highlighted ? 3 : 2,
+            borderColor: highlighted
+              ? '#f5c542'
+              : empathNeighbor
+                ? '#2ecc71'
+                : borderColor,
+            borderWidth: highlighted || empathNeighbor ? 3 : 2,
             backgroundColor: bgColor,
             opacity: player.isAlive ? 1 : 0.4,
-            shadowColor: highlighted ? '#f5c542' : 'transparent',
+            shadowColor: highlighted
+              ? '#f5c542'
+              : empathNeighbor
+                ? '#2ecc71'
+                : 'transparent',
             shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: highlighted ? 0.8 : 0,
-            shadowRadius: highlighted ? 10 : 0,
-            elevation: highlighted ? 10 : 0,
+            shadowOpacity: highlighted || empathNeighbor ? 0.8 : 0,
+            shadowRadius: highlighted || empathNeighbor ? 10 : 0,
+            elevation: highlighted || empathNeighbor ? 10 : 0,
           },
         ]}
       >

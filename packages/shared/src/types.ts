@@ -30,6 +30,8 @@ export interface GameState {
   nominations: Nomination[];
   started: boolean;
   butlerMasters?: Record<string, string>;
+  playerOrder: string[];
+  settings: GameSettings;
 }
 
 export interface Nomination {
@@ -140,6 +142,16 @@ export interface WhisperMessage {
   message: string;
   timestamp: number;
 }
+
+export interface GameSettings {
+  whisperMode: 'chat' | 'offline';
+  votingMode: 'online' | 'offline';
+}
+
+export const DEFAULT_GAME_SETTINGS: GameSettings = {
+  whisperMode: 'chat',
+  votingMode: 'online',
+};
 
 export interface Edition {
   id: string;

@@ -33,6 +33,8 @@ export function registerPlayerHandlers(
       if (player) {
         socket.join(player.id);
         callback({ success: true, playerId: player.id });
+        // 설정 전송
+        socket.emit('game:settings', game.getSettings());
         storytellerIo.emit('game:state', game.getState());
         console.log(`Player joined: ${playerName}`);
       } else {
@@ -88,6 +90,8 @@ export function registerPlayerHandlers(
         deadVoteUsed: player.deadVoteUsed,
         nightProgress,
       });
+      // 설정 전송
+      socket.emit('game:settings', state.settings);
       console.log(`Player rejoined: ${player.name}`);
     });
 
@@ -99,6 +103,11 @@ export function registerPlayerHandlers(
       }
 
       const state = game.getState();
+      // 오프라인 투표 모드에서는 플레이어 지목 차단
+      if (state.settings.votingMode === 'offline') {
+        callback({ success: false, error: '투표는 오프라인으로 진행됩니다' });
+        return;
+      }
       if (state.phase !== 'day' || state.daySubPhase !== 'nomination') {
         callback({ success: false, error: '지금은 지목할 수 없습니다' });
         return;
@@ -155,11 +164,18 @@ export function registerPlayerHandlers(
 
     socket.on('vote:cast', ({ guilty }) => {
       const playerId = getPlayerIdFromSocket(socket);
-      if (playerId) {
-        const result = game.castVote(playerId, guilty);
-        if (result.success) {
-          storytellerIo.emit('game:state', game.getState());
-        }
+      if (!playerId) return;
+
+      const state = game.getState();
+      // 오프라인 투표 모드에서는 플레이어 투표 차단
+      if (state.settings.votingMode === 'offline') return;
+
+      const result = game.castVote(playerId, guilty);
+      if (result.success) {
+        storytellerIo.emit('game:state', game.getState());
+        // 시계방향 투표: 현재 턴 타이머를 클리어하고 다음 턴으로
+        // (타이머가 존재하면 시계방향 모드)
+        game.clearVoteTimer();
       }
     });
 
@@ -288,6 +304,8 @@ export function registerPlayerHandlers(
     socket.on('whisper:send', ({ toId, message }) => {
       const state = game.getState();
       if (state.phase !== 'day' || state.daySubPhase !== 'whisper') return;
+      // 오프라인 밀담 모드에서는 채팅 밀담 차단
+      if (state.settings.whisperMode === 'offline') return;
 
       const fromId = getPlayerIdFromSocket(socket);
       if (!fromId) return;

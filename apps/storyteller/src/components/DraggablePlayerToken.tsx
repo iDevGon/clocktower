@@ -10,28 +10,42 @@ import Animated, {
 import { useResponsive } from '../hooks/useResponsive';
 import { PlayerToken } from './PlayerToken';
 
+export interface CircularPosition {
+  x: number;
+  y: number;
+  index: number;
+}
+
 interface DraggablePlayerTokenProps {
   player: Player;
   statuses?: PlayerStatus[];
   highlighted?: boolean;
+  empathNeighbor?: boolean;
   butlerMasterName?: string;
   tokenSize?: number;
   initialX: number;
   initialY: number;
+  circularPositions?: CircularPosition[];
   onPress?: () => void;
   onPositionChange?: (x: number, y: number) => void;
+  onSwap?: (fromIndex: number, toIndex: number) => void;
+  positionIndex?: number;
 }
 
 export function DraggablePlayerToken({
   player,
   statuses,
   highlighted,
+  empathNeighbor,
   butlerMasterName,
   tokenSize: tokenSizeProp,
   initialX,
   initialY,
+  circularPositions,
   onPress,
   onPositionChange,
+  onSwap,
+  positionIndex,
 }: DraggablePlayerTokenProps) {
   const responsive = useResponsive();
   const tokenSize = tokenSizeProp ?? responsive.tokenSize;
@@ -61,7 +75,34 @@ export function DraggablePlayerToken({
     })
     .onEnd(() => {
       scale.value = withSpring(1);
-      if (onPositionChange) {
+      if (
+        circularPositions &&
+        circularPositions.length > 0 &&
+        onSwap &&
+        positionIndex != null
+      ) {
+        // 가장 가까운 원형 위치를 찾아 스냅
+        const curX = translateX.value;
+        const curY = translateY.value;
+        let closestIdx = positionIndex;
+        let closestDist = Number.MAX_SAFE_INTEGER;
+        for (const pos of circularPositions) {
+          const dx = curX - pos.x;
+          const dy = curY - pos.y;
+          const dist = dx * dx + dy * dy;
+          if (dist < closestDist) {
+            closestDist = dist;
+            closestIdx = pos.index;
+          }
+        }
+        if (closestIdx !== positionIndex) {
+          runOnJS(onSwap)(positionIndex, closestIdx);
+        } else {
+          // 원래 위치로 스냅백
+          translateX.value = withSpring(initialX);
+          translateY.value = withSpring(initialY);
+        }
+      } else if (onPositionChange) {
         runOnJS(onPositionChange)(translateX.value, translateY.value);
       }
     })
@@ -90,6 +131,7 @@ export function DraggablePlayerToken({
           player={player}
           statuses={statuses}
           highlighted={highlighted}
+          empathNeighbor={empathNeighbor}
           butlerMasterName={butlerMasterName}
           size={tokenSize}
         />

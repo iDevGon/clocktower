@@ -80,15 +80,29 @@ export function NightPhase({
 interface WhisperPhaseProps {
   visible: boolean;
   totalUnread: number;
+  whisperMode?: 'chat' | 'offline';
   onOpenWhisper: () => void;
 }
 
 export function WhisperPhase({
   visible,
   totalUnread,
+  whisperMode,
   onOpenWhisper,
 }: WhisperPhaseProps) {
   if (!visible) return null;
+
+  if (whisperMode === 'offline') {
+    return (
+      <View style={styles.phaseContent}>
+        <Text style={styles.dayTitle}>밀담 시간</Text>
+        <Text style={styles.phaseDescription}>
+          밀담은 직접 대면으로 진행하세요.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.phaseContent}>
       <Text style={styles.dayTitle}>밀담 시간</Text>
@@ -128,6 +142,7 @@ interface NominationPhaseProps {
   visible: boolean;
   isAlive: boolean;
   hasNominatedToday: boolean;
+  votingMode?: 'online' | 'offline';
   onOpenNominate: () => void;
 }
 
@@ -135,9 +150,22 @@ export function NominationPhase({
   visible,
   isAlive,
   hasNominatedToday,
+  votingMode,
   onOpenNominate,
 }: NominationPhaseProps) {
   if (!visible) return null;
+
+  if (votingMode === 'offline') {
+    return (
+      <View style={styles.phaseContent}>
+        <Text style={styles.dayTitle}>지목</Text>
+        <Text style={styles.phaseDescription}>
+          투표는 오프라인으로 진행됩니다.{'\n'}진행자의 안내를 따라주세요.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.phaseContent}>
       <Text style={styles.dayTitle}>지목</Text>
