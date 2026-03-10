@@ -584,6 +584,26 @@ export function registerStorytellerHandlers(
       }
     });
 
+    socket.on('chat:sendToPlayer', ({ playerId, message }) => {
+      const player = game.getPlayer(playerId);
+      if (!player) return;
+
+      const chatMsg = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        playerId,
+        playerName: player.name,
+        message,
+        fromStoryteller: true,
+        timestamp: Date.now(),
+      };
+
+      // Send to the target player
+      playerIo.to(playerId).emit('chat:receiveFromStoryteller', chatMsg);
+      // Echo back to storyteller
+      storytellerIo.emit('chat:receiveFromPlayer' as string, chatMsg);
+      console.log(`ST Chat -> ${player.name}: ${message}`);
+    });
+
     socket.on('disconnect', () => {
       console.log('Storyteller disconnected');
     });

@@ -26,6 +26,13 @@ export function useGameActions() {
     }
   }, []);
 
+  const sendChatToStoryteller = useCallback((message: string) => {
+    const socket = useConnectionStore.getState().socket;
+    if (socket) {
+      socket.emit('chat:sendToStoryteller', { message });
+    }
+  }, []);
+
   const useSlayer = useCallback(
     (targetId: string): Promise<{ success: boolean; error?: string }> => {
       return new Promise((resolve) => {
@@ -70,6 +77,7 @@ export function useGameActions() {
     castVote,
     submitNightAction,
     sendWhisper,
+    sendChatToStoryteller,
     nominatePlayer,
     useSlayer,
   };

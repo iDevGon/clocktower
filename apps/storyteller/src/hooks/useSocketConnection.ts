@@ -2,6 +2,7 @@ import {
   type GameResult,
   getRoleById,
   type NightAction,
+  type StorytellerMessage,
 } from '@clocktower/shared';
 import { useCallback } from 'react';
 import { io } from 'socket.io-client';
@@ -81,6 +82,12 @@ export function useSocketConnection() {
         newSocket.on('vote:timer', () => {
           // timer info is handled via storyteller's game:state
         });
+        newSocket.on(
+          'chat:receiveFromPlayer' as string,
+          (message: StorytellerMessage) => {
+            useGameStore.getState().addChatMessage(message);
+          },
+        );
 
         setSocket(newSocket);
         useConnectionStore.getState().setServerUrl(serverUrl);

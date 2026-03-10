@@ -151,6 +151,12 @@ export function useGameActions() {
     [socket],
   );
 
+  const sendChatToPlayer = useCallback(
+    (playerId: string, message: string) =>
+      socket?.emit('chat:sendToPlayer', { playerId, message }),
+    [socket],
+  );
+
   return {
     createGame,
     startGame,
@@ -172,5 +178,6 @@ export function useGameActions() {
     setPlayerStatuses,
     setGameSettings,
     setPlayerOrder,
+    sendChatToPlayer,
   };
 }

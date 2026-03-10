@@ -5,6 +5,7 @@ import type {
 import { getRoleById } from '@clocktower/shared';
 import type { Socket } from 'socket.io-client';
 import { vibrateAlert } from '../notifications';
+import { useChatStore } from '../stores/chatStore';
 import { usePlayerStore } from '../stores/playerStore';
 import { useWhisperStore } from '../stores/whisperStore';
 
@@ -32,6 +33,7 @@ export function attachListeners(socket: AppSocket) {
           usePlayerStore.getState().reset();
           usePlayerStore.getState().set({ playerName });
           useWhisperStore.getState().reset();
+          useChatStore.getState().reset();
         }
       });
     }
@@ -47,6 +49,9 @@ export function attachListeners(socket: AppSocket) {
 
   socket.on('game:phase', (phase) => {
     const prev = usePlayerStore.getState();
+    if (phase === 'setup') {
+      useChatStore.getState().reset();
+    }
     usePlayerStore.getState().set({
       currentPhase: phase,
       nomination: null,
@@ -108,6 +113,7 @@ export function attachListeners(socket: AppSocket) {
       usePlayerStore.getState().reset();
       usePlayerStore.getState().set({ playerName });
       useWhisperStore.getState().reset();
+      useChatStore.getState().reset();
       return;
     }
 
@@ -184,6 +190,17 @@ export function attachListeners(socket: AppSocket) {
         fromName: message.fromName,
         message: message.message,
       });
+    }
+  });
+
+  socket.on('chat:receiveFromStoryteller', (message) => {
+    const chatState = useChatStore.getState();
+    chatState.addMessage(message);
+
+    // Show toast if chat is not open and message is from storyteller
+    if (message.fromStoryteller && !chatState.isOpen) {
+      chatState.showToast({ message: message.message });
+      vibrateAlert();
     }
   });
 

@@ -3,6 +3,7 @@ import type {
   GameState,
   NightAction,
   PlayerStatus,
+  StorytellerMessage,
 } from '@clocktower/shared';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
@@ -31,6 +32,9 @@ interface GameStore {
   lastExecutedPlayerId: string | null;
   gameResult: GameResult | null;
   playerOrder: string[];
+  chatMessages: Record<string, StorytellerMessage[]>;
+  chatUnreadCounts: Record<string, number>;
+  activeChatPlayerId: string | null;
   setGameState: (state: GameState) => void;
   addNightAction: (action: NightAction) => void;
   clearNightActions: () => void;
@@ -45,6 +49,10 @@ interface GameStore {
   clearTokenPositions: () => void;
   setPlayerOrder: (order: string[]) => void;
   swapPlayerOrder: (fromIndex: number, toIndex: number) => void;
+  addChatMessage: (message: StorytellerMessage) => void;
+  setActiveChatPlayerId: (playerId: string | null) => void;
+  clearChatUnread: (playerId: string) => void;
+  totalChatUnread: () => number;
   reset: () => void;
 }
 
@@ -61,6 +69,9 @@ export const useGameStore = create<GameStore>()(
       lastExecutedPlayerId: null,
       gameResult: null,
       playerOrder: [],
+      chatMessages: {},
+      chatUnreadCounts: {},
+      activeChatPlayerId: null,
       setGameState: (state) => {
         // 서버 상태의 player.statuses를 playerStatuses 스토어에 동기화
         const synced: Record<string, PlayerStatus[]> = {};
@@ -107,6 +118,41 @@ export const useGameStore = create<GameStore>()(
           return { playerStatuses: rest };
         }),
       setGameResult: (result) => set({ gameResult: result }),
+      addChatMessage: (message) =>
+        set((s) => {
+          const prev = s.chatMessages[message.playerId] ?? [];
+          const isActive = s.activeChatPlayerId === message.playerId;
+          return {
+            chatMessages: {
+              ...s.chatMessages,
+              [message.playerId]: [...prev, message],
+            },
+            chatUnreadCounts:
+              !message.fromStoryteller && !isActive
+                ? {
+                    ...s.chatUnreadCounts,
+                    [message.playerId]:
+                      (s.chatUnreadCounts[message.playerId] ?? 0) + 1,
+                  }
+                : s.chatUnreadCounts,
+          };
+        }),
+      setActiveChatPlayerId: (playerId) => {
+        set((s) => ({
+          activeChatPlayerId: playerId,
+          chatUnreadCounts: playerId
+            ? { ...s.chatUnreadCounts, [playerId]: 0 }
+            : s.chatUnreadCounts,
+        }));
+      },
+      clearChatUnread: (playerId) =>
+        set((s) => ({
+          chatUnreadCounts: { ...s.chatUnreadCounts, [playerId]: 0 },
+        })),
+      totalChatUnread: () => {
+        const s = useGameStore.getState();
+        return Object.values(s.chatUnreadCounts).reduce((a, b) => a + b, 0);
+      },
       setTokenPosition: (playerId, pos) =>
         set((s) => ({
           tokenPositions: { ...s.tokenPositions, [playerId]: pos },
@@ -141,6 +187,9 @@ export const useGameStore = create<GameStore>()(
           lastExecutedPlayerId: null,
           gameResult: null,
           playerOrder: [],
+          chatMessages: {},
+          chatUnreadCounts: {},
+          activeChatPlayerId: null,
         }),
     }),
     {
