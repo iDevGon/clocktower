@@ -79,8 +79,8 @@ export function VoteClockRing() {
     }
 
     function tick() {
-      const elapsed = Date.now() - voteClock!.startedAt;
-      const progress = Math.min(elapsed / voteClock!.durationMs, 1);
+      const elapsed = Date.now() - voteClock.startedAt;
+      const progress = Math.min(elapsed / voteClock.durationMs, 1);
       setHandAngle(nomineeAngle + progress * 360);
       if (progress < 1) {
         animFrameRef.current = requestAnimationFrame(tick);
@@ -102,7 +102,9 @@ export function VoteClockRing() {
     ? Math.max(0, voteClock.durationMs - (Date.now() - voteClock.startedAt))
     : 0;
   const remainingSec = Math.ceil(remainingMs / 1000);
-  const isUrgent = voteClock ? remainingMs < voteClock.durationMs * 0.15 : false;
+  const isUrgent = voteClock
+    ? remainingMs < voteClock.durationMs * 0.15
+    : false;
 
   // Vote order set (participants)
   const voteOrderIds = new Set(voteOrder?.order.map((p) => p.id) ?? []);
@@ -110,7 +112,8 @@ export function VoteClockRing() {
 
   // Current hand progress (degrees swept from nominee)
   const handProgress = voteClock
-    ? Math.min((Date.now() - voteClock.startedAt) / voteClock.durationMs, 1) * 360
+    ? Math.min((Date.now() - voteClock.startedAt) / voteClock.durationMs, 1) *
+      360
     : 0;
 
   return (
@@ -237,17 +240,26 @@ export function VoteClockRing() {
           const nodeAngleDeg = (index / totalNodes) * 360;
           const nodeOffset = (nodeAngleDeg - nomineeAngle + 360) % 360;
           // nominee itself (offset=0) is confirmed at the end (360)
-          const confirmOffset = nodeOffset === 0 && !isNominee ? 0 : (nodeOffset === 0 ? 360 : nodeOffset);
+          const confirmOffset =
+            nodeOffset === 0 && !isNominee
+              ? 0
+              : nodeOffset === 0
+                ? 360
+                : nodeOffset;
           const hasPassed = handProgress >= confirmOffset;
 
           // Is the hand currently near this player?
-          const distToHand = Math.abs(handProgress - (nodeOffset === 0 && isNominee ? 360 : nodeOffset));
-          const isNearHand = distToHand < (360 / totalNodes) * 0.5 && !hasPassed;
+          const distToHand = Math.abs(
+            handProgress - (nodeOffset === 0 && isNominee ? 360 : nodeOffset),
+          );
+          const isNearHand =
+            distToHand < (360 / totalNodes) * 0.5 && !hasPassed;
 
           const showGuilty = preselection === true && hasPassed;
           const showInnocent = preselection === false && hasPassed;
           // Default to innocent if passed with no preselection
-          const showDefaultInnocent = hasPassed && preselection == null && isVoter && !isNominee;
+          const showDefaultInnocent =
+            hasPassed && preselection == null && isVoter && !isNominee;
 
           return (
             <View
@@ -266,8 +278,14 @@ export function VoteClockRing() {
                 isNearHand && isVoter && styles.activeNode,
                 isMe && !isNearHand && !isNominee && styles.myNode,
                 hasPassed && showGuilty && styles.guiltyNode,
-                hasPassed && (showInnocent || showDefaultInnocent) && styles.innocentNode,
-                hasPassed && !showGuilty && !showInnocent && !showDefaultInnocent && styles.pastNode,
+                hasPassed &&
+                  (showInnocent || showDefaultInnocent) &&
+                  styles.innocentNode,
+                hasPassed &&
+                  !showGuilty &&
+                  !showInnocent &&
+                  !showDefaultInnocent &&
+                  styles.pastNode,
               ]}
             >
               <Text
@@ -277,7 +295,10 @@ export function VoteClockRing() {
                   isNearHand && isVoter && styles.activeText,
                   isMe && !isNearHand && styles.myText,
                   hasPassed && showGuilty && { color: COLORS.guilty },
-                  hasPassed && (showInnocent || showDefaultInnocent) && { color: COLORS.innocent },
+                  hasPassed &&
+                    (showInnocent || showDefaultInnocent) && {
+                      color: COLORS.innocent,
+                    },
                 ]}
                 numberOfLines={1}
               >
@@ -300,7 +321,8 @@ export function VoteClockRing() {
             const nodeIdx = allNodes.findIndex((n) => n.id === node.id);
             const nodeAngleDeg = (nodeIdx / totalNodes) * 360;
             const nodeOffset = (nodeAngleDeg - nomineeAngle + 360) % 360;
-            const confirmOffset = nodeOffset === 0 && isNominee ? 360 : nodeOffset;
+            const confirmOffset =
+              nodeOffset === 0 && isNominee ? 360 : nodeOffset;
             const hasPassed = handProgress >= confirmOffset;
 
             return (
@@ -310,8 +332,10 @@ export function VoteClockRing() {
                   styles.legendText,
                   isNominee && { color: COLORS.bloodGlow },
                   isMe && { color: COLORS.brass },
-                  hasPassed && preselection === true && { color: COLORS.guilty },
-                  hasPassed && preselection !== true && { color: COLORS.innocent },
+                  hasPassed &&
+                    preselection === true && { color: COLORS.guilty },
+                  hasPassed &&
+                    preselection !== true && { color: COLORS.innocent },
                 ]}
                 numberOfLines={1}
               >

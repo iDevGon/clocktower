@@ -150,10 +150,26 @@ export function createNightActionLogStyles(scale: number) {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    numberButtonSuggested: {
+      backgroundColor: '#2a3560',
+      borderColor: '#5dade2',
+      borderWidth: 2,
+    },
+    numberButtonDimmed: {
+      backgroundColor: '#14151e',
+      borderColor: '#2a2a36',
+      opacity: 0.5,
+    },
     numberText: {
       color: '#d0c8f0',
       fontSize: s(18),
       fontWeight: 'bold',
+    },
+    numberTextSuggested: {
+      color: '#5dade2',
+    },
+    numberTextDimmed: {
+      color: '#5c5a68',
     },
     // Yes/No
     yesNoButton: {

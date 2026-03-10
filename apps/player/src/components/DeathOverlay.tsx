@@ -1,3 +1,4 @@
+import { DEATH_REASON_LABELS, type DeathReason } from '@clocktower/shared';
 import { useEffect } from 'react';
 import { Dimensions, StyleSheet, Text, Vibration, View } from 'react-native';
 import Animated, {
@@ -115,11 +116,12 @@ const FADE_OUT_MS = 800;
 
 interface DeathOverlayProps {
   onDismiss: () => void;
+  reason?: DeathReason | null;
 }
 
 const DRIP_COUNT = 14;
 
-export function DeathOverlay({ onDismiss }: DeathOverlayProps) {
+export function DeathOverlay({ onDismiss, reason }: DeathOverlayProps) {
   const fadeOut = useSharedValue(1);
 
   useEffect(() => {
@@ -177,14 +179,23 @@ export function DeathOverlay({ onDismiss }: DeathOverlayProps) {
           당신은 사망했습니다
         </Animated.Text>
 
+        {reason && (
+          <Animated.View
+            entering={FadeIn.delay(1100).duration(500)}
+            style={s.reasonBadge}
+          >
+            <Text style={s.reasonText}>{DEATH_REASON_LABELS[reason]}</Text>
+          </Animated.View>
+        )}
+
         <Animated.Text
-          entering={FadeIn.delay(1200).duration(600)}
+          entering={FadeIn.delay(1400).duration(600)}
           style={s.subtitle}
         >
           투표권이 <Text style={s.subtitleEmphasis}>단 1회</Text> 남아있습니다
         </Animated.Text>
         <Animated.Text
-          entering={FadeIn.delay(1500).duration(600)}
+          entering={FadeIn.delay(1700).duration(600)}
           style={s.subtitleHint}
         >
           신중하게 사용하세요
@@ -222,6 +233,22 @@ const s = StyleSheet.create({
     color: '#cc2020',
     textAlign: 'center',
     marginBottom: 8,
+  },
+  reasonBadge: {
+    backgroundColor: 'rgba(139, 0, 0, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 0, 0, 0.35)',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 16,
+    marginTop: 4,
+  },
+  reasonText: {
+    fontSize: 13,
+    color: '#a04040',
+    fontWeight: '500',
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 15,

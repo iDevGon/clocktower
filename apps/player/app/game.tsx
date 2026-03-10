@@ -5,6 +5,7 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { DeadVignette } from '../src/components/DeadVignette';
 import { DeathOverlay } from '../src/components/DeathOverlay';
 import { DictionaryModal } from '../src/components/DictionaryModal';
+import { ExecutionOverlay } from '../src/components/ExecutionOverlay';
 import { FeedbackHistoryModal } from '../src/components/FeedbackHistoryModal';
 import { GameEndOverlay } from '../src/components/GameEndOverlay';
 import { NominateModal } from '../src/components/NominateModal';
@@ -18,6 +19,7 @@ import {
 } from '../src/components/PhaseContent';
 import { PhaseIndicator } from '../src/components/PhaseIndicator';
 import { RoleCard } from '../src/components/RoleCard';
+import { SlayerFizzleOverlay } from '../src/components/SlayerFizzleOverlay';
 import { StorytellerChatModal } from '../src/components/StorytellerChatModal';
 import { StorytellerChatToast } from '../src/components/StorytellerChatToast';
 import { VeiledRoleCard } from '../src/components/VeiledRoleCard';
@@ -55,9 +57,13 @@ export default function GameScreen() {
     gamePlayers,
     gameResult,
     justDied,
+    deathReason,
+    executionAnnouncement,
     slayerUsed,
+    slayerFizzle,
     evilInfo,
     gameSettings,
+    executionHappenedToday,
   } = usePlayerStore();
   const dismissDeath = usePlayerStore((s) => s.set);
   const {
@@ -246,6 +252,7 @@ export default function GameScreen() {
           visible={currentPhase === 'day' && daySubPhase === 'nomination'}
           isAlive={isAlive}
           hasNominatedToday={hasNominatedToday}
+          executionHappenedToday={executionHappenedToday}
           votingMode={gameSettings?.votingMode}
           onOpenNominate={() => setNominateModalVisible(true)}
         />
@@ -295,7 +302,25 @@ export default function GameScreen() {
       </ScrollView>
 
       {justDied && (
-        <DeathOverlay onDismiss={() => dismissDeath({ justDied: false })} />
+        <DeathOverlay
+          onDismiss={() => dismissDeath({ justDied: false, deathReason: null })}
+          reason={deathReason}
+        />
+      )}
+
+      {executionAnnouncement && !justDied && (
+        <ExecutionOverlay
+          announcement={executionAnnouncement}
+          onDismiss={() => dismissDeath({ executionAnnouncement: null })}
+        />
+      )}
+
+      {slayerFizzle && !justDied && !executionAnnouncement && (
+        <SlayerFizzleOverlay
+          slayerName={slayerFizzle.slayerName}
+          targetName={slayerFizzle.targetName}
+          onDismiss={() => dismissDeath({ slayerFizzle: null })}
+        />
       )}
 
       {currentPhase === 'ended' && gameResult && role && !gameEndDismissed && (

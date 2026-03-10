@@ -47,7 +47,9 @@ interface GameStore {
   setActiveNightRoleId: (roleId: string | null) => void;
   setActiveWhispers: (whispers: ActiveWhisper[]) => void;
   setLastExecutedPlayerId: (id: string | null) => void;
-  setVoteClock: (clock: { startedAt: number; durationMs: number } | null) => void;
+  setVoteClock: (
+    clock: { startedAt: number; durationMs: number } | null,
+  ) => void;
   setVotePreselection: (playerId: string, guilty: boolean | null) => void;
   setVoteConfirmed: (playerId: string, guilty: boolean) => void;
   clearVotePreselections: () => void;
@@ -115,7 +117,8 @@ export const useGameStore = create<GameStore>()(
         set((s) => ({
           voteConfirmed: { ...s.voteConfirmed, [playerId]: guilty },
         })),
-      clearVotePreselections: () => set({ votePreselections: {}, voteConfirmed: {} }),
+      clearVotePreselections: () =>
+        set({ votePreselections: {}, voteConfirmed: {} }),
       addPlayerStatus: (playerId, status) =>
         set((s) => {
           const current = s.playerStatuses[playerId] ?? [];

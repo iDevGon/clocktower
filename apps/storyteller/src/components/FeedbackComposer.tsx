@@ -17,6 +17,7 @@ interface FeedbackComposerProps {
   feedbackDef: { type: string; roleTeamFilter?: Team; allowNone?: boolean };
   players: Player[];
   isDrunkUser?: boolean;
+  suggestedNumber?: number;
   onSend: (feedback: NightFeedbackPayload) => void;
 }
 
@@ -24,11 +25,14 @@ export function FeedbackComposer({
   feedbackDef,
   players,
   isDrunkUser,
+  suggestedNumber,
   onSend,
 }: FeedbackComposerProps) {
   switch (feedbackDef.type) {
     case 'number':
-      return <NumberFeedback onSend={onSend} />;
+      return (
+        <NumberFeedback suggestedNumber={suggestedNumber} onSend={onSend} />
+      );
     case 'yes_no':
       return <YesNoFeedback onSend={onSend} />;
     case 'players_and_role':
@@ -49,22 +53,41 @@ export function FeedbackComposer({
 }
 
 function NumberFeedback({
+  suggestedNumber,
   onSend,
 }: {
+  suggestedNumber?: number;
   onSend: (fb: NightFeedbackPayload) => void;
 }) {
   const styles = useNightActionLogStyles();
+  const hasSuggestion = suggestedNumber !== undefined;
   return (
     <View style={styles.composerRow}>
-      {[0, 1, 2, 3].map((n) => (
-        <Pressable
-          key={n}
-          onPress={() => onSend({ type: 'number', value: n })}
-          style={styles.numberButton}
-        >
-          <Text style={styles.numberText}>{n}</Text>
-        </Pressable>
-      ))}
+      {[0, 1, 2, 3].map((n) => {
+        const isSuggested = hasSuggestion && n === suggestedNumber;
+        const isDimmed = hasSuggestion && n !== suggestedNumber;
+        return (
+          <Pressable
+            key={n}
+            onPress={() => onSend({ type: 'number', value: n })}
+            style={[
+              styles.numberButton,
+              isSuggested && styles.numberButtonSuggested,
+              isDimmed && styles.numberButtonDimmed,
+            ]}
+          >
+            <Text
+              style={[
+                styles.numberText,
+                isSuggested && styles.numberTextSuggested,
+                isDimmed && styles.numberTextDimmed,
+              ]}
+            >
+              {n}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -153,15 +176,11 @@ function PlayersAndRoleFeedback({
 
   const highlightedRoleIds = useMemo(() => {
     if (selectedPlayers.length === 0) return new Set<string>();
-    if (shouldGiveFalseInfo) {
-      // 거짓 정보: 실제 역할이 아닌 역할들을 하이라이트
-      return new Set(
-        roles.filter((r) => !realRoleIds.has(r.id)).map((r) => r.id),
-      );
-    }
+    // 주정뱅이면 하이라이트 비활성화
+    if (shouldGiveFalseInfo) return new Set<string>();
     // 정상: 실제 역할을 하이라이트
     return realRoleIds;
-  }, [selectedPlayers.length, shouldGiveFalseInfo, realRoleIds, roles]);
+  }, [selectedPlayers.length, shouldGiveFalseInfo, realRoleIds]);
 
   // 정상 피드백일 때 선택된 플레이어의 실제 역할만 표시
   // 팀 필터에 맞는 플레이어가 있으면 그 역할만, 없으면 전체 (자유 선택)

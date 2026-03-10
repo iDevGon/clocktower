@@ -50,10 +50,7 @@ export interface ServerToClientEvents {
     targetName: string;
     targetId: string;
   }) => void;
-  'slayer:noEffect': (data: {
-    slayerName: string;
-    targetName: string;
-  }) => void;
+  'slayer:noEffect': (data: { slayerName: string; targetName: string }) => void;
   'virgin:triggered': (data: {
     virginName: string;
     nominatorName: string;
@@ -79,7 +76,10 @@ export interface ServerToClientEvents {
   ) => void;
   'game:settings': (settings: GameSettings) => void;
   'vote:clockStart': (data: { durationMs: number }) => void;
-  'vote:preselected': (data: { playerId: string; guilty: boolean | null }) => void;
+  'vote:preselected': (data: {
+    playerId: string;
+    guilty: boolean | null;
+  }) => void;
   'vote:confirmed': (data: { playerId: string; guilty: boolean }) => void;
   'vote:order': (data: {
     nomineeId: string;

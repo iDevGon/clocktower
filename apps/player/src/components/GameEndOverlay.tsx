@@ -172,6 +172,112 @@ function VictoryParticle({ index }: { index: number }) {
   );
 }
 
+// ── Slayer Spark (golden burst particle) ──
+
+function SlayerSpark({ index }: { index: number }) {
+  const progress = useSharedValue(0);
+  const centerX = SCREEN_WIDTH / 2;
+  const centerY = SCREEN_HEIGHT * 0.25;
+  const angle = (index / 32) * 2 * Math.PI + (index * 137.5 * Math.PI) / 180;
+  const distance = 40 + (index % 6) * 50;
+  const size = 2 + (index % 5) * 2;
+  const delay = (index * 60) % 1800;
+  const duration = 1800 + (index % 4) * 600;
+
+  useEffect(() => {
+    progress.value = withDelay(
+      delay,
+      withRepeat(
+        withTiming(1, { duration, easing: Easing.out(Easing.cubic) }),
+        -1,
+        false,
+      ),
+    );
+    return () => cancelAnimation(progress);
+  }, [progress, delay, duration]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateX: interpolate(
+          progress.value,
+          [0, 1],
+          [0, Math.cos(angle) * distance],
+        ),
+      },
+      {
+        translateY: interpolate(
+          progress.value,
+          [0, 1],
+          [0, Math.sin(angle) * distance],
+        ),
+      },
+      { scale: interpolate(progress.value, [0, 0.15, 0.5, 1], [0, 1.8, 1, 0]) },
+    ],
+    opacity: interpolate(progress.value, [0, 0.1, 0.4, 1], [0, 1, 0.7, 0]),
+  }));
+
+  const colors = ['#ffd700', '#ffb300', '#ff8c00', '#ffe066', '#fff5cc'];
+  const color = colors[index % colors.length];
+
+  return (
+    <Animated.View
+      style={[
+        {
+          position: 'absolute',
+          left: centerX,
+          top: centerY,
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: color,
+        },
+        style,
+      ]}
+    />
+  );
+}
+
+// ── Slayer Glow (golden radial) ──
+
+function SlayerGlow() {
+  const pulse = useSharedValue(0);
+
+  useEffect(() => {
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      false,
+    );
+    return () => cancelAnimation(pulse);
+  }, [pulse]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: interpolate(pulse.value, [0, 1], [0.1, 0.3]),
+    transform: [{ scale: interpolate(pulse.value, [0, 1], [0.8, 1.2]) }],
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        {
+          position: 'absolute',
+          width: SCREEN_WIDTH * 1.5,
+          height: SCREEN_WIDTH * 1.5,
+          borderRadius: SCREEN_WIDTH * 0.75,
+          backgroundColor: '#b8860b',
+          top: SCREEN_HEIGHT * 0.15 - SCREEN_WIDTH * 0.75,
+          left: SCREEN_WIDTH * 0.5 - SCREEN_WIDTH * 0.75,
+        },
+        style,
+      ]}
+    />
+  );
+}
+
 // ── Radial Glow (victory) ──
 
 function VictoryGlow() {
@@ -266,14 +372,20 @@ function AnimatedTextLine({
 function PlayerRow({
   player,
   index,
-  isVictory,
+  theme,
 }: {
   player: GameResult['players'][number];
   index: number;
-  isVictory: boolean;
+  theme: 'victory' | 'defeat' | 'slayer';
 }) {
   const isPlayerGood = isGoodTeam(player.team);
   const teamColor = isPlayerGood ? '#5dade2' : '#e74c3c';
+  const subtleColor =
+    theme === 'slayer'
+      ? '#6a5a3a'
+      : theme === 'victory'
+        ? '#6a7a8a'
+        : '#6a4444';
 
   return (
     <Animated.View
@@ -290,9 +402,7 @@ function PlayerRow({
         <Text style={[s.playerRole, { color: teamColor }]}>
           {player.role.name}
         </Text>
-        <Text
-          style={[s.playerTeam, { color: isVictory ? '#6a7a8a' : '#6a4444' }]}
-        >
+        <Text style={[s.playerTeam, { color: subtleColor }]}>
           {TEAM_LABELS[player.team] ?? player.team}
         </Text>
       </View>
@@ -316,33 +426,87 @@ export function GameEndOverlay({
   const myTeamIsGood = isGoodTeam(myTeam);
   const goodWon = gameResult.winningTeam === 'good';
   const isVictory = myTeamIsGood === goodWon;
+  const isSlayerKill = gameResult.cause === 'slayer';
 
   const DRIP_COUNT = 18;
   const POOL_COUNT = 6;
   const PARTICLE_COUNT = 24;
+  const SPARK_COUNT = 32;
 
   useEffect(() => {
-    if (isVictory) {
+    if (isSlayerKill) {
+      // 사냥꾼 특수 진동: 급격한 강한 일격 느낌
+      Vibration.vibrate([0, 50, 50, 50, 50, 600]);
+    } else if (isVictory) {
       Vibration.vibrate([0, 100, 80, 100, 80, 300]);
     } else {
       Vibration.vibrate([0, 400, 200, 400]);
     }
-  }, [isVictory]);
+  }, [isVictory, isSlayerKill]);
+
+  // Determine visual theme
+  const theme: 'victory' | 'defeat' | 'slayer' = isSlayerKill
+    ? 'slayer'
+    : isVictory
+      ? 'victory'
+      : 'defeat';
+
+  const bgColor =
+    theme === 'slayer'
+      ? '#0a0800'
+      : theme === 'victory'
+        ? '#060a10'
+        : '#0a0000';
+
+  const dividerColor =
+    theme === 'slayer'
+      ? 'rgba(255,215,0,0.35)'
+      : theme === 'victory'
+        ? 'rgba(77,166,255,0.25)'
+        : 'rgba(139,0,0,0.4)';
+
+  const listTitleColor =
+    theme === 'slayer'
+      ? '#b8860b'
+      : theme === 'victory'
+        ? '#5090c0'
+        : '#8b3030';
+
+  const buttonBorder =
+    theme === 'slayer'
+      ? 'rgba(255,215,0,0.3)'
+      : theme === 'victory'
+        ? 'rgba(77,166,255,0.3)'
+        : 'rgba(139,0,0,0.4)';
+
+  const buttonBg =
+    theme === 'slayer'
+      ? 'rgba(255,215,0,0.1)'
+      : theme === 'victory'
+        ? 'rgba(77,166,255,0.1)'
+        : 'rgba(139,0,0,0.1)';
+
+  const buttonTextColor =
+    theme === 'slayer'
+      ? '#e0c870'
+      : theme === 'victory'
+        ? '#c0daf0'
+        : '#d0a0a0';
 
   return (
     <View style={[StyleSheet.absoluteFill, s.overlay]}>
       {/* Background layer */}
-      <View
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            backgroundColor: isVictory ? '#060a10' : '#0a0000',
-          },
-        ]}
-      />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: bgColor }]} />
 
       {/* Effects layer */}
-      {isVictory ? (
+      {theme === 'slayer' ? (
+        <>
+          <SlayerGlow />
+          {Array.from({ length: SPARK_COUNT }).map((_, i) => (
+            <SlayerSpark key={`sk-${i}`} index={i} />
+          ))}
+        </>
+      ) : theme === 'victory' ? (
         <>
           <VictoryGlow />
           {Array.from({ length: PARTICLE_COUNT }).map((_, i) => (
@@ -367,8 +531,42 @@ export function GameEndOverlay({
         style={s.scrollView}
         contentContainerStyle={s.content}
       >
-        {/* Main heading — 4 cases: good win, good lose, evil win, evil lose */}
-        {isVictory && myTeamIsGood && (
+        {/* ── Slayer Easter Egg heading ── */}
+        {theme === 'slayer' && isVictory && (
+          <>
+            <AnimatedTextLine delay={100} style={s.slayerIcon}>
+              {'\uD83C\uDFF9'}
+            </AnimatedTextLine>
+            <AnimatedTextLine delay={300} style={s.slayerLabel}>
+              SLAYER
+            </AnimatedTextLine>
+            <AnimatedTextLine delay={600} style={s.slayerTitle}>
+              {'사냥꾼의 한 방!'}
+            </AnimatedTextLine>
+            <AnimatedTextLine delay={900} style={s.slayerSubtitle}>
+              {'단 한 발의 총성이 악마를 쓰러뜨렸습니다'}
+            </AnimatedTextLine>
+          </>
+        )}
+        {theme === 'slayer' && !isVictory && (
+          <>
+            <AnimatedTextLine delay={100} style={s.slayerIcon}>
+              {'\uD83C\uDFF9'}
+            </AnimatedTextLine>
+            <AnimatedTextLine delay={300} style={s.defeatLabel}>
+              DEFEAT
+            </AnimatedTextLine>
+            <AnimatedTextLine delay={600} style={s.slayerDefeatTitle}>
+              {'사냥꾼의 총성이 울려 퍼졌으나...'}
+            </AnimatedTextLine>
+            <AnimatedTextLine delay={900} style={s.slayerDefeatSubtitle}>
+              {'당신의 편은 이미 무너져 있었습니다'}
+            </AnimatedTextLine>
+          </>
+        )}
+
+        {/* ── Standard victory headings ── */}
+        {theme === 'victory' && myTeamIsGood && (
           <>
             <AnimatedTextLine delay={200} style={s.victoryLabel}>
               VICTORY
@@ -381,7 +579,7 @@ export function GameEndOverlay({
             </AnimatedTextLine>
           </>
         )}
-        {isVictory && !myTeamIsGood && (
+        {theme === 'victory' && !myTeamIsGood && (
           <>
             <AnimatedTextLine delay={200} style={s.victoryLabel}>
               VICTORY
@@ -394,7 +592,9 @@ export function GameEndOverlay({
             </AnimatedTextLine>
           </>
         )}
-        {!isVictory && myTeamIsGood && (
+
+        {/* ── Standard defeat headings ── */}
+        {theme === 'defeat' && myTeamIsGood && (
           <>
             <AnimatedTextLine delay={400} style={s.defeatLabel}>
               DEFEAT
@@ -407,7 +607,7 @@ export function GameEndOverlay({
             </AnimatedTextLine>
           </>
         )}
-        {!isVictory && !myTeamIsGood && (
+        {theme === 'defeat' && !myTeamIsGood && (
           <>
             <AnimatedTextLine delay={400} style={s.defeatLabel}>
               DEFEAT
@@ -424,7 +624,13 @@ export function GameEndOverlay({
         {/* Reason */}
         <AnimatedTextLine
           delay={1200}
-          style={isVictory ? s.reasonVictory : s.reasonDefeat}
+          style={
+            theme === 'slayer'
+              ? s.reasonSlayer
+              : isVictory
+                ? s.reasonVictory
+                : s.reasonDefeat
+          }
         >
           {gameResult.reason}
         </AnimatedTextLine>
@@ -432,14 +638,7 @@ export function GameEndOverlay({
         {/* Divider */}
         <Animated.View
           entering={FadeIn.delay(1400).duration(600)}
-          style={[
-            s.divider,
-            {
-              backgroundColor: isVictory
-                ? 'rgba(77,166,255,0.25)'
-                : 'rgba(139,0,0,0.4)',
-            },
-          ]}
+          style={[s.divider, { backgroundColor: dividerColor }]}
         />
 
         {/* Player list */}
@@ -447,18 +646,13 @@ export function GameEndOverlay({
           entering={FadeIn.delay(1500).duration(400)}
           style={s.playerListHeader}
         >
-          <Text
-            style={[
-              s.playerListTitle,
-              { color: isVictory ? '#5090c0' : '#8b3030' },
-            ]}
-          >
+          <Text style={[s.playerListTitle, { color: listTitleColor }]}>
             역할 공개
           </Text>
         </Animated.View>
 
         {gameResult.players.map((p, i) => (
-          <PlayerRow key={p.id} player={p} index={i} isVictory={isVictory} />
+          <PlayerRow key={p.id} player={p} index={i} theme={theme} />
         ))}
 
         {/* Confirm button */}
@@ -467,16 +661,14 @@ export function GameEndOverlay({
             onPress={onDismiss}
             style={({ pressed }) => [
               s.confirmButton,
-              isVictory ? s.confirmButtonVictory : s.confirmButtonDefeat,
+              {
+                borderColor: buttonBorder,
+                backgroundColor: buttonBg,
+              },
               pressed && { opacity: 0.7 },
             ]}
           >
-            <Text
-              style={[
-                s.confirmButtonText,
-                { color: isVictory ? '#c0daf0' : '#d0a0a0' },
-              ]}
-            >
+            <Text style={[s.confirmButtonText, { color: buttonTextColor }]}>
               확인
             </Text>
           </Pressable>
@@ -500,6 +692,58 @@ const s = StyleSheet.create({
     paddingTop: SCREEN_HEIGHT * 0.15,
     paddingHorizontal: 28,
     paddingBottom: 40,
+  },
+
+  // Slayer Easter Egg styles (golden/amber)
+  slayerIcon: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  slayerLabel: {
+    fontSize: 16,
+    letterSpacing: 16,
+    color: '#ffd700',
+    fontWeight: '300',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  slayerTitle: {
+    fontSize: 30,
+    fontWeight: '900',
+    color: '#ffe066',
+    textAlign: 'center',
+    marginBottom: 8,
+    textShadowColor: 'rgba(255, 215, 0, 0.4)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 16,
+  },
+  slayerSubtitle: {
+    fontSize: 15,
+    color: '#c0a030',
+    fontWeight: '400',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  slayerDefeatTitle: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#b8860b',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  slayerDefeatSubtitle: {
+    fontSize: 15,
+    color: '#8a6a20',
+    fontWeight: '400',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  reasonSlayer: {
+    fontSize: 13,
+    color: '#a08030',
+    textAlign: 'center',
+    fontWeight: '500',
+    marginBottom: 24,
   },
 
   // Victory styles (blue)
@@ -617,14 +861,6 @@ const s = StyleSheet.create({
     paddingHorizontal: 48,
     borderRadius: 8,
     borderWidth: 1,
-  },
-  confirmButtonVictory: {
-    borderColor: 'rgba(77,166,255,0.3)',
-    backgroundColor: 'rgba(77,166,255,0.1)',
-  },
-  confirmButtonDefeat: {
-    borderColor: 'rgba(139,0,0,0.4)',
-    backgroundColor: 'rgba(139,0,0,0.1)',
   },
   confirmButtonText: {
     fontSize: 16,

@@ -30,7 +30,7 @@ const io = new Server<
 const game = new GameManager();
 const storytellerIo = io.of('/storyteller');
 const playerIo = io.of('/player');
-const whisperTracker = new WhisperTracker(storytellerIo);
+const whisperTracker = new WhisperTracker(storytellerIo, playerIo);
 
 // Register socket handlers
 registerStorytellerHandlers(storytellerIo, playerIo, game, whisperTracker);

@@ -162,9 +162,10 @@ function ChatView({
     useGameStore((s) => s.gameState?.players.find((p) => p.id === playerId))
       ?.name ?? playerId;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on new messages
   useEffect(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-  }, [messages.length]);
+  }, [messages]);
 
   const handleSend = () => {
     const trimmed = text.trim();

@@ -5,7 +5,7 @@ import {
   PHASE_ENTRIES,
   STATUS_ENTRIES,
   TEAM_COLORS,
-  TEAM_LABELS,
+  type Team,
   TROUBLE_BREWING_ROLES,
 } from '@clocktower/shared';
 import { useState } from 'react';
@@ -32,32 +32,55 @@ interface DictionaryModalProps {
   onClose: () => void;
 }
 
+const TEAM_ORDER: Array<{ team: Team; label: string }> = [
+  { team: 'townsfolk', label: '마을주민' },
+  { team: 'outsider', label: '외지인' },
+  { team: 'minion', label: '하수인' },
+  { team: 'demon', label: '악마' },
+];
+
 function RolesTab() {
   return (
     <View style={tabStyles.section}>
-      {TROUBLE_BREWING_ROLES.map((role) => (
-        <View key={role.id} style={tabStyles.card}>
-          <View style={tabStyles.cardHeader}>
-            <Text
-              style={[
-                tabStyles.roleName,
-                { color: TEAM_COLORS[role.team] },
-              ]}
+      {TEAM_ORDER.map(({ team, label }) => {
+        const roles = TROUBLE_BREWING_ROLES.filter((r) => r.team === team);
+        if (roles.length === 0) return null;
+        return (
+          <View key={team}>
+            <View
+              style={[tabStyles.teamHeader, { borderColor: TEAM_COLORS[team] }]}
             >
-              {role.name}
-            </Text>
-            <Text
-              style={[
-                tabStyles.teamBadge,
-                { color: TEAM_COLORS[role.team], borderColor: TEAM_COLORS[role.team] },
-              ]}
-            >
-              {TEAM_LABELS[role.team]}
-            </Text>
+              <View
+                style={[
+                  tabStyles.teamDot,
+                  { backgroundColor: TEAM_COLORS[team] },
+                ]}
+              />
+              <Text
+                style={[tabStyles.teamHeaderText, { color: TEAM_COLORS[team] }]}
+              >
+                {label}
+              </Text>
+              <Text style={tabStyles.teamCount}>{roles.length}</Text>
+            </View>
+            {roles.map((role) => (
+              <View key={role.id} style={tabStyles.card}>
+                <View style={tabStyles.cardHeader}>
+                  <Text
+                    style={[
+                      tabStyles.roleName,
+                      { color: TEAM_COLORS[role.team] },
+                    ]}
+                  >
+                    {role.name}
+                  </Text>
+                </View>
+                <Text style={tabStyles.abilityText}>{role.ability}</Text>
+              </View>
+            ))}
           </View>
-          <Text style={tabStyles.abilityText}>{role.ability}</Text>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 }
@@ -107,9 +130,7 @@ function RulesTab() {
         </View>
       ))}
 
-      <Text style={[tabStyles.sectionTitle, { marginTop: 20 }]}>
-        상세 규칙
-      </Text>
+      <Text style={[tabStyles.sectionTitle, { marginTop: 20 }]}>상세 규칙</Text>
       {GAME_RULES.map((rule) => (
         <View key={rule.title} style={tabStyles.card}>
           <Text style={tabStyles.ruleTitle}>{rule.title}</Text>
@@ -143,8 +164,9 @@ export function DictionaryModal({ visible, onClose }: DictionaryModalProps) {
       animationType="slide"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.container} onPress={() => {}}>
+      <View style={styles.overlay}>
+        <Pressable style={styles.dismissArea} onPress={onClose} />
+        <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.title}>사전</Text>
             <Pressable onPress={onClose} style={styles.closeButton}>
@@ -157,10 +179,7 @@ export function DictionaryModal({ visible, onClose }: DictionaryModalProps) {
               <Pressable
                 key={tab.id}
                 onPress={() => setActiveTab(tab.id)}
-                style={[
-                  styles.tab,
-                  activeTab === tab.id && styles.tabActive,
-                ]}
+                style={[styles.tab, activeTab === tab.id && styles.tabActive]}
               >
                 <Text
                   style={[
@@ -177,14 +196,15 @@ export function DictionaryModal({ visible, onClose }: DictionaryModalProps) {
           <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
+            nestedScrollEnabled
           >
             {activeTab === 'roles' && <RolesTab />}
             {activeTab === 'statuses' && <StatusesTab />}
             {activeTab === 'rules' && <RulesTab />}
             {activeTab === 'flow' && <FlowTab />}
           </ScrollView>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -195,13 +215,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.7)',
     justifyContent: 'flex-end',
   },
+  dismissArea: {
+    flex: 1,
+  },
   container: {
     backgroundColor: '#1a1a1e',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    maxHeight: '90%',
-    minHeight: 300,
-    flex: 1,
+    height: '85%',
   },
   header: {
     flexDirection: 'row',
@@ -263,6 +284,29 @@ const tabStyles = StyleSheet.create({
   section: {
     gap: 10,
   },
+  teamHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 16,
+    marginBottom: 4,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+  },
+  teamDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  teamHeaderText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  teamCount: {
+    color: '#5c5a58',
+    fontSize: 12,
+    fontWeight: '500',
+  },
   sectionTitle: {
     color: '#e0ddd8',
     fontSize: 16,
@@ -285,15 +329,6 @@ const tabStyles = StyleSheet.create({
   roleName: {
     fontSize: 15,
     fontWeight: '700',
-  },
-  teamBadge: {
-    fontSize: 11,
-    fontWeight: '600',
-    borderWidth: 1,
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    overflow: 'hidden',
   },
   statusDot: {
     width: 10,

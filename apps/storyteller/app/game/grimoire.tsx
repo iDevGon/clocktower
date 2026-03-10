@@ -12,8 +12,9 @@ import {
   ActionModal,
   type ActionModalOption,
 } from '../../src/components/ActionModal';
-import { DictionaryModal } from '../../src/components/DictionaryModal';
+import { ChatToast } from '../../src/components/ChatToast';
 import { DaySubPhaseBar } from '../../src/components/DaySubPhaseBar';
+import { DictionaryModal } from '../../src/components/DictionaryModal';
 import {
   type CircularPosition,
   DraggablePlayerToken,
@@ -24,7 +25,6 @@ import {
 } from '../../src/components/NightActionLog';
 import { NightOrderPanel } from '../../src/components/NightOrderPanel';
 import { PhaseBar } from '../../src/components/PhaseBar';
-import { ChatToast } from '../../src/components/ChatToast';
 import { StorytellerChatModal } from '../../src/components/StorytellerChatModal';
 import { VoteClockHand } from '../../src/components/VoteClockHand';
 import { VotePanel } from '../../src/components/VotePanel';
@@ -718,7 +718,10 @@ export default function GrimoireScreen() {
                 player={player}
                 statuses={playerStatuses[player.id]}
                 highlighted={player.id === executedPlayerId}
-                empathNeighbor={empathNeighborIds.has(player.id) || chefEvilPairIds.has(player.id)}
+                empathNeighbor={
+                  empathNeighborIds.has(player.id) ||
+                  chefEvilPairIds.has(player.id)
+                }
                 butlerMasterName={butlerMasterNames[player.id]}
                 tokenSize={dynamicTokenSize}
                 initialX={pos.x}
@@ -737,26 +740,30 @@ export default function GrimoireScreen() {
           })}
 
         {/* Vote clock hand overlay */}
-        {hasActiveVote && voteClock && areaSize.width > 0 && (() => {
-          const nomination = gameState?.nominations[gameState.nominations.length - 1];
-          if (!nomination) return null;
-          const nomineeIndex = playerOrder.indexOf(nomination.nomineeId);
-          if (nomineeIndex < 0) return null;
-          const total = playerOrder.length || gameState?.players.length || 0;
-          if (total === 0) return null;
-          const cX = areaSize.width / 2;
-          const cY = areaSize.height / 2;
-          const r = Math.min(cX, cY) - dynamicTokenSize * 0.6;
-          return (
-            <VoteClockHand
-              nomineeIndex={nomineeIndex}
-              totalPlayers={total}
-              centerX={cX}
-              centerY={cY}
-              radius={r}
-            />
-          );
-        })()}
+        {hasActiveVote &&
+          voteClock &&
+          areaSize.width > 0 &&
+          (() => {
+            const nomination =
+              gameState?.nominations[gameState.nominations.length - 1];
+            if (!nomination) return null;
+            const nomineeIndex = playerOrder.indexOf(nomination.nomineeId);
+            if (nomineeIndex < 0) return null;
+            const total = playerOrder.length || gameState?.players.length || 0;
+            if (total === 0) return null;
+            const cX = areaSize.width / 2;
+            const cY = areaSize.height / 2;
+            const r = Math.min(cX, cY) - dynamicTokenSize * 0.6;
+            return (
+              <VoteClockHand
+                nomineeIndex={nomineeIndex}
+                totalPlayers={total}
+                centerX={cX}
+                centerY={cY}
+                radius={r}
+              />
+            );
+          })()}
       </View>
 
       {gameState.phase === 'night' && nightActions.length > 0 && (
@@ -861,10 +868,15 @@ export default function GrimoireScreen() {
                             for (let i = 0; i < order.length; i++) {
                               const curr = order[i];
                               const next = order[(i + 1) % order.length];
-                              const cp = gameState.players.find((p) => p.id === curr);
-                              const np = gameState.players.find((p) => p.id === next);
+                              const cp = gameState.players.find(
+                                (p) => p.id === curr,
+                              );
+                              const np = gameState.players.find(
+                                (p) => p.id === next,
+                              );
                               const isEvil = (p: typeof cp) =>
-                                p?.role?.team === 'minion' || p?.role?.team === 'demon';
+                                p?.role?.team === 'minion' ||
+                                p?.role?.team === 'demon';
                               if (isEvil(cp) && isEvil(np)) {
                                 pairs.push([cp?.name ?? '', np?.name ?? '']);
                               }

@@ -7,16 +7,25 @@ interface WhisperToast {
   message: string;
 }
 
+interface ActiveWhisperChat {
+  player1Id: string;
+  player1Name: string;
+  player2Id: string;
+  player2Name: string;
+}
+
 interface WhisperState {
   conversations: Record<string, WhisperMessage[]>;
   activeChat: string | null;
   unreadCounts: Record<string, number>;
   toast: WhisperToast | null;
+  activeWhispers: ActiveWhisperChat[];
   setActiveChat: (playerId: string | null) => void;
   addMessage: (message: WhisperMessage, myPlayerId: string) => void;
   clearUnread: (playerId: string) => void;
   showToast: (toast: WhisperToast) => void;
   dismissToast: () => void;
+  setActiveWhispers: (whispers: ActiveWhisperChat[]) => void;
   reset: () => void;
 }
 
@@ -25,6 +34,7 @@ const initialState = {
   activeChat: null,
   unreadCounts: {},
   toast: null as WhisperToast | null,
+  activeWhispers: [] as ActiveWhisperChat[],
 };
 
 export const useWhisperStore = create<WhisperState>((set, get) => ({
@@ -63,5 +73,6 @@ export const useWhisperStore = create<WhisperState>((set, get) => ({
   },
   showToast: (toast) => set({ toast }),
   dismissToast: () => set({ toast: null }),
+  setActiveWhispers: (whispers) => set({ activeWhispers: whispers }),
   reset: () => set(initialState),
 }));

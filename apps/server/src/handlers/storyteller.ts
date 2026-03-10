@@ -94,7 +94,11 @@ export function startClockwiseVote(
     const p = game.getPlayer(id);
     return { id, name: p?.name ?? id, isAlive: p?.isAlive ?? false };
   });
-  playerIo.emit('vote:order', { nomineeId, order: orderWithNames, fullOrder: fullOrderInfo });
+  playerIo.emit('vote:order', {
+    nomineeId,
+    order: orderWithNames,
+    fullOrder: fullOrderInfo,
+  });
 
   // 시계 바늘 시작 알림
   playerIo.emit('vote:clockStart', { durationMs });
@@ -106,7 +110,8 @@ export function startClockwiseVote(
   for (const voterId of voteOrder) {
     const voterFullIdx = fullOrder.indexOf(voterId);
     // nominee 기준 시계방향 상대 위치 (0 ~ N-1)
-    const offset = (voterFullIdx - nomineeFullIdx + totalPlayers) % totalPlayers;
+    const offset =
+      (voterFullIdx - nomineeFullIdx + totalPlayers) % totalPlayers;
     // 확정 시점: 해당 위치를 지날 때 (offset/N 만큼 진행했을 때)
     // offset=0인 nominee는 한 바퀴 끝에서 확정
     const fraction = offset === 0 ? 1 : offset / totalPlayers;
@@ -129,7 +134,10 @@ export function startClockwiseVote(
         const guilty = game.getPreselectedVote(next.playerId);
         game.castVote(next.playerId, guilty, true);
         playerIo.emit('vote:confirmed', { playerId: next.playerId, guilty });
-        storytellerIo.emit('vote:confirmed' as string, { playerId: next.playerId, guilty });
+        storytellerIo.emit('vote:confirmed' as string, {
+          playerId: next.playerId,
+          guilty,
+        });
         nextConfirmIdx++;
       } else {
         break;

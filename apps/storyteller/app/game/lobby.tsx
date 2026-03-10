@@ -1,4 +1,4 @@
-import type { GameSettings, Player, Team } from '@clocktower/shared';
+import type { Player, Team } from '@clocktower/shared';
 import {
   EDITIONS,
   getRoleById,
@@ -416,7 +416,9 @@ export default function LobbyScreen() {
               >
                 <ClockSpeedSetting
                   value={gameState.settings.voteClockSeconds}
-                  onChange={(val: number) => setGameSettings({ voteClockSeconds: val })}
+                  onChange={(val: number) =>
+                    setGameSettings({ voteClockSeconds: val })
+                  }
                   scale={scale}
                 />
               </View>
@@ -842,7 +844,13 @@ function SettingToggle({
   scale: number;
 }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Math.round(8 * scale) }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Math.round(8 * scale),
+      }}
+    >
       <Text
         style={{
           color: value ? '#e0ddd8' : '#5c5a58',

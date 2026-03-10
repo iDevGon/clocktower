@@ -39,17 +39,17 @@ function RolesTab() {
         <View key={role.id} style={tabStyles.card}>
           <View style={tabStyles.cardHeader}>
             <Text
-              style={[
-                tabStyles.roleName,
-                { color: TEAM_COLORS[role.team] },
-              ]}
+              style={[tabStyles.roleName, { color: TEAM_COLORS[role.team] }]}
             >
               {role.name}
             </Text>
             <Text
               style={[
                 tabStyles.teamBadge,
-                { color: TEAM_COLORS[role.team], borderColor: TEAM_COLORS[role.team] },
+                {
+                  color: TEAM_COLORS[role.team],
+                  borderColor: TEAM_COLORS[role.team],
+                },
               ]}
             >
               {TEAM_LABELS[role.team]}
@@ -107,9 +107,7 @@ function RulesTab() {
         </View>
       ))}
 
-      <Text style={[tabStyles.sectionTitle, { marginTop: 20 }]}>
-        상세 규칙
-      </Text>
+      <Text style={[tabStyles.sectionTitle, { marginTop: 20 }]}>상세 규칙</Text>
       {GAME_RULES.map((rule) => (
         <View key={rule.title} style={tabStyles.card}>
           <Text style={tabStyles.ruleTitle}>{rule.title}</Text>
@@ -157,10 +155,7 @@ export function DictionaryModal({ visible, onClose }: DictionaryModalProps) {
               <Pressable
                 key={tab.id}
                 onPress={() => setActiveTab(tab.id)}
-                style={[
-                  styles.tab,
-                  activeTab === tab.id && styles.tabActive,
-                ]}
+                style={[styles.tab, activeTab === tab.id && styles.tabActive]}
               >
                 <Text
                   style={[

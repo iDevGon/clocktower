@@ -14,9 +14,11 @@ const WHISPER_TIMEOUT = 60_000; // 60 seconds
 export class WhisperTracker {
   private activeWhispers: Map<string, ActiveWhisperEntry> = new Map();
   private storytellerIo: Namespace;
+  private playerIo: Namespace;
 
-  constructor(storytellerIo: Namespace) {
+  constructor(storytellerIo: Namespace, playerIo: Namespace) {
     this.storytellerIo = storytellerIo;
+    this.playerIo = playerIo;
   }
 
   getKey(id1: string, id2: string): string {
@@ -60,5 +62,6 @@ export class WhisperTracker {
       }
     }
     this.storytellerIo.emit('whisper:activeChats', chats);
+    this.playerIo.emit('whisper:activeChats', chats);
   }
 }

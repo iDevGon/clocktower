@@ -51,11 +51,17 @@ interface EmpathHint {
   evilCount: number;
 }
 
+interface ChefHint {
+  evilPairCount: number;
+  evilPairNames: string[][];
+}
+
 interface NightFeedbackPanelProps {
   activeRoleId: string | null;
   players: Player[];
   nightActions?: NightAction[];
   empathHint?: EmpathHint;
+  chefHint?: ChefHint;
   onSendFeedback: (playerId: string, feedback: NightFeedbackPayload) => void;
 }
 
@@ -64,6 +70,7 @@ export function NightFeedbackPanel({
   players,
   nightActions,
   empathHint,
+  chefHint,
   onSendFeedback,
 }: NightFeedbackPanelProps) {
   const { fontSize } = useResponsive();
@@ -219,10 +226,39 @@ export function NightFeedbackPanel({
               </View>
             )}
 
+          {activeRoleId === 'chef' && chefHint && (
+            <View
+              style={[
+                styles.drunkBanner,
+                {
+                  backgroundColor: 'rgba(230,126,34,0.15)',
+                  borderColor: '#e67e22',
+                },
+              ]}
+            >
+              <Text style={[styles.drunkBannerText, { color: '#e67e22' }]}>
+                인접 악한 쌍: {chefHint.evilPairCount}개
+                {chefHint.evilPairNames.length > 0
+                  ? ` (${chefHint.evilPairNames.map((pair) => pair.join('-')).join(', ')})`
+                  : ''}
+                {isDrunk ? ' (주정뱅이 - 가짜 정보 제공)' : ''}
+              </Text>
+            </View>
+          )}
+
           <FeedbackComposer
             feedbackDef={feedbackDef}
             players={players.filter((p) => p.id !== targetPlayer.id)}
             isDrunkUser={isDrunk}
+            suggestedNumber={
+              isDrunk
+                ? undefined
+                : activeRoleId === 'empath' && empathHint
+                  ? empathHint.evilCount
+                  : activeRoleId === 'chef' && chefHint
+                    ? chefHint.evilPairCount
+                    : undefined
+            }
             onSend={handleSend}
           />
         </View>

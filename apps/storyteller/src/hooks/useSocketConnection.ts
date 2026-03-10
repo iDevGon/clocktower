@@ -76,25 +76,26 @@ export function useSocketConnection() {
         newSocket.on('slayer:declared', () => {
           // handled via game:state
         });
-        newSocket.on(
-          'vote:clockStart',
-          (data: { durationMs: number }) => {
-            useGameStore.getState().setVoteClock({
-              startedAt: Date.now(),
-              durationMs: data.durationMs,
-            });
-          },
-        );
+        newSocket.on('vote:clockStart', (data: { durationMs: number }) => {
+          useGameStore.getState().setVoteClock({
+            startedAt: Date.now(),
+            durationMs: data.durationMs,
+          });
+        });
         newSocket.on(
           'vote:preselected',
           (data: { playerId: string; guilty: boolean | null }) => {
-            useGameStore.getState().setVotePreselection(data.playerId, data.guilty);
+            useGameStore
+              .getState()
+              .setVotePreselection(data.playerId, data.guilty);
           },
         );
         newSocket.on(
           'vote:confirmed',
           (data: { playerId: string; guilty: boolean }) => {
-            useGameStore.getState().setVoteConfirmed(data.playerId, data.guilty);
+            useGameStore
+              .getState()
+              .setVoteConfirmed(data.playerId, data.guilty);
           },
         );
         newSocket.on(

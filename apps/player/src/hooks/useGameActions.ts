@@ -11,6 +11,13 @@ export function useGameActions() {
     }
   }, []);
 
+  const preselectVote = useCallback((guilty: boolean | null) => {
+    const socket = useConnectionStore.getState().socket;
+    if (socket) {
+      socket.emit('vote:preselect', { guilty });
+    }
+  }, []);
+
   const submitNightAction = useCallback((targets: string[]) => {
     const socket = useConnectionStore.getState().socket;
     if (socket) {
@@ -75,6 +82,7 @@ export function useGameActions() {
 
   return {
     castVote,
+    preselectVote,
     submitNightAction,
     sendWhisper,
     sendChatToStoryteller,

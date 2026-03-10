@@ -3,8 +3,9 @@ import type {
   NightFeedbackPayload,
   Role,
 } from '@clocktower/shared';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { NightProgress as NightProgressData } from '../stores/playerStore';
+import { useWhisperStore } from '../stores/whisperStore';
 import { styles } from '../styles/game.styles';
 import { NightActionPrompt } from './NightActionPrompt';
 import { NightProgress } from './NightProgress';
@@ -90,6 +91,8 @@ export function WhisperPhase({
   whisperMode,
   onOpenWhisper,
 }: WhisperPhaseProps) {
+  const activeWhispers = useWhisperStore((s) => s.activeWhispers);
+
   if (!visible) return null;
 
   if (whisperMode === 'offline') {
@@ -117,9 +120,46 @@ export function WhisperPhase({
           </View>
         )}
       </Pressable>
+      {activeWhispers.length > 0 && (
+        <View style={whisperStyles.activePanel}>
+          <Text style={whisperStyles.activePanelTitle}>진행 중인 밀담</Text>
+          {activeWhispers.map((w) => (
+            <Text
+              key={`${w.player1Id}-${w.player2Id}`}
+              style={whisperStyles.activePanelItem}
+            >
+              {w.player1Name} ↔ {w.player2Name}
+            </Text>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
+
+const whisperStyles = StyleSheet.create({
+  activePanel: {
+    marginTop: 16,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    width: '100%',
+  },
+  activePanelTitle: {
+    color: '#8a8a8a',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  activePanelItem: {
+    color: '#e0ddd8',
+    fontSize: 14,
+    paddingVertical: 3,
+  },
+});
 
 interface DiscussionPhaseProps {
   visible: boolean;
@@ -142,6 +182,7 @@ interface NominationPhaseProps {
   visible: boolean;
   isAlive: boolean;
   hasNominatedToday: boolean;
+  executionHappenedToday: boolean;
   votingMode?: 'online' | 'offline';
   onOpenNominate: () => void;
 }
@@ -150,6 +191,7 @@ export function NominationPhase({
   visible,
   isAlive,
   hasNominatedToday,
+  executionHappenedToday,
   votingMode,
   onOpenNominate,
 }: NominationPhaseProps) {
@@ -166,18 +208,25 @@ export function NominationPhase({
     );
   }
 
+  const canNominate = isAlive && !hasNominatedToday && !executionHappenedToday;
+
   return (
     <View style={styles.phaseContent}>
       <Text style={styles.dayTitle}>지목</Text>
       <Text style={styles.phaseDescription}>
         처형할 플레이어를 지목하세요.{'\n'}하루에 한 번 지목할 수 있습니다.
       </Text>
-      {isAlive && !hasNominatedToday && (
+      {isAlive && canNominate && (
         <Pressable style={styles.nominateButton} onPress={onOpenNominate}>
           <Text style={styles.nominateButtonText}>지목하기</Text>
         </Pressable>
       )}
-      {isAlive && hasNominatedToday && (
+      {isAlive && executionHappenedToday && (
+        <View style={styles.nominatedBadge}>
+          <Text style={styles.nominatedText}>오늘 처형이 집행되었습니다</Text>
+        </View>
+      )}
+      {isAlive && !executionHappenedToday && hasNominatedToday && (
         <View style={styles.nominatedBadge}>
           <Text style={styles.nominatedText}>오늘 지목을 사용했습니다</Text>
         </View>

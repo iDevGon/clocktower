@@ -30,7 +30,8 @@ export function VoteClockHand({
   const [handAngle, setHandAngle] = useState(0);
   const animFrameRef = useRef<number | null>(null);
 
-  const nomineeAngle = totalPlayers > 0 ? (nomineeIndex / totalPlayers) * 360 : 0;
+  const nomineeAngle =
+    totalPlayers > 0 ? (nomineeIndex / totalPlayers) * 360 : 0;
 
   useEffect(() => {
     if (!voteClock) {
@@ -39,8 +40,8 @@ export function VoteClockHand({
     }
 
     function tick() {
-      const elapsed = Date.now() - voteClock!.startedAt;
-      const progress = Math.min(elapsed / voteClock!.durationMs, 1);
+      const elapsed = Date.now() - voteClock.startedAt;
+      const progress = Math.min(elapsed / voteClock.durationMs, 1);
       setHandAngle(nomineeAngle + progress * 360);
       if (progress < 1) {
         animFrameRef.current = requestAnimationFrame(tick);

@@ -58,7 +58,11 @@ export function attachListeners(socket: AppSocket) {
       nightProgress: null,
       nightFeedback: null,
       ...(phase === 'night'
-        ? { hasNominatedToday: false, executionHappenedToday: false, nightCount: prev.nightCount + 1 }
+        ? {
+            hasNominatedToday: false,
+            executionHappenedToday: false,
+            nightCount: prev.nightCount + 1,
+          }
         : {}),
       // 새 게임 시작 (setup): 역할/상태 초기화, 피드백 히스토리 리셋
       ...(phase === 'setup'
@@ -176,10 +180,14 @@ export function attachListeners(socket: AppSocket) {
     const state = usePlayerStore.getState();
     if (data.executedId === state.playerId) {
       // 본인이 처형당한 경우: deathReason만 설정 (사망 오버레이에 반영)
-      usePlayerStore.getState().set({ deathReason: data.reason, executionHappenedToday: true });
+      usePlayerStore
+        .getState()
+        .set({ deathReason: data.reason, executionHappenedToday: true });
     } else {
       // 다른 플레이어가 처형된 경우: 처형 알림 오버레이 표시
-      usePlayerStore.getState().set({ executionAnnouncement: data, executionHappenedToday: true });
+      usePlayerStore
+        .getState()
+        .set({ executionAnnouncement: data, executionHappenedToday: true });
     }
   });
 

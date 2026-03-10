@@ -28,8 +28,8 @@ export const TEAM_LABELS: Record<Team, string> = {
 
 export const TEAM_COLORS: Record<Team, string> = {
   townsfolk: '#5dade2',
-  outsider: '#5dade2',
-  minion: '#e74c3c',
+  outsider: '#2ecc71',
+  minion: '#e67e22',
   demon: '#e74c3c',
 };
 

@@ -35,7 +35,8 @@ export function VotePanel({
     return () => clearInterval(interval);
   }, [voteClock]);
 
-  const voteCount = Object.values(nomination.votes).length + Object.keys(voteConfirmed).length;
+  const voteCount =
+    Object.values(nomination.votes).length + Object.keys(voteConfirmed).length;
   const guiltyCount =
     Object.values(nomination.votes).filter(Boolean).length +
     Object.values(voteConfirmed).filter(Boolean).length;
@@ -49,10 +50,12 @@ export function VotePanel({
   const remainingMs = voteClock
     ? Math.max(0, voteClock.durationMs - (Date.now() - voteClock.startedAt))
     : null;
-  const remainingSec = remainingMs != null ? Math.ceil(remainingMs / 1000) : null;
-  const isUrgent = voteClock && remainingMs != null
-    ? remainingMs < voteClock.durationMs * 0.15
-    : false;
+  const remainingSec =
+    remainingMs != null ? Math.ceil(remainingMs / 1000) : null;
+  const isUrgent =
+    voteClock && remainingMs != null
+      ? remainingMs < voteClock.durationMs * 0.15
+      : false;
 
   return (
     <View style={styles.votePanel}>
@@ -68,12 +71,7 @@ export function VotePanel({
       </Text>
       {voteClock && remainingSec != null && (
         <View style={styles.timerRow}>
-          <Text
-            style={[
-              styles.timerText,
-              isUrgent && styles.timerUrgent,
-            ]}
-          >
+          <Text style={[styles.timerText, isUrgent && styles.timerUrgent]}>
             {remainingSec}초
           </Text>
         </View>
@@ -92,10 +90,7 @@ export function VotePanel({
             const hasConfirmed = confirmed !== undefined;
             const preselection = votePreselections[player.id];
             return (
-              <View
-                key={player.id}
-                style={styles.voterItem}
-              >
+              <View key={player.id} style={styles.voterItem}>
                 <Text
                   style={[
                     styles.voterName,
