@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { DeadVignette } from '../src/components/DeadVignette';
 import { DeathOverlay } from '../src/components/DeathOverlay';
+import { DictionaryModal } from '../src/components/DictionaryModal';
 import { FeedbackHistoryModal } from '../src/components/FeedbackHistoryModal';
 import { GameEndOverlay } from '../src/components/GameEndOverlay';
 import { NominateModal } from '../src/components/NominateModal';
@@ -81,6 +82,7 @@ export default function GameScreen() {
   const [nominateModalVisible, setNominateModalVisible] = useState(false);
   const [slayerModalVisible, setSlayerModalVisible] = useState(false);
   const [feedbackHistoryVisible, setFeedbackHistoryVisible] = useState(false);
+  const [dictionaryVisible, setDictionaryVisible] = useState(false);
   const feedbackHistory = usePlayerStore((s) => s.feedbackHistory);
   const totalUnread = useWhisperStore((s) =>
     Object.values(s.unreadCounts).reduce((a, b) => a + b, 0),
@@ -138,6 +140,12 @@ export default function GameScreen() {
             </Text>
           </View>
           <View style={styles.headerRight}>
+            <Pressable
+              onPress={() => setDictionaryVisible(true)}
+              style={styles.feedbackHistoryButton}
+            >
+              <Text style={styles.feedbackHistoryIcon}>📖</Text>
+            </Pressable>
             {feedbackHistory.length > 0 && currentPhase !== 'setup' && (
               <Pressable
                 onPress={() => setFeedbackHistoryVisible(true)}
@@ -291,6 +299,11 @@ export default function GameScreen() {
         visible={feedbackHistoryVisible}
         history={feedbackHistory}
         onClose={() => setFeedbackHistoryVisible(false)}
+      />
+
+      <DictionaryModal
+        visible={dictionaryVisible}
+        onClose={() => setDictionaryVisible(false)}
       />
     </View>
   );
