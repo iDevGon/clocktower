@@ -12,6 +12,7 @@ import {
   ActionModal,
   type ActionModalOption,
 } from '../../src/components/ActionModal';
+import { DictionaryModal } from '../../src/components/DictionaryModal';
 import { DaySubPhaseBar } from '../../src/components/DaySubPhaseBar';
 import {
   type CircularPosition,
@@ -339,6 +340,8 @@ export default function GrimoireScreen() {
     setGameSettings(partial);
   };
 
+  const [dictionaryVisible, setDictionaryVisible] = useState(false);
+
   // Night feedback overlay state
   const [feedbackCollapsed, setFeedbackCollapsed] = useState(false);
   const [feedbackSentForRole, setFeedbackSentForRole] = useState<string | null>(
@@ -593,6 +596,12 @@ export default function GrimoireScreen() {
                 <Text style={styles.nominateText}>지목 (수동)</Text>
               </Pressable>
             )}
+          <Pressable
+            onPress={() => setDictionaryVisible(true)}
+            style={styles.logButton}
+          >
+            <Text style={styles.logText}>사전</Text>
+          </Pressable>
           <Pressable
             onPress={() => router.push('/game/log')}
             style={styles.logButton}
@@ -1037,6 +1046,11 @@ export default function GrimoireScreen() {
         title={modal.title}
         options={modal.options}
         onClose={closeModal}
+      />
+
+      <DictionaryModal
+        visible={dictionaryVisible}
+        onClose={() => setDictionaryVisible(false)}
       />
     </View>
   );
