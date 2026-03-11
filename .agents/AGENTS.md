@@ -76,7 +76,7 @@ Player App       ──(ClientToServerEvents)────────>  Server
 
 `PlayerStatus`: `'poisoned'` | `'drunk'` | `'protected'` | `'cursed'`
 
-- 이야기꾼가 `player:setStatuses`로 수동 설정 가능
+- 이야기꾼이 `player:setStatuses`로 수동 설정 가능
 - UI 색상: poisoned=#9b59b6, drunk=#e67e22, protected=#2ecc71, cursed=#9b59b6
 - 한국어 라벨: `PLAYER_STATUS_LABELS` (types.ts)
 
