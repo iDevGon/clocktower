@@ -209,7 +209,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
   },
   {
     id: 'dreamer',
-    name: '몽상가',
+    name: '꿈꾸는 자',
     team: 'townsfolk',
     ability:
       '매일 밤, 플레이어 1명을 선택합니다: 그 플레이어의 역할 또는 가짜 역할 중 하나를 알게 됩니다.',
@@ -217,7 +217,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
   },
   {
     id: 'snake_charmer',
-    name: '뱀술사',
+    name: '뱀 조련사',
     team: 'townsfolk',
     ability:
       '매일 밤, 플레이어 1명을 선택합니다 (이전과 다른 사람): 그 플레이어가 악마이면 당신과 역할을 교환하고, 당신은 중독됩니다.',
@@ -233,7 +233,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
   },
   {
     id: 'flowergirl',
-    name: '꽃소녀',
+    name: '꽃팔이 소녀',
     team: 'townsfolk',
     ability: '매일 밤*, 악마가 오늘 투표했는지 여부를 알게 됩니다.',
     edition: 'sects_and_violets',
@@ -247,14 +247,14 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
   },
   {
     id: 'oracle',
-    name: '신탁',
+    name: '예언자',
     team: 'townsfolk',
     ability: '매일 밤*, 죽은 플레이어 중 몇 명이 악한지 알게 됩니다.',
     edition: 'sects_and_violets',
   },
   {
     id: 'savant',
-    name: '학자',
+    name: '백치천재',
     team: 'townsfolk',
     ability:
       '매일 낮, 스토리텔러로부터 2개의 정보를 받습니다. 하나는 참이고 하나는 거짓입니다.',
@@ -278,7 +278,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
   },
   {
     id: 'artist',
-    name: '예술가',
+    name: '화가',
     team: 'townsfolk',
     ability:
       '게임 중 1회, 낮에 스토리텔러에게 예/아니오 질문을 할 수 있습니다.',
@@ -286,7 +286,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
   },
   {
     id: 'juggler',
-    name: '저글러',
+    name: '곡예사',
     team: 'townsfolk',
     ability:
       '첫째 날, 공개적으로 플레이어-역할 조합을 최대 5개 추측합니다. 그날 밤 정확한 추측 수를 알게 됩니다.',
@@ -304,7 +304,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
   // 외지인 (4)
   {
     id: 'mutant',
-    name: '돌연변이',
+    name: '변종',
     team: 'outsider',
     ability:
       '자신이 외지인이라고 "밝히면", 처형될 수 있습니다. (스토리텔러 재량)',
@@ -327,7 +327,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
   },
   {
     id: 'klutz',
-    name: '얼간이',
+    name: '얼뜨기',
     team: 'outsider',
     ability:
       '사망하면, 살아있는 플레이어 1명을 선택합니다: 그 플레이어가 악하면 당신 팀이 패배합니다.',
@@ -353,7 +353,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
   },
   {
     id: 'cerenovus',
-    name: '체레노부스',
+    name: '세레노버스',
     team: 'minion',
     ability:
       '매일 밤, 플레이어 1명과 선한 역할을 선택합니다: 그 플레이어가 내일 그 역할이라고 주장하지 않으면 처형될 수 있습니다.',
@@ -361,7 +361,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
   },
   {
     id: 'pit_hag',
-    name: '구덩이 마녀',
+    name: '마귀할멈',
     team: 'minion',
     ability:
       '매일 밤*, 플레이어를 선택하고 역할을 지정합니다: 그 플레이어의 역할이 변경됩니다. 같은 역할이 이미 있으면 둘 중 하나가 사망합니다.',
@@ -371,10 +371,10 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
   // 악마 (1)
   {
     id: 'fang_gu',
-    name: '팡구',
+    name: '팡 구',
     team: 'demon',
     ability:
-      '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 첫 번째 외지인 사망 시, 그 외지인이 대신 팡구가 되고 당신은 사망합니다.',
+      '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 첫 번째 외지인 사망 시, 그 외지인이 대신 팡 구가 되고 당신은 사망합니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -387,7 +387,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
   },
   {
     id: 'no_dashii',
-    name: '노다시',
+    name: '노 다시',
     team: 'demon',
     ability:
       '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 가장 가까운 살아있는 마을주민 2명이 중독됩니다.',
