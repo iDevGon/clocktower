@@ -377,7 +377,7 @@ export class GameManager {
     this.nightActionTargets.set(playerId, targets);
   }
 
-  // ── 사냥꾼 능력 ──
+  // ── 처단자 능력 ──
 
   isSlayerUsed(playerId: string): boolean {
     return this.slayerUsed.has(playerId);
@@ -521,9 +521,9 @@ export class GameManager {
 
   /**
    * 승리 조건 확인. 게임 종료 시 GameResult 반환, 아직 진행 중이면 null.
-   * - 악마 사망 (붉은 여인 승계 조건 미충족) → 선한 팀 승리
+   * - 악마 사망 (탕녀 승계 조건 미충족) → 선한 팀 승리
    * - 생존자 2명 이하 (악마 포함) → 악한 팀 승리
-   * - 성인 처형 → 악한 팀 승리 (호출 측에서 executedRoleId 전달)
+   * - 성자 처형 → 악한 팀 승리 (호출 측에서 executedRoleId 전달)
    * - 시장: 생존자 3명, 오늘 처형 없음, 살아있는 시장 → 선한 팀 승리
    */
   checkWinCondition(executedRoleId?: string): GameResult | null {
@@ -555,26 +555,26 @@ export class GameManager {
       };
     };
 
-    // 성인(Saint) 처형 → 악한 팀 승리 (중독/취한 성인은 능력 무효화)
+    // 성자(Saint) 처형 → 악한 팀 승리 (중독/취한 성자는 능력 무효화)
     if (executedRoleId === 'saint') {
       const saintPlayer = this.state.players.find(
         (p) => p.role?.id === 'saint',
       );
       if (saintPlayer && !isPoisonedOrDrunk(saintPlayer)) {
-        return buildResult('evil', '성인이 처형되었습니다');
+        return buildResult('evil', '성자가 처형되었습니다');
       }
     }
 
     // 악마 사망 체크
     const aliveDemon = alivePlayers.find((p) => p.role?.team === 'demon');
     if (!aliveDemon) {
-      // 붉은 여인 승계: 생존자 5명 이상이고 살아있는 (중독되지 않은) 붉은 여인이 있으면 게임 계속
+      // 탕녀 승계: 생존자 5명 이상이고 살아있는 (중독되지 않은) 탕녀가 있으면 게임 계속
       const aliveScarletWoman = alivePlayers.find(
         (p) =>
           p.role?.id === 'scarlet_woman' && !p.statuses.includes('poisoned'),
       );
       if (aliveScarletWoman && aliveCount >= 5) {
-        return null; // 붉은 여인이 악마가 됨 — 스토리텔러가 수동 처리
+        return null; // 탕녀가 악마가 됨 — 이야기꾼가 수동 처리
       }
       return buildResult('good', '악마가 사망했습니다');
     }
@@ -723,10 +723,10 @@ export class GameManager {
     this.votePreselections.clear();
   }
 
-  // ── 공감자(Empath) 이웃 계산 ──
+  // ── 초공감자(Empath) 이웃 계산 ──
 
   /**
-   * 공감자의 살아있는 양쪽 이웃을 찾고 악한 이웃 수를 계산합니다.
+   * 초공감자의 살아있는 양쪽 이웃을 찾고 악한 이웃 수를 계산합니다.
    * playerOrder 기준으로 양 방향 가장 가까운 살아있는 플레이어를 반환합니다.
    */
   getEmpathNeighborInfo(empathPlayerId: string): {

@@ -114,10 +114,10 @@ export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
 
 export const PLAYER_STATUS_DESCRIPTIONS: Record<PlayerStatus, string> = {
   poisoned:
-    '독살자에 의해 중독됨. 이 플레이어의 능력은 오늘 밤과 내일 낮 동안 무효화됩니다.',
+    '독살범에 의해 중독됨. 이 플레이어의 능력은 오늘 밤과 내일 낮 동안 무효화됩니다.',
   drunk: '주정뱅이. 본인은 자신의 역할을 모르며, 능력이 무효화됩니다.',
   protected:
-    '수도승에 의해 보호됨. 이 플레이어는 오늘 밤 악마에게 죽지 않습니다.',
+    '수도사에 의해 보호됨. 이 플레이어는 오늘 밤 악마에게 죽지 않습니다.',
   cursed: '점쟁이의 저주. 점쟁이에게 악마로 감지됩니다.',
 };
 
@@ -172,8 +172,8 @@ export type DeathReason = 'execution' | 'virgin' | 'slayer' | 'night_kill';
 
 export const DEATH_REASON_LABELS: Record<DeathReason, string> = {
   execution: '투표로 처형됨',
-  virgin: '성녀의 능력으로 처형됨',
-  slayer: '사냥꾼에게 처형됨',
+  virgin: '성결자의 능력으로 처형됨',
+  slayer: '처단자에게 처형됨',
   night_kill: '밤에 사망함',
 };
 

@@ -516,7 +516,7 @@ export default function GrimoireScreen() {
     [],
   );
 
-  // 공감자(Empath) 이웃 하이라이트
+  // 초공감자(Empath) 이웃 하이라이트
   const empathNeighborIds = useMemo(() => {
     if (gameState?.phase !== 'night' || activeNightRoleId !== 'empath')
       return new Set<string>();
@@ -559,7 +559,7 @@ export default function GrimoireScreen() {
     return neighbors;
   }, [gameState?.phase, gameState?.players, activeNightRoleId, playerOrder]);
 
-  // 공감자 악한 이웃 수 계산
+  // 초공감자 악한 이웃 수 계산
   const empathEvilCount = useMemo(() => {
     if (empathNeighborIds.size === 0) return 0;
     return (
@@ -990,7 +990,7 @@ export default function GrimoireScreen() {
         }}
       />
 
-      {/* 공감자 이웃 정보 힌트 */}
+      {/* 초공감자 이웃 정보 힌트 */}
       {empathNeighborIds.size > 0 && (
         <View
           style={{
@@ -1012,7 +1012,7 @@ export default function GrimoireScreen() {
               fontWeight: '600',
             }}
           >
-            공감자 이웃:
+            초공감자 이웃:
           </Text>
           <Text style={{ color: '#e0ddd8', fontSize: fontSize.sm }}>
             {gameState.players
