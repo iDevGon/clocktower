@@ -574,7 +574,7 @@ export class GameManager {
           p.role?.id === 'scarlet_woman' && !p.statuses.includes('poisoned'),
       );
       if (aliveScarletWoman && aliveCount >= 5) {
-        return null; // 탕녀가 악마가 됨 — 스토리텔러가 수동 처리
+        return null; // 탕녀가 악마가 됨 — 이야기꾼가 수동 처리
       }
       return buildResult('good', '악마가 사망했습니다');
     }

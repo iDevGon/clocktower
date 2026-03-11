@@ -2,7 +2,7 @@
 
 ## 프로젝트 개요
 
-Blood on the Clocktower 디지털 구현체. pnpm 워크스페이스 기반 모노레포로, 서버 / 플레이어 앱 / 스토리텔러 앱 / 공유 패키지로 구성됨.
+Blood on the Clocktower 디지털 구현체. pnpm 워크스페이스 기반 모노레포로, 서버 / 플레이어 앱 / 이야기꾼 앱 / 공유 패키지로 구성됨.
 
 ## 코드베이스 구조
 
@@ -10,14 +10,14 @@ Blood on the Clocktower 디지털 구현체. pnpm 워크스페이스 기반 모�
 apps/server/src/index.ts            # 서버 엔트리포인트 (Express + Socket.io)
 apps/server/src/game.ts             # GameManager 클래스 (게임 상태 관리)
 apps/server/src/handlers/player.ts  # 플레이어 소켓 이벤트 핸들러
-apps/server/src/handlers/storyteller.ts # 스토리텔러 소켓 이벤트 핸들러
+apps/server/src/handlers/storyteller.ts # 이야기꾼 소켓 이벤트 핸들러
 apps/server/src/pushNotifications.ts # Expo 푸시 알림 관리
 apps/player/app/                    # 플레이어 Expo Router 페이지
 apps/player/src/stores/             # Zustand 스토어 (player, connection, whisper)
 apps/player/src/hooks/              # 소켓 연결 및 이벤트 훅
 apps/player/src/components/         # UI 컴포넌트
 apps/player/src/notifications.ts    # 푸시 알림 등록 및 진동 알림
-apps/storyteller/app/               # 스토리텔러 Expo Router 페이지
+apps/storyteller/app/               # 이야기꾼 Expo Router 페이지
 apps/storyteller/app/game/log.tsx   # 게임 로그 뷰
 apps/storyteller/app/game/whispers.tsx # 밀담 현황 뷰
 apps/storyteller/src/stores/        # Zustand 스토어 (game, connection, log) - AsyncStorage 영속
@@ -76,7 +76,7 @@ Player App       ──(ClientToServerEvents)────────>  Server
 
 `PlayerStatus`: `'poisoned'` | `'drunk'` | `'protected'` | `'cursed'`
 
-- 스토리텔러가 `player:setStatuses`로 수동 설정 가능
+- 이야기꾼가 `player:setStatuses`로 수동 설정 가능
 - UI 색상: poisoned=#9b59b6, drunk=#e67e22, protected=#2ecc71, cursed=#9b59b6
 - 한국어 라벨: `PLAYER_STATUS_LABELS` (types.ts)
 
@@ -101,7 +101,7 @@ Player App       ──(ClientToServerEvents)────────>  Server
 - `NightActionPrompt`: 밤 행동 UI
 - `FeedbackDisplay`: 피드백 결과 표시
 
-### 스토리텔러 앱
+### 이야기꾼 앱
 - `PlayerToken` / `DraggablePlayerToken`: 플레이어 토큰 (드래그 앤 드롭 지원)
 - `PhaseBar` / `DaySubPhaseBar`: 페이즈 전환 컨트롤
 - `NightOrderPanel` / `NightActionLog`: 밤 순서 관리 및 행동 기록
@@ -120,9 +120,9 @@ Player App       ──(ClientToServerEvents)────────>  Server
 ## 개발 시 주의사항
 
 - 새 타입/이벤트 추가 시 `packages/shared`부터 시작
-- 플레이어 앱과 스토리텔러 앱은 독립적인 Expo 프로젝트. 각각 별도의 소켓 훅을 가짐
+- 플레이어 앱과 이야기꾼 앱은 독립적인 Expo 프로젝트. 각각 별도의 소켓 훅을 가짐
 - 서버는 인메모리 상태. 재시작하면 게임 데이터 소실
-- 스토리텔러 앱은 AsyncStorage로 `gameId`, `gameState`, `serverUrl`, `gameLogs`를 영속화
+- 이야기꾼 앱은 AsyncStorage로 `gameId`, `gameState`, `serverUrl`, `gameLogs`를 영속화
 - `__DEV__` 모드에서 더미 플레이어 추가/삭제 및 페이즈/역할 테스트 가능
 - 다크 테마 기반 UI. 페이즈별 색상: night=#8090c0, day=#c4a050, vote=#c47070
 - 애니메이션: `react-native-reanimated` 사용. 제스처: `react-native-gesture-handler` 사용

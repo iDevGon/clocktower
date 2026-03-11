@@ -198,7 +198,7 @@ export function registerPlayerHandlers(
       if (current && playerId in current.votes) return;
 
       game.preselectVote(playerId, guilty);
-      // 모든 플레이어와 스토리텔러에게 프리셀렉트 알림
+      // 모든 플레이어와 이야기꾼에게 프리셀렉트 알림
       playerIo.emit('vote:preselected', { playerId, guilty });
       storytellerIo.emit('vote:preselected' as string, { playerId, guilty });
     });
@@ -290,7 +290,7 @@ export function registerPlayerHandlers(
       game.markSlayerUsed(playerId);
       callback({ success: true });
 
-      // 모든 플레이어와 스토리텔러에게 선언 알림
+      // 모든 플레이어와 이야기꾼에게 선언 알림
       playerIo.emit('slayer:declared', {
         slayerName: player.name,
         targetName: target.name,
