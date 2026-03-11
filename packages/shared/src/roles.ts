@@ -198,12 +198,207 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
 ];
 
 export const SECTS_AND_VIOLETS_ROLES: Role[] = [
-  // 외지인 (일부만 추가)
+  // 마을주민 (13)
+  {
+    id: 'clockmaker',
+    name: '시계공',
+    team: 'townsfolk',
+    ability:
+      '게임 시작 시, 악마와 가장 가까운 하수인 사이의 거리를 알게 됩니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'dreamer',
+    name: '몽상가',
+    team: 'townsfolk',
+    ability:
+      '매일 밤, 플레이어 1명을 선택합니다: 그 플레이어의 역할 또는 가짜 역할 중 하나를 알게 됩니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'snake_charmer',
+    name: '뱀술사',
+    team: 'townsfolk',
+    ability:
+      '매일 밤, 플레이어 1명을 선택합니다 (이전과 다른 사람): 그 플레이어가 악마이면 당신과 역할을 교환하고, 당신은 중독됩니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'mathematician',
+    name: '수학자',
+    team: 'townsfolk',
+    ability:
+      '매일 밤, 지난 낮/밤 동안 능력이 잘못 작동한 플레이어 수를 알게 됩니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'flowergirl',
+    name: '꽃소녀',
+    team: 'townsfolk',
+    ability: '매일 밤*, 악마가 오늘 투표했는지 여부를 알게 됩니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'town_crier',
+    name: '포고꾼',
+    team: 'townsfolk',
+    ability: '매일 밤*, 하수인이 오늘 지명했는지 여부를 알게 됩니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'oracle',
+    name: '신탁',
+    team: 'townsfolk',
+    ability: '매일 밤*, 죽은 플레이어 중 몇 명이 악한지 알게 됩니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'savant',
+    name: '학자',
+    team: 'townsfolk',
+    ability:
+      '매일 낮, 스토리텔러로부터 2개의 정보를 받습니다. 하나는 참이고 하나는 거짓입니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'seamstress',
+    name: '재봉사',
+    team: 'townsfolk',
+    ability:
+      '게임 중 1회, 밤에 2명의 플레이어를 선택합니다 (본인 제외): 둘이 같은 진영인지 알게 됩니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'philosopher',
+    name: '철학자',
+    team: 'townsfolk',
+    ability:
+      '게임 중 1회, 밤에 선한 역할을 선택합니다: 그 역할의 능력을 얻습니다. 해당 역할의 플레이어가 있으면 그 플레이어는 중독됩니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'artist',
+    name: '예술가',
+    team: 'townsfolk',
+    ability:
+      '게임 중 1회, 낮에 스토리텔러에게 예/아니오 질문을 할 수 있습니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'juggler',
+    name: '저글러',
+    team: 'townsfolk',
+    ability:
+      '첫째 날, 공개적으로 플레이어-역할 조합을 최대 5개 추측합니다. 그날 밤 정확한 추측 수를 알게 됩니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'sage',
+    name: '현자',
+    team: 'townsfolk',
+    ability:
+      '악마에 의해 사망하면, 2명의 플레이어를 알게 됩니다: 둘 중 하나가 악마입니다.',
+    edition: 'sects_and_violets',
+  },
+
+  // 외지인 (4)
+  {
+    id: 'mutant',
+    name: '돌연변이',
+    team: 'outsider',
+    ability:
+      '자신이 외지인이라고 "밝히면", 처형될 수 있습니다. (스토리텔러 재량)',
+    edition: 'sects_and_violets',
+  },
   {
     id: 'sweetheart',
     name: '사랑꾼',
     team: 'outsider',
     ability: '사망하면, 1명의 플레이어가 다음 황혼부터 취한 상태가 됩니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'barber',
+    name: '이발사',
+    team: 'outsider',
+    ability:
+      '사망하면, 악마가 오늘 밤에 2명의 플레이어를 선택할 수 있습니다: 그 둘의 역할을 교환합니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'klutz',
+    name: '얼간이',
+    team: 'outsider',
+    ability:
+      '사망하면, 살아있는 플레이어 1명을 선택합니다: 그 플레이어가 악하면 당신 팀이 패배합니다.',
+    edition: 'sects_and_violets',
+  },
+
+  // 하수인 (4)
+  {
+    id: 'evil_twin',
+    name: '사악한 쌍둥이',
+    team: 'minion',
+    ability:
+      '당신과 선한 플레이어 1명은 서로가 쌍둥이임을 알게 됩니다. 선한 쌍둥이가 살아 있는 동안 처형으로 사망하지 않습니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'witch',
+    name: '마녀',
+    team: 'minion',
+    ability:
+      '매일 밤, 플레이어 1명을 선택합니다: 그 플레이어가 내일 지명하면 즉시 사망합니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'cerenovus',
+    name: '체레노부스',
+    team: 'minion',
+    ability:
+      '매일 밤, 플레이어 1명과 선한 역할을 선택합니다: 그 플레이어가 내일 그 역할이라고 주장하지 않으면 처형될 수 있습니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'pit_hag',
+    name: '구덩이 마녀',
+    team: 'minion',
+    ability:
+      '매일 밤*, 플레이어를 선택하고 역할을 지정합니다: 그 플레이어의 역할이 변경됩니다. 같은 역할이 이미 있으면 둘 중 하나가 사망합니다.',
+    edition: 'sects_and_violets',
+  },
+
+  // 악마 (1)
+  {
+    id: 'fang_gu',
+    name: '팡구',
+    team: 'demon',
+    ability:
+      '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 첫 번째 외지인 사망 시, 그 외지인이 대신 팡구가 되고 당신은 사망합니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'vigormortis',
+    name: '비고르모르티스',
+    team: 'demon',
+    ability:
+      '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 하수인을 죽이면 그 하수인의 능력이 유지되고, 그 하수인의 마을주민 이웃 1명이 중독됩니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'no_dashii',
+    name: '노다시',
+    team: 'demon',
+    ability:
+      '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 가장 가까운 살아있는 마을주민 2명이 중독됩니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'vortox',
+    name: '보르톡스',
+    team: 'demon',
+    ability:
+      '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 마을주민의 정보는 모두 거짓입니다. 처형이 있는 날 아무도 사망하지 않으면 선한 팀이 승리합니다.',
     edition: 'sects_and_violets',
   },
 ];
@@ -217,7 +412,7 @@ export const EDITIONS: Edition[] = [
   {
     id: 'sects_and_violets',
     name: 'Sects & Violets',
-    description: '중급자용 에디션. (부분 구현)',
+    description: '중급자용 에디션. 25개 역할. (능력 미구현)',
     disabled: true,
   },
 ];
