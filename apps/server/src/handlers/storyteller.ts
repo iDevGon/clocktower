@@ -456,7 +456,7 @@ export function registerStorytellerHandlers(
       }
 
       if (roleId === 'drunk') {
-        // 수동 주정뱅이 배정: 이야기꾼가 가짜 역할을 지정하거나, 없으면 랜덤 선택
+        // 수동 주정뱅이 배정: 이야기꾼이 가짜 역할을 지정하거나, 없으면 랜덤 선택
         let fakeRoleId = drunkAs;
         if (!fakeRoleId) {
           const freshState = game.getState();
