@@ -26,6 +26,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     team: 'townsfolk',
     ability:
       '게임 시작 시, 2명의 플레이어 중 1명이 특정 마을주민임을 알게 됩니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'librarian',
@@ -33,6 +34,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     team: 'townsfolk',
     ability:
       '게임 시작 시, 2명의 플레이어 중 1명이 특정 외지인임을 알게 됩니다. (또는 외지인이 없음을 알 수 있습니다.)',
+    edition: 'trouble_brewing',
   },
   {
     id: 'investigator',
@@ -40,6 +42,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     team: 'townsfolk',
     ability:
       '게임 시작 시, 2명의 플레이어 중 1명이 특정 하수인임을 알게 됩니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'chef',
@@ -47,12 +50,14 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     team: 'townsfolk',
     ability:
       '게임 시작 시, 서로 이웃한 악한 플레이어 쌍이 몇 개인지 알게 됩니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'empath',
     name: '공감자',
     team: 'townsfolk',
     ability: '매일 밤, 살아있는 양쪽 이웃 중 몇 명이 악한지 알게 됩니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'fortune_teller',
@@ -60,12 +65,14 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     team: 'townsfolk',
     ability:
       '매일 밤, 2명의 플레이어를 선택합니다: 둘 중 악마가 있는지 알게 됩니다. 당신에게 악마로 감지되는 선한 플레이어가 1명 있습니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'undertaker',
     name: '장의사',
     team: 'townsfolk',
     ability: '매일 밤*, 오늘 처형으로 사망한 캐릭터가 누구인지 알게 됩니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'monk',
@@ -73,6 +80,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     team: 'townsfolk',
     ability:
       '매일 밤*, 플레이어 1명을 선택합니다 (본인 제외): 그 플레이어는 오늘 밤 악마로부터 안전합니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'ravenkeeper',
@@ -80,12 +88,14 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     team: 'townsfolk',
     ability:
       '밤에 사망하면, 깨어나서 플레이어 1명을 선택합니다: 그 플레이어의 캐릭터를 알게 됩니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'virgin',
     name: '성녀',
     team: 'townsfolk',
     ability: '처음 지명당했을 때, 지명자가 마을주민이면 즉시 처형됩니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'slayer',
@@ -93,12 +103,14 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     team: 'townsfolk',
     ability:
       '게임 중 1회, 낮에 공개적으로 플레이어 1명을 선택합니다: 그 플레이어가 악마이면 사망합니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'soldier',
     name: '군인',
     team: 'townsfolk',
     ability: '악마로부터 안전합니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'mayor',
@@ -106,6 +118,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     team: 'townsfolk',
     ability:
       '생존자가 3명이고 처형이 없으면 당신 팀이 승리합니다. 밤에 사망하면 다른 플레이어가 대신 사망할 수 있습니다.',
+    edition: 'trouble_brewing',
   },
 
   // 외지인 (4)
@@ -115,6 +128,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     team: 'outsider',
     ability:
       '매일 밤, 플레이어 1명을 선택합니다 (본인 제외): 내일, 그 플레이어가 투표할 때만 당신도 투표할 수 있습니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'drunk',
@@ -122,6 +136,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     team: 'outsider',
     ability:
       '자신이 주정뱅이인 것을 모릅니다. 마을주민 캐릭터라고 생각하지만 아닙니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'recluse',
@@ -129,12 +144,14 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     team: 'outsider',
     ability:
       '사망한 경우에도 악한 것으로, 하수인이나 악마로 감지될 수 있습니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'saint',
     name: '성인',
     team: 'outsider',
     ability: '처형으로 사망하면 당신 팀이 패배합니다.',
+    edition: 'trouble_brewing',
   },
 
   // 하수인 (4)
@@ -144,6 +161,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     team: 'minion',
     ability:
       '매일 밤, 플레이어 1명을 선택합니다: 오늘 밤과 내일 낮 동안 중독됩니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'spy',
@@ -151,18 +169,21 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     team: 'minion',
     ability:
       '매일 밤, 마법서를 봅니다. 사망한 경우에도 선한 것으로, 마을주민이나 외지인으로 감지될 수 있습니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'scarlet_woman',
     name: '붉은 여인',
     team: 'minion',
     ability: '생존자가 5명 이상이고 악마가 사망하면, 당신이 악마가 됩니다.',
+    edition: 'trouble_brewing',
   },
   {
     id: 'baron',
     name: '남작',
     team: 'minion',
     ability: '게임에 외지인이 추가됩니다. [외지인 +2]',
+    edition: 'trouble_brewing',
   },
 
   // 악마 (1)
@@ -172,6 +193,18 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     team: 'demon',
     ability:
       '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 자신을 선택하면 하수인 1명이 임프가 됩니다.',
+    edition: 'trouble_brewing',
+  },
+];
+
+export const SECTS_AND_VIOLETS_ROLES: Role[] = [
+  // 외지인 (일부만 추가)
+  {
+    id: 'sweetheart',
+    name: '사랑꾼',
+    team: 'outsider',
+    ability: '사망하면, 1명의 플레이어가 다음 황혼부터 취한 상태가 됩니다.',
+    edition: 'sects_and_violets',
   },
 ];
 
@@ -181,17 +214,40 @@ export const EDITIONS: Edition[] = [
     name: 'Trouble Brewing',
     description: '입문자용 에디션. 21개 역할.',
   },
+  {
+    id: 'sects_and_violets',
+    name: 'Sects & Violets',
+    description: '중급자용 에디션. (부분 구현)',
+    disabled: true,
+  },
 ];
 
 export const EDITION_ROLES: Record<string, Role[]> = {
   trouble_brewing: TROUBLE_BREWING_ROLES,
+  sects_and_violets: SECTS_AND_VIOLETS_ROLES,
 };
+
+/** 모든 에디션의 역할을 합친 목록 */
+export const ALL_ROLES: Role[] = [
+  ...TROUBLE_BREWING_ROLES,
+  ...SECTS_AND_VIOLETS_ROLES,
+];
 
 export function getRolesForEdition(editionId: string): Role[] {
   return EDITION_ROLES[editionId] ?? TROUBLE_BREWING_ROLES;
 }
 
-export const ROLES_BY_ID = new Map(TROUBLE_BREWING_ROLES.map((r) => [r.id, r]));
+export const ROLES_BY_ID = new Map(ALL_ROLES.map((r) => [r.id, r]));
+
+export const EDITION_LABELS: Record<string, string> = {
+  trouble_brewing: 'TB',
+  sects_and_violets: 'S&V',
+};
+
+export const EDITION_COLORS: Record<string, string> = {
+  trouble_brewing: '#5dade2',
+  sects_and_violets: '#a569bd',
+};
 
 // 첫째 밤 진행 순서
 export const FIRST_NIGHT_ORDER: string[] = [
@@ -263,6 +319,8 @@ export interface RoleDistribution {
 export interface DistributeOptions {
   excludedRoleIds?: string[];
   editionId?: string;
+  /** 다른 에디션에서 추가로 포함할 역할 ID 목록 (크로스 에디션 믹싱) */
+  additionalRoleIds?: string[];
 }
 
 /**
@@ -280,7 +338,15 @@ export function distributeRoles(
   let [townsfolkCount, outsiderCount, minionCount, demonCount] = dist;
 
   const excluded = new Set(options?.excludedRoleIds ?? []);
-  const allRoles = getRolesForEdition(options?.editionId ?? 'trouble_brewing');
+  const editionRoles = getRolesForEdition(options?.editionId ?? 'trouble_brewing');
+
+  // 크로스 에디션 믹싱: 다른 에디션 역할 추가
+  const additionalIds = new Set(options?.additionalRoleIds ?? []);
+  const editionRoleIds = new Set(editionRoles.map((r) => r.id));
+  const additionalRoles = additionalIds.size > 0
+    ? ALL_ROLES.filter((r) => additionalIds.has(r.id) && !editionRoleIds.has(r.id))
+    : [];
+  const allRoles = [...editionRoles, ...additionalRoles];
 
   const townsfolk = allRoles.filter(
     (r) => r.team === 'townsfolk' && !excluded.has(r.id),

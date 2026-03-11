@@ -1,12 +1,14 @@
 import {
+  ALL_ROLES,
   DAY_SUB_PHASE_ENTRIES,
+  EDITION_COLORS,
+  EDITION_LABELS,
   GAME_FLOW,
   GAME_RULES,
   PHASE_ENTRIES,
   STATUS_ENTRIES,
   TEAM_COLORS,
   type Team,
-  TROUBLE_BREWING_ROLES,
 } from '@clocktower/shared';
 import { useState } from 'react';
 import {
@@ -43,7 +45,7 @@ function RolesTab() {
   return (
     <View style={tabStyles.section}>
       {TEAM_ORDER.map(({ team, label }) => {
-        const roles = TROUBLE_BREWING_ROLES.filter((r) => r.team === team);
+        const roles = ALL_ROLES.filter((r) => r.team === team);
         if (roles.length === 0) return null;
         return (
           <View key={team}>
@@ -63,21 +65,40 @@ function RolesTab() {
               </Text>
               <Text style={tabStyles.teamCount}>{roles.length}</Text>
             </View>
-            {roles.map((role) => (
-              <View key={role.id} style={tabStyles.card}>
-                <View style={tabStyles.cardHeader}>
-                  <Text
-                    style={[
-                      tabStyles.roleName,
-                      { color: TEAM_COLORS[role.team] },
-                    ]}
-                  >
-                    {role.name}
-                  </Text>
+            {roles.map((role) => {
+              const editionColor = EDITION_COLORS[role.edition] ?? '#908e8a';
+              const editionLabel = EDITION_LABELS[role.edition] ?? role.edition;
+              return (
+                <View key={role.id} style={tabStyles.card}>
+                  <View style={tabStyles.cardHeader}>
+                    <Text
+                      style={[
+                        tabStyles.roleName,
+                        { color: TEAM_COLORS[role.team] },
+                      ]}
+                    >
+                      {role.name}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 9,
+                        fontWeight: '700',
+                        color: editionColor,
+                        borderWidth: 1,
+                        borderColor: editionColor,
+                        borderRadius: 3,
+                        paddingHorizontal: 4,
+                        paddingVertical: 1,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {editionLabel}
+                    </Text>
+                  </View>
+                  <Text style={tabStyles.abilityText}>{role.ability}</Text>
                 </View>
-                <Text style={tabStyles.abilityText}>{role.ability}</Text>
-              </View>
-            ))}
+              );
+            })}
           </View>
         );
       })}

@@ -1,12 +1,14 @@
 import {
+  ALL_ROLES,
   DAY_SUB_PHASE_ENTRIES,
+  EDITION_COLORS,
+  EDITION_LABELS,
   GAME_FLOW,
   GAME_RULES,
   PHASE_ENTRIES,
   STATUS_ENTRIES,
   TEAM_COLORS,
   TEAM_LABELS,
-  TROUBLE_BREWING_ROLES,
 } from '@clocktower/shared';
 import { useState } from 'react';
 import {
@@ -35,29 +37,44 @@ interface DictionaryModalProps {
 function RolesTab() {
   return (
     <View style={tabStyles.section}>
-      {TROUBLE_BREWING_ROLES.map((role) => (
-        <View key={role.id} style={tabStyles.card}>
-          <View style={tabStyles.cardHeader}>
-            <Text
-              style={[tabStyles.roleName, { color: TEAM_COLORS[role.team] }]}
-            >
-              {role.name}
-            </Text>
-            <Text
-              style={[
-                tabStyles.teamBadge,
-                {
-                  color: TEAM_COLORS[role.team],
-                  borderColor: TEAM_COLORS[role.team],
-                },
-              ]}
-            >
-              {TEAM_LABELS[role.team]}
-            </Text>
+      {ALL_ROLES.map((role) => {
+        const editionLabel = EDITION_LABELS[role.edition] ?? role.edition;
+        const editionColor = EDITION_COLORS[role.edition] ?? '#908e8a';
+        return (
+          <View key={role.id} style={tabStyles.card}>
+            <View style={tabStyles.cardHeader}>
+              <Text
+                style={[tabStyles.roleName, { color: TEAM_COLORS[role.team] }]}
+              >
+                {role.name}
+              </Text>
+              <Text
+                style={[
+                  tabStyles.teamBadge,
+                  {
+                    color: TEAM_COLORS[role.team],
+                    borderColor: TEAM_COLORS[role.team],
+                  },
+                ]}
+              >
+                {TEAM_LABELS[role.team]}
+              </Text>
+              <Text
+                style={[
+                  tabStyles.teamBadge,
+                  {
+                    color: editionColor,
+                    borderColor: editionColor,
+                  },
+                ]}
+              >
+                {editionLabel}
+              </Text>
+            </View>
+            <Text style={tabStyles.abilityText}>{role.ability}</Text>
           </View>
-          <Text style={tabStyles.abilityText}>{role.ability}</Text>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 }
