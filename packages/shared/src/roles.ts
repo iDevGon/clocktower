@@ -406,12 +406,12 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
 export const EDITIONS: Edition[] = [
   {
     id: 'trouble_brewing',
-    name: 'Trouble Brewing',
+    name: '점철되는 혼란',
     description: '입문자용 에디션. 21개 역할.',
   },
   {
     id: 'sects_and_violets',
-    name: 'Sects & Violets',
+    name: '화단에 꽃피운 이단',
     description: '중급자용 에디션. 25개 역할. (능력 미구현)',
     disabled: true,
   },
@@ -435,8 +435,8 @@ export function getRolesForEdition(editionId: string): Role[] {
 export const ROLES_BY_ID = new Map(ALL_ROLES.map((r) => [r.id, r]));
 
 export const EDITION_LABELS: Record<string, string> = {
-  trouble_brewing: 'TB',
-  sects_and_violets: 'S&V',
+  trouble_brewing: '혼란',
+  sects_and_violets: '이단',
 };
 
 export const EDITION_COLORS: Record<string, string> = {
