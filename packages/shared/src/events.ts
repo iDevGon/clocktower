@@ -162,7 +162,11 @@ export interface StorytellerToServerEvents {
     feedback: NightFeedbackPayload;
   }) => void;
   'game:distributeRoles': (
-    options: { excludedRoleIds?: string[]; editionId?: string },
+    options: {
+      excludedRoleIds?: string[];
+      editionId?: string;
+      additionalRoleIds?: string[];
+    },
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
   'game:addDummyPlayers': (count: number) => void;

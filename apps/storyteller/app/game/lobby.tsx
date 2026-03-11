@@ -1,10 +1,12 @@
 import type { Player, Team } from '@clocktower/shared';
 import {
+  ALL_ROLES,
+  EDITION_COLORS,
+  EDITION_LABELS,
   EDITIONS,
   getRoleById,
   getRolesForEdition,
   ROLE_DISTRIBUTION,
-  TROUBLE_BREWING_ROLES,
 } from '@clocktower/shared';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -47,6 +49,10 @@ export default function LobbyScreen() {
     new Set(),
   );
   const [showExcludeModal, setShowExcludeModal] = useState(false);
+  const [additionalRoleIds, setAdditionalRoleIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [showMixModal, setShowMixModal] = useState(false);
 
   // 주정뱅이 가짜 역할 변경 모달 상태
   const [drunkModalPlayer, setDrunkModalPlayer] = useState<Player | null>(null);
@@ -58,6 +64,21 @@ export default function LobbyScreen() {
 
   const toggleExcludedRole = useCallback((roleId: string) => {
     setExcludedRoleIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(roleId)) next.delete(roleId);
+      else next.add(roleId);
+      return next;
+    });
+  }, []);
+
+  // 현재 에디션에 없는 다른 에디션 역할 목록 (믹싱 가능)
+  const mixableRoles = useMemo(() => {
+    const editionRoleIds = new Set(editionRoles.map((r) => r.id));
+    return ALL_ROLES.filter((r) => !editionRoleIds.has(r.id));
+  }, [editionRoles]);
+
+  const toggleAdditionalRole = useCallback((roleId: string) => {
+    setAdditionalRoleIds((prev) => {
       const next = new Set(prev);
       if (next.has(roleId)) next.delete(roleId);
       else next.add(roleId);
@@ -101,6 +122,8 @@ export default function LobbyScreen() {
         excludedRoleIds:
           excludedRoleIds.size > 0 ? [...excludedRoleIds] : undefined,
         editionId: selectedEditionId,
+        additionalRoleIds:
+          additionalRoleIds.size > 0 ? [...additionalRoleIds] : undefined,
       });
     } catch (e) {
       Alert.alert('오류', e instanceof Error ? e.message : '알 수 없는 오류');
@@ -120,7 +143,7 @@ export default function LobbyScreen() {
         })
         .filter((id): id is string => !!id),
     );
-    return TROUBLE_BREWING_ROLES.filter(
+    return ALL_ROLES.filter(
       (r) => r.team === 'townsfolk' && !assignedRoleIds.has(r.id),
     );
   }, [gameState]);
@@ -209,29 +232,43 @@ export default function LobbyScreen() {
             <Pressable
               key={edition.id}
               onPress={() => {
+                if (edition.disabled) return;
                 setSelectedEditionId(edition.id);
                 setExcludedRoleIds(new Set());
+                setAdditionalRoleIds(new Set());
               }}
+              disabled={edition.disabled}
               style={{
                 paddingVertical: s(6),
                 paddingHorizontal: s(12),
                 borderRadius: 6,
-                backgroundColor:
-                  selectedEditionId === edition.id ? '#2a3a5c' : '#242428',
+                backgroundColor: edition.disabled
+                  ? '#1a1a1e'
+                  : selectedEditionId === edition.id
+                    ? '#2a3a5c'
+                    : '#242428',
                 borderWidth: 1,
-                borderColor:
-                  selectedEditionId === edition.id ? '#4a6a9c' : '#3a3a3e',
+                borderColor: edition.disabled
+                  ? '#2a2a2e'
+                  : selectedEditionId === edition.id
+                    ? '#4a6a9c'
+                    : '#3a3a3e',
+                opacity: edition.disabled ? 0.5 : 1,
               }}
             >
               <Text
                 style={{
-                  color:
-                    selectedEditionId === edition.id ? '#8ab4f8' : '#706e6a',
+                  color: edition.disabled
+                    ? '#4a4a4e'
+                    : selectedEditionId === edition.id
+                      ? '#8ab4f8'
+                      : '#706e6a',
                   fontSize: s(13),
                   fontWeight: '600',
                 }}
               >
                 {edition.name}
+                {edition.disabled ? ' (준비중)' : ''}
               </Text>
             </Pressable>
           ))}
@@ -263,6 +300,38 @@ export default function LobbyScreen() {
             {excludedRoleIds.size > 0 ? ` (${excludedRoleIds.size}개)` : ''}
           </Text>
         </Pressable>
+
+        {/* 다른 에디션 역할 믹스 버튼 */}
+        {mixableRoles.length > 0 && (
+          <Pressable
+            onPress={() => setShowMixModal(true)}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingVertical: s(8),
+              marginBottom: s(8),
+              borderRadius: 6,
+              backgroundColor: pressed ? '#2a2a30' : '#1e1e22',
+              borderWidth: 1,
+              borderColor:
+                additionalRoleIds.size > 0 ? '#a569bd' : '#3a3a3e',
+            })}
+          >
+            <Text
+              style={{
+                color: additionalRoleIds.size > 0 ? '#a569bd' : '#908e8a',
+                fontSize: s(13),
+                fontWeight: '600',
+              }}
+            >
+              다른 에디션 역할 추가
+              {additionalRoleIds.size > 0
+                ? ` (${additionalRoleIds.size}개)`
+                : ''}
+            </Text>
+          </Pressable>
+        )}
 
         <Pressable
           onPress={handleDistributeRoles}
@@ -713,7 +782,19 @@ export default function LobbyScreen() {
                   { team: 'demon' as Team, label: '악마', color: '#b85c5c' },
                 ] as const
               ).map(({ team, label, color }) => {
-                const teamRoles = editionRoles.filter((r) => r.team === team);
+                // 현재 에디션 + 믹스된 역할
+                const additionalRolesArr = ALL_ROLES.filter(
+                  (r) =>
+                    additionalRoleIds.has(r.id) &&
+                    !editionRoles.some((er) => er.id === r.id),
+                );
+                const allAvailableRoles = [
+                  ...editionRoles,
+                  ...additionalRolesArr,
+                ];
+                const teamRoles = allAvailableRoles.filter(
+                  (r) => r.team === team,
+                );
                 if (teamRoles.length === 0) return null;
                 return (
                   <View key={team} style={{ marginBottom: s(12) }}>
@@ -776,18 +857,30 @@ export default function LobbyScreen() {
                             )}
                           </View>
                           <View style={{ flex: 1 }}>
-                            <Text
+                            <View
                               style={{
-                                color: isExcluded ? '#706060' : '#e0ddd8',
-                                fontSize: s(14),
-                                fontWeight: '600',
-                                textDecorationLine: isExcluded
-                                  ? 'line-through'
-                                  : 'none',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: s(6),
                               }}
                             >
-                              {role.name}
-                            </Text>
+                              <Text
+                                style={{
+                                  color: isExcluded ? '#706060' : '#e0ddd8',
+                                  fontSize: s(14),
+                                  fontWeight: '600',
+                                  textDecorationLine: isExcluded
+                                    ? 'line-through'
+                                    : 'none',
+                                }}
+                              >
+                                {role.name}
+                              </Text>
+                              <EditionBadge
+                                editionId={role.edition}
+                                scale={scale}
+                              />
+                            </View>
                             <Text
                               style={{
                                 color: isExcluded ? '#504848' : '#787674',
@@ -828,7 +921,253 @@ export default function LobbyScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+      {/* 다른 에디션 역할 믹스 모달 */}
+      <Modal
+        visible={showMixModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowMixModal(false)}
+      >
+        <Pressable
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+          onPress={() => setShowMixModal(false)}
+        >
+          <Pressable
+            style={{
+              backgroundColor: '#1e1e22',
+              borderRadius: 12,
+              width: '90%',
+              maxHeight: '80%',
+              borderWidth: 2,
+              borderColor: '#a569bd',
+            }}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View
+              style={{
+                paddingHorizontal: s(16),
+                paddingTop: s(16),
+                paddingBottom: s(12),
+                borderBottomWidth: 1,
+                borderBottomColor: '#3a3a42',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Text
+                style={{
+                  color: '#e0ddd8',
+                  fontSize: s(18),
+                  fontWeight: '700',
+                }}
+              >
+                다른 에디션 역할 추가
+              </Text>
+              {additionalRoleIds.size > 0 && (
+                <Pressable
+                  onPress={() => setAdditionalRoleIds(new Set())}
+                  style={{
+                    paddingVertical: s(4),
+                    paddingHorizontal: s(10),
+                    borderRadius: 4,
+                    backgroundColor: '#3a2020',
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: '#c47070',
+                      fontSize: s(12),
+                      fontWeight: '600',
+                    }}
+                  >
+                    초기화
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+            <ScrollView
+              contentContainerStyle={{
+                paddingHorizontal: s(12),
+                paddingVertical: s(8),
+              }}
+            >
+              {(
+                [
+                  {
+                    team: 'townsfolk' as Team,
+                    label: '마을주민',
+                    color: '#7090c4',
+                  },
+                  {
+                    team: 'outsider' as Team,
+                    label: '외지인',
+                    color: '#50a090',
+                  },
+                  { team: 'minion' as Team, label: '하수인', color: '#c48850' },
+                  { team: 'demon' as Team, label: '악마', color: '#b85c5c' },
+                ] as const
+              ).map(({ team, label, color }) => {
+                const teamRoles = mixableRoles.filter((r) => r.team === team);
+                if (teamRoles.length === 0) return null;
+                return (
+                  <View key={team} style={{ marginBottom: s(12) }}>
+                    <Text
+                      style={{
+                        color,
+                        fontSize: s(14),
+                        fontWeight: '700',
+                        marginBottom: s(6),
+                      }}
+                    >
+                      {label}
+                    </Text>
+                    {teamRoles.map((role) => {
+                      const isSelected = additionalRoleIds.has(role.id);
+                      return (
+                        <Pressable
+                          key={role.id}
+                          onPress={() => toggleAdditionalRole(role.id)}
+                          style={({ pressed }) => ({
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingVertical: s(8),
+                            paddingHorizontal: s(10),
+                            marginBottom: s(2),
+                            borderRadius: 6,
+                            backgroundColor: isSelected
+                              ? '#2a1a2a'
+                              : pressed
+                                ? '#2a2a30'
+                                : '#252528',
+                          })}
+                        >
+                          <View
+                            style={{
+                              width: s(18),
+                              height: s(18),
+                              borderRadius: 4,
+                              borderWidth: 2,
+                              borderColor: isSelected ? '#a569bd' : '#5a5a5e',
+                              backgroundColor: isSelected
+                                ? '#a569bd'
+                                : 'transparent',
+                              marginRight: s(10),
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            {isSelected && (
+                              <Text
+                                style={{
+                                  color: '#1e1e22',
+                                  fontSize: s(12),
+                                  fontWeight: '900',
+                                  lineHeight: s(14),
+                                }}
+                              >
+                                ✓
+                              </Text>
+                            )}
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: s(6),
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  color: '#e0ddd8',
+                                  fontSize: s(14),
+                                  fontWeight: '600',
+                                }}
+                              >
+                                {role.name}
+                              </Text>
+                              <EditionBadge
+                                editionId={role.edition}
+                                scale={scale}
+                              />
+                            </View>
+                            <Text
+                              style={{
+                                color: '#787674',
+                                fontSize: s(11),
+                                lineHeight: s(15),
+                              }}
+                              numberOfLines={2}
+                            >
+                              {role.ability}
+                            </Text>
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                );
+              })}
+            </ScrollView>
+            <Pressable
+              style={{
+                paddingVertical: s(14),
+                borderTopWidth: 1,
+                borderTopColor: '#3a3a42',
+              }}
+              onPress={() => setShowMixModal(false)}
+            >
+              <Text
+                style={{
+                  color: '#7070c4',
+                  fontSize: s(15),
+                  fontWeight: '600',
+                  textAlign: 'center',
+                }}
+              >
+                완료
+              </Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
+  );
+}
+
+function EditionBadge({
+  editionId,
+  scale,
+}: {
+  editionId: string;
+  scale: number;
+}) {
+  const s = (v: number) => Math.round(v * scale);
+  const label = EDITION_LABELS[editionId] ?? editionId;
+  const color = EDITION_COLORS[editionId] ?? '#908e8a';
+
+  return (
+    <Text
+      style={{
+        fontSize: s(9),
+        fontWeight: '700',
+        color,
+        borderWidth: 1,
+        borderColor: color,
+        borderRadius: 3,
+        paddingHorizontal: s(4),
+        paddingVertical: s(1),
+        overflow: 'hidden',
+      }}
+    >
+      {label}
+    </Text>
   );
 }
 

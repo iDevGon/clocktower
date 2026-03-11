@@ -1,4 +1,8 @@
-import { TROUBLE_BREWING_ROLES } from '@clocktower/shared';
+import {
+  ALL_ROLES,
+  EDITION_COLORS,
+  EDITION_LABELS,
+} from '@clocktower/shared';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, Text, View } from 'react-native';
@@ -53,18 +57,18 @@ export default function AssignRoleScreen() {
     return map;
   }, [gameState, playerId]);
 
-  // 모든 역할 표시 (배정된 역할 포함)
-  const availableRoles = TROUBLE_BREWING_ROLES;
+  // 모든 에디션의 역할 표시 (배정된 역할 포함)
+  const availableRoles = ALL_ROLES;
 
   // 주정뱅이의 가짜 역할로 선택 가능한 마을주민 목록
   const availableTownsfolk = useMemo(
-    () => TROUBLE_BREWING_ROLES.filter((r) => r.team === 'townsfolk'),
+    () => ALL_ROLES.filter((r) => r.team === 'townsfolk'),
     [],
   );
 
   const handleRandomAssign = useCallback(() => {
     if (!playerId) return;
-    const unassignedRoles = TROUBLE_BREWING_ROLES.filter(
+    const unassignedRoles = ALL_ROLES.filter(
       (r) => !roleOwnerMap.has(r.id),
     );
     if (unassignedRoles.length === 0) return;
@@ -149,14 +153,23 @@ export default function AssignRoleScreen() {
               ]}
             >
               <View style={styles.roleHeader}>
-                <Text
-                  style={[
-                    styles.roleName,
-                    ownerName && styles.roleNameAssigned,
-                  ]}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
                 >
-                  {item.name}
-                </Text>
+                  <Text
+                    style={[
+                      styles.roleName,
+                      ownerName && styles.roleNameAssigned,
+                    ]}
+                  >
+                    {item.name}
+                  </Text>
+                  <EditionBadge editionId={item.edition} />
+                </View>
                 {ownerName ? (
                   <Text style={styles.assignedLabel}>{ownerName}</Text>
                 ) : (
@@ -247,5 +260,28 @@ export default function AssignRoleScreen() {
         </Pressable>
       </Modal>
     </View>
+  );
+}
+
+function EditionBadge({ editionId }: { editionId: string }) {
+  const label = EDITION_LABELS[editionId] ?? editionId;
+  const color = EDITION_COLORS[editionId] ?? '#908e8a';
+
+  return (
+    <Text
+      style={{
+        fontSize: 9,
+        fontWeight: '700',
+        color,
+        borderWidth: 1,
+        borderColor: color,
+        borderRadius: 3,
+        paddingHorizontal: 4,
+        paddingVertical: 1,
+        overflow: 'hidden',
+      }}
+    >
+      {label}
+    </Text>
   );
 }

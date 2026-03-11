@@ -8,6 +8,7 @@ export interface Role {
   name: string;
   team: Team;
   ability: string;
+  edition: string;
 }
 
 export interface Player {
@@ -187,4 +188,5 @@ export interface Edition {
   id: string;
   name: string;
   description: string;
+  disabled?: boolean;
 }

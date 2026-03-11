@@ -1,9 +1,9 @@
 import {
   distributeRoles,
   FIRST_NIGHT_ORDER,
+  ALL_ROLES,
   getRoleById,
   OTHER_NIGHT_ORDER,
-  TROUBLE_BREWING_ROLES,
 } from '@clocktower/shared';
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
@@ -33,7 +33,7 @@ function sendEvilInfo(
   );
 
   // 게임에 없는 선한 역할 중 3개를 블러프용으로 선택
-  const notInPlayGood = TROUBLE_BREWING_ROLES.filter(
+  const notInPlayGood = ALL_ROLES.filter(
     (r) =>
       (r.team === 'townsfolk' || r.team === 'outsider') &&
       !assignedRoleIds.has(r.id),
@@ -463,7 +463,7 @@ export function registerStorytellerHandlers(
             .filter((p) => p.id !== playerId)
             .map((p) => p.role?.id)
             .filter(Boolean);
-          const availableTownsfolk = TROUBLE_BREWING_ROLES.filter(
+          const availableTownsfolk = ALL_ROLES.filter(
             (r) => r.team === 'townsfolk' && !assignedRoleIds.includes(r.id),
           );
           fakeRoleId =

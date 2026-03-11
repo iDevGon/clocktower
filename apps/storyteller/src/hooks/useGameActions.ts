@@ -42,7 +42,11 @@ export function useGameActions() {
   );
 
   const distributeRoles = useCallback(
-    (options?: { excludedRoleIds?: string[]; editionId?: string }) =>
+    (options?: {
+      excludedRoleIds?: string[];
+      editionId?: string;
+      additionalRoleIds?: string[];
+    }) =>
       new Promise<void>((resolve, reject) => {
         const s = getSocket();
         if (!s) return reject(new Error('Not connected'));
