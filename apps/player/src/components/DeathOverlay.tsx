@@ -6,13 +6,13 @@ import Animated, {
   Easing,
   FadeIn,
   interpolate,
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { BaseOverlay } from './BaseOverlay';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -121,47 +121,31 @@ interface DeathOverlayProps {
 
 const DRIP_COUNT = 14;
 
-export function DeathOverlay({ onDismiss, reason }: DeathOverlayProps) {
-  const fadeOut = useSharedValue(1);
-
-  useEffect(() => {
-    Vibration.vibrate([0, 300, 150, 500]);
-
-    // Auto-dismiss: fade out then call onDismiss
-    fadeOut.value = withDelay(
-      AUTO_DISMISS_MS,
-      withTiming(
-        0,
-        { duration: FADE_OUT_MS, easing: Easing.in(Easing.quad) },
-        (finished) => {
-          if (finished) {
-            runOnJS(onDismiss)();
-          }
-        },
-      ),
-    );
-
-    return () => cancelAnimation(fadeOut);
-  }, [fadeOut, onDismiss]);
-
-  const containerStyle = useAnimatedStyle(() => ({
-    opacity: fadeOut.value,
-  }));
-
+function DeathEffects() {
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, s.overlay, containerStyle]}>
-      {/* Dark background */}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: '#0a0000' }]} />
-
-      {/* Vignette */}
+    <>
       <VignettePulse />
-
-      {/* Blood drips */}
       {Array.from({ length: DRIP_COUNT }).map((_, i) => (
         <BloodDrip key={`d-${i}`} index={i} />
       ))}
+    </>
+  );
+}
 
-      {/* Content */}
+export function DeathOverlay({ onDismiss, reason }: DeathOverlayProps) {
+  useEffect(() => {
+    Vibration.vibrate([0, 300, 150, 500]);
+  }, []);
+
+  return (
+    <BaseOverlay
+      backgroundColor="#0a0000"
+      zIndex={90}
+      effectsLayer={<DeathEffects />}
+      onDismiss={onDismiss}
+      autoDismissMs={AUTO_DISMISS_MS}
+      fadeOutDurationMs={FADE_OUT_MS}
+    >
       <View style={s.content}>
         <SkullIcon />
 
@@ -201,16 +185,11 @@ export function DeathOverlay({ onDismiss, reason }: DeathOverlayProps) {
           신중하게 사용하세요
         </Animated.Text>
       </View>
-    </Animated.View>
+    </BaseOverlay>
   );
 }
 
 const s = StyleSheet.create({
-  overlay: {
-    zIndex: 90,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   content: {
     alignItems: 'center',
     paddingHorizontal: 32,

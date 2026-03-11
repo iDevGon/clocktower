@@ -151,6 +151,7 @@ export function startClockwiseVote(
       const result = game.closeVote();
       if (result) {
         playerIo.emit('vote:result', result);
+        storytellerIo.emit('vote:result' as string, result);
         game.returnToNomination();
         playerIo.emit('game:phase', 'day');
         playerIo.emit('day:subPhase', 'nomination');
@@ -608,9 +609,12 @@ export function registerStorytellerHandlers(
         `${nominator?.name ?? '???'}이(가) ${nominee?.name ?? '???'}을(를) 지목했습니다`,
       );
 
-      // 시계방향 투표 시작 (온라인 투표 모드일 때만)
+      // 시계방향 투표 시작 (온라인 투표 모드일 때만) - 5초 카운트다운 후 시작
       if (state.settings.votingMode === 'online') {
-        startClockwiseVote(game, playerIo, storytellerIo, nomineeId);
+        const countdownTimeout = setTimeout(() => {
+          startClockwiseVote(game, playerIo, storytellerIo, nomineeId);
+        }, 5000);
+        game.setVoteCountdownTimeout(countdownTimeout);
       }
     });
 
@@ -625,6 +629,7 @@ export function registerStorytellerHandlers(
       const result = game.closeVote();
       if (result) {
         playerIo.emit('vote:result', result);
+        storytellerIo.emit('vote:result' as string, result);
 
         // 투표 종료 후 → 지목 단계로 복귀 (처형은 밤 전환 시 수행)
         game.returnToNomination();

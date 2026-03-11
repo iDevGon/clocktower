@@ -14,17 +14,27 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
   const { preselectVote } = useGameActions();
   const playerId = usePlayerStore((s) => s.playerId);
   const voteClock = usePlayerStore((s) => s.voteClock);
+  const voteCountdown = usePlayerStore((s) => s.voteCountdown);
   const voteOrder = usePlayerStore((s) => s.voteOrder);
   const votePreselections = usePlayerStore((s) => s.votePreselections);
 
   const [, forceUpdate] = useState(0);
 
-  // Periodic re-render to track hand position
+  // Periodic re-render to track hand position and countdown
   useEffect(() => {
-    if (!voteClock) return;
+    if (!voteClock && !voteCountdown) return;
     const interval = setInterval(() => forceUpdate((n) => n + 1), 200);
     return () => clearInterval(interval);
-  }, [voteClock]);
+  }, [voteClock, voteCountdown]);
+
+  // 카운트다운 계산
+  const countdownRemaining = useMemo(() => {
+    if (!voteCountdown) return 0;
+    const elapsed = Date.now() - voteCountdown.startedAt;
+    return Math.max(0, Math.ceil((voteCountdown.durationMs - elapsed) / 1000));
+  }, [voteCountdown]);
+
+  const isCountingDown = voteCountdown !== null && countdownRemaining > 0;
 
   // Compute whether the hand has passed my position
   const myVoteState = useMemo(() => {
@@ -71,62 +81,71 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
         {'(을)를 지목했습니다'}
       </Text>
 
-      <VoteClockRing />
-
-      {myVoteState.canVote ? (
-        <>
-          <Text style={styles.description}>
-            시계 바늘이 지나가기 전에 찬반을 선택하세요.
+      {isCountingDown ? (
+        <View style={styles.countdownContainer}>
+          <Text style={styles.countdownMessage}>
+            잠시 후 투표가 시작됩니다
           </Text>
-          <View style={styles.buttonRow}>
-            <Pressable
-              style={[
-                styles.guiltyButton,
-                myPreselection === true && styles.guiltyButtonSelected,
-              ]}
-              onPress={() => handleToggle(true)}
-            >
-              <Text
-                style={[
-                  styles.guiltyText,
-                  myPreselection === true && styles.guiltyTextSelected,
-                ]}
-              >
-                유죄
+          <Text style={styles.countdownNumber}>{countdownRemaining}</Text>
+        </View>
+      ) : (
+        <>
+          <VoteClockRing />
+          {myVoteState.canVote ? (
+            <>
+              <Text style={styles.description}>
+                시계 바늘이 지나가기 전에 찬반을 선택하세요.
               </Text>
-            </Pressable>
-
-            <Pressable
-              style={[
-                styles.innocentButton,
-                myPreselection === false && styles.innocentButtonSelected,
-              ]}
-              onPress={() => handleToggle(false)}
-            >
-              <Text
-                style={[
-                  styles.innocentText,
-                  myPreselection === false && styles.innocentTextSelected,
-                ]}
-              >
-                무죄
+              <View style={styles.buttonRow}>
+                <Pressable
+                  style={[
+                    styles.guiltyButton,
+                    myPreselection === true && styles.guiltyButtonSelected,
+                  ]}
+                  onPress={() => handleToggle(true)}
+                >
+                  <Text
+                    style={[
+                      styles.guiltyText,
+                      myPreselection === true && styles.guiltyTextSelected,
+                    ]}
+                  >
+                    유죄
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.innocentButton,
+                    myPreselection === false && styles.innocentButtonSelected,
+                  ]}
+                  onPress={() => handleToggle(false)}
+                >
+                  <Text
+                    style={[
+                      styles.innocentText,
+                      myPreselection === false && styles.innocentTextSelected,
+                    ]}
+                  >
+                    무죄
+                  </Text>
+                </Pressable>
+              </View>
+              {myPreselection == null && (
+                <Text style={styles.noSelectionHint}>
+                  미선택 시 무죄로 처리됩니다
+                </Text>
+              )}
+            </>
+          ) : (
+            <View style={styles.votedContainer}>
+              <Text style={styles.votedSubtext}>
+                {myVoteState.hasPassed
+                  ? '투표 완료. 결과를 기다리는 중...'
+                  : '다른 플레이어의 투표를 기다리는 중...'}
               </Text>
-            </Pressable>
-          </View>
-          {myPreselection == null && (
-            <Text style={styles.noSelectionHint}>
-              미선택 시 무죄로 처리됩니다
-            </Text>
+            </View>
           )}
         </>
-      ) : (
-        <View style={styles.votedContainer}>
-          <Text style={styles.votedSubtext}>
-            {myVoteState.hasPassed
-              ? '투표 완료. 결과를 기다리는 중...'
-              : '다른 플레이어의 투표를 기다리는 중...'}
-          </Text>
-        </View>
       )}
     </View>
   );

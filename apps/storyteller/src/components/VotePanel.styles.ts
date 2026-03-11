@@ -129,6 +129,24 @@ export function createVotePanelStyles(scale: number) {
     timerUrgent: {
       color: '#e74c3c',
     },
+    countdownRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#12121a',
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: '#4a3a2a',
+      paddingVertical: s(10),
+      paddingHorizontal: s(14),
+      marginBottom: s(12),
+    },
+    countdownText: {
+      color: '#c4a050',
+      fontSize: s(14),
+      fontWeight: '700',
+      fontVariant: ['tabular-nums'] as const,
+    },
     closeVoteButton: {
       backgroundColor: '#943c3c',
       borderRadius: 8,
@@ -138,6 +156,52 @@ export function createVotePanelStyles(scale: number) {
     closeVoteText: {
       color: '#e0ddd8',
       fontSize: s(15),
+      fontWeight: '600',
+    },
+    resultBanner: {
+      backgroundColor: '#12121a',
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#2a2a36',
+      padding: s(14),
+      alignItems: 'center',
+      gap: s(6),
+    },
+    resultVerdict: {
+      fontSize: s(16),
+      fontWeight: '800',
+    },
+    resultVerdictGuilty: {
+      color: '#c47070',
+    },
+    resultVerdictInnocent: {
+      color: '#6a9a6a',
+    },
+    resultCount: {
+      color: '#908e8a',
+      fontSize: s(12),
+    },
+    resultSentence: {
+      fontSize: s(14),
+      fontWeight: '700',
+      marginTop: s(4),
+    },
+    resultSentenceGuilty: {
+      color: '#c47070',
+    },
+    resultSentenceInnocent: {
+      color: '#6a9a6a',
+    },
+    resultDismiss: {
+      backgroundColor: '#2a2a36',
+      borderRadius: 6,
+      paddingVertical: s(8),
+      paddingHorizontal: s(24),
+      marginTop: s(8),
+    },
+    resultDismissText: {
+      color: '#e0ddd8',
+      fontSize: s(13),
       fontWeight: '600',
     },
   });

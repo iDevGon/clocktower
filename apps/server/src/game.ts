@@ -34,6 +34,7 @@ export class GameManager {
 
   // 시계방향 투표 관련 상태
   private voteClockInterval: ReturnType<typeof setInterval> | null = null;
+  private voteCountdownTimeout: ReturnType<typeof setTimeout> | null = null;
   // 투표 프리셀렉트 (토글): 시계 바늘이 지나갈 때 확정됨
   private votePreselections = new Map<string, boolean>();
 
@@ -696,11 +697,19 @@ export class GameManager {
   // ── 시계방향 투표 타이머 관리 ──
 
   clearVoteTimer(): void {
+    if (this.voteCountdownTimeout) {
+      clearTimeout(this.voteCountdownTimeout);
+      this.voteCountdownTimeout = null;
+    }
     if (this.voteClockInterval) {
       clearInterval(this.voteClockInterval);
       this.voteClockInterval = null;
     }
     this.votePreselections.clear();
+  }
+
+  setVoteCountdownTimeout(timeout: ReturnType<typeof setTimeout>): void {
+    this.voteCountdownTimeout = timeout;
   }
 
   setVoteClockInterval(interval: ReturnType<typeof setInterval>): void {

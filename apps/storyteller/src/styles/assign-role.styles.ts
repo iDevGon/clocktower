@@ -7,9 +7,22 @@ export function createAssignRoleStyles(scale: number) {
       flex: 1,
       backgroundColor: '#121214',
     },
+    searchInput: {
+      marginHorizontal: s(16),
+      marginTop: s(12),
+      marginBottom: s(4),
+      paddingVertical: s(10),
+      paddingHorizontal: s(14),
+      backgroundColor: '#1e1e22',
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#3a3a3e',
+      color: '#e0ddd8',
+      fontSize: s(15),
+    },
     listContent: {
       paddingHorizontal: s(16),
-      paddingVertical: s(16),
+      paddingVertical: s(12),
     },
     randomButton: {
       marginBottom: s(12),

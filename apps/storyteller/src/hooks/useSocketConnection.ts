@@ -99,6 +99,23 @@ export function useSocketConnection() {
           },
         );
         newSocket.on(
+          'vote:result',
+          (data: {
+            nomineeId: string;
+            nomineeName: string;
+            guilty: boolean;
+            votes: Record<string, boolean>;
+          }) => {
+            const store = useGameStore.getState();
+            store.setVoteResult(data);
+            store.setVoteClock(null);
+            store.clearVotePreselections();
+            if (data.guilty) {
+              store.setLastExecutedPlayerId(data.nomineeId);
+            }
+          },
+        );
+        newSocket.on(
           'chat:receiveFromPlayer' as string,
           (message: StorytellerMessage) => {
             const store = useGameStore.getState();

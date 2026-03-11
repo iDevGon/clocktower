@@ -169,9 +169,12 @@ export function registerPlayerHandlers(
       });
       storytellerIo.emit('game:state', game.getState());
 
-      // 시계방향 투표 시작 (온라인 투표 모드일 때)
+      // 시계방향 투표 시작 (온라인 투표 모드일 때) - 5초 카운트다운 후 시작
       if (game.getState().settings.votingMode === 'online') {
-        startClockwiseVote(game, playerIo, storytellerIo, nomineeId);
+        const countdownTimeout = setTimeout(() => {
+          startClockwiseVote(game, playerIo, storytellerIo, nomineeId);
+        }, 5000);
+        game.setVoteCountdownTimeout(countdownTimeout);
       }
     });
 

@@ -150,6 +150,7 @@ export function attachListeners(socket: AppSocket) {
       voteResult: null,
       votePreselections: {},
       voteClock: null,
+      voteCountdown: { startedAt: Date.now(), durationMs: 5000 },
     });
     vibrateAlert();
   });
@@ -160,6 +161,7 @@ export function attachListeners(socket: AppSocket) {
       nomination: null,
       voteOrder: null,
       voteClock: null,
+      voteCountdown: null,
       votePreselections: {},
     });
     setTimeout(() => {
@@ -267,6 +269,7 @@ export function attachListeners(socket: AppSocket) {
   socket.on('vote:clockStart', ({ durationMs }) => {
     usePlayerStore.getState().set({
       voteClock: { startedAt: Date.now(), durationMs },
+      voteCountdown: null,
     });
   });
 

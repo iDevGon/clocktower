@@ -88,6 +88,8 @@ export default function GrimoireScreen() {
   const executedPlayerId = useGameStore((s) => s.lastExecutedPlayerId);
   const setExecutedPlayerId = useGameStore((s) => s.setLastExecutedPlayerId);
   const voteClock = useGameStore((s) => s.voteClock);
+  const voteResult = useGameStore((s) => s.voteResult);
+  const setVoteResult = useGameStore((s) => s.setVoteResult);
 
   // Modal state
   const [modal, setModal] = useState<{
@@ -903,6 +905,17 @@ export default function GrimoireScreen() {
           players={gameState.players}
           onCloseVote={closeVote}
           onCastVote={castVoteForPlayer}
+          voteResult={voteResult}
+          onDismissResult={() => setVoteResult(null)}
+        />
+      )}
+      {!hasActiveVote && voteResult && currentNomination && (
+        <VotePanel
+          nomination={currentNomination}
+          players={gameState.players}
+          onCloseVote={() => {}}
+          voteResult={voteResult}
+          onDismissResult={() => setVoteResult(null)}
         />
       )}
       {executedPlayer && (

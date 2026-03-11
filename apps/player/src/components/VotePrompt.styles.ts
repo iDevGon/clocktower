@@ -142,4 +142,23 @@ export const styles = StyleSheet.create({
     marginTop: 8,
     fontStyle: 'italic',
   },
+  countdownContainer: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  countdownMessage: {
+    color: COLORS.brass,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginBottom: 12,
+  },
+  countdownNumber: {
+    color: COLORS.bloodGlow,
+    fontSize: 48,
+    fontWeight: '900',
+    textShadowColor: `${COLORS.bloodGlow}60`,
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 12,
+  },
 });

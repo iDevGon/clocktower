@@ -1,5 +1,5 @@
 import type { GameResult, Team } from '@clocktower/shared';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   Dimensions,
   Pressable,
@@ -20,6 +20,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { BaseOverlay } from './BaseOverlay';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -410,6 +411,49 @@ function PlayerRow({
   );
 }
 
+// ── Effects layers ──
+
+const DRIP_COUNT = 18;
+const POOL_COUNT = 6;
+const PARTICLE_COUNT = 24;
+const SPARK_COUNT = 32;
+
+function SlayerEffects() {
+  return (
+    <>
+      <SlayerGlow />
+      {Array.from({ length: SPARK_COUNT }).map((_, i) => (
+        <SlayerSpark key={`sk-${i}`} index={i} />
+      ))}
+    </>
+  );
+}
+
+function VictoryEffects() {
+  return (
+    <>
+      <VictoryGlow />
+      {Array.from({ length: PARTICLE_COUNT }).map((_, i) => (
+        <VictoryParticle key={`p-${i}`} index={i} />
+      ))}
+    </>
+  );
+}
+
+function DefeatEffects() {
+  return (
+    <>
+      <DefeatPulse />
+      {Array.from({ length: DRIP_COUNT }).map((_, i) => (
+        <BloodDrip key={`d-${i}`} index={i} />
+      ))}
+      {Array.from({ length: POOL_COUNT }).map((_, i) => (
+        <BloodPool key={`bp-${i}`} index={i} />
+      ))}
+    </>
+  );
+}
+
 // ── Main Overlay ──
 
 interface GameEndOverlayProps {
@@ -428,14 +472,8 @@ export function GameEndOverlay({
   const isVictory = myTeamIsGood === goodWon;
   const isSlayerKill = gameResult.cause === 'slayer';
 
-  const DRIP_COUNT = 18;
-  const POOL_COUNT = 6;
-  const PARTICLE_COUNT = 24;
-  const SPARK_COUNT = 32;
-
   useEffect(() => {
     if (isSlayerKill) {
-      // 처단자 특수 진동: 급격한 강한 일격 느낌
       Vibration.vibrate([0, 50, 50, 50, 50, 600]);
     } else if (isVictory) {
       Vibration.vibrate([0, 100, 80, 100, 80, 300]);
@@ -444,7 +482,6 @@ export function GameEndOverlay({
     }
   }, [isVictory, isSlayerKill]);
 
-  // Determine visual theme
   const theme: 'victory' | 'defeat' | 'slayer' = isSlayerKill
     ? 'slayer'
     : isVictory
@@ -457,6 +494,12 @@ export function GameEndOverlay({
       : theme === 'victory'
         ? '#060a10'
         : '#0a0000';
+
+  const effectsLayer = useMemo(() => {
+    if (theme === 'slayer') return <SlayerEffects />;
+    if (theme === 'victory') return <VictoryEffects />;
+    return <DefeatEffects />;
+  }, [theme]);
 
   const dividerColor =
     theme === 'slayer'
@@ -494,43 +537,14 @@ export function GameEndOverlay({
         : '#d0a0a0';
 
   return (
-    <View style={[StyleSheet.absoluteFill, s.overlay]}>
-      {/* Background layer */}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: bgColor }]} />
-
-      {/* Effects layer */}
-      {theme === 'slayer' ? (
-        <>
-          <SlayerGlow />
-          {Array.from({ length: SPARK_COUNT }).map((_, i) => (
-            <SlayerSpark key={`sk-${i}`} index={i} />
-          ))}
-        </>
-      ) : theme === 'victory' ? (
-        <>
-          <VictoryGlow />
-          {Array.from({ length: PARTICLE_COUNT }).map((_, i) => (
-            <VictoryParticle key={`p-${i}`} index={i} />
-          ))}
-        </>
-      ) : (
-        <>
-          <DefeatPulse />
-          {Array.from({ length: DRIP_COUNT }).map((_, i) => (
-            <BloodDrip key={`d-${i}`} index={i} />
-          ))}
-          {Array.from({ length: POOL_COUNT }).map((_, i) => (
-            <BloodPool key={`bp-${i}`} index={i} />
-          ))}
-        </>
-      )}
-
-      {/* Content layer */}
-      <Animated.ScrollView
-        entering={FadeIn.duration(600)}
-        style={s.scrollView}
-        contentContainerStyle={s.content}
-      >
+    <BaseOverlay
+      backgroundColor={bgColor}
+      zIndex={100}
+      effectsLayer={effectsLayer}
+      scrollable
+      contentAlign="flex-start"
+    >
+      <View style={s.content}>
         {/* ── Slayer Easter Egg heading ── */}
         {theme === 'slayer' && isVictory && (
           <>
@@ -675,18 +689,12 @@ export function GameEndOverlay({
         </Animated.View>
 
         <View style={{ height: 60 }} />
-      </Animated.ScrollView>
-    </View>
+      </View>
+    </BaseOverlay>
   );
 }
 
 const s = StyleSheet.create({
-  overlay: {
-    zIndex: 100,
-  },
-  scrollView: {
-    flex: 1,
-  },
   content: {
     alignItems: 'center',
     paddingTop: SCREEN_HEIGHT * 0.15,

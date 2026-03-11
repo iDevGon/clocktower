@@ -20,6 +20,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { BaseOverlay } from './BaseOverlay';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -192,6 +193,19 @@ function StrikeLine() {
 
 const EMBER_COUNT = 16;
 
+// ── Effects layer ──
+
+function ExecutionEffects() {
+  return (
+    <>
+      <SmolderVignette />
+      {Array.from({ length: EMBER_COUNT }).map((_, i) => (
+        <Ember key={`e-${i}`} index={i} />
+      ))}
+    </>
+  );
+}
+
 // ── Main Overlay ──
 
 interface ExecutionOverlayProps {
@@ -211,19 +225,12 @@ export function ExecutionOverlay({
   const title = REASON_TITLES[announcement.reason] ?? '\uCC98\uD615';
 
   return (
-    <View style={[StyleSheet.absoluteFill, s.overlay]}>
-      {/* Dark background */}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: '#0a0300' }]} />
-
-      {/* Smoldering vignette */}
-      <SmolderVignette />
-
-      {/* Ember particles */}
-      {Array.from({ length: EMBER_COUNT }).map((_, i) => (
-        <Ember key={`e-${i}`} index={i} />
-      ))}
-
-      {/* Content */}
+    <BaseOverlay
+      backgroundColor="#0a0300"
+      zIndex={95}
+      effectsLayer={<ExecutionEffects />}
+      onDismiss={onDismiss}
+    >
       <View style={s.content}>
         <AxeIcon />
 
@@ -264,16 +271,11 @@ export function ExecutionOverlay({
           </Pressable>
         </Animated.View>
       </View>
-    </View>
+    </BaseOverlay>
   );
 }
 
 const s = StyleSheet.create({
-  overlay: {
-    zIndex: 95,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   content: {
     alignItems: 'center',
     paddingHorizontal: 32,

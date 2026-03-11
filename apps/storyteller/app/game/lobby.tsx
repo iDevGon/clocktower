@@ -14,12 +14,19 @@ import {
   Alert,
   FlatList,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Switch,
   Text,
+  TextInput,
   View,
 } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import QRCode from 'react-native-qrcode-svg';
 import { AbilityText } from '../../src/components/AbilityText';
 import { useGameActions } from '../../src/hooks/useGameActions';
@@ -53,6 +60,10 @@ export default function LobbyScreen() {
     new Set(),
   );
   const [showMixModal, setShowMixModal] = useState(false);
+  const [excludeSearch, setExcludeSearch] = useState('');
+  const [mixSearch, setMixSearch] = useState('');
+  const [roleSettingsOpen, setRoleSettingsOpen] = useState(false);
+  const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
 
   // 주정뱅이 가짜 역할 변경 모달 상태
   const [drunkModalPlayer, setDrunkModalPlayer] = useState<Player | null>(null);
@@ -274,37 +285,19 @@ export default function LobbyScreen() {
           ))}
         </View>
 
-        {/* 직업 제외 버튼 */}
-        <Pressable
-          onPress={() => setShowExcludeModal(true)}
-          style={({ pressed }) => ({
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingVertical: s(8),
-            marginBottom: s(8),
-            borderRadius: 6,
-            backgroundColor: pressed ? '#2a2a30' : '#1e1e22',
-            borderWidth: 1,
-            borderColor: excludedRoleIds.size > 0 ? '#c47070' : '#3a3a3e',
-          })}
+        {/* 직업 상세 설정 (collapsible) */}
+        <CollapsibleSection
+          label="직업 상세 설정"
+          isOpen={roleSettingsOpen}
+          onToggle={() => setRoleSettingsOpen((v) => !v)}
+          scale={scale}
         >
-          <Text
-            style={{
-              color: excludedRoleIds.size > 0 ? '#c47070' : '#908e8a',
-              fontSize: s(13),
-              fontWeight: '600',
-            }}
-          >
-            직업 제외 설정
-            {excludedRoleIds.size > 0 ? ` (${excludedRoleIds.size}개)` : ''}
-          </Text>
-        </Pressable>
-
-        {/* 다른 에디션 역할 믹스 버튼 */}
-        {mixableRoles.length > 0 && (
+          {/* 직업 제외 버튼 */}
           <Pressable
-            onPress={() => setShowMixModal(true)}
+            onPress={() => {
+            setExcludeSearch('');
+            setShowExcludeModal(true);
+          }}
             style={({ pressed }) => ({
               flexDirection: 'row',
               alignItems: 'center',
@@ -314,24 +307,56 @@ export default function LobbyScreen() {
               borderRadius: 6,
               backgroundColor: pressed ? '#2a2a30' : '#1e1e22',
               borderWidth: 1,
-              borderColor:
-                additionalRoleIds.size > 0 ? '#a569bd' : '#3a3a3e',
+              borderColor: excludedRoleIds.size > 0 ? '#c47070' : '#3a3a3e',
             })}
           >
             <Text
               style={{
-                color: additionalRoleIds.size > 0 ? '#a569bd' : '#908e8a',
+                color: excludedRoleIds.size > 0 ? '#c47070' : '#908e8a',
                 fontSize: s(13),
                 fontWeight: '600',
               }}
             >
-              다른 에디션 역할 추가
-              {additionalRoleIds.size > 0
-                ? ` (${additionalRoleIds.size}개)`
-                : ''}
+              직업 제외 설정
+              {excludedRoleIds.size > 0 ? ` (${excludedRoleIds.size}개)` : ''}
             </Text>
           </Pressable>
-        )}
+
+          {/* 다른 에디션 역할 믹스 버튼 */}
+          {mixableRoles.length > 0 && (
+            <Pressable
+              onPress={() => {
+              setMixSearch('');
+              setShowMixModal(true);
+            }}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: s(8),
+                marginBottom: s(8),
+                borderRadius: 6,
+                backgroundColor: pressed ? '#2a2a30' : '#1e1e22',
+                borderWidth: 1,
+                borderColor:
+                  additionalRoleIds.size > 0 ? '#a569bd' : '#3a3a3e',
+              })}
+            >
+              <Text
+                style={{
+                  color: additionalRoleIds.size > 0 ? '#a569bd' : '#908e8a',
+                  fontSize: s(13),
+                  fontWeight: '600',
+                }}
+              >
+                다른 에디션 역할 추가
+                {additionalRoleIds.size > 0
+                  ? ` (${additionalRoleIds.size}개)`
+                  : ''}
+              </Text>
+            </Pressable>
+          )}
+        </CollapsibleSection>
 
         <Pressable
           onPress={handleDistributeRoles}
@@ -353,12 +378,27 @@ export default function LobbyScreen() {
           data={gameState?.players ?? []}
           keyExtractor={(p) => p.id}
           contentContainerStyle={{ paddingHorizontal: s(16) }}
+          style={
+            Platform.OS === 'web'
+              ? ({
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#2a2a34 transparent',
+                } as Record<string, string>)
+              : undefined
+          }
           renderItem={({ item }) => (
             <Pressable
               onPress={() =>
                 router.push({
                   pathname: '/game/assign-role',
-                  params: { playerId: item.id },
+                  params: {
+                    playerId: item.id,
+                    editionId: selectedEditionId,
+                    additionalRoleIds:
+                      additionalRoleIds.size > 0
+                        ? [...additionalRoleIds].join(',')
+                        : '',
+                  },
                 })
               }
               style={{
@@ -439,59 +479,71 @@ export default function LobbyScreen() {
             style={{
               marginBottom: s(12),
               paddingHorizontal: s(12),
-              gap: s(10),
             }}
           >
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-around',
-                backgroundColor: '#1a1a1e',
-                borderRadius: 8,
-                paddingVertical: s(10),
-                paddingHorizontal: s(12),
-                borderWidth: 1,
-                borderColor: '#2a2a2e',
-              }}
+            <CollapsibleSection
+              label="상세 설정"
+              isOpen={advancedSettingsOpen}
+              onToggle={() => setAdvancedSettingsOpen((v) => !v)}
+              scale={scale}
             >
-              <SettingToggle
-                label="채팅 밀담"
-                value={gameState.settings.whisperMode === 'chat'}
-                onValueChange={(val: boolean) =>
-                  setGameSettings({ whisperMode: val ? 'chat' : 'offline' })
-                }
-                scale={scale}
-              />
-              <View style={{ width: 1, backgroundColor: '#2e2e34' }} />
-              <SettingToggle
-                label="온라인 투표"
-                value={gameState.settings.votingMode === 'online'}
-                onValueChange={(val: boolean) =>
-                  setGameSettings({ votingMode: val ? 'online' : 'offline' })
-                }
-                scale={scale}
-              />
-            </View>
-            {gameState.settings.votingMode === 'online' && (
-              <View
-                style={{
-                  backgroundColor: '#1a1a1e',
-                  borderRadius: 8,
-                  paddingVertical: s(10),
-                  paddingHorizontal: s(12),
-                  borderWidth: 1,
-                  borderColor: '#2a2a2e',
-                }}
-              >
-                <ClockSpeedSetting
-                  value={gameState.settings.voteClockSeconds}
-                  onChange={(val: number) =>
-                    setGameSettings({ voteClockSeconds: val })
-                  }
-                  scale={scale}
-                />
+              <View style={{ gap: s(10) }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-around',
+                    backgroundColor: '#1a1a1e',
+                    borderRadius: 8,
+                    paddingVertical: s(10),
+                    paddingHorizontal: s(12),
+                    borderWidth: 1,
+                    borderColor: '#2a2a2e',
+                  }}
+                >
+                  <SettingToggle
+                    label="채팅 밀담"
+                    value={gameState.settings.whisperMode === 'chat'}
+                    onValueChange={(val: boolean) =>
+                      setGameSettings({
+                        whisperMode: val ? 'chat' : 'offline',
+                      })
+                    }
+                    scale={scale}
+                  />
+                  <View style={{ width: 1, backgroundColor: '#2e2e34' }} />
+                  <SettingToggle
+                    label="온라인 투표"
+                    value={gameState.settings.votingMode === 'online'}
+                    onValueChange={(val: boolean) =>
+                      setGameSettings({
+                        votingMode: val ? 'online' : 'offline',
+                      })
+                    }
+                    scale={scale}
+                  />
+                </View>
+                {gameState.settings.votingMode === 'online' && (
+                  <View
+                    style={{
+                      backgroundColor: '#1a1a1e',
+                      borderRadius: 8,
+                      paddingVertical: s(10),
+                      paddingHorizontal: s(12),
+                      borderWidth: 1,
+                      borderColor: '#2a2a2e',
+                    }}
+                  >
+                    <ClockSpeedSetting
+                      value={gameState.settings.voteClockSeconds}
+                      onChange={(val: number) =>
+                        setGameSettings({ voteClockSeconds: val })
+                      }
+                      scale={scale}
+                    />
+                  </View>
+                )}
               </View>
-            )}
+            </CollapsibleSection>
           </View>
         )}
         <Pressable
@@ -760,6 +812,25 @@ export default function LobbyScreen() {
                 </Pressable>
               )}
             </View>
+            <TextInput
+              value={excludeSearch}
+              onChangeText={setExcludeSearch}
+              placeholder="역할 검색..."
+              placeholderTextColor="#5a5a5e"
+              style={{
+                marginHorizontal: s(12),
+                marginTop: s(8),
+                marginBottom: s(4),
+                paddingVertical: s(8),
+                paddingHorizontal: s(12),
+                backgroundColor: '#252528',
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: '#3a3a3e',
+                color: '#e0ddd8',
+                fontSize: s(14),
+              }}
+            />
             <ScrollView
               contentContainerStyle={{
                 paddingHorizontal: s(12),
@@ -792,8 +863,12 @@ export default function LobbyScreen() {
                   ...editionRoles,
                   ...additionalRolesArr,
                 ];
+                const searchLower = excludeSearch.toLowerCase().trim();
                 const teamRoles = allAvailableRoles.filter(
-                  (r) => r.team === team,
+                  (r) =>
+                    r.team === team &&
+                    (searchLower === '' ||
+                      r.name.toLowerCase().includes(searchLower)),
                 );
                 if (teamRoles.length === 0) return null;
                 return (
@@ -905,7 +980,10 @@ export default function LobbyScreen() {
                 borderTopWidth: 1,
                 borderTopColor: '#3a3a42',
               }}
-              onPress={() => setShowExcludeModal(false)}
+              onPress={() => {
+                setShowExcludeModal(false);
+                setExcludeSearch('');
+              }}
             >
               <Text
                 style={{
@@ -915,7 +993,9 @@ export default function LobbyScreen() {
                   textAlign: 'center',
                 }}
               >
-                완료
+                {excludedRoleIds.size > 0
+                  ? `선택 완료 (${excludedRoleIds.size}개 제외)`
+                  : '선택 완료'}
               </Text>
             </Pressable>
           </Pressable>
@@ -991,6 +1071,25 @@ export default function LobbyScreen() {
                 </Pressable>
               )}
             </View>
+            <TextInput
+              value={mixSearch}
+              onChangeText={setMixSearch}
+              placeholder="역할 검색..."
+              placeholderTextColor="#5a5a5e"
+              style={{
+                marginHorizontal: s(12),
+                marginTop: s(8),
+                marginBottom: s(4),
+                paddingVertical: s(8),
+                paddingHorizontal: s(12),
+                backgroundColor: '#252528',
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: '#3a3a3e',
+                color: '#e0ddd8',
+                fontSize: s(14),
+              }}
+            />
             <ScrollView
               contentContainerStyle={{
                 paddingHorizontal: s(12),
@@ -1013,7 +1112,13 @@ export default function LobbyScreen() {
                   { team: 'demon' as Team, label: '악마', color: '#b85c5c' },
                 ] as const
               ).map(({ team, label, color }) => {
-                const teamRoles = mixableRoles.filter((r) => r.team === team);
+                const mixSearchLower = mixSearch.toLowerCase().trim();
+                const teamRoles = mixableRoles.filter(
+                  (r) =>
+                    r.team === team &&
+                    (mixSearchLower === '' ||
+                      r.name.toLowerCase().includes(mixSearchLower)),
+                );
                 if (teamRoles.length === 0) return null;
                 return (
                   <View key={team} style={{ marginBottom: s(12) }}>
@@ -1121,7 +1226,10 @@ export default function LobbyScreen() {
                 borderTopWidth: 1,
                 borderTopColor: '#3a3a42',
               }}
-              onPress={() => setShowMixModal(false)}
+              onPress={() => {
+                setShowMixModal(false);
+                setMixSearch('');
+              }}
             >
               <Text
                 style={{
@@ -1131,7 +1239,9 @@ export default function LobbyScreen() {
                   textAlign: 'center',
                 }}
               >
-                완료
+                {additionalRoleIds.size > 0
+                  ? `선택 완료 (${additionalRoleIds.size}개 추가)`
+                  : '선택 완료'}
               </Text>
             </Pressable>
           </Pressable>
@@ -1205,6 +1315,81 @@ function SettingToggle({
         trackColor={{ false: '#3a3a42', true: '#2a4a2a' }}
         thumbColor={value ? '#2ecc71' : '#908e8a'}
       />
+    </View>
+  );
+}
+
+function CollapsibleSection({
+  label,
+  isOpen,
+  onToggle,
+  scale,
+  children,
+}: {
+  label: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  scale: number;
+  children: React.ReactNode;
+}) {
+  const s = (v: number) => Math.round(v * scale);
+  const chevronRotation = useSharedValue(0);
+  const contentHeight = useSharedValue(0);
+
+  // Update animation values when isOpen changes
+  chevronRotation.value = withTiming(isOpen ? 180 : 0, { duration: 250 });
+  contentHeight.value = withTiming(isOpen ? 1 : 0, { duration: 250 });
+
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${chevronRotation.value}deg` }],
+  }));
+
+  const contentStyle = useAnimatedStyle(() => ({
+    opacity: contentHeight.value,
+    maxHeight: contentHeight.value === 0 ? 0 : contentHeight.value * 500,
+    overflow: 'hidden' as const,
+  }));
+
+  return (
+    <View style={{ marginBottom: s(8) }}>
+      <Pressable
+        onPress={onToggle}
+        style={({ pressed }) => ({
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingVertical: s(8),
+          borderRadius: 6,
+          backgroundColor: pressed ? '#2a2a30' : '#1e1e22',
+          borderWidth: 1,
+          borderColor: '#3a3a3e',
+          gap: s(6),
+        })}
+      >
+        <Text
+          style={{
+            color: '#908e8a',
+            fontSize: s(13),
+            fontWeight: '600',
+          }}
+        >
+          {label}
+        </Text>
+        <Animated.Text
+          style={[
+            {
+              color: '#908e8a',
+              fontSize: s(11),
+            },
+            chevronStyle,
+          ]}
+        >
+          ▼
+        </Animated.Text>
+      </Pressable>
+      <Animated.View style={[{ marginTop: s(8) }, contentStyle]}>
+        {children}
+      </Animated.View>
     </View>
   );
 }

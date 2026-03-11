@@ -19,6 +19,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { BaseOverlay } from './BaseOverlay';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -223,6 +224,21 @@ function DissolveLine() {
 
 const SMOKE_COUNT = 14;
 
+// ── Effects layer ──
+
+function FizzleEffects() {
+  return (
+    <>
+      <MistVignette />
+      {Array.from({ length: SMOKE_COUNT }).map((_, i) => (
+        <SmokeWisp key={`s-${i}`} index={i} />
+      ))}
+    </>
+  );
+}
+
+// ── Main Overlay ──
+
 interface SlayerFizzleOverlayProps {
   slayerName: string;
   targetName: string;
@@ -240,19 +256,12 @@ export function SlayerFizzleOverlay({
   }, []);
 
   return (
-    <View style={[StyleSheet.absoluteFill, styles.overlay]}>
-      {/* Deep cold background */}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: '#060a10' }]} />
-
-      {/* Mist vignette */}
-      <MistVignette />
-
-      {/* Smoke particles */}
-      {Array.from({ length: SMOKE_COUNT }).map((_, i) => (
-        <SmokeWisp key={`s-${i}`} index={i} />
-      ))}
-
-      {/* Content */}
+    <BaseOverlay
+      backgroundColor="#060a10"
+      zIndex={94}
+      effectsLayer={<FizzleEffects />}
+      onDismiss={onDismiss}
+    >
       <View style={styles.content}>
         <GunIcon />
 
@@ -301,16 +310,11 @@ export function SlayerFizzleOverlay({
           </Pressable>
         </Animated.View>
       </View>
-    </View>
+    </BaseOverlay>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    zIndex: 94,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   content: {
     alignItems: 'center',
     paddingHorizontal: 32,

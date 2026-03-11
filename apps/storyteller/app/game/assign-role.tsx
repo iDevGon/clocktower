@@ -2,10 +2,11 @@ import {
   ALL_ROLES,
   EDITION_COLORS,
   EDITION_LABELS,
+  getRolesForEdition,
 } from '@clocktower/shared';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Modal, Pressable, Text, View } from 'react-native';
+import { FlatList, Modal, Pressable, Text, TextInput, View } from 'react-native';
 import { AbilityText } from '../../src/components/AbilityText';
 import { useGameActions } from '../../src/hooks/useGameActions';
 import { useResponsive } from '../../src/hooks/useResponsive';
@@ -38,14 +39,28 @@ export default function AssignRoleScreen() {
   const { fontSize } = useResponsive();
   const scale = fontSize.md / 12;
   const styles = useMemo(() => createAssignRoleStyles(scale), [scale]);
-  const { playerId } = useLocalSearchParams<{ playerId: string }>();
+  const { playerId, editionId, additionalRoleIds: additionalRoleIdsParam } =
+    useLocalSearchParams<{
+      playerId: string;
+      editionId?: string;
+      additionalRoleIds?: string;
+    }>();
   const { assignRole } = useGameActions();
   const gameState = useGameStore((s) => s.gameState);
 
+  const [searchQuery, setSearchQuery] = useState('');
   // 주정뱅이 가짜 역할 선택 모달 상태
   const [drunkModalVisible, setDrunkModalVisible] = useState(false);
 
-  // 역할 ID → 배정된 플레이어 이름 매핑 (현재 플레이어 제외)
+  const selectedEditionId = editionId ?? 'trouble_brewing';
+  const additionalIds = useMemo(() => {
+    if (!additionalRoleIdsParam || additionalRoleIdsParam === '') {
+      return new Set<string>();
+    }
+    return new Set(additionalRoleIdsParam.split(','));
+  }, [additionalRoleIdsParam]);
+
+  // 역할 ID -> 배정된 플레이어 이름 매핑 (현재 플레이어 제외)
   const roleOwnerMap = useMemo(() => {
     if (!gameState) return new Map<string, string>();
     const map = new Map<string, string>();
@@ -57,18 +72,49 @@ export default function AssignRoleScreen() {
     return map;
   }, [gameState, playerId]);
 
-  // 모든 에디션의 역할 표시 (배정된 역할 포함)
-  const availableRoles = ALL_ROLES;
+  // 이미 다른 플레이어에게 배정된 다른 에디션 역할의 ID 수집
+  const manuallyAssignedOtherEditionIds = useMemo(() => {
+    if (!gameState) return new Set<string>();
+    const editionRoleIds = new Set(
+      getRolesForEdition(selectedEditionId).map((r) => r.id),
+    );
+    const ids = new Set<string>();
+    for (const p of gameState.players) {
+      if (p.role?.id && !editionRoleIds.has(p.role.id)) {
+        ids.add(p.role.id);
+      }
+    }
+    return ids;
+  }, [gameState, selectedEditionId]);
+
+  // 현재 에디션 역할 + 추가된 다른 에디션 역할 + 수동 배정된 다른 에디션 역할
+  const availableRoles = useMemo(() => {
+    const editionRoles = getRolesForEdition(selectedEditionId);
+    const editionRoleIds = new Set(editionRoles.map((r) => r.id));
+    const extraRoles = ALL_ROLES.filter(
+      (r) =>
+        !editionRoleIds.has(r.id) &&
+        (additionalIds.has(r.id) || manuallyAssignedOtherEditionIds.has(r.id)),
+    );
+    return [...editionRoles, ...extraRoles];
+  }, [selectedEditionId, additionalIds, manuallyAssignedOtherEditionIds]);
+
+  // 검색 필터링
+  const filteredRoles = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (q === '') return availableRoles;
+    return availableRoles.filter((r) => r.name.toLowerCase().includes(q));
+  }, [availableRoles, searchQuery]);
 
   // 주정뱅이의 가짜 역할로 선택 가능한 마을주민 목록
   const availableTownsfolk = useMemo(
-    () => ALL_ROLES.filter((r) => r.team === 'townsfolk'),
-    [],
+    () => availableRoles.filter((r) => r.team === 'townsfolk'),
+    [availableRoles],
   );
 
   const handleRandomAssign = useCallback(() => {
     if (!playerId) return;
-    const unassignedRoles = ALL_ROLES.filter(
+    const unassignedRoles = availableRoles.filter(
       (r) => !roleOwnerMap.has(r.id),
     );
     if (unassignedRoles.length === 0) return;
@@ -88,7 +134,7 @@ export default function AssignRoleScreen() {
       assignRole(playerId, randomRole.id);
     }
     router.back();
-  }, [playerId, roleOwnerMap, assignRole, router]);
+  }, [playerId, availableRoles, roleOwnerMap, assignRole, router]);
 
   const handleAssign = useCallback(
     (roleId: string) => {
@@ -123,12 +169,19 @@ export default function AssignRoleScreen() {
 
   return (
     <View style={styles.container}>
+      <TextInput
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        placeholder="역할 검색..."
+        placeholderTextColor="#5a5a5e"
+        style={styles.searchInput}
+      />
       <FlatList
-        data={availableRoles}
+        data={filteredRoles}
         keyExtractor={(r) => r.id}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
-          availableRoles.length > 0 ? (
+          filteredRoles.length > 0 && searchQuery === '' ? (
             <Pressable
               onPress={handleRandomAssign}
               style={({ pressed }) => [
@@ -187,6 +240,20 @@ export default function AssignRoleScreen() {
             </Pressable>
           );
         }}
+        ListEmptyComponent={
+          searchQuery !== '' ? (
+            <Text
+              style={{
+                color: '#908e8a',
+                fontSize: 14,
+                textAlign: 'center',
+                paddingVertical: 20,
+              }}
+            >
+              검색 결과가 없습니다
+            </Text>
+          ) : null
+        }
       />
 
       {/* 주정뱅이 가짜 역할 선택 모달 */}

@@ -52,6 +52,11 @@ interface VoteClock {
   durationMs: number;
 }
 
+interface VoteCountdown {
+  startedAt: number;
+  durationMs: number;
+}
+
 interface PlayerState {
   playerId: string;
   playerName: string;
@@ -80,6 +85,7 @@ interface PlayerState {
   slayerUsed: boolean;
   slayerFizzle: { slayerName: string; targetName: string } | null;
   gameSettings: GameSettings | null;
+  voteCountdown: VoteCountdown | null;
   voteClock: VoteClock | null;
   voteOrder: {
     nomineeId: string;
@@ -120,6 +126,7 @@ const initialState = {
   slayerUsed: false,
   slayerFizzle: null as { slayerName: string; targetName: string } | null,
   gameSettings: null as GameSettings | null,
+  voteCountdown: null as VoteCountdown | null,
   voteClock: null as VoteClock | null,
   voteOrder: null as {
     nomineeId: string;

@@ -24,6 +24,12 @@ export function VoteResult({ nomineeName, guilty, votes }: VoteResultProps) {
       <Text style={styles.count}>
         찬성 {yesCount}표 / 반대 {noCount}표
       </Text>
+      <View style={styles.sentenceDivider} />
+      <Text style={[styles.sentence, guilty ? styles.sentenceGuilty : styles.sentenceInnocent]}>
+        {guilty
+          ? `${nomineeName}님이 처형 예정입니다`
+          : '아무도 처형되지 않았습니다'}
+      </Text>
     </View>
   );
 }
@@ -58,5 +64,26 @@ const styles = StyleSheet.create({
   count: {
     color: '#908e8a',
     fontSize: 14,
+  },
+  sentenceDivider: {
+    width: '60%',
+    height: 1,
+    backgroundColor: '#2a2a32',
+    marginVertical: 12,
+  },
+  sentence: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  sentenceGuilty: {
+    color: '#c47070',
+    textShadowColor: '#c4707040',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
+  },
+  sentenceInnocent: {
+    color: '#6a9a6a',
   },
 });

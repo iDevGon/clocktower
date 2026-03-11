@@ -21,6 +21,13 @@ interface TokenPosition {
   y: number;
 }
 
+interface VoteResult {
+  nomineeId: string;
+  nomineeName: string;
+  guilty: boolean;
+  votes: Record<string, boolean>;
+}
+
 interface GameStore {
   gameId: string | null;
   gameState: GameState | null;
@@ -30,9 +37,11 @@ interface GameStore {
   playerStatuses: Record<string, PlayerStatus[]>;
   tokenPositions: Record<string, TokenPosition>;
   lastExecutedPlayerId: string | null;
+  voteCountdown: { startedAt: number; durationMs: number } | null;
   voteClock: { startedAt: number; durationMs: number } | null;
   votePreselections: Record<string, boolean | null>;
   voteConfirmed: Record<string, boolean>;
+  voteResult: VoteResult | null;
   gameResult: GameResult | null;
   playerOrder: string[];
   chatMessages: Record<string, StorytellerMessage[]>;
@@ -56,6 +65,7 @@ interface GameStore {
   addPlayerStatus: (playerId: string, status: PlayerStatus) => void;
   removePlayerStatus: (playerId: string, status: PlayerStatus) => void;
   clearPlayerStatuses: (playerId: string) => void;
+  setVoteResult: (result: VoteResult | null) => void;
   setGameResult: (result: GameResult | null) => void;
   setTokenPosition: (playerId: string, pos: TokenPosition) => void;
   clearTokenPositions: () => void;
@@ -78,9 +88,11 @@ export const useGameStore = create<GameStore>()(
       playerStatuses: {},
       tokenPositions: {},
       lastExecutedPlayerId: null,
+      voteCountdown: null,
       voteClock: null,
       votePreselections: {},
       voteConfirmed: {},
+      voteResult: null,
       gameResult: null,
       playerOrder: [],
       chatMessages: {},
@@ -95,11 +107,23 @@ export const useGameStore = create<GameStore>()(
         for (const player of state.players) {
           synced[player.id] = player.statuses ?? [];
         }
+        const prev = useGameStore.getState();
+        const phaseChangedToVote =
+          state.phase === 'vote' && prev.gameState?.phase !== 'vote';
         set({
           gameState: state,
           gameId: state.id,
           playerStatuses: synced,
           playerOrder: state.playerOrder ?? [],
+          ...(phaseChangedToVote
+            ? {
+                voteCountdown: { startedAt: Date.now(), durationMs: 5000 },
+                voteResult: null,
+              }
+            : {}),
+          ...(state.phase !== 'vote'
+            ? { voteCountdown: null, voteClock: null }
+            : {}),
         });
       },
       addNightAction: (action) =>
@@ -108,7 +132,7 @@ export const useGameStore = create<GameStore>()(
       setActiveNightRoleId: (roleId) => set({ activeNightRoleId: roleId }),
       setActiveWhispers: (whispers) => set({ activeWhispers: whispers }),
       setLastExecutedPlayerId: (id) => set({ lastExecutedPlayerId: id }),
-      setVoteClock: (clock) => set({ voteClock: clock }),
+      setVoteClock: (clock) => set({ voteClock: clock, voteCountdown: null }),
       setVotePreselection: (playerId, guilty) =>
         set((s) => ({
           votePreselections: { ...s.votePreselections, [playerId]: guilty },
@@ -145,6 +169,7 @@ export const useGameStore = create<GameStore>()(
           const { [playerId]: _, ...rest } = s.playerStatuses;
           return { playerStatuses: rest };
         }),
+      setVoteResult: (result) => set({ voteResult: result }),
       setGameResult: (result) => set({ gameResult: result }),
       addChatMessage: (message) =>
         set((s) => {
@@ -209,9 +234,11 @@ export const useGameStore = create<GameStore>()(
           playerStatuses: {},
           tokenPositions: {},
           lastExecutedPlayerId: null,
+          voteCountdown: null,
           voteClock: null,
           votePreselections: {},
           voteConfirmed: {},
+          voteResult: null,
           gameResult: null,
           playerOrder: [],
           chatMessages: {},

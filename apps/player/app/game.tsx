@@ -264,7 +264,7 @@ export default function GameScreen() {
           />
         )}
 
-        {currentPhase === 'vote' && !nomination && voteResult && (
+        {!nomination && voteResult && (
           <VoteResult
             nomineeName={voteResult.nomineeName}
             guilty={voteResult.guilty}
