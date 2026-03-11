@@ -119,7 +119,7 @@ export default function GameScreen() {
     setSlayerModalVisible(false);
     const result = await activateSlayer(targetId);
     if (!result.success) {
-      Alert.alert('사냥꾼 실패', result.error ?? '사용할 수 없습니다');
+      Alert.alert('처단자 실패', result.error ?? '사용할 수 없습니다');
     }
   };
 
@@ -289,7 +289,7 @@ export default function GameScreen() {
               }}
             >
               <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>
-                사냥꾼 능력 사용
+                처단자 능력 사용
               </Text>
             </Pressable>
           </View>

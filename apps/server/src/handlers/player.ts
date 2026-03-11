@@ -122,7 +122,7 @@ export function registerPlayerHandlers(
 
       callback({ success: true });
 
-      // 성녀(Virgin) 트리거
+      // 성결자(Virgin) 트리거
       if (result.virginKill) {
         const virgin = game.getPlayer(nomineeId);
         const nominator = game.getPlayer(playerId);
@@ -139,13 +139,13 @@ export function registerPlayerHandlers(
             executedId: result.virginKill,
             executedName: killedNominator.name,
             reason: 'virgin',
-            detail: `${killedNominator.name}이(가) 성녀를 지목하여 처형되었습니다`,
+            detail: `${killedNominator.name}이(가) 성결자를 지목하여 처형되었습니다`,
           });
           playerIo.emit('game:playerUpdate', killedNominator);
         }
         storytellerIo.emit('game:state', game.getState());
 
-        // 성녀 트리거 후 승리 조건 체크
+        // 성결자 트리거 후 승리 조건 체크
         const winResult = game.checkWinCondition();
         if (winResult) {
           winResult.cause = 'virgin';
@@ -241,7 +241,7 @@ export function registerPlayerHandlers(
       }
     });
 
-    // 사냥꾼(Slayer) 능력 사용
+    // 처단자(Slayer) 능력 사용
     socket.on('slayer:use', ({ targetId }, callback) => {
       const playerId = getPlayerIdFromSocket(socket);
       if (!playerId) {
@@ -266,14 +266,14 @@ export function registerPlayerHandlers(
       const isDrunkAsSlayer =
         player.role?.id === 'drunk' && player.drunkAs === 'slayer';
       if (!isSlayer && !isDrunkAsSlayer) {
-        callback({ success: false, error: '사냥꾼만 사용할 수 있습니다' });
+        callback({ success: false, error: '처단자만 사용할 수 있습니다' });
         return;
       }
 
       if (game.isSlayerUsed(playerId)) {
         callback({
           success: false,
-          error: '이미 사냥꾼 능력을 사용했습니다',
+          error: '이미 처단자 능력을 사용했습니다',
         });
         return;
       }
@@ -302,7 +302,7 @@ export function registerPlayerHandlers(
         targetId,
       });
 
-      // 실제 사냥꾼이고 대상이 악마면 자동 사망 (중독 상태면 무효)
+      // 실제 처단자이고 대상이 악마면 자동 사망 (중독 상태면 무효)
       const killCondition =
         isSlayer &&
         !player.statuses.includes('poisoned') &&
@@ -310,14 +310,14 @@ export function registerPlayerHandlers(
 
       if (killCondition) {
         game.kill(targetId);
-        game.markExecution(); // 사냥꾼 처형은 처형으로 간주 → 더 이상 지목 불가
+        game.markExecution(); // 처단자 처형은 처형으로 간주 → 더 이상 지목 불가
         const killedTarget = game.getPlayer(targetId);
         if (killedTarget) {
           playerIo.emit('execution:announced', {
             executedId: targetId,
             executedName: killedTarget.name,
             reason: 'slayer',
-            detail: `${player.name}의 사냥꾼 능력으로 ${killedTarget.name}이(가) 사망했습니다`,
+            detail: `${player.name}의 처단자 능력으로 ${killedTarget.name}이(가) 사망했습니다`,
           });
           playerIo.emit('game:playerUpdate', killedTarget);
         }
@@ -326,7 +326,7 @@ export function registerPlayerHandlers(
         const winResult = game.checkWinCondition();
         if (winResult) {
           winResult.cause = 'slayer';
-          winResult.reason = `사냥꾼 ${player.name}이(가) 악마를 처치했습니다`;
+          winResult.reason = `처단자 ${player.name}이(가) 악마를 처치했습니다`;
           playerIo.emit('game:end', winResult);
           playerIo.emit('game:phase', 'ended');
           storytellerIo.emit('game:end', winResult);

@@ -435,7 +435,7 @@ export function GameEndOverlay({
 
   useEffect(() => {
     if (isSlayerKill) {
-      // 사냥꾼 특수 진동: 급격한 강한 일격 느낌
+      // 처단자 특수 진동: 급격한 강한 일격 느낌
       Vibration.vibrate([0, 50, 50, 50, 50, 600]);
     } else if (isVictory) {
       Vibration.vibrate([0, 100, 80, 100, 80, 300]);
@@ -541,7 +541,7 @@ export function GameEndOverlay({
               SLAYER
             </AnimatedTextLine>
             <AnimatedTextLine delay={600} style={s.slayerTitle}>
-              {'사냥꾼의 한 방!'}
+              {'처단자의 한 방!'}
             </AnimatedTextLine>
             <AnimatedTextLine delay={900} style={s.slayerSubtitle}>
               {'단 한 발의 총성이 악마를 쓰러뜨렸습니다'}
@@ -557,7 +557,7 @@ export function GameEndOverlay({
               DEFEAT
             </AnimatedTextLine>
             <AnimatedTextLine delay={600} style={s.slayerDefeatTitle}>
-              {'사냥꾼의 총성이 울려 퍼졌으나...'}
+              {'처단자의 총성이 울려 퍼졌으나...'}
             </AnimatedTextLine>
             <AnimatedTextLine delay={900} style={s.slayerDefeatSubtitle}>
               {'당신의 편은 이미 무너져 있었습니다'}

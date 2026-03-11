@@ -50,7 +50,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
   },
   {
     id: 'empath',
-    name: '공감자',
+    name: '초공감자',
     team: 'townsfolk',
     ability: '매일 밤, 살아있는 양쪽 이웃 중 몇 명이 악한지 알게 됩니다.',
   },
@@ -69,7 +69,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
   },
   {
     id: 'monk',
-    name: '수도승',
+    name: '수도사',
     team: 'townsfolk',
     ability:
       '매일 밤*, 플레이어 1명을 선택합니다 (본인 제외): 그 플레이어는 오늘 밤 악마로부터 안전합니다.',
@@ -83,13 +83,13 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
   },
   {
     id: 'virgin',
-    name: '성녀',
+    name: '성결자',
     team: 'townsfolk',
     ability: '처음 지명당했을 때, 지명자가 마을주민이면 즉시 처형됩니다.',
   },
   {
     id: 'slayer',
-    name: '사냥꾼',
+    name: '처단자',
     team: 'townsfolk',
     ability:
       '게임 중 1회, 낮에 공개적으로 플레이어 1명을 선택합니다: 그 플레이어가 악마이면 사망합니다.',
@@ -132,7 +132,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
   },
   {
     id: 'saint',
-    name: '성인',
+    name: '성자',
     team: 'outsider',
     ability: '처형으로 사망하면 당신 팀이 패배합니다.',
   },
@@ -140,21 +140,21 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
   // 하수인 (4)
   {
     id: 'poisoner',
-    name: '독살자',
+    name: '독살범',
     team: 'minion',
     ability:
       '매일 밤, 플레이어 1명을 선택합니다: 오늘 밤과 내일 낮 동안 중독됩니다.',
   },
   {
     id: 'spy',
-    name: '스파이',
+    name: '첩자',
     team: 'minion',
     ability:
       '매일 밤, 마법서를 봅니다. 사망한 경우에도 선한 것으로, 마을주민이나 외지인으로 감지될 수 있습니다.',
   },
   {
     id: 'scarlet_woman',
-    name: '붉은 여인',
+    name: '탕녀',
     team: 'minion',
     ability: '생존자가 5명 이상이고 악마가 사망하면, 당신이 악마가 됩니다.',
   },

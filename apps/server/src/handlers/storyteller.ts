@@ -553,7 +553,7 @@ export function registerStorytellerHandlers(
       const result = game.nominate(nominatorId, nomineeId);
       if (!result.success) return;
 
-      // 성녀(Virgin) 트리거: 지명자가 마을주민이면 즉시 처형
+      // 성결자(Virgin) 트리거: 지명자가 마을주민이면 즉시 처형
       if (result.virginKill) {
         const virgin = game.getPlayer(nomineeId);
         const nominator = game.getPlayer(nominatorId);
@@ -570,13 +570,13 @@ export function registerStorytellerHandlers(
             executedId: result.virginKill,
             executedName: killedNominator.name,
             reason: 'virgin',
-            detail: `${killedNominator.name}이(가) 성녀를 지목하여 처형되었습니다`,
+            detail: `${killedNominator.name}이(가) 성결자를 지목하여 처형되었습니다`,
           });
           playerIo.emit('game:playerUpdate', killedNominator);
         }
         storytellerIo.emit('game:state', game.getState());
 
-        // 성녀 트리거 후 승리 조건 체크
+        // 성결자 트리거 후 승리 조건 체크
         const winResult = game.checkWinCondition();
         if (winResult) {
           winResult.cause = 'virgin';
