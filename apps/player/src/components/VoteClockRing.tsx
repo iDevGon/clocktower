@@ -260,6 +260,11 @@ export function VoteClockRing() {
           // Default to innocent if passed with no preselection
           const showDefaultInnocent =
             hasPassed && preselection == null && isVoter && !isNominee;
+          // Preselection hint (before hand passes)
+          const showPreselectedGuilty =
+            !hasPassed && preselection === true && isVoter && !isNominee;
+          const showPreselectedInnocent =
+            !hasPassed && preselection === false && isVoter && !isNominee;
 
           return (
             <View
@@ -286,6 +291,8 @@ export function VoteClockRing() {
                   !showInnocent &&
                   !showDefaultInnocent &&
                   styles.pastNode,
+                !isNearHand && showPreselectedGuilty && styles.preselectedGuiltyNode,
+                !isNearHand && showPreselectedInnocent && styles.preselectedInnocentNode,
               ]}
             >
               <Text
@@ -325,6 +332,8 @@ export function VoteClockRing() {
               nodeOffset === 0 && isNominee ? 360 : nodeOffset;
             const hasPassed = handProgress >= confirmOffset;
 
+            const isVoter = voteOrderIds.has(node.id);
+
             return (
               <Text
                 key={node.id}
@@ -336,6 +345,18 @@ export function VoteClockRing() {
                     preselection === true && { color: COLORS.guilty },
                   hasPassed &&
                     preselection !== true && { color: COLORS.innocent },
+                  !hasPassed &&
+                    !isNominee &&
+                    isVoter &&
+                    preselection === true && {
+                      color: `${COLORS.guilty}90`,
+                    },
+                  !hasPassed &&
+                    !isNominee &&
+                    isVoter &&
+                    preselection === false && {
+                      color: `${COLORS.innocent}90`,
+                    },
                 ]}
                 numberOfLines={1}
               >
@@ -502,6 +523,14 @@ const styles = StyleSheet.create({
   innocentNode: {
     borderColor: COLORS.innocent,
     backgroundColor: `${COLORS.innocent}20`,
+  },
+  preselectedGuiltyNode: {
+    borderColor: `${COLORS.guilty}70`,
+    borderStyle: 'dashed',
+  },
+  preselectedInnocentNode: {
+    borderColor: `${COLORS.innocent}70`,
+    borderStyle: 'dashed',
   },
   pastNode: {
     opacity: 0.35,
