@@ -9,6 +9,7 @@ const COLORS = {
   bloodGlow: '#c43c3c',
   iron: '#4a4a52',
   ironDark: '#2a2a30',
+  active: '#e8c44a',
 };
 
 interface VoteClockHandProps {
@@ -58,8 +59,59 @@ export function VoteClockHand({
 
   const handLength = radius * 0.85;
 
+  const wedgeHalfWidth = radius * 0.55;
+  const wedgeInnerHalf = radius * 0.22;
+
   return (
     <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
+      {/* Active voter wedge glow */}
+      {voteClock && (
+        <View
+          style={[
+            styles.wedgeContainer,
+            {
+              left: centerX - wedgeHalfWidth,
+              top: centerY - radius,
+              width: wedgeHalfWidth * 2,
+              height: radius,
+              transform: [{ rotate: `${handAngle}deg` }],
+              transformOrigin: `${wedgeHalfWidth}px ${radius}px`,
+            },
+          ]}
+        >
+          <View
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              width: 0,
+              height: 0,
+              borderLeftWidth: wedgeHalfWidth,
+              borderRightWidth: wedgeHalfWidth,
+              borderBottomWidth: radius,
+              borderLeftColor: 'transparent',
+              borderRightColor: 'transparent',
+              borderBottomColor: `${COLORS.active}08`,
+            }}
+          />
+          <View
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: wedgeHalfWidth - wedgeInnerHalf,
+              width: 0,
+              height: 0,
+              borderLeftWidth: wedgeInnerHalf,
+              borderRightWidth: wedgeInnerHalf,
+              borderBottomWidth: radius * 0.7,
+              borderLeftColor: 'transparent',
+              borderRightColor: 'transparent',
+              borderBottomColor: `${COLORS.active}12`,
+            }}
+          />
+        </View>
+      )}
+
       <View
         style={[
           styles.handContainer,
@@ -94,6 +146,10 @@ export function VoteClockHand({
 }
 
 const styles = StyleSheet.create({
+  wedgeContainer: {
+    position: 'absolute',
+    zIndex: 40,
+  },
   handContainer: {
     position: 'absolute',
     alignItems: 'center',
