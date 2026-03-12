@@ -417,15 +417,23 @@ export const EDITIONS: Edition[] = [
   },
 ];
 
+/** S&V 에디션에서 실제 능력이 구현된 역할 ID 목록 */
+const IMPLEMENTED_SV_ROLE_IDS = new Set(['sweetheart']);
+
+/** 구현된 S&V 역할만 필터링 */
+const IMPLEMENTED_SV_ROLES = SECTS_AND_VIOLETS_ROLES.filter((r) =>
+  IMPLEMENTED_SV_ROLE_IDS.has(r.id),
+);
+
 export const EDITION_ROLES: Record<string, Role[]> = {
   trouble_brewing: TROUBLE_BREWING_ROLES,
-  sects_and_violets: SECTS_AND_VIOLETS_ROLES,
+  sects_and_violets: IMPLEMENTED_SV_ROLES,
 };
 
-/** 모든 에디션의 역할을 합친 목록 */
+/** 모든 에디션의 역할을 합친 목록 (미구현 역할 제외) */
 export const ALL_ROLES: Role[] = [
   ...TROUBLE_BREWING_ROLES,
-  ...SECTS_AND_VIOLETS_ROLES,
+  ...IMPLEMENTED_SV_ROLES,
 ];
 
 export function getRolesForEdition(editionId: string): Role[] {
