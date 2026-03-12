@@ -21,6 +21,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { BaseOverlay } from './BaseOverlay';
+import { FullScreenVignette } from './FullScreenVignette';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -319,34 +320,6 @@ function VictoryGlow() {
   );
 }
 
-// ── Defeat Vignette Pulse ──
-
-function DefeatPulse() {
-  const pulse = useSharedValue(0);
-
-  useEffect(() => {
-    pulse.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 3000, easing: Easing.inOut(Easing.sin) }),
-      ),
-      -1,
-      false,
-    );
-    return () => cancelAnimation(pulse);
-  }, [pulse]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: interpolate(pulse.value, [0, 1], [0.3, 0.6]),
-  }));
-
-  return (
-    <Animated.View
-      style={[StyleSheet.absoluteFill, { backgroundColor: '#1a0000' }, style]}
-    />
-  );
-}
-
 // ── Animated Text Line ──
 
 function AnimatedTextLine({
@@ -443,7 +416,11 @@ function VictoryEffects() {
 function DefeatEffects() {
   return (
     <>
-      <DefeatPulse />
+      <FullScreenVignette
+        color="#1a0000"
+        opacityRange={[0.3, 0.6]}
+        duration={3000}
+      />
       {Array.from({ length: DRIP_COUNT }).map((_, i) => (
         <BloodDrip key={`d-${i}`} index={i} />
       ))}
