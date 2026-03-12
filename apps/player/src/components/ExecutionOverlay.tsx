@@ -21,6 +21,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { BaseOverlay } from './BaseOverlay';
+import { FullScreenVignette } from './FullScreenVignette';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -130,34 +131,6 @@ function Ember({ index }: { index: number }) {
   );
 }
 
-// ── Dark smolder vignette ──
-
-function SmolderVignette() {
-  const pulse = useSharedValue(0);
-
-  useEffect(() => {
-    pulse.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 2500, easing: Easing.inOut(Easing.sin) }),
-      ),
-      -1,
-      false,
-    );
-    return () => cancelAnimation(pulse);
-  }, [pulse]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: interpolate(pulse.value, [0, 1], [0.5, 0.7]),
-  }));
-
-  return (
-    <Animated.View
-      style={[StyleSheet.absoluteFill, { backgroundColor: '#0d0500' }, style]}
-    />
-  );
-}
-
 // ── Strike line (dramatic horizontal slash) ──
 
 function StrikeLine() {
@@ -198,7 +171,11 @@ const EMBER_COUNT = 16;
 function ExecutionEffects() {
   return (
     <>
-      <SmolderVignette />
+      <FullScreenVignette
+        color="#0d0500"
+        opacityRange={[0.5, 0.7]}
+        duration={2500}
+      />
       {Array.from({ length: EMBER_COUNT }).map((_, i) => (
         <Ember key={`e-${i}`} index={i} />
       ))}

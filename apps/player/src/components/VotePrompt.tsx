@@ -1,71 +1,41 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Dimensions, Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
+import { Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
 import Animated, {
-  cancelAnimation,
   Easing,
-  interpolate,
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
-  withSequence,
   withTiming,
 } from 'react-native-reanimated';
 import { useGameActions } from '../hooks/useGameActions';
 import { usePlayerStore } from '../stores/playerStore';
+import { EdgeVignette } from './EdgeVignette';
 import { VoteClockRing } from './VoteClockRing';
 import { styles } from './VotePrompt.styles';
 
-const { width: SW, height: SH } = Dimensions.get('window');
-const VIGNETTE_EDGE_H = SH * 0.12;
-const VIGNETTE_SIDE_W = SW * 0.08;
+const VOTE_COLORS = {
+  top: [
+    { offset: '0%', size: '40%', color: 'rgba(180,140,20,0.85)' },
+    { offset: '40%', size: '30%', color: 'rgba(140,100,10,0.45)' },
+    { offset: '70%', size: '30%', color: 'rgba(100,70,5,0.15)' },
+  ],
+  bottom: [
+    { offset: '0%', size: '40%', color: 'rgba(160,120,15,0.8)' },
+    { offset: '40%', size: '30%', color: 'rgba(120,90,10,0.4)' },
+    { offset: '70%', size: '30%', color: 'rgba(80,60,5,0.12)' },
+  ],
+  side: [
+    { offset: '0%', size: '50%', color: 'rgba(160,120,15,0.65)' },
+    { offset: '50%', size: '50%', color: 'rgba(100,70,5,0.18)' },
+  ],
+  borderColor: 'rgba(232,196,74,0.5)',
+} as const;
 
-const vignetteStyles = StyleSheet.create({
-  edgeTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: VIGNETTE_EDGE_H,
-    zIndex: 80,
-  },
-  edgeBottom: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: VIGNETTE_EDGE_H,
-    zIndex: 80,
-  },
-  edgeLeft: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    width: VIGNETTE_SIDE_W,
-    zIndex: 80,
-  },
-  edgeRight: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    width: VIGNETTE_SIDE_W,
-    zIndex: 80,
-  },
-  gradLayer: {
-    position: 'absolute',
-  },
-  innerBorder: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderWidth: 1,
-    borderColor: 'rgba(232,196,74,0.5)',
-    zIndex: 81,
-  },
-});
+const VOTE_OPACITY_RANGES = {
+  top: [0.5, 0.7] as [number, number],
+  bottom: [0.4, 0.6] as [number, number],
+  side: [0.3, 0.5] as [number, number],
+  border: [0.3, 0.6] as [number, number],
+};
 
 /**
  * Gold vignette overlay shown when the player can vote.
@@ -97,8 +67,7 @@ export function VoteVignette() {
 
     if (nomineeFullIdx < 0 || myFullIdx < 0) return false;
 
-    const myOffset =
-      (myFullIdx - nomineeFullIdx + totalPlayers) % totalPlayers;
+    const myOffset = (myFullIdx - nomineeFullIdx + totalPlayers) % totalPlayers;
     const myConfirmFraction = myOffset === 0 ? 1 : myOffset / totalPlayers;
 
     const elapsed = Date.now() - voteClock.startedAt;
@@ -106,8 +75,8 @@ export function VoteVignette() {
 
     return progress < myConfirmFraction;
   }, [voteClock, voteOrder, playerId]);
+
   const fadeIn = useSharedValue(0);
-  const pulse = useSharedValue(0);
 
   useEffect(() => {
     if (visible) {
@@ -115,42 +84,17 @@ export function VoteVignette() {
         duration: 600,
         easing: Easing.out(Easing.ease),
       });
-      pulse.value = withRepeat(
-        withSequence(
-          withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0, { duration: 2500, easing: Easing.inOut(Easing.sin) }),
-        ),
-        -1,
-      );
     } else {
       fadeIn.value = withTiming(0, {
         duration: 400,
         easing: Easing.in(Easing.ease),
       });
-      cancelAnimation(pulse);
-      pulse.value = 0;
     }
-  }, [visible, fadeIn, pulse]);
+  }, [visible, fadeIn]);
 
   const containerStyle = useAnimatedStyle(() => ({
     opacity: fadeIn.value,
     pointerEvents: 'none' as const,
-  }));
-
-  const topStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(pulse.value, [0, 1], [0.5, 0.7]),
-  }));
-
-  const bottomStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(pulse.value, [0, 1], [0.4, 0.6]),
-  }));
-
-  const sideStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(pulse.value, [0, 1], [0.3, 0.5]),
-  }));
-
-  const borderStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(pulse.value, [0, 1], [0.3, 0.6]),
   }));
 
   return (
@@ -158,158 +102,10 @@ export function VoteVignette() {
       style={[StyleSheet.absoluteFill, { zIndex: 79 }, containerStyle]}
       pointerEvents="none"
     >
-      {/* Top edge */}
-      <Animated.View
-        style={[vignetteStyles.edgeTop, topStyle]}
-        pointerEvents="none"
-      >
-        <Animated.View
-          style={[
-            vignetteStyles.gradLayer,
-            {
-              top: 0,
-              height: '40%',
-              left: 0,
-              right: 0,
-              backgroundColor: 'rgba(180,140,20,0.85)',
-            },
-          ]}
-        />
-        <Animated.View
-          style={[
-            vignetteStyles.gradLayer,
-            {
-              top: '40%',
-              height: '30%',
-              left: 0,
-              right: 0,
-              backgroundColor: 'rgba(140,100,10,0.45)',
-            },
-          ]}
-        />
-        <Animated.View
-          style={[
-            vignetteStyles.gradLayer,
-            {
-              top: '70%',
-              height: '30%',
-              left: 0,
-              right: 0,
-              backgroundColor: 'rgba(100,70,5,0.15)',
-            },
-          ]}
-        />
-      </Animated.View>
-
-      {/* Bottom edge */}
-      <Animated.View
-        style={[vignetteStyles.edgeBottom, bottomStyle]}
-        pointerEvents="none"
-      >
-        <Animated.View
-          style={[
-            vignetteStyles.gradLayer,
-            {
-              bottom: 0,
-              height: '40%',
-              left: 0,
-              right: 0,
-              backgroundColor: 'rgba(160,120,15,0.8)',
-            },
-          ]}
-        />
-        <Animated.View
-          style={[
-            vignetteStyles.gradLayer,
-            {
-              bottom: '40%',
-              height: '30%',
-              left: 0,
-              right: 0,
-              backgroundColor: 'rgba(120,90,10,0.4)',
-            },
-          ]}
-        />
-        <Animated.View
-          style={[
-            vignetteStyles.gradLayer,
-            {
-              bottom: '70%',
-              height: '30%',
-              left: 0,
-              right: 0,
-              backgroundColor: 'rgba(80,60,5,0.12)',
-            },
-          ]}
-        />
-      </Animated.View>
-
-      {/* Left edge */}
-      <Animated.View
-        style={[vignetteStyles.edgeLeft, sideStyle]}
-        pointerEvents="none"
-      >
-        <Animated.View
-          style={[
-            vignetteStyles.gradLayer,
-            {
-              left: 0,
-              width: '50%',
-              top: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(160,120,15,0.65)',
-            },
-          ]}
-        />
-        <Animated.View
-          style={[
-            vignetteStyles.gradLayer,
-            {
-              left: '50%',
-              width: '50%',
-              top: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(100,70,5,0.18)',
-            },
-          ]}
-        />
-      </Animated.View>
-
-      {/* Right edge */}
-      <Animated.View
-        style={[vignetteStyles.edgeRight, sideStyle]}
-        pointerEvents="none"
-      >
-        <Animated.View
-          style={[
-            vignetteStyles.gradLayer,
-            {
-              right: 0,
-              width: '50%',
-              top: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(160,120,15,0.65)',
-            },
-          ]}
-        />
-        <Animated.View
-          style={[
-            vignetteStyles.gradLayer,
-            {
-              right: '50%',
-              width: '50%',
-              top: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(100,70,5,0.18)',
-            },
-          ]}
-        />
-      </Animated.View>
-
-      {/* Thin gold inner border */}
-      <Animated.View
-        style={[vignetteStyles.innerBorder, borderStyle]}
-        pointerEvents="none"
+      <EdgeVignette
+        colors={VOTE_COLORS}
+        opacityRanges={VOTE_OPACITY_RANGES}
+        duration={2500}
       />
     </Animated.View>
   );
@@ -405,9 +201,7 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
 
       {isCountingDown ? (
         <View style={styles.countdownContainer}>
-          <Text style={styles.countdownMessage}>
-            잠시 후 투표가 시작됩니다
-          </Text>
+          <Text style={styles.countdownMessage}>잠시 후 투표가 시작됩니다</Text>
           <Text style={styles.countdownNumber}>{countdownRemaining}</Text>
         </View>
       ) : (

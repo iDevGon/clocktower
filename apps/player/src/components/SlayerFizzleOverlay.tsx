@@ -20,6 +20,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { BaseOverlay } from './BaseOverlay';
+import { FullScreenVignette } from './FullScreenVignette';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -96,34 +97,6 @@ function SmokeWisp({ index }: { index: number }) {
         },
         style,
       ]}
-    />
-  );
-}
-
-// ── Cold mist vignette ──
-
-function MistVignette() {
-  const pulse = useSharedValue(0);
-
-  useEffect(() => {
-    pulse.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 3000, easing: Easing.inOut(Easing.sin) }),
-      ),
-      -1,
-      false,
-    );
-    return () => cancelAnimation(pulse);
-  }, [pulse]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: interpolate(pulse.value, [0, 1], [0.6, 0.75]),
-  }));
-
-  return (
-    <Animated.View
-      style={[StyleSheet.absoluteFill, { backgroundColor: '#080c12' }, style]}
     />
   );
 }
@@ -229,7 +202,11 @@ const SMOKE_COUNT = 14;
 function FizzleEffects() {
   return (
     <>
-      <MistVignette />
+      <FullScreenVignette
+        color="#080c12"
+        opacityRange={[0.6, 0.75]}
+        duration={3000}
+      />
       {Array.from({ length: SMOKE_COUNT }).map((_, i) => (
         <SmokeWisp key={`s-${i}`} index={i} />
       ))}
