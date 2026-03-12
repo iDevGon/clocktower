@@ -158,6 +158,21 @@ export function VoteClockRing() {
 
         <View style={styles.innerRing} />
 
+        {/* Active voter wedge glow */}
+        {voteClock && (
+          <View
+            style={[
+              styles.wedgeContainer,
+              {
+                transform: [{ rotate: `${handAngle}deg` }],
+              },
+            ]}
+          >
+            <View style={styles.wedgeOuter} />
+            <View style={styles.wedgeInner} />
+          </View>
+        )}
+
         {/* Clock hand */}
         <View
           style={[
@@ -409,6 +424,41 @@ const styles = StyleSheet.create({
     borderRadius: INNER_RING_RADIUS,
     borderWidth: 0.8,
     borderColor: `${COLORS.brassDark}40`,
+  },
+  wedgeContainer: {
+    position: 'absolute',
+    left: CENTER - RADIUS * 0.55,
+    top: CENTER - RADIUS,
+    width: RADIUS * 1.1,
+    height: RADIUS,
+    transformOrigin: `${RADIUS * 0.55}px ${RADIUS}px`,
+    zIndex: 4,
+  },
+  wedgeOuter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: 0,
+    height: 0,
+    borderLeftWidth: RADIUS * 0.55,
+    borderRightWidth: RADIUS * 0.55,
+    borderBottomWidth: RADIUS,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: `${COLORS.active}08`,
+  },
+  wedgeInner: {
+    position: 'absolute',
+    bottom: 0,
+    left: RADIUS * 0.55 - RADIUS * 0.22,
+    width: 0,
+    height: 0,
+    borderLeftWidth: RADIUS * 0.22,
+    borderRightWidth: RADIUS * 0.22,
+    borderBottomWidth: RADIUS * 0.7,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: `${COLORS.active}12`,
   },
   handContainer: {
     position: 'absolute',

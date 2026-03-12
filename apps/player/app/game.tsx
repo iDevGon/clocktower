@@ -23,7 +23,7 @@ import { SlayerFizzleOverlay } from '../src/components/SlayerFizzleOverlay';
 import { StorytellerChatModal } from '../src/components/StorytellerChatModal';
 import { StorytellerChatToast } from '../src/components/StorytellerChatToast';
 import { VeiledRoleCard } from '../src/components/VeiledRoleCard';
-import { VotePrompt } from '../src/components/VotePrompt';
+import { VotePrompt, VoteVignette } from '../src/components/VotePrompt';
 import { VoteResult } from '../src/components/VoteResult';
 import { WhisperModal } from '../src/components/WhisperModal';
 import { WhisperToast } from '../src/components/WhisperToast';
@@ -137,6 +137,7 @@ export default function GameScreen() {
 
       {/* Persistent red vignette when dead */}
       {!isAlive && <DeadVignette />}
+      {currentPhase === 'vote' && <VoteVignette />}
 
       <View style={[styles.header, !isAlive && styles.headerDead]}>
         <View style={styles.headerRow}>
