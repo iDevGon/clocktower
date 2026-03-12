@@ -264,14 +264,10 @@ export function registerPlayerHandlers(
         return;
       }
 
-      // 실제 역할이 slayer이거나 주정뱅이가 slayer인 척하는 경우
+      // 누구나 처단자 선언 가능 (블러프). 실제 효과는 역할에 따라 결정
       const isSlayer = player.role?.id === 'slayer';
       const isDrunkAsSlayer =
         player.role?.id === 'drunk' && player.drunkAs === 'slayer';
-      if (!isSlayer && !isDrunkAsSlayer) {
-        callback({ success: false, error: '처단자만 사용할 수 있습니다' });
-        return;
-      }
 
       if (game.isSlayerUsed(playerId)) {
         callback({

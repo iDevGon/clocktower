@@ -123,9 +123,8 @@ export default function GameScreen() {
     }
   };
 
-  const isSlayerRole = role?.id === 'slayer';
   const canUseSlayer =
-    isSlayerRole && isAlive && !slayerUsed && currentPhase === 'day';
+    isAlive && !slayerUsed && currentPhase === 'day';
 
   const nominatablePlayers = gamePlayers.filter(
     (p) => p.isAlive && p.id !== playerId,
@@ -289,7 +288,7 @@ export default function GameScreen() {
               }}
             >
               <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>
-                처단자 능력 사용
+                처단자 선언
               </Text>
             </Pressable>
           </View>
