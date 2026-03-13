@@ -582,12 +582,13 @@ export default function LobbyScreen() {
                     }}
                   >
                     <ClockSpeedSetting
-                      label="투표 시간"
+                      label="1인당 투표 시간"
                       value={gameState.settings.voteClockSeconds}
                       onChange={(val: number) =>
                         setGameSettings({ voteClockSeconds: val })
                       }
                       scale={scale}
+                      options={[2, 3, 4, 5, 6]}
                     />
                   </View>
                 )}

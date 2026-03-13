@@ -92,7 +92,7 @@ export function startClockwiseVote(
 
   const fullOrder = game.getPlayerOrder();
   const totalPlayers = fullOrder.length;
-  const durationMs = game.getSettings().voteClockSeconds * 1000;
+  const durationMs = game.getSettings().voteClockSeconds * totalPlayers * 1000;
 
   // 투표 순서를 플레이어에게 전송
   const orderWithNames = voteOrder.map((id) => {

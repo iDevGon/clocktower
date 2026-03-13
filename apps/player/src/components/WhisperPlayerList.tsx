@@ -40,9 +40,7 @@ export function WhisperPlayerList({
   const [groupMode, setGroupMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  const availablePlayers = players.filter(
-    (p) => p.id !== myPlayerId && p.isAlive,
-  );
+  const availablePlayers = players.filter((p) => p.id !== myPlayerId);
 
   // Get existing conversation entries sorted by unread then activity
   const existingConversations = Object.entries(conversationMeta)
@@ -238,20 +236,25 @@ export function WhisperPlayerList({
               onPress={() => handlePlayerTap(player)}
             >
               <View style={styles.playerInfo}>
-                <View
-                  style={[
-                    styles.avatarCircle,
-                    isSelected && groupStyles.selectedAvatar,
-                  ]}
-                >
-                  <Text
+                <View style={groupStyles.avatarWrapper}>
+                  <View
                     style={[
-                      styles.avatarText,
-                      isSelected && groupStyles.selectedAvatarText,
+                      styles.avatarCircle,
+                      isSelected && groupStyles.selectedAvatar,
                     ]}
                   >
-                    {isSelected ? '✓' : player.name.charAt(0)}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.avatarText,
+                        isSelected && groupStyles.selectedAvatarText,
+                      ]}
+                    >
+                      {isSelected ? '✓' : player.name.charAt(0)}
+                    </Text>
+                  </View>
+                  {!player.isAlive && (
+                    <Text style={groupStyles.deadLabel}>사망</Text>
+                  )}
                 </View>
                 <Text style={styles.playerName}>{player.name}</Text>
               </View>
@@ -366,5 +369,20 @@ const groupStyles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  avatarWrapper: {
+    alignItems: 'center',
+  },
+  deadLabel: {
+    position: 'absolute',
+    bottom: -6,
+    color: '#e8d0d0',
+    fontSize: 8,
+    fontWeight: '700',
+    backgroundColor: '#6e2a2a',
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    overflow: 'hidden',
   },
 });

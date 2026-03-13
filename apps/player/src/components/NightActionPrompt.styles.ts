@@ -18,9 +18,13 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
   },
-  playerList: {
+  playerScroll: {
     width: '100%',
+    maxHeight: 300,
+  },
+  playerList: {
     gap: 8,
+    paddingRight: 4,
   },
   playerItem: {
     backgroundColor: '#1a1a1e',

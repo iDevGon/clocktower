@@ -6,7 +6,7 @@ import type {
 } from '@clocktower/shared';
 import { NIGHT_ACTIONS } from '@clocktower/shared';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { FeedbackDisplay } from './FeedbackDisplay';
 import { styles } from './NightActionPrompt.styles';
 
@@ -86,7 +86,12 @@ export function NightActionPrompt({
       <Text style={styles.roleName}>{role.name}</Text>
       <Text style={styles.instruction}>{actionDef.instruction}</Text>
 
-      <View style={styles.playerList}>
+      <ScrollView
+        style={styles.playerScroll}
+        contentContainerStyle={styles.playerList}
+        showsVerticalScrollIndicator={true}
+        persistentScrollbar={true}
+      >
         {availablePlayers.map((player) => {
           const isSelected = selected.includes(player.id);
           return (
@@ -109,7 +114,7 @@ export function NightActionPrompt({
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       <Pressable
         onPress={() => canSubmit && onSubmit(selected)}

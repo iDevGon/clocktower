@@ -164,7 +164,7 @@ export interface GameSettings {
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
   whisperMode: 'chat',
   votingMode: 'online',
-  voteClockSeconds: 60,
+  voteClockSeconds: 3,
   whisperClockSeconds: 0,
 };
 

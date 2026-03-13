@@ -34,6 +34,10 @@ export function VoteResult({
       <Text style={styles.count}>
         찬성 {yesCount}표 / 반대 {noCount}표
       </Text>
+      <Text style={styles.threshold}>
+        *찬성표가 <Text style={styles.thresholdHighlight}>생존자 수</Text>의 절반
+        이상이면 처형
+      </Text>
       <View style={styles.sentenceDivider} />
       <Text
         style={[
@@ -81,6 +85,15 @@ const styles = StyleSheet.create({
   count: {
     color: '#908e8a',
     fontSize: 14,
+  },
+  threshold: {
+    color: '#706e6a',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  thresholdHighlight: {
+    color: '#a0967a',
+    fontWeight: '600',
   },
   sentenceDivider: {
     width: '60%',

@@ -183,6 +183,15 @@ export function createVotePanelStyles(scale: number) {
       fontSize: s(12),
       fontVariant: ['tabular-nums'] as const,
     },
+    resultThreshold: {
+      color: '#706e6a',
+      fontSize: s(10),
+      marginTop: s(2),
+    },
+    resultThresholdHighlight: {
+      color: '#a0967a',
+      fontWeight: '600' as const,
+    },
     resultSentence: {
       fontSize: s(14),
       fontWeight: '700',

@@ -481,14 +481,26 @@ interface FlippableRoleCardProps {
   evilInfo?: EvilInfo | null;
   /** If true, shows veiled (setup) state, no flip interaction */
   veiled?: boolean;
+  /** Current game phase – used to auto-hide card on night→day transition */
+  currentPhase?: string | null;
 }
 
 export function FlippableRoleCard({
   role,
   evilInfo,
   veiled,
+  currentPhase,
 }: FlippableRoleCardProps) {
   const [isHidden, setIsHidden] = useState(false);
+  const prevPhaseRef = useRef(currentPhase);
+
+  useEffect(() => {
+    const prev = prevPhaseRef.current;
+    prevPhaseRef.current = currentPhase;
+    if (prev === 'night' && currentPhase === 'day' && !isHidden) {
+      setIsHidden(true);
+    }
+  }, [currentPhase]);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const mode: CardMode = veiled ? 'veiled' : isHidden ? 'hidden' : 'revealed';

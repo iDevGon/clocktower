@@ -710,7 +710,8 @@ export class GameManager {
       const idx = (nomineeIndex + i) % order.length;
       const playerId = order[idx];
       const player = this.getPlayer(playerId);
-      if (player?.isAlive) {
+      // 사망 플레이어도 원래 자리 순서대로 투표 (deadVoteUsed면 제외)
+      if (player && (player.isAlive || !player.deadVoteUsed)) {
         result.push(playerId);
       }
     }

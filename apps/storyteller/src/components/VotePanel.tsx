@@ -213,6 +213,11 @@ export function VotePanel({
             찬성 {Object.values(voteResult.votes).filter(Boolean).length}표 /
             반대 {Object.values(voteResult.votes).filter((v) => !v).length}표
           </Text>
+          <Text style={styles.resultThreshold}>
+            *찬성표가{' '}
+            <Text style={styles.resultThresholdHighlight}>생존자 수</Text>의
+            절반 이상이면 처형
+          </Text>
           <Text
             style={[
               styles.resultSentence,
