@@ -93,6 +93,7 @@ interface PlayerState {
   gameSettings: GameSettings | null;
   voteCountdown: VoteCountdown | null;
   voteClock: VoteClock | null;
+  whisperClock: VoteClock | null;
   voteOrder: {
     nomineeId: string;
     order: Array<{ id: string; name: string }>;
@@ -136,6 +137,7 @@ const initialState = {
   gameSettings: null as GameSettings | null,
   voteCountdown: null as VoteCountdown | null,
   voteClock: null as VoteClock | null,
+  whisperClock: null as VoteClock | null,
   voteOrder: null as {
     nomineeId: string;
     order: Array<{ id: string; name: string }>;

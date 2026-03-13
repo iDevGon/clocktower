@@ -38,6 +38,7 @@ interface GameStore {
   lastExecutedPlayerId: string | null;
   voteCountdown: { startedAt: number; durationMs: number } | null;
   voteClock: { startedAt: number; durationMs: number } | null;
+  whisperClock: { startedAt: number; durationMs: number } | null;
   votePreselections: Record<string, boolean | null>;
   voteConfirmed: Record<string, boolean>;
   voteResult: VoteResult | null;
@@ -59,6 +60,9 @@ interface GameStore {
   setActiveWhispers: (whispers: ActiveWhisperChat[]) => void;
   setLastExecutedPlayerId: (id: string | null) => void;
   setVoteClock: (
+    clock: { startedAt: number; durationMs: number } | null,
+  ) => void;
+  setWhisperClock: (
     clock: { startedAt: number; durationMs: number } | null,
   ) => void;
   setVotePreselection: (playerId: string, guilty: boolean | null) => void;
@@ -92,6 +96,7 @@ export const useGameStore = create<GameStore>()(
       lastExecutedPlayerId: null,
       voteCountdown: null,
       voteClock: null,
+      whisperClock: null,
       votePreselections: {},
       voteConfirmed: {},
       voteResult: null,
@@ -129,6 +134,7 @@ export const useGameStore = create<GameStore>()(
           ...(state.phase !== 'vote'
             ? { voteCountdown: null, voteClock: null }
             : {}),
+          ...(state.daySubPhase !== 'whisper' ? { whisperClock: null } : {}),
         });
       },
       addNightAction: (action) =>
@@ -138,6 +144,7 @@ export const useGameStore = create<GameStore>()(
       setActiveWhispers: (whispers) => set({ activeWhispers: whispers }),
       setLastExecutedPlayerId: (id) => set({ lastExecutedPlayerId: id }),
       setVoteClock: (clock) => set({ voteClock: clock, voteCountdown: null }),
+      setWhisperClock: (clock) => set({ whisperClock: clock }),
       setVotePreselection: (playerId, guilty) =>
         set((s) => ({
           votePreselections: { ...s.votePreselections, [playerId]: guilty },
@@ -241,6 +248,7 @@ export const useGameStore = create<GameStore>()(
           lastExecutedPlayerId: null,
           voteCountdown: null,
           voteClock: null,
+          whisperClock: null,
           votePreselections: {},
           voteConfirmed: {},
           voteResult: null,

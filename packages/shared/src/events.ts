@@ -73,6 +73,7 @@ export interface ServerToClientEvents {
     bluffRoles?: { id: string; name: string }[];
   }) => void;
   'whisper:activeChats': (chats: ActiveWhisperChat[]) => void;
+  'whisper:clockStart': (data: { durationMs: number }) => void;
   'game:settings': (settings: GameSettings) => void;
   'vote:clockStart': (data: { durationMs: number }) => void;
   'vote:preselected': (data: {
@@ -103,6 +104,7 @@ export interface ServerToStorytellerEvents {
   'game:end': ServerToClientEvents['game:end'];
   'night:actionReceived': ServerToClientEvents['night:actionReceived'];
   'whisper:activeChats': ServerToClientEvents['whisper:activeChats'];
+  'whisper:clockStart': ServerToClientEvents['whisper:clockStart'];
   'slayer:declared': ServerToClientEvents['slayer:declared'];
   'slayer:noEffect': ServerToClientEvents['slayer:noEffect'];
   'vote:preselected': ServerToClientEvents['vote:preselected'];

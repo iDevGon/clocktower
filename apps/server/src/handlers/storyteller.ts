@@ -292,6 +292,12 @@ export function registerStorytellerHandlers(
         playerIo.emit('game:state', game.getState());
         playerIo.emit('day:subPhase', 'whisper');
         whisperTracker.clear();
+        const whisperSec = game.getSettings().whisperClockSeconds;
+        if (whisperSec > 0) {
+          const durationMs = whisperSec * 1000;
+          playerIo.emit('whisper:clockStart', { durationMs });
+          storytellerIo.emit('whisper:clockStart', { durationMs });
+        }
         const state = game.getState();
         const allIds = state.players.map((p) => p.id);
         sendPushToAll(allIds, '☀️ 낮이 되었습니다', '토론을 시작하세요!');
@@ -303,6 +309,15 @@ export function registerStorytellerHandlers(
       game.setDaySubPhase(subPhase);
       playerIo.emit('day:subPhase', subPhase);
       storytellerIo.emit('game:state', game.getState());
+
+      if (subPhase === 'whisper') {
+        const whisperSec = game.getSettings().whisperClockSeconds;
+        if (whisperSec > 0) {
+          const durationMs = whisperSec * 1000;
+          playerIo.emit('whisper:clockStart', { durationMs });
+          storytellerIo.emit('whisper:clockStart', { durationMs });
+        }
+      }
     });
 
     socket.on('night:sendFeedback', ({ playerId, feedback }) => {

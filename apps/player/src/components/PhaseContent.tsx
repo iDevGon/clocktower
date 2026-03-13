@@ -3,8 +3,10 @@ import type {
   NightFeedbackPayload,
   Role,
 } from '@clocktower/shared';
+import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import type { NightProgress as NightProgressData } from '../stores/playerStore';
+import { usePlayerStore } from '../stores/playerStore';
 import { useWhisperStore } from '../stores/whisperStore';
 import { styles } from '../styles/game.styles';
 import { NightActionPrompt } from './NightActionPrompt';
@@ -83,6 +85,31 @@ export function NightPhase({
   );
 }
 
+function useWhisperCountdown() {
+  const whisperClock = usePlayerStore((s) => s.whisperClock);
+  const [remaining, setRemaining] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!whisperClock) {
+      setRemaining(null);
+      return;
+    }
+    const update = () => {
+      const elapsed = Date.now() - whisperClock.startedAt;
+      const left = Math.max(
+        0,
+        Math.ceil((whisperClock.durationMs - elapsed) / 1000),
+      );
+      setRemaining(left);
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [whisperClock]);
+
+  return remaining;
+}
+
 interface WhisperPhaseProps {
   visible: boolean;
   totalUnread: number;
@@ -97,6 +124,7 @@ export function WhisperPhase({
   onOpenWhisper,
 }: WhisperPhaseProps) {
   const activeWhispers = useWhisperStore((s) => s.activeWhispers);
+  const remaining = useWhisperCountdown();
 
   if (!visible) return null;
 
@@ -111,9 +139,22 @@ export function WhisperPhase({
     );
   }
 
+  const minutes = remaining !== null ? Math.floor(remaining / 60) : 0;
+  const seconds = remaining !== null ? remaining % 60 : 0;
+
   return (
     <View style={styles.phaseContent}>
       <Text style={styles.dayTitle}>밀담 시간</Text>
+      {remaining !== null && (
+        <Text
+          style={[
+            whisperStyles.countdownText,
+            remaining <= 10 && whisperStyles.countdownUrgent,
+          ]}
+        >
+          {minutes}:{seconds.toString().padStart(2, '0')}
+        </Text>
+      )}
       <Text style={styles.phaseDescription}>
         다른 플레이어와 자유롭게 대화하세요.
       </Text>

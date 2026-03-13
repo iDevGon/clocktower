@@ -544,6 +544,28 @@ export default function LobbyScreen() {
                     scale={scale}
                   />
                 </View>
+                {gameState.settings.whisperMode === 'chat' && (
+                  <View
+                    style={{
+                      backgroundColor: '#1a1a1e',
+                      borderRadius: 8,
+                      paddingVertical: s(10),
+                      paddingHorizontal: s(12),
+                      borderWidth: 1,
+                      borderColor: '#2a2a2e',
+                    }}
+                  >
+                    <ClockSpeedSetting
+                      label="밀담시계"
+                      value={gameState.settings.whisperClockSeconds}
+                      onChange={(val: number) =>
+                        setGameSettings({ whisperClockSeconds: val })
+                      }
+                      scale={scale}
+                      showOff
+                    />
+                  </View>
+                )}
                 {gameState.settings.votingMode === 'online' && (
                   <View
                     style={{
@@ -556,6 +578,7 @@ export default function LobbyScreen() {
                     }}
                   >
                     <ClockSpeedSetting
+                      label="투표시계"
                       value={gameState.settings.voteClockSeconds}
                       onChange={(val: number) =>
                         setGameSettings({ voteClockSeconds: val })

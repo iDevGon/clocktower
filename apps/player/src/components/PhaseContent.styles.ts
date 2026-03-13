@@ -22,6 +22,16 @@ export const whisperStyles = StyleSheet.create({
     fontSize: 14,
     paddingVertical: 3,
   },
+  countdownText: {
+    color: '#c4a050',
+    fontSize: 32,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+    marginBottom: 4,
+  },
+  countdownUrgent: {
+    color: '#e05050',
+  },
 });
 
 export const endedStyles = StyleSheet.create({

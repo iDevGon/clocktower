@@ -158,12 +158,14 @@ export interface GameSettings {
   whisperMode: 'chat' | 'offline';
   votingMode: 'online' | 'offline';
   voteClockSeconds: number;
+  whisperClockSeconds: number;
 }
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
   whisperMode: 'chat',
   votingMode: 'online',
   voteClockSeconds: 60,
+  whisperClockSeconds: 0,
 };
 
 export interface StorytellerMessage {

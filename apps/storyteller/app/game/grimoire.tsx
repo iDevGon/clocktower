@@ -51,6 +51,48 @@ const PHASE_LABELS: Record<string, string> = {
   ended: '종료',
 };
 
+function WhisperClockLabel() {
+  const whisperClock = useGameStore((s) => s.whisperClock);
+  const [remaining, setRemaining] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!whisperClock) {
+      setRemaining(null);
+      return;
+    }
+    const update = () => {
+      const elapsed = Date.now() - whisperClock.startedAt;
+      const left = Math.max(
+        0,
+        Math.ceil((whisperClock.durationMs - elapsed) / 1000),
+      );
+      setRemaining(left);
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [whisperClock]);
+
+  if (remaining === null) return null;
+
+  const minutes = Math.floor(remaining / 60);
+  const seconds = remaining % 60;
+
+  return (
+    <Text
+      style={{
+        color: remaining <= 10 ? '#e05050' : '#c4a050',
+        fontSize: 14,
+        fontWeight: '700',
+        fontVariant: ['tabular-nums'],
+        marginRight: 8,
+      }}
+    >
+      {minutes}:{seconds.toString().padStart(2, '0')}
+    </Text>
+  );
+}
+
 export default function GrimoireScreen() {
   const { fontSize } = useResponsive();
   const scale = fontSize.md / 12;
@@ -686,15 +728,20 @@ export default function GrimoireScreen() {
         <Text style={styles.dayText}>{gameState.day}일차</Text>
         <View style={styles.topBarRight}>
           {gameState.phase === 'day' && gameState.daySubPhase === 'whisper' && (
-            <Pressable
-              onPress={() => router.push('/game/whispers')}
-              style={styles.whisperButton}
-            >
-              <Text style={styles.whisperButtonText}>
-                밀담{' '}
-                {activeWhispers.length > 0 ? `(${activeWhispers.length})` : ''}
-              </Text>
-            </Pressable>
+            <>
+              <WhisperClockLabel />
+              <Pressable
+                onPress={() => router.push('/game/whispers')}
+                style={styles.whisperButton}
+              >
+                <Text style={styles.whisperButtonText}>
+                  밀담{' '}
+                  {activeWhispers.length > 0
+                    ? `(${activeWhispers.length})`
+                    : ''}
+                </Text>
+              </Pressable>
+            </>
           )}
           {__DEV__ &&
             gameState.phase === 'day' &&

@@ -92,7 +92,10 @@ export function attachListeners(socket: AppSocket) {
   });
 
   socket.on('day:subPhase', (subPhase) => {
-    usePlayerStore.getState().set({ daySubPhase: subPhase });
+    usePlayerStore.getState().set({
+      daySubPhase: subPhase,
+      ...(subPhase !== 'whisper' ? { whisperClock: null } : {}),
+    });
   });
 
   socket.on('night:deaths', ({ deaths }) => {
@@ -292,6 +295,12 @@ export function attachListeners(socket: AppSocket) {
     usePlayerStore.getState().set({
       voteClock: { startedAt: Date.now(), durationMs },
       voteCountdown: null,
+    });
+  });
+
+  socket.on('whisper:clockStart', ({ durationMs }) => {
+    usePlayerStore.getState().set({
+      whisperClock: { startedAt: Date.now(), durationMs },
     });
   });
 

@@ -117,6 +117,12 @@ export function useSocketConnection() {
             durationMs: data.durationMs,
           });
         });
+        newSocket.on('whisper:clockStart', (data) => {
+          useGameStore.getState().setWhisperClock({
+            startedAt: Date.now(),
+            durationMs: data.durationMs,
+          });
+        });
         newSocket.on('vote:preselected', (data) => {
           useGameStore
             .getState()
