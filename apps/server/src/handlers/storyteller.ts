@@ -701,6 +701,18 @@ export function registerStorytellerHandlers(
       }
     });
 
+    socket.on('slayer:forceAck', () => {
+      playerIo.emit('slayer:allAcked');
+      storytellerIo.emit('slayer:allAcked');
+
+      const pausedNomineeId = game.getVoteClockPausedNomineeId();
+      game.clearSlayerAckState();
+      if (pausedNomineeId) {
+        startClockwiseVote(game, playerIo, storytellerIo, pausedNomineeId);
+      }
+      console.log('Storyteller forced slayer ack');
+    });
+
     socket.on('chat:sendToPlayer', ({ playerId, message }) => {
       const player = game.getPlayer(playerId);
       if (!player) return;

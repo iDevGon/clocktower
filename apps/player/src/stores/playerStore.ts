@@ -90,6 +90,7 @@ interface PlayerState {
   executionHappenedToday: boolean;
   slayerUsed: boolean;
   slayerFizzle: { slayerName: string; targetName: string } | null;
+  slayerAcked: boolean;
   gameSettings: GameSettings | null;
   voteCountdown: VoteCountdown | null;
   voteClock: VoteClock | null;
@@ -134,6 +135,7 @@ const initialState = {
   executionHappenedToday: false,
   slayerUsed: false,
   slayerFizzle: null as { slayerName: string; targetName: string } | null,
+  slayerAcked: false,
   gameSettings: null as GameSettings | null,
   voteCountdown: null as VoteCountdown | null,
   voteClock: null as VoteClock | null,

@@ -8,6 +8,7 @@ import type {
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
 import { registerPushToken } from '../pushNotifications.js';
+import { startClockwiseVote } from './storyteller.js';
 import { WhisperTracker } from '../whisper.js';
 
 type PlayerNamespace = Namespace<ClientToServerEvents, ServerToClientEvents>;
@@ -281,7 +282,7 @@ export function registerPlayerHandlers(
       }
 
       const state = game.getState();
-      if (state.phase !== 'day') {
+      if (state.phase !== 'day' && state.phase !== 'vote') {
         callback({ success: false, error: '낮에만 사용할 수 있습니다' });
         return;
       }
@@ -369,9 +370,37 @@ export function registerPlayerHandlers(
           slayerName: player.name,
           targetName: target.name,
         });
+
+        // 투표 중 처단자 선언 → 시계 일시정지
+        if (state.phase === 'vote') {
+          const nomineeId = state.nominations.at(-1)?.nomineeId ?? '';
+          game.pauseVoteClockForSlayer(nomineeId);
+          playerIo.emit('vote:clockPause');
+          storytellerIo.emit('vote:clockPause');
+        }
       }
 
       console.log(`Slayer: ${player.name} -> ${target.name}`);
+    });
+
+    // 처단자 선언 확인 (투표 일시정지 해제)
+    socket.on('slayer:ack', () => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) return;
+
+      game.addSlayerAck(playerId);
+
+      if (game.isAllSlayerAcked()) {
+        playerIo.emit('slayer:allAcked');
+        storytellerIo.emit('slayer:allAcked');
+
+        // 투표 시계 재개
+        const pausedNomineeId = game.getVoteClockPausedNomineeId();
+        game.clearSlayerAckState();
+        if (pausedNomineeId) {
+          startClockwiseVote(game, playerIo, storytellerIo, pausedNomineeId);
+        }
+      }
     });
 
     socket.on('whisper:send', ({ conversationId, participantIds, message }) => {

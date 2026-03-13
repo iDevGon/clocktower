@@ -78,6 +78,12 @@ export function useSocketConnection() {
             .getState()
             .addLog(gs?.day ?? 0, 'day', `⚔️ ${msg}`, 'ability');
         });
+        newSocket.on('slayer:noEffect', () => {
+          useGameStore.getState().setSlayerWaitingAck(true);
+        });
+        newSocket.on('slayer:allAcked', () => {
+          useGameStore.getState().setSlayerWaitingAck(false);
+        });
         newSocket.on(
           'virgin:triggered',
           (data: {
@@ -125,6 +131,9 @@ export function useSocketConnection() {
             startedAt: Date.now(),
             durationMs: data.durationMs,
           });
+        });
+        newSocket.on('vote:clockPause', () => {
+          useGameStore.getState().setVoteClock(null);
         });
         newSocket.on('vote:preselected', (data) => {
           useGameStore

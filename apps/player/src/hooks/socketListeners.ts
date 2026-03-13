@@ -54,7 +54,7 @@ export function attachListeners(socket: AppSocket) {
     }
     usePlayerStore.getState().set({
       currentPhase: phase,
-      nomination: null,
+      ...(phase !== 'vote' ? { nomination: null } : {}),
       nightProgress: null,
       nightFeedback: null,
       ...(phase === 'night'
@@ -276,7 +276,15 @@ export function attachListeners(socket: AppSocket) {
   });
 
   socket.on('slayer:noEffect', (data) => {
-    usePlayerStore.getState().set({ slayerFizzle: data });
+    usePlayerStore.getState().set({ slayerFizzle: data, slayerAcked: false });
+  });
+
+  socket.on('slayer:allAcked', () => {
+    usePlayerStore.getState().set({ slayerFizzle: null, slayerAcked: false });
+  });
+
+  socket.on('vote:clockPause', () => {
+    usePlayerStore.getState().set({ voteClock: null });
   });
 
   socket.on('virgin:triggered', () => {

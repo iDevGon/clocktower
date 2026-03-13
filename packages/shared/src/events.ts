@@ -57,6 +57,8 @@ export interface ServerToClientEvents {
     targetId: string;
   }) => void;
   'slayer:noEffect': (data: { slayerName: string; targetName: string }) => void;
+  'slayer:allAcked': () => void;
+  'vote:clockPause': () => void;
   'virgin:triggered': (data: {
     virginName: string;
     nominatorName: string;
@@ -107,6 +109,8 @@ export interface ServerToStorytellerEvents {
   'whisper:clockStart': ServerToClientEvents['whisper:clockStart'];
   'slayer:declared': ServerToClientEvents['slayer:declared'];
   'slayer:noEffect': ServerToClientEvents['slayer:noEffect'];
+  'slayer:allAcked': ServerToClientEvents['slayer:allAcked'];
+  'vote:clockPause': ServerToClientEvents['vote:clockPause'];
   'vote:preselected': ServerToClientEvents['vote:preselected'];
   'vote:confirmed': ServerToClientEvents['vote:confirmed'];
   'vote:clockStart': ServerToClientEvents['vote:clockStart'];
@@ -164,6 +168,7 @@ export interface ClientToServerEvents {
   ) => void;
   'push:register': (data: { token: string }) => void;
   'chat:sendToStoryteller': (data: { message: string }) => void;
+  'slayer:ack': () => void;
 }
 
 export interface StorytellerToServerEvents {
@@ -210,4 +215,5 @@ export interface StorytellerToServerEvents {
   'game:setSettings': (settings: Partial<GameSettings>) => void;
   'game:setPlayerOrder': (order: string[]) => void;
   'chat:sendToPlayer': (data: { playerId: string; message: string }) => void;
+  'slayer:forceAck': () => void;
 }

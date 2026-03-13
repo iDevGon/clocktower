@@ -1,5 +1,5 @@
 import { FullScreenVignette } from '@clocktower/ui';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dimensions,
   Pressable,
@@ -20,6 +20,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { useConnectionStore } from '../stores/connectionStore';
 import { BaseOverlay } from './BaseOverlay';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -133,7 +134,7 @@ function GunIcon() {
     };
   }, [recoil, smokeOpacity]);
 
-  const gunStyle = useAnimatedStyle(() => ({
+  const bowStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: recoil.value },
       { rotate: `${recoil.value * 0.5}deg` },
@@ -150,8 +151,8 @@ function GunIcon() {
   }));
 
   return (
-    <View style={styles.gunContainer}>
-      <Animated.Text style={[styles.gunText, gunStyle]}>
+    <View style={styles.bowContainer}>
+      <Animated.Text style={[styles.bowText, bowStyle]}>
         {'\uD83C\uDFF9'}
       </Animated.Text>
       <Animated.Text style={[styles.arrowText, arrowStyle]}>
@@ -221,25 +222,40 @@ function FizzleEffects() {
 interface SlayerFizzleOverlayProps {
   slayerName: string;
   targetName: string;
+  isVotePhase: boolean;
   onDismiss: () => void;
 }
 
 export function SlayerFizzleOverlay({
   slayerName,
   targetName,
+  isVotePhase,
   onDismiss,
 }: SlayerFizzleOverlayProps) {
+  const [acked, setAcked] = useState(false);
+
   useEffect(() => {
     // Muffled vibration — a dull thud, not a sharp crack
     Vibration.vibrate([0, 60, 80, 40]);
   }, []);
+
+  const handleConfirm = () => {
+    if (isVotePhase) {
+      if (acked) return;
+      setAcked(true);
+      const socket = useConnectionStore.getState().socket;
+      socket?.emit('slayer:ack');
+    } else {
+      onDismiss();
+    }
+  };
 
   return (
     <BaseOverlay
       backgroundColor="#060a10"
       zIndex={94}
       effectsLayer={<FizzleEffects />}
-      onDismiss={onDismiss}
+      onDismiss={isVotePhase ? undefined : onDismiss}
     >
       <View style={styles.content}>
         <GunIcon />
@@ -284,10 +300,32 @@ export function SlayerFizzleOverlay({
         </Animated.View>
 
         <Animated.View entering={FadeIn.delay(2200).duration(500)}>
-          <Pressable style={styles.confirmButton} onPress={onDismiss}>
-            <Text style={styles.confirmText}>확인</Text>
+          <Pressable
+            style={[
+              styles.confirmButton,
+              acked && styles.confirmButtonAcked,
+            ]}
+            onPress={handleConfirm}
+          >
+            <Text
+              style={[
+                styles.confirmText,
+                acked && styles.confirmTextAcked,
+              ]}
+            >
+              {acked ? '대기 중...' : '확인'}
+            </Text>
           </Pressable>
         </Animated.View>
+
+        {acked && (
+          <Animated.Text
+            entering={FadeIn.duration(400)}
+            style={styles.waitingHint}
+          >
+            다른 플레이어를 기다리는 중
+          </Animated.Text>
+        )}
       </View>
     </BaseOverlay>
   );
@@ -298,13 +336,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 32,
   },
-  gunContainer: {
+  bowContainer: {
     marginBottom: 4,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  gunText: {
+  bowText: {
     fontSize: 52,
   },
   arrowText: {
@@ -377,10 +415,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     paddingVertical: 12,
   },
+  confirmButtonAcked: {
+    backgroundColor: 'rgba(46, 204, 113, 0.2)',
+    borderColor: 'rgba(46, 204, 113, 0.5)',
+  },
   confirmText: {
     fontSize: 15,
     color: '#8a9aaa',
     fontWeight: '600',
+    textAlign: 'center',
+  },
+  confirmTextAcked: {
+    color: '#2ecc71',
+  },
+  waitingHint: {
+    marginTop: 12,
+    fontSize: 12,
+    color: '#4a5a6a',
     textAlign: 'center',
   },
 });

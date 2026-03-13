@@ -63,6 +63,8 @@ export default function GrimoireScreen() {
   const activeNightRoleId = useGameStore((s) => s.activeNightRoleId);
   const playerStatuses = useGameStore((s) => s.playerStatuses);
   const whisperClock = useGameStore((s) => s.whisperClock);
+  const slayerWaitingAck = useGameStore((s) => s.slayerWaitingAck);
+  const socket = useConnectionStore((s) => s.socket);
   const addLog = useLogStore((s) => s.addLog);
   const {
     setPhase,
@@ -715,6 +717,14 @@ export default function GrimoireScreen() {
                 <Text style={styles.nominateText}>지목 (수동)</Text>
               </Pressable>
             )}
+          {__DEV__ && slayerWaitingAck && (
+            <Pressable
+              onPress={() => socket?.emit('slayer:forceAck')}
+              style={[styles.nominateButton, { backgroundColor: '#7a2a2a' }]}
+            >
+              <Text style={styles.nominateText}>처단자 강제확인</Text>
+            </Pressable>
+          )}
           <Pressable
             onPress={() => setDictionaryVisible(true)}
             style={styles.logButton}

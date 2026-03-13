@@ -44,6 +44,9 @@ export class GameManager {
   private nightActionTargets = new Map<string, string[]>();
   // 사냥꾼 능력 사용 추적
   private slayerUsed = new Set<string>();
+  // 처단자 선언 확인 추적 (투표 중 일시정지용)
+  private slayerAcks = new Set<string>();
+  private voteClockPausedNomineeId: string | null = null;
   // 성녀 능력 발동 여부
   private virginTriggered = false;
   // 오늘 처형이 있었는지 (시장 승리 조건용)
@@ -77,6 +80,8 @@ export class GameManager {
     this.butlerMasters.clear();
     this.nightActionTargets.clear();
     this.slayerUsed.clear();
+    this.slayerAcks.clear();
+    this.voteClockPausedNomineeId = null;
     this.virginTriggered = false;
     this.executionToday = false;
     this.pendingNightKills = [];
@@ -134,6 +139,8 @@ export class GameManager {
     this.butlerMasters.clear();
     this.nightActionTargets.clear();
     this.slayerUsed.clear();
+    this.slayerAcks.clear();
+    this.voteClockPausedNomineeId = null;
     this.virginTriggered = false;
     this.executionToday = false;
     this.executionCandidate = null;
@@ -792,5 +799,34 @@ export class GameManager {
 
     const evilCount = neighbors.filter((n) => n.isEvil).length;
     return { neighbors, evilCount };
+  }
+
+  // ── 처단자 선언 확인 (투표 중 일시정지) ──
+
+  pauseVoteClockForSlayer(nomineeId: string): void {
+    if (this.voteClockInterval) {
+      clearInterval(this.voteClockInterval);
+      this.voteClockInterval = null;
+    }
+    this.voteClockPausedNomineeId = nomineeId;
+    this.slayerAcks.clear();
+  }
+
+  addSlayerAck(playerId: string): void {
+    this.slayerAcks.add(playerId);
+  }
+
+  isAllSlayerAcked(): boolean {
+    const alivePlayers = this.state.players.filter((p) => p.isAlive);
+    return alivePlayers.every((p) => this.slayerAcks.has(p.id));
+  }
+
+  getVoteClockPausedNomineeId(): string | null {
+    return this.voteClockPausedNomineeId;
+  }
+
+  clearSlayerAckState(): void {
+    this.voteClockPausedNomineeId = null;
+    this.slayerAcks.clear();
   }
 }

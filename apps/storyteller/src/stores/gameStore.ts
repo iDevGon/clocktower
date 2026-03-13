@@ -47,6 +47,8 @@ interface GameStore {
   chatMessages: Record<string, StorytellerMessage[]>;
   chatUnreadCounts: Record<string, number>;
   activeChatPlayerId: string | null;
+  slayerWaitingAck: boolean;
+  setSlayerWaitingAck: (waiting: boolean) => void;
   chatToast: { playerName: string; message: string } | null;
   showChatToast: (toast: { playerName: string; message: string }) => void;
   dismissChatToast: () => void;
@@ -105,6 +107,8 @@ export const useGameStore = create<GameStore>()(
       chatMessages: {},
       chatUnreadCounts: {},
       activeChatPlayerId: null,
+      slayerWaitingAck: false,
+      setSlayerWaitingAck: (waiting) => set({ slayerWaitingAck: waiting }),
       chatToast: null,
       showChatToast: (toast) => set({ chatToast: toast }),
       dismissChatToast: () => set({ chatToast: null }),
@@ -259,6 +263,7 @@ export const useGameStore = create<GameStore>()(
           activeChatPlayerId: null,
           chatToast: null,
           eventToast: null,
+          slayerWaitingAck: false,
         }),
     }),
     {
