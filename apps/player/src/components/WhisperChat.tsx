@@ -25,6 +25,7 @@ interface WhisperChatProps {
     participantIds?: string[];
     message: string;
   }) => void;
+  readOnly?: boolean;
 }
 
 export function WhisperChat({
@@ -33,6 +34,7 @@ export function WhisperChat({
   participantNames,
   onBack,
   onSend,
+  readOnly = false,
 }: WhisperChatProps) {
   const [text, setText] = useState('');
   const scrollRef = useRef<ScrollView>(null);
@@ -142,35 +144,62 @@ export function WhisperChat({
         })}
       </ScrollView>
 
-      <QuickSuggestions
-        text={text}
-        candidates={candidates}
-        onSelect={handleSuggestionSelect}
-      />
-      <View
-        style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 8) }]}
-      >
-        <TextInput
-          style={styles.input}
-          value={text}
-          onChangeText={setText}
-          placeholder="메시지를 입력하세요..."
-          placeholderTextColor="#5c5a58"
-          returnKeyType="send"
-          onSubmitEditing={handleSend}
-        />
-        <Pressable
-          onPress={handleSend}
-          style={[styles.sendButton, !text.trim() && styles.sendButtonDisabled]}
-          disabled={!text.trim()}
+      {readOnly ? (
+        <View
+          style={[
+            styles.inputRow,
+            {
+              paddingBottom: Math.max(insets.bottom, 8),
+              justifyContent: 'center',
+            },
+          ]}
         >
-          <Text
-            style={[styles.sendText, !text.trim() && styles.sendTextDisabled]}
-          >
-            전송
+          <Text style={{ color: '#706e6a', fontSize: 14, fontWeight: '600' }}>
+            밀담 시간이 종료되었습니다
           </Text>
-        </Pressable>
-      </View>
+        </View>
+      ) : (
+        <>
+          <QuickSuggestions
+            text={text}
+            candidates={candidates}
+            onSelect={handleSuggestionSelect}
+          />
+          <View
+            style={[
+              styles.inputRow,
+              { paddingBottom: Math.max(insets.bottom, 8) },
+            ]}
+          >
+            <TextInput
+              style={styles.input}
+              value={text}
+              onChangeText={setText}
+              placeholder="메시지를 입력하세요..."
+              placeholderTextColor="#5c5a58"
+              returnKeyType="send"
+              onSubmitEditing={handleSend}
+            />
+            <Pressable
+              onPress={handleSend}
+              style={[
+                styles.sendButton,
+                !text.trim() && styles.sendButtonDisabled,
+              ]}
+              disabled={!text.trim()}
+            >
+              <Text
+                style={[
+                  styles.sendText,
+                  !text.trim() && styles.sendTextDisabled,
+                ]}
+              >
+                전송
+              </Text>
+            </Pressable>
+          </View>
+        </>
+      )}
     </KeyboardAvoidingView>
   );
 }

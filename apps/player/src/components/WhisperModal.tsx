@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
+import { useWhisperExpired } from '../hooks/useWhisperExpired';
 import { usePlayerStore } from '../stores/playerStore';
 import { useWhisperStore } from '../stores/whisperStore';
 import { WhisperChat } from './WhisperChat';
@@ -32,6 +33,7 @@ export function WhisperModal({
   const [activeConversation, setActiveConversation] =
     useState<ConversationTarget | null>(null);
   const playerId = usePlayerStore((s) => s.playerId);
+  const whisperExpired = useWhisperExpired();
 
   useEffect(() => {
     if (visible && initialTarget) {
@@ -82,6 +84,7 @@ export function WhisperModal({
             participantNames={activeConversation.participantNames}
             onBack={handleBack}
             onSend={onSend}
+            readOnly={whisperExpired}
           />
         ) : (
           <WhisperPlayerList
