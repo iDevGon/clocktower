@@ -4,17 +4,22 @@ export function ClockSpeedSetting({
   value,
   onChange,
   scale,
-  label = '투표시계',
+  label = '투표 시간',
   showOff = false,
+  options = [30, 45, 60, 90, 120],
+  formatOption,
 }: {
   value: number;
   onChange: (val: number) => void;
   scale: number;
   label?: string;
   showOff?: boolean;
+  options?: number[];
+  formatOption?: (val: number) => string;
 }) {
   const s = (v: number) => Math.round(v * scale);
-  const options = [30, 45, 60, 90, 120];
+  const defaultFormat = (sec: number) => `${sec}초`;
+  const fmt = formatOption ?? defaultFormat;
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: s(6) }}>
@@ -64,7 +69,7 @@ export function ClockSpeedSetting({
               fontWeight: '600',
             }}
           >
-            {sec}초
+            {fmt(sec)}
           </Text>
         </Pressable>
       ))}

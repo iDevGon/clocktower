@@ -556,13 +556,17 @@ export default function LobbyScreen() {
                     }}
                   >
                     <ClockSpeedSetting
-                      label="밀담시계"
+                      label="밀담 시간"
                       value={gameState.settings.whisperClockSeconds}
                       onChange={(val: number) =>
                         setGameSettings({ whisperClockSeconds: val })
                       }
                       scale={scale}
                       showOff
+                      options={[10, 300, 600, 900, 1200]}
+                      formatOption={(sec: number) =>
+                        sec < 60 ? `${sec}초` : `${sec / 60}분`
+                      }
                     />
                   </View>
                 )}
@@ -578,7 +582,7 @@ export default function LobbyScreen() {
                     }}
                   >
                     <ClockSpeedSetting
-                      label="투표시계"
+                      label="투표 시간"
                       value={gameState.settings.voteClockSeconds}
                       onChange={(val: number) =>
                         setGameSettings({ voteClockSeconds: val })
