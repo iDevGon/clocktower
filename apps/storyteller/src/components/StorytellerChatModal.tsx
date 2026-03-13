@@ -1,4 +1,8 @@
-import { ALL_ROLES, type StorytellerMessage } from '@clocktower/shared';
+import {
+  ALL_ROLES,
+  PLAYER_STATUS_LABELS,
+  type StorytellerMessage,
+} from '@clocktower/shared';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -13,6 +17,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGameStore } from '../stores/gameStore';
+import { HighlightedMessage } from './HighlightedMessage';
+import type { TaggedCandidate } from './QuickSuggestions';
 import { QuickSuggestions } from './QuickSuggestions';
 import { styles } from './StorytellerChatModal.styles';
 
@@ -183,9 +189,33 @@ function ChatView({
 
   const allPlayers = useGameStore((s) => s.gameState?.players) ?? [];
   const candidates = useMemo(() => {
-    const playerNames = allPlayers.map((p) => p.name);
-    const roleNames = ALL_ROLES.map((r) => r.name);
-    return [...new Set([...playerNames, ...roleNames])];
+    const items: TaggedCandidate[] = [];
+    const seen = new Set<string>();
+    for (const p of allPlayers) {
+      if (!seen.has(p.name)) {
+        seen.add(p.name);
+        items.push({ word: p.name, category: 'player' });
+      }
+    }
+    for (const r of ALL_ROLES) {
+      if (!seen.has(r.name)) {
+        seen.add(r.name);
+        items.push({ word: r.name, category: 'role' });
+      }
+    }
+    for (const label of Object.values(PLAYER_STATUS_LABELS)) {
+      if (!seen.has(label)) {
+        seen.add(label);
+        items.push({ word: label, category: 'status' });
+      }
+    }
+    for (const extra of ['사망', '생존', '죽음', '이야기꾼']) {
+      if (!seen.has(extra)) {
+        seen.add(extra);
+        items.push({ word: extra, category: 'status' });
+      }
+    }
+    return items;
   }, [allPlayers]);
 
   const handleSuggestionSelect = (word: string) => {
@@ -244,11 +274,14 @@ function ChatView({
                 {!isMine && (
                   <Text style={styles.senderLabel}>{playerName}</Text>
                 )}
-                <Text
-                  style={[styles.messageText, isMine && styles.messageTextMine]}
-                >
-                  {msg.message}
-                </Text>
+                <HighlightedMessage
+                  message={msg.message}
+                  keywords={candidates}
+                  baseStyle={[
+                    styles.messageText,
+                    isMine && styles.messageTextMine,
+                  ]}
+                />
                 <Text style={styles.messageTime}>
                   {formatTime(msg.timestamp)}
                 </Text>
@@ -264,7 +297,10 @@ function ChatView({
         onSelect={handleSuggestionSelect}
       />
       <View
-        style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 8) }]}
+        style={[
+          styles.inputRow,
+          { paddingBottom: Math.max(insets.bottom, 12) + 8 },
+        ]}
       >
         <TextInput
           style={styles.input}

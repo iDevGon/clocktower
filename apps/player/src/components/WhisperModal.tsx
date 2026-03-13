@@ -92,6 +92,7 @@ export function WhisperModal({
             myPlayerId={playerId}
             onSelectConversation={handleSelectConversation}
             onClose={handleClose}
+            readOnly={whisperExpired}
           />
         )}
         <WhisperToast onNavigate={handleToastNavigate} />

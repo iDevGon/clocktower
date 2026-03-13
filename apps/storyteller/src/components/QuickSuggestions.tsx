@@ -46,9 +46,25 @@ function matchQuery(candidate: string, query: string): boolean {
   return false;
 }
 
+export type CandidateCategory = 'player' | 'role' | 'status';
+
+export interface TaggedCandidate {
+  word: string;
+  category: CandidateCategory;
+}
+
+const CATEGORY_COLORS: Record<
+  CandidateCategory,
+  { bg: string; text: string; border: string }
+> = {
+  player: { bg: '#1a2e1a', text: '#7dce82', border: '#2e4a2e' },
+  role: { bg: '#1a1e2e', text: '#82a8ce', border: '#2e3a4e' },
+  status: { bg: '#2e1a1e', text: '#ce8282', border: '#4e2e2e' },
+};
+
 interface QuickSuggestionsProps {
   text: string;
-  candidates: string[];
+  candidates: TaggedCandidate[];
   onSelect: (word: string) => void;
 }
 
@@ -64,7 +80,7 @@ export function QuickSuggestions({
 
   const filtered = useMemo(() => {
     if (!query) return [];
-    return candidates.filter((c) => matchQuery(c, query));
+    return candidates.filter((c) => matchQuery(c.word, query));
   }, [query, candidates]);
 
   if (filtered.length === 0) return null;
@@ -77,15 +93,26 @@ export function QuickSuggestions({
         keyboardShouldPersistTaps="always"
         contentContainerStyle={styles.scrollContent}
       >
-        {filtered.map((word) => (
-          <Pressable
-            key={word}
-            style={styles.chip}
-            onPress={() => onSelect(word)}
-          >
-            <Text style={styles.chipText}>{word}</Text>
-          </Pressable>
-        ))}
+        {filtered.map((item) => {
+          const colors = CATEGORY_COLORS[item.category];
+          return (
+            <Pressable
+              key={item.word}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor: colors.bg,
+                  borderColor: colors.border,
+                },
+              ]}
+              onPress={() => onSelect(item.word)}
+            >
+              <Text style={[styles.chipText, { color: colors.text }]}>
+                {item.word}
+              </Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
     </View>
   );
@@ -105,13 +132,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    backgroundColor: '#2e2e34',
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 6,
+    borderWidth: 1,
   },
   chipText: {
-    color: '#e0ddd8',
     fontSize: 13,
+    fontWeight: '600',
   },
 });

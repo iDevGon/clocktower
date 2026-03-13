@@ -90,6 +90,12 @@ export function registerPlayerHandlers(
         nightProgress = { ...np, players };
       }
 
+      const gamePlayers = state.players.map((p) => ({
+        id: p.id,
+        name: p.name,
+        isAlive: p.isAlive,
+      }));
+
       callback({
         success: true,
         playerName: player.name,
@@ -101,6 +107,7 @@ export function registerPlayerHandlers(
         hasNominatedToday: player.hasNominatedToday,
         deadVoteUsed: player.deadVoteUsed,
         nightProgress,
+        gamePlayers,
       });
       // 설정 전송
       socket.emit('game:settings', state.settings);

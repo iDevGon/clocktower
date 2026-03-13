@@ -143,6 +143,7 @@ export interface ClientToServerEvents {
         order: string[];
         players: PlayerInfo[];
       };
+      gamePlayers?: PlayerInfo[];
     }) => void,
   ) => void;
   'vote:cast': (data: { guilty: boolean }) => void;

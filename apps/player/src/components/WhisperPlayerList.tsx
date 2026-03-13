@@ -20,6 +20,7 @@ interface WhisperPlayerListProps {
   myPlayerId: string;
   onSelectConversation: (target: ConversationTarget) => void;
   onClose: () => void;
+  readOnly?: boolean;
 }
 
 function makeConversationId(...ids: string[]): string {
@@ -31,6 +32,7 @@ export function WhisperPlayerList({
   myPlayerId,
   onSelectConversation,
   onClose,
+  readOnly,
 }: WhisperPlayerListProps) {
   const unreadCounts = useWhisperStore((s) => s.unreadCounts);
   const conversations = useWhisperStore((s) => s.conversations);
@@ -198,7 +200,7 @@ export function WhisperPlayerList({
         )}
 
         {/* Group create button */}
-        {!groupMode && (
+        {!groupMode && !readOnly && (
           <Pressable
             style={groupStyles.groupCreateButton}
             onPress={() => setGroupMode(true)}

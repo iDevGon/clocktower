@@ -104,6 +104,7 @@ export function useConnection() {
             hasNominatedToday: res.hasNominatedToday ?? false,
             deadVoteUsed: res.deadVoteUsed ?? false,
             nightProgress: res.nightProgress ?? null,
+            gamePlayers: res.gamePlayers ?? [],
           });
 
           const token = await registerForPushNotifications();
