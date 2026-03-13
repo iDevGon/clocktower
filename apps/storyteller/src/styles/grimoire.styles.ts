@@ -178,6 +178,89 @@ export function createGrimoireStyles(scale: number) {
       zIndex: 10,
       backgroundColor: '#101014',
     },
+    nightOrderRelative: {
+      position: 'relative',
+    },
+
+    /* ---- Empath hint bar ---- */
+    empathHintBar: {
+      backgroundColor: '#1a2a1a',
+      borderTopWidth: 1,
+      borderColor: '#2a4a2a',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+
+    /* ---- Chef hint bar ---- */
+    chefHintBar: {
+      backgroundColor: '#2a1a0a',
+      borderTopWidth: 1,
+      borderColor: '#4a2a0a',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+    },
+
+    /* ---- Settings overlay ---- */
+    settingsOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      zIndex: 500,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    settingsPanel: {
+      backgroundColor: '#1e1e24',
+      borderRadius: 12,
+      padding: 24,
+      width: '80%',
+      maxWidth: 400,
+      borderWidth: 1,
+      borderColor: '#3a3a42',
+    },
+    settingsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    settingsRowLast: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+    settingsCloseButton: {
+      backgroundColor: '#2a2a34',
+      paddingVertical: 12,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+
+    /* ---- Game end result banner ---- */
+    gameEndBannerGood: {
+      backgroundColor: '#1a3a5c',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+    },
+    gameEndBannerEvil: {
+      backgroundColor: '#4a1a1a',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+    },
   });
 }
 
