@@ -351,7 +351,8 @@ const groupStyles = StyleSheet.create({
   },
   confirmBar: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 32,
     borderTopWidth: 1,
     borderColor: '#2e2e34',
   },

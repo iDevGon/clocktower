@@ -87,7 +87,7 @@ export function WhisperChat({
   const handleSuggestionSelect = (word: string) => {
     const parts = text.split(/(\s+)/);
     parts[parts.length - 1] = word;
-    setText(`${parts.join('')} `);
+    setText(parts.join(''));
   };
 
   useEffect(() => {
@@ -174,7 +174,9 @@ export function WhisperChat({
         contentContainerStyle={styles.messageListContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>밀담을 시작하세요</Text>
+            <Text style={styles.emptyText}>
+              {readOnly ? '주고받은 밀담이 없습니다' : '밀담을 시작하세요'}
+            </Text>
           </View>
         }
       />

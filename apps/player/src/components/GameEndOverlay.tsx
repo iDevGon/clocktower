@@ -185,7 +185,7 @@ export function GameEndOverlay({
               {'처단자의 한 방!'}
             </AnimatedTextLine>
             <AnimatedTextLine delay={900} style={s.slayerSubtitle}>
-              {'단 한 발의 총성이 악마를 쓰러뜨렸습니다'}
+              {'단 한 발의 화살이 악마를 쓰러뜨렸습니다'}
             </AnimatedTextLine>
           </>
         )}
@@ -198,7 +198,7 @@ export function GameEndOverlay({
               DEFEAT
             </AnimatedTextLine>
             <AnimatedTextLine delay={600} style={s.slayerDefeatTitle}>
-              {'처단자의 총성이 울려 퍼졌으나...'}
+              {'처단자의 화살이 날아갔으나...'}
             </AnimatedTextLine>
             <AnimatedTextLine delay={900} style={s.slayerDefeatSubtitle}>
               {'당신의 편은 이미 무너져 있었습니다'}

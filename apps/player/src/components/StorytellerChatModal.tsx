@@ -71,7 +71,7 @@ export function StorytellerChatModal({
   const handleSuggestionSelect = (word: string) => {
     const parts = text.split(/(\s+)/);
     parts[parts.length - 1] = word;
-    setText(`${parts.join('')} `);
+    setText(parts.join(''));
   };
 
   useEffect(() => {

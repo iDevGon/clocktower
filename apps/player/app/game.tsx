@@ -87,6 +87,15 @@ export default function GameScreen() {
     setWhisperModalVisible(false);
     setWhisperInitialTarget(null);
   }, []);
+
+  // 서브페이즈가 밀담에서 벗어나거나 메인페이즈가 변경되면 밀담 모달 강제 닫기
+  useEffect(() => {
+    if (currentPhase !== 'day' || daySubPhase !== 'whisper') {
+      setWhisperModalVisible(false);
+      setWhisperInitialTarget(null);
+    }
+  }, [currentPhase, daySubPhase]);
+
   const [gameEndDismissed, setGameEndDismissed] = useState(false);
   const [whisperModalVisible, setWhisperModalVisible] = useState(false);
   const [whisperInitialTarget, setWhisperInitialTarget] = useState<{
@@ -127,7 +136,7 @@ export default function GameScreen() {
     }
   };
 
-  const canUseSlayer = isAlive && !slayerUsed && currentPhase === 'day';
+  const canUseSlayer = isAlive && !slayerUsed && (currentPhase === 'day' || currentPhase === 'vote');
 
   const nominatablePlayers = gamePlayers.filter(
     (p) => p.isAlive && p.id !== playerId,
@@ -137,7 +146,7 @@ export default function GameScreen() {
     <View style={[styles.container, !isAlive && styles.containerDead]}>
       <StatusBar style="light" />
 
-      {/* Persistent red vignette when dead */}
+      {/* Persistent ghostly blue vignette when dead */}
       {!isAlive && <DeadVignette />}
       {currentPhase === 'vote' && <VoteVignette />}
 
@@ -158,7 +167,7 @@ export default function GameScreen() {
           <View style={styles.headerRight}>
             <Pressable
               onPress={() => setDictionaryVisible(true)}
-              style={styles.feedbackHistoryButton}
+              style={[styles.feedbackHistoryButton, !isAlive && styles.feedbackHistoryButtonDead]}
               accessibilityLabel="역할 사전"
               accessibilityRole="button"
             >
@@ -167,7 +176,7 @@ export default function GameScreen() {
             {currentPhase !== 'setup' && (
               <Pressable
                 onPress={() => setChatModalVisible(true)}
-                style={styles.feedbackHistoryButton}
+                style={[styles.feedbackHistoryButton, !isAlive && styles.feedbackHistoryButtonDead]}
                 accessibilityLabel="밀담"
                 accessibilityRole="button"
               >
@@ -178,7 +187,7 @@ export default function GameScreen() {
                       position: 'absolute',
                       top: -4,
                       right: -4,
-                      backgroundColor: '#c44',
+                      backgroundColor: !isAlive ? '#6a6c74' : '#c44',
                       borderRadius: 8,
                       minWidth: 16,
                       height: 16,
@@ -202,12 +211,12 @@ export default function GameScreen() {
             {feedbackHistory.length > 0 && currentPhase !== 'setup' && (
               <Pressable
                 onPress={() => setFeedbackHistoryVisible(true)}
-                style={styles.feedbackHistoryButton}
+                style={[styles.feedbackHistoryButton, !isAlive && styles.feedbackHistoryButtonDead]}
                 accessibilityLabel="피드백 기록"
                 accessibilityRole="button"
               >
                 <Text style={styles.feedbackHistoryIcon}>📜</Text>
-                <Text style={styles.feedbackHistoryCount}>
+                <Text style={[styles.feedbackHistoryCount, !isAlive && styles.feedbackHistoryCountDead]}>
                   {feedbackHistory.length}
                 </Text>
               </Pressable>
@@ -226,10 +235,10 @@ export default function GameScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.phaseRow}>
-          <PhaseIndicator phase={currentPhase} />
+          <PhaseIndicator phase={currentPhase} desaturated={!isAlive} />
           {currentPhase === 'day' && daySubPhase && (
-            <View style={styles.subPhaseBadge}>
-              <Text style={styles.subPhaseText}>
+            <View style={[styles.subPhaseBadge, !isAlive && styles.subPhaseBadgeDead]}>
+              <Text style={[styles.subPhaseText, !isAlive && styles.subPhaseTextDead]}>
                 {DAY_SUB_PHASE_LABELS[daySubPhase] ?? ''}
               </Text>
             </View>
@@ -327,7 +336,7 @@ export default function GameScreen() {
 
       {justDied && (
         <DeathOverlay
-          onDismiss={() => dismissDeath({ justDied: false, deathReason: null })}
+          onDismiss={() => dismissDeath({ justDied: false, deathReason: null, nightDeathAnnouncement: null })}
           reason={deathReason}
         />
       )}
@@ -350,6 +359,7 @@ export default function GameScreen() {
         <SlayerFizzleOverlay
           slayerName={slayerFizzle.slayerName}
           targetName={slayerFizzle.targetName}
+          isVotePhase={currentPhase === 'vote'}
           onDismiss={() => dismissDeath({ slayerFizzle: null })}
         />
       )}

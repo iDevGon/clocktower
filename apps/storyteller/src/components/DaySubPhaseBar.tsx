@@ -131,8 +131,15 @@ export function DaySubPhaseBar({
             {active?.value === 'whisper' && whisperRemaining !== null && (
               <Text
                 style={{
-                  color: whisperRemaining <= 10 ? '#e05050' : colors.text,
+                  color:
+                    whisperRemaining === 0
+                      ? '#555'
+                      : whisperRemaining <= 10
+                        ? '#e05050'
+                        : colors.text,
                   fontVariant: ['tabular-nums'],
+                  textDecorationLine:
+                    whisperRemaining === 0 ? 'line-through' : 'none',
                 }}
               >
                 ({formatTimer(whisperRemaining)})
@@ -190,12 +197,16 @@ export function DaySubPhaseBar({
                   <Text
                     style={{
                       color:
-                        whisperRemaining <= 10
-                          ? '#e05050'
-                          : isActive
-                            ? pc.text
-                            : undefined,
+                        whisperRemaining === 0
+                          ? '#555'
+                          : whisperRemaining <= 10
+                            ? '#e05050'
+                            : isActive
+                              ? pc.text
+                              : undefined,
                       fontVariant: ['tabular-nums'],
+                      textDecorationLine:
+                        whisperRemaining === 0 ? 'line-through' : 'none',
                     }}
                   >
                     ({formatTimer(whisperRemaining)})
