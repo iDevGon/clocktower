@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { DeadVignette } from '../src/components/DeadVignette';
 import { DeathOverlay } from '../src/components/DeathOverlay';
-import { DictionaryModal } from '../src/components/DictionaryModal';
+import { DictionaryModal } from '@clocktower/shared';
 import { ExecutionOverlay } from '../src/components/ExecutionOverlay';
 import { FeedbackHistoryModal } from '../src/components/FeedbackHistoryModal';
 import { GameEndOverlay } from '../src/components/GameEndOverlay';

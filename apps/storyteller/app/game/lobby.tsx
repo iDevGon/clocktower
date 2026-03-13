@@ -28,7 +28,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import QRCode from 'react-native-qrcode-svg';
-import { AbilityText } from '../../src/components/AbilityText';
+import { AbilityText } from '@clocktower/shared';
 import { useGameActions } from '../../src/hooks/useGameActions';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import { useConnectionStore } from '../../src/stores/connectionStore';
