@@ -14,7 +14,7 @@ import {
 } from '../../src/components/ActionModal';
 import { ChatToast } from '../../src/components/ChatToast';
 import { DaySubPhaseBar } from '../../src/components/DaySubPhaseBar';
-import { DictionaryModal } from '../../src/components/DictionaryModal';
+import { DictionaryModal } from '@clocktower/shared';
 import {
   type CircularPosition,
   DraggablePlayerToken,
@@ -1267,6 +1267,7 @@ export default function GrimoireScreen() {
       <DictionaryModal
         visible={dictionaryVisible}
         onClose={() => setDictionaryVisible(false)}
+        groupRolesByTeam={false}
       />
     </View>
   );

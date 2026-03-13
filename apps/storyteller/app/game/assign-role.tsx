@@ -7,7 +7,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, Text, TextInput, View } from 'react-native';
-import { AbilityText } from '../../src/components/AbilityText';
+import { AbilityText } from '@clocktower/shared';
 import { useGameActions } from '../../src/hooks/useGameActions';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import { useGameStore } from '../../src/stores/gameStore';

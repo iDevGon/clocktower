@@ -1,7 +1,7 @@
 import type { Role, Team } from '@clocktower/shared';
 import { StyleSheet, Text, View } from 'react-native';
 import type { EvilInfo } from '../stores/playerStore';
-import { AbilityText } from './AbilityText';
+import { AbilityText } from '@clocktower/shared';
 
 const TEAM_STYLES: Record<
   Team,

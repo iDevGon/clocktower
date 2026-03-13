@@ -7,7 +7,7 @@ import { getRoleById, NIGHT_FEEDBACK } from '@clocktower/shared';
 import { useMemo, useState } from 'react';
 import { Platform, ScrollView, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
-import { AbilityText } from './AbilityText';
+import { AbilityText } from '@clocktower/shared';
 import { AnimatedBorderCard } from './AnimatedBorderCard';
 import { FeedbackComposer } from './FeedbackComposer';
 import { createNightActionLogStyles } from './NightActionLog.styles';

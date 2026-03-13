@@ -6,7 +6,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
-import { AbilityText } from './AbilityText';
+import { AbilityText } from '@clocktower/shared';
 import {
   createNightOrderPanelStyles,
   TEAM_COLORS,
