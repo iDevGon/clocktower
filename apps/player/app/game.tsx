@@ -66,6 +66,7 @@ export default function GameScreen() {
     evilInfo,
     gameSettings,
     executionHappenedToday,
+    executionCandidate,
     nominatedTodayIds,
   } = usePlayerStore();
   const dismissDeath = usePlayerStore((s) => s.set);
@@ -302,6 +303,29 @@ export default function GameScreen() {
           />
         )}
 
+        {!voteResult && !nomination && executionCandidate && currentPhase !== 'night' && currentPhase !== 'ended' && (
+          <View style={{
+            backgroundColor: '#1a1a1e',
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: '#c4707060',
+            padding: 14,
+            alignItems: 'center',
+            marginHorizontal: 20,
+            marginVertical: 8,
+          }}>
+            <Text style={{ color: '#908e8a', fontSize: 11, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>
+              처형 예정
+            </Text>
+            <Text style={{ color: '#c47070', fontSize: 18, fontWeight: '700', textShadowColor: '#c4707040', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 }}>
+              {executionCandidate.playerName}
+            </Text>
+            <Text style={{ color: '#706e6a', fontSize: 12, marginTop: 4 }}>
+              찬성 {executionCandidate.guiltyVotes}표
+            </Text>
+          </View>
+        )}
+
         <EndedPhase
           visible={currentPhase === 'ended'}
           gameResult={gameResult}
@@ -330,6 +354,7 @@ export default function GameScreen() {
             role={role}
             evilInfo={evilInfo}
             veiled={currentPhase === 'setup'}
+            currentPhase={currentPhase}
           />
         )}
       </ScrollView>
@@ -341,7 +366,7 @@ export default function GameScreen() {
         />
       )}
 
-      {executionAnnouncement && !justDied && (
+      {executionAnnouncement && !justDied && !(currentPhase === 'ended' && gameResult) && (
         <ExecutionOverlay
           announcement={executionAnnouncement}
           onDismiss={() => dismissDeath({ executionAnnouncement: null })}

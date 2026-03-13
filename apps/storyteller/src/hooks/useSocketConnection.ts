@@ -148,6 +148,10 @@ export function useSocketConnection() {
           store.setVoteResult(data);
           store.setVoteClock(null);
           store.clearVotePreselections();
+          // 처형 예정자 추적
+          if (data.executionCandidate) {
+            store.setExecutionCandidate(data.executionCandidate);
+          }
           if (data.guilty) {
             store.setLastExecutedPlayerId(data.nomineeId);
           }

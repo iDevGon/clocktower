@@ -51,6 +51,7 @@ export function attachListeners(socket: AppSocket) {
     const prev = usePlayerStore.getState();
     if (phase === 'setup') {
       useChatStore.getState().reset();
+      useWhisperStore.getState().reset();
     }
     usePlayerStore.getState().set({
       currentPhase: phase,
@@ -63,6 +64,8 @@ export function attachListeners(socket: AppSocket) {
             executionHappenedToday: false,
             nightCount: prev.nightCount + 1,
             nominatedTodayIds: [],
+            voteResult: null,
+            executionCandidate: null,
           }
         : {}),
       // 새 게임 시작 (setup): 역할/상태 초기화, 피드백 히스토리 리셋
@@ -85,6 +88,7 @@ export function attachListeners(socket: AppSocket) {
             executionHappenedToday: false,
             slayerUsed: false,
             voteResult: null,
+            executionCandidate: null,
             nominatedTodayIds: [],
           }
         : {}),
@@ -178,6 +182,8 @@ export function attachListeners(socket: AppSocket) {
   });
 
   socket.on('vote:result', (data) => {
+    // 처형 예정자 추적: 유죄 판결이면 새 후보, 아니면 기존 유지
+    const newCandidate = data.executionCandidate ?? usePlayerStore.getState().executionCandidate;
     usePlayerStore.getState().set({
       voteResult: data,
       nomination: null,
@@ -185,17 +191,16 @@ export function attachListeners(socket: AppSocket) {
       voteClock: null,
       voteCountdown: null,
       votePreselections: {},
+      executionCandidate: newCandidate,
     });
+    // 5초 후 phase만 day로 전환 (voteResult는 유지)
     setTimeout(() => {
       const current = usePlayerStore.getState();
-      if (current.voteResult === data) {
-        // phase가 아직 vote 상태일 때만 day로 전환 (밤 전환과의 race condition 방지)
-        const update: Record<string, unknown> = { voteResult: null };
-        if (current.currentPhase === 'vote') {
-          update.currentPhase = 'day';
-          update.daySubPhase = 'nomination';
-        }
-        usePlayerStore.getState().set(update);
+      if (current.voteResult === data && current.currentPhase === 'vote') {
+        usePlayerStore.getState().set({
+          currentPhase: 'day',
+          daySubPhase: 'nomination',
+        });
       }
     }, 5000);
   });

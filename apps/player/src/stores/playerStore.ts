@@ -101,6 +101,11 @@ interface PlayerState {
     fullOrder?: Array<{ id: string; name: string; isAlive: boolean }>;
   } | null;
   votePreselections: Record<string, boolean | null>;
+  executionCandidate: {
+    playerId: string;
+    playerName: string;
+    guiltyVotes: number;
+  } | null;
   nominatedTodayIds: string[];
   set: (partial: Partial<PlayerState>) => void;
   addFeedback: (day: number, feedback: NightFeedbackPayload) => void;
@@ -146,6 +151,11 @@ const initialState = {
     fullOrder?: Array<{ id: string; name: string; isAlive: boolean }>;
   } | null,
   votePreselections: {} as Record<string, boolean | null>,
+  executionCandidate: null as {
+    playerId: string;
+    playerName: string;
+    guiltyVotes: number;
+  } | null,
   nominatedTodayIds: [] as string[],
 };
 

@@ -56,6 +56,7 @@ interface PlayerTokenProps {
   empathNeighbor?: boolean;
   butlerMasterName?: string;
   voteIndicator?: VoteIndicator;
+  isExecutionCandidate?: boolean;
   onPress?: () => void;
 }
 
@@ -67,6 +68,7 @@ export function PlayerToken({
   empathNeighbor,
   butlerMasterName,
   voteIndicator,
+  isExecutionCandidate,
   onPress,
 }: PlayerTokenProps) {
   const [tooltipStatus, setTooltipStatus] = useState<PlayerStatus | null>(null);
@@ -205,6 +207,15 @@ export function PlayerToken({
                 주인: {butlerMasterName}
               </Text>
             </Pressable>
+          </View>
+        )}
+        {isExecutionCandidate && (
+          <View style={[styles.statusRow, { marginTop: 1 }]}>
+            <View style={[styles.statusBadge, { backgroundColor: '#c43c3c' }]}>
+              <Text style={[styles.statusText, { fontSize: scaledFont.xs }]}>
+                처형 예정
+              </Text>
+            </View>
           </View>
         )}
       </View>

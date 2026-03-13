@@ -96,6 +96,7 @@ export default function GrimoireScreen() {
   const voteClock = useGameStore((s) => s.voteClock);
   const voteResult = useGameStore((s) => s.voteResult);
   const setVoteResult = useGameStore((s) => s.setVoteResult);
+  const executionCandidateData = useGameStore((s) => s.executionCandidate);
   const votePreselections = useGameStore((s) => s.votePreselections);
   const voteConfirmed = useGameStore((s) => s.voteConfirmed);
 
@@ -790,6 +791,7 @@ export default function GrimoireScreen() {
                 }
                 butlerMasterName={butlerMasterNames[player.id]}
                 voteIndicator={voteIndicators[player.id]}
+                isExecutionCandidate={executionCandidateData?.playerId === player.id}
                 tokenSize={dynamicTokenSize}
                 initialX={pos.x}
                 initialY={pos.y}

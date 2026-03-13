@@ -42,6 +42,11 @@ interface GameStore {
   votePreselections: Record<string, boolean | null>;
   voteConfirmed: Record<string, boolean>;
   voteResult: VoteResult | null;
+  executionCandidate: {
+    playerId: string;
+    playerName: string;
+    guiltyVotes: number;
+  } | null;
   gameResult: GameResult | null;
   playerOrder: string[];
   chatMessages: Record<string, StorytellerMessage[]>;
@@ -74,6 +79,7 @@ interface GameStore {
   removePlayerStatus: (playerId: string, status: PlayerStatus) => void;
   clearPlayerStatuses: (playerId: string) => void;
   setVoteResult: (result: VoteResult | null) => void;
+  setExecutionCandidate: (candidate: { playerId: string; playerName: string; guiltyVotes: number } | null) => void;
   setGameResult: (result: GameResult | null) => void;
   setTokenPosition: (playerId: string, pos: TokenPosition) => void;
   clearTokenPositions: () => void;
@@ -102,6 +108,7 @@ export const useGameStore = create<GameStore>()(
       votePreselections: {},
       voteConfirmed: {},
       voteResult: null,
+      executionCandidate: null,
       gameResult: null,
       playerOrder: [],
       chatMessages: {},
@@ -122,6 +129,7 @@ export const useGameStore = create<GameStore>()(
           synced[player.id] = player.statuses ?? [];
         }
         const prev = useGameStore.getState();
+        const isNewGame = prev.gameId !== null && prev.gameId !== state.id;
         const phaseChangedToVote =
           state.phase === 'vote' && prev.gameState?.phase !== 'vote';
         set({
@@ -129,6 +137,14 @@ export const useGameStore = create<GameStore>()(
           gameId: state.id,
           playerStatuses: synced,
           playerOrder: state.playerOrder ?? [],
+          ...(isNewGame
+            ? {
+                chatMessages: {},
+                chatUnreadCounts: {},
+                activeChatPlayerId: null,
+                chatToast: null,
+              }
+            : {}),
           ...(phaseChangedToVote
             ? {
                 voteCountdown: null,
@@ -137,6 +153,9 @@ export const useGameStore = create<GameStore>()(
             : {}),
           ...(state.phase !== 'vote'
             ? { voteCountdown: null, voteClock: null }
+            : {}),
+          ...(state.phase === 'night' || state.phase === 'setup'
+            ? { executionCandidate: null, voteResult: null }
             : {}),
           ...(state.daySubPhase !== 'whisper' ? { whisperClock: null } : {}),
         });
@@ -186,6 +205,7 @@ export const useGameStore = create<GameStore>()(
           return { playerStatuses: rest };
         }),
       setVoteResult: (result) => set({ voteResult: result }),
+      setExecutionCandidate: (candidate) => set({ executionCandidate: candidate }),
       setGameResult: (result) => set({ gameResult: result }),
       addChatMessage: (message) =>
         set((s) => {
@@ -256,6 +276,7 @@ export const useGameStore = create<GameStore>()(
           votePreselections: {},
           voteConfirmed: {},
           voteResult: null,
+          executionCandidate: null,
           gameResult: null,
           playerOrder: [],
           chatMessages: {},

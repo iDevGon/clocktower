@@ -23,6 +23,7 @@ interface DraggablePlayerTokenProps {
   empathNeighbor?: boolean;
   butlerMasterName?: string;
   voteIndicator?: VoteIndicator;
+  isExecutionCandidate?: boolean;
   tokenSize?: number;
   initialX: number;
   initialY: number;
@@ -42,6 +43,7 @@ export function DraggablePlayerToken({
   empathNeighbor,
   butlerMasterName,
   voteIndicator,
+  isExecutionCandidate,
   tokenSize: tokenSizeProp,
   initialX,
   initialY,
@@ -138,6 +140,7 @@ export function DraggablePlayerToken({
           empathNeighbor={empathNeighbor}
           butlerMasterName={butlerMasterName}
           voteIndicator={voteIndicator}
+          isExecutionCandidate={isExecutionCandidate}
           size={tokenSize}
         />
       </Animated.View>
