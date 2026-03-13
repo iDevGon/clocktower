@@ -12,17 +12,22 @@ const PHASE_CONFIG: Record<
   ended: { label: '게임 종료', color: '#b85c5c', dotColor: '#b85c5c' },
 };
 
+const DESATURATED_COLOR = '#6e7078';
+
 interface PhaseIndicatorProps {
   phase: Phase;
+  desaturated?: boolean;
 }
 
-export function PhaseIndicator({ phase }: PhaseIndicatorProps) {
+export function PhaseIndicator({ phase, desaturated }: PhaseIndicatorProps) {
   const config = PHASE_CONFIG[phase];
+  const color = desaturated ? DESATURATED_COLOR : config.color;
+  const dotColor = desaturated ? DESATURATED_COLOR : config.dotColor;
 
   return (
     <View style={styles.container}>
-      <View style={[styles.dot, { backgroundColor: config.dotColor }]} />
-      <Text style={[styles.label, { color: config.color }]}>
+      <View style={[styles.dot, { backgroundColor: dotColor }]} />
+      <Text style={[styles.label, { color }]}>
         {config.label}
       </Text>
     </View>

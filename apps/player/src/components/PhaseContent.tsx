@@ -56,10 +56,11 @@ export function NightPhase({
   nightFeedback,
   onSubmitNightAction,
 }: NightPhaseProps) {
+  const isDead = !usePlayerStore((s) => s.isAlive);
   if (!visible) return null;
   return (
     <View style={styles.phaseContent}>
-      <Text style={styles.nightTitle}>밤이 찾아옵니다</Text>
+      <Text style={[styles.nightTitle, isDead && styles.nightTitleDead]}>밤이 찾아옵니다</Text>
       <Text style={styles.phaseDescription}>
         눈을 감으세요. 능력이 발동되면 진동으로 알려드립니다.
       </Text>
@@ -125,13 +126,14 @@ export function WhisperPhase({
 }: WhisperPhaseProps) {
   const activeWhispers = useWhisperStore((s) => s.activeWhispers);
   const remaining = useWhisperCountdown();
+  const isDead = !usePlayerStore((s) => s.isAlive);
 
   if (!visible) return null;
 
   if (whisperMode === 'offline') {
     return (
       <View style={styles.phaseContent}>
-        <Text style={styles.dayTitle}>밀담 시간</Text>
+        <Text style={[styles.dayTitle, isDead && styles.dayTitleDead]}>밀담 시간</Text>
         <Text style={styles.phaseDescription}>
           밀담은 직접 대면으로 진행하세요.
         </Text>
@@ -142,10 +144,14 @@ export function WhisperPhase({
   const minutes = remaining !== null ? Math.floor(remaining / 60) : 0;
   const seconds = remaining !== null ? remaining % 60 : 0;
 
+  const isExpired = remaining === 0;
+
   return (
     <View style={styles.phaseContent}>
-      <Text style={styles.dayTitle}>밀담 시간</Text>
-      {remaining !== null && (
+      <Text style={[styles.dayTitle, isDead && styles.dayTitleDead, isExpired && { color: '#555' }]}>
+        {isExpired ? '밀담 시간 종료' : '밀담 시간'}
+      </Text>
+      {remaining !== null && remaining > 0 && (
         <Text
           style={[
             whisperStyles.countdownText,
@@ -155,13 +161,15 @@ export function WhisperPhase({
           {minutes}:{seconds.toString().padStart(2, '0')}
         </Text>
       )}
-      <Text style={styles.phaseDescription}>
-        다른 플레이어와 자유롭게 대화하세요.
-      </Text>
-      <Pressable style={styles.whisperButton} onPress={onOpenWhisper}>
-        <Text style={styles.whisperButtonText}>밀담</Text>
+      {!isExpired && (
+        <Text style={styles.phaseDescription}>
+          다른 플레이어와 자유롭게 대화하세요.
+        </Text>
+      )}
+      <Pressable style={[styles.whisperButton, isDead && styles.whisperButtonDead]} onPress={onOpenWhisper}>
+        <Text style={[styles.whisperButtonText, isDead && styles.whisperButtonTextDead]}>밀담</Text>
         {totalUnread > 0 && (
-          <View style={styles.whisperBadge}>
+          <View style={[styles.whisperBadge, isDead && styles.whisperBadgeDead]}>
             <Text style={styles.whisperBadgeText}>{totalUnread}</Text>
           </View>
         )}
@@ -185,10 +193,11 @@ interface DiscussionPhaseProps {
 }
 
 export function DiscussionPhase({ visible }: DiscussionPhaseProps) {
+  const isDead = !usePlayerStore((s) => s.isAlive);
   if (!visible) return null;
   return (
     <View style={styles.phaseContent}>
-      <Text style={styles.dayTitle}>공개 토론</Text>
+      <Text style={[styles.dayTitle, isDead && styles.dayTitleDead]}>공개 토론</Text>
       <Text style={styles.phaseDescription}>
         마을 사람들과 공개적으로 토론하세요.{'\n'}정보를 공유하고, 의심하고,
         변호하세요.
@@ -214,12 +223,13 @@ export function NominationPhase({
   votingMode,
   onOpenNominate,
 }: NominationPhaseProps) {
+  const isDead = !isAlive;
   if (!visible) return null;
 
   if (votingMode === 'offline') {
     return (
       <View style={styles.phaseContent}>
-        <Text style={styles.dayTitle}>지목</Text>
+        <Text style={[styles.dayTitle, isDead && styles.dayTitleDead]}>지목</Text>
         <Text style={styles.phaseDescription}>
           투표는 오프라인으로 진행됩니다.{'\n'}진행자의 안내를 따라주세요.
         </Text>
@@ -231,7 +241,7 @@ export function NominationPhase({
 
   return (
     <View style={styles.phaseContent}>
-      <Text style={styles.dayTitle}>지목</Text>
+      <Text style={[styles.dayTitle, isDead && styles.dayTitleDead]}>지목</Text>
       <Text style={styles.phaseDescription}>
         처형할 플레이어를 지목하세요.{'\n'}하루에 한 번 지목할 수 있습니다.
       </Text>

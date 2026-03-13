@@ -6,7 +6,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#121214',
   },
   containerDead: {
-    backgroundColor: '#140a0a',
+    backgroundColor: '#121214',
   },
   header: {
     paddingTop: 64,
@@ -16,8 +16,8 @@ export const styles = StyleSheet.create({
     borderColor: '#2e2e34',
   },
   headerDead: {
-    borderColor: 'rgba(139,20,20,0.4)',
-    backgroundColor: 'rgba(30,8,8,0.6)',
+    borderColor: 'rgba(160,165,180,0.15)',
+    backgroundColor: 'rgba(20,22,28,0.7)',
   },
   headerRow: {
     flexDirection: 'row',
@@ -60,10 +60,10 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
   },
   playerLabelDead: {
-    color: '#8b3030',
+    color: '#7a7e88',
   },
   playerNameDead: {
-    color: '#c08080',
+    color: '#b0b4be',
   },
   deadSkull: {
     fontSize: 28,
@@ -195,5 +195,37 @@ export const styles = StyleSheet.create({
   nominatedText: {
     color: '#706e6a',
     fontSize: 14,
+  },
+
+  /* ── Dead (ghostly desaturated) overrides ── */
+  feedbackHistoryButtonDead: {
+    backgroundColor: '#1e1f24',
+    borderColor: '#3a3b42',
+  },
+  feedbackHistoryCountDead: {
+    color: '#6e7078',
+  },
+  subPhaseBadgeDead: {
+    backgroundColor: '#28292e',
+    borderColor: '#6a6c74',
+  },
+  subPhaseTextDead: {
+    color: '#6a6c74',
+  },
+  nightTitleDead: {
+    color: '#8a8e98',
+  },
+  dayTitleDead: {
+    color: '#8a8e98',
+  },
+  whisperButtonDead: {
+    backgroundColor: '#28292e',
+    borderColor: '#6a6c74',
+  },
+  whisperButtonTextDead: {
+    color: '#6a6c74',
+  },
+  whisperBadgeDead: {
+    backgroundColor: '#6a6c74',
   },
 });

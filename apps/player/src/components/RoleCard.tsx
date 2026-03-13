@@ -19,13 +19,13 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import type { EvilInfo } from '../stores/playerStore';
+import { usePlayerStore } from '../stores/playerStore';
 
 // ─── Constants ───────────────────────────────────────────────
 
-const TEAM_STYLES: Record<
-  Team,
-  { borderColor: string; label: string; labelColor: string; accentDim: string }
-> = {
+type TeamStyleEntry = { borderColor: string; label: string; labelColor: string; accentDim: string };
+
+const TEAM_STYLES: Record<Team, TeamStyleEntry> = {
   townsfolk: {
     borderColor: '#506aaa',
     label: '마을주민',
@@ -50,6 +50,13 @@ const TEAM_STYLES: Record<
     labelColor: '#b85c5c',
     accentDim: '#4a1c1c',
   },
+};
+
+const DEAD_TEAM_STYLE: TeamStyleEntry = {
+  borderColor: '#4a4c54',
+  label: '',
+  labelColor: '#6e7078',
+  accentDim: '#2a2c30',
 };
 
 const VEIL_PHRASES = [
@@ -129,7 +136,8 @@ export function RoleCard({
     };
   });
 
-  const teamStyle = role ? TEAM_STYLES[role.team] : null;
+  const isDead = !usePlayerStore((s) => s.isAlive);
+  const teamStyle = role ? (isDead ? { ...DEAD_TEAM_STYLE, label: TEAM_STYLES[role.team].label } : TEAM_STYLES[role.team]) : null;
 
   return (
     <View style={styles.container}>
@@ -141,6 +149,7 @@ export function RoleCard({
           teamStyle={teamStyle}
           flipHint={flipHint}
           isHidden={isHidden}
+          isDead={isDead}
         />
       </Animated.View>
 
@@ -160,12 +169,14 @@ function FrontFace({
   teamStyle,
   flipHint,
   isHidden,
+  isDead,
 }: {
   role?: Role | null;
   evilInfo?: EvilInfo | null;
-  teamStyle: (typeof TEAM_STYLES)[Team] | null;
+  teamStyle: TeamStyleEntry | null;
   flipHint?: boolean;
   isHidden?: boolean;
+  isDead?: boolean;
 }) {
   if (!role || !teamStyle) return null;
 
@@ -174,7 +185,7 @@ function FrontFace({
       <Text style={[styles.teamLabel, { color: teamStyle.labelColor }]}>
         {teamStyle.label}
       </Text>
-      <Text style={styles.roleName}>{role.name}</Text>
+      <Text style={[styles.roleName, isDead && styles.roleNameDead]}>{role.name}</Text>
       <View style={styles.divider} />
       <AbilityText text={role.ability} style={styles.ability} />
 
@@ -559,6 +570,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 12,
+  },
+  roleNameDead: {
+    color: '#9a9ca4',
   },
   divider: {
     width: '100%',
