@@ -1,5 +1,7 @@
 import type { StorytellerMessage } from '@clocktower/shared';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 interface ChatToast {
   message: string;
@@ -25,7 +27,9 @@ const initialState = {
   toast: null as ChatToast | null,
 };
 
-export const useChatStore = create<ChatState>((set, get) => ({
+export const useChatStore = create<ChatState>()(
+  persist(
+    (set, get) => ({
   ...initialState,
   addMessage: (message) => {
     const { isOpen } = get();
@@ -45,4 +49,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
   showToast: (toast) => set({ toast }),
   dismissToast: () => set({ toast: null }),
   reset: () => set(initialState),
-}));
+    }),
+    {
+      name: 'chat-store',
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        messages: state.messages,
+      }),
+    },
+  ),
+);

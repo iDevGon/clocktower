@@ -1,5 +1,7 @@
 import type { ActiveWhisperChat, WhisperMessage } from '@clocktower/shared';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 interface WhisperToast {
   fromId: string;
@@ -39,7 +41,9 @@ const initialState = {
   activeWhispers: [] as ActiveWhisperChat[],
 };
 
-export const useWhisperStore = create<WhisperState>((set, get) => ({
+export const useWhisperStore = create<WhisperState>()(
+  persist(
+    (set, get) => ({
   ...initialState,
   setActiveChat: (conversationId) => {
     set({ activeChat: conversationId });
@@ -83,4 +87,14 @@ export const useWhisperStore = create<WhisperState>((set, get) => ({
   dismissToast: () => set({ toast: null }),
   setActiveWhispers: (whispers) => set({ activeWhispers: whispers }),
   reset: () => set(initialState),
-}));
+    }),
+    {
+      name: 'whisper-store',
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        conversations: state.conversations,
+        conversationMeta: state.conversationMeta,
+      }),
+    },
+  ),
+);
