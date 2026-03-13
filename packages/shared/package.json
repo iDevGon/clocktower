@@ -13,18 +13,7 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit"
   },
-  "peerDependencies": {
-    "react": "*",
-    "react-native": "*",
-    "react-native-reanimated": "*",
-    "expo-linear-gradient": "*"
-  },
   "devDependencies": {
-    "@types/react": "*",
-    "react": "*",
-    "react-native": "*",
-    "react-native-reanimated": "*",
-    "expo-linear-gradient": "*",
     "typescript": "^5.4.0"
   }
 }

@@ -1,4 +1,8 @@
-import { FullScreenVignette } from '@clocktower/shared';
+import {
+  FullScreenVignette,
+  PLAYER_SMOKE_PARTICLES,
+  SmokeParticles,
+} from '@clocktower/ui';
 import { useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -21,7 +25,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { QrScannerModal } from '../src/components/QrScannerModal';
-import { SmokeParticles } from '../src/components/SmokeParticles';
 import { useConnection } from '../src/hooks/useConnection';
 import { useConnectionStore } from '../src/stores/connectionStore';
 import { usePlayerStore } from '../src/stores/playerStore';
@@ -166,7 +169,7 @@ export default function JoinScreen() {
       />
 
       {/* Atmospheric layers */}
-      <SmokeParticles />
+      <SmokeParticles particles={PLAYER_SMOKE_PARTICLES} />
       <FullScreenVignette
         color="#0a0304"
         opacityRange={[0.6, 0.85]}

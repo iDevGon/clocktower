@@ -1,4 +1,4 @@
-import { DictionaryModal } from '@clocktower/shared';
+import { DictionaryModal } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -212,7 +212,11 @@ export default function GameScreen() {
                 </Text>
               </Pressable>
             )}
-            {!isAlive && <Text style={styles.deadSkull} accessibilityLabel="사망자 목록">💀</Text>}
+            {!isAlive && (
+              <Text style={styles.deadSkull} accessibilityLabel="사망자 목록">
+                💀
+              </Text>
+            )}
           </View>
         </View>
       </View>

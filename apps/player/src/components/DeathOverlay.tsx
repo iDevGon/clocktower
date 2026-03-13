@@ -1,6 +1,12 @@
 import { DEATH_REASON_LABELS, type DeathReason } from '@clocktower/shared';
 import { useEffect } from 'react';
-import { StyleSheet, Text, useWindowDimensions, Vibration, View } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  Vibration,
+  View,
+} from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,

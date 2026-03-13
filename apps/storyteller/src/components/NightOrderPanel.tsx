@@ -1,9 +1,9 @@
 import {
-  AbilityText,
   FIRST_NIGHT_ORDER,
   getRoleById,
   OTHER_NIGHT_ORDER,
 } from '@clocktower/shared';
+import { AbilityText } from '@clocktower/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';

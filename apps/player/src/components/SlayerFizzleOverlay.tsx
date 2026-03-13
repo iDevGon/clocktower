@@ -1,4 +1,4 @@
-import { FullScreenVignette } from '@clocktower/shared';
+import { FullScreenVignette } from '@clocktower/ui';
 import { useEffect } from 'react';
 import {
   Dimensions,

@@ -3,8 +3,9 @@ import {
   PLAYER_STATUS_LABELS,
   type StorytellerMessage,
 } from '@clocktower/shared';
+import type { TaggedCandidate } from '@clocktower/ui';
+import { HighlightedMessage, QuickSuggestions } from '@clocktower/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
-
 import {
   KeyboardAvoidingView,
   Modal,
@@ -17,9 +18,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGameStore } from '../stores/gameStore';
-import { HighlightedMessage } from './HighlightedMessage';
-import type { TaggedCandidate } from './QuickSuggestions';
-import { QuickSuggestions } from './QuickSuggestions';
 import { styles } from './StorytellerChatModal.styles';
 
 interface StorytellerChatModalProps {

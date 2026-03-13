@@ -3,6 +3,8 @@ import {
   PLAYER_STATUS_LABELS,
   type WhisperMessage,
 } from '@clocktower/shared';
+import type { TaggedCandidate } from '@clocktower/ui';
+import { HighlightedMessage, QuickSuggestions } from '@clocktower/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
@@ -16,9 +18,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlayerStore } from '../stores/playerStore';
 import { useWhisperStore } from '../stores/whisperStore';
-import { HighlightedMessage } from './HighlightedMessage';
-import type { TaggedCandidate } from './QuickSuggestions';
-import { QuickSuggestions } from './QuickSuggestions';
 import { styles } from './WhisperChat.styles';
 
 interface WhisperChatProps {
@@ -168,7 +167,9 @@ export function WhisperChat({
           );
         }}
         keyExtractor={(item) => item.id}
-        onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+        onContentSizeChange={() =>
+          listRef.current?.scrollToEnd({ animated: true })
+        }
         style={styles.messageList}
         contentContainerStyle={styles.messageListContent}
         ListEmptyComponent={

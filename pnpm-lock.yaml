@@ -20,6 +20,9 @@ importers:
       '@clocktower/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@clocktower/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@expo/metro-runtime':
         specifier: ~6.1.2
         version: 6.1.2(expo@54.0.33)(react-dom@19.1.0(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -124,6 +127,9 @@ importers:
       '@clocktower/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@clocktower/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@expo/metro-runtime':
         specifier: ~6.1.2
         version: 6.1.2(expo@54.0.33)(react-dom@19.1.0(react@19.1.0))(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -190,6 +196,16 @@ importers:
         version: 5.9.3
 
   packages/shared:
+    devDependencies:
+      typescript:
+        specifier: ^5.4.0
+        version: 5.9.3
+
+  packages/ui:
+    dependencies:
+      '@clocktower/shared':
+        specifier: workspace:*
+        version: link:../shared
     devDependencies:
       '@types/react':
         specifier: '*'

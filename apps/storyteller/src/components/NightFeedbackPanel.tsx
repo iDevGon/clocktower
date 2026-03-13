@@ -3,7 +3,8 @@ import type {
   NightFeedbackPayload,
   Player,
 } from '@clocktower/shared';
-import { AbilityText, getRoleById, NIGHT_FEEDBACK } from '@clocktower/shared';
+import { getRoleById, NIGHT_FEEDBACK } from '@clocktower/shared';
+import { AbilityText } from '@clocktower/ui';
 import { useMemo, useState } from 'react';
 import { Platform, ScrollView, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';

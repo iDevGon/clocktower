@@ -1,11 +1,11 @@
 import {
-  DictionaryModal,
   type GameSettings,
   getRoleById,
   NIGHT_FEEDBACK,
   PLAYER_STATUS_LABELS,
   type PlayerStatus,
 } from '@clocktower/shared';
+import { DictionaryModal } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, Switch, Text, View } from 'react-native';
@@ -50,7 +50,6 @@ const PHASE_LABELS: Record<string, string> = {
   vote: '투표',
   ended: '종료',
 };
-
 
 export default function GrimoireScreen() {
   const { fontSize } = useResponsive();
@@ -113,7 +112,7 @@ export default function GrimoireScreen() {
   const getPhase = () => useGameStore.getState().gameState?.phase ?? 'setup';
   const playerNameMap = useMemo(() => {
     const map = new Map<string, string>();
-    gameState?.players?.forEach((p) => map.set(p.id, p.name));
+    for (const p of gameState?.players ?? []) map.set(p.id, p.name);
     return map;
   }, [gameState?.players]);
   const getPlayerName = (id: string) => playerNameMap.get(id) ?? id;
@@ -153,7 +152,9 @@ export default function GrimoireScreen() {
       const entries = Object.entries(nom.votes);
       const totalVotes = entries.length;
       let guiltyCount = 0;
-      for (const [, v] of entries) { if (v) guiltyCount++; }
+      for (const [, v] of entries) {
+        if (v) guiltyCount++;
+      }
       const alivePlayers =
         gameState?.players.filter((p) => p.isAlive).length ?? 0;
       const isGuilty = guiltyCount >= Math.ceil(alivePlayers / 2);
@@ -694,19 +695,15 @@ export default function GrimoireScreen() {
         <Text style={styles.dayText}>{gameState.day}일차</Text>
         <View style={styles.topBarRight}>
           {gameState.phase === 'day' && gameState.daySubPhase === 'whisper' && (
-            <>
-              <Pressable
-                onPress={() => router.push('/game/whispers')}
-                style={styles.whisperButton}
-              >
-                <Text style={styles.whisperButtonText}>
-                  밀담{' '}
-                  {activeWhispers.length > 0
-                    ? `(${activeWhispers.length})`
-                    : ''}
-                </Text>
-              </Pressable>
-            </>
+            <Pressable
+              onPress={() => router.push('/game/whispers')}
+              style={styles.whisperButton}
+            >
+              <Text style={styles.whisperButtonText}>
+                밀담{' '}
+                {activeWhispers.length > 0 ? `(${activeWhispers.length})` : ''}
+              </Text>
+            </Pressable>
           )}
           {__DEV__ &&
             gameState.phase === 'day' &&

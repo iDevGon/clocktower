@@ -1,3 +1,8 @@
+import {
+  FullScreenVignette,
+  SmokeParticles,
+  STORYTELLER_SMOKE_PARTICLES,
+} from '@clocktower/ui';
 import { useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -18,9 +23,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { FullScreenVignette } from '../src/components/FullScreenVignette';
 import { QRScannerModal } from '../src/components/QRScannerModal';
-import { SmokeParticles } from '../src/components/SmokeParticles';
 import { useGameActions } from '../src/hooks/useGameActions';
 import { useResponsive } from '../src/hooks/useResponsive';
 import { useSocketConnection } from '../src/hooks/useSocketConnection';
@@ -156,7 +159,7 @@ export default function HomeScreen() {
       />
 
       {/* Atmospheric layers */}
-      <SmokeParticles />
+      <SmokeParticles particles={STORYTELLER_SMOKE_PARTICLES} />
       <FullScreenVignette
         color="#04060c"
         opacityRange={[0.5, 0.75]}

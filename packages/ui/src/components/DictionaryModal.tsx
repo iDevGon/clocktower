@@ -1,3 +1,15 @@
+import {
+  ALL_ROLES,
+  DAY_SUB_PHASE_ENTRIES,
+  EDITION_COLORS,
+  EDITION_LABELS,
+  GAME_FLOW,
+  GAME_RULES,
+  PHASE_ENTRIES,
+  STATUS_ENTRIES,
+  TEAM_COLORS,
+  type Team,
+} from '@clocktower/shared';
 import { useState } from 'react';
 import {
   Modal,
@@ -7,16 +19,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import {
-  DAY_SUB_PHASE_ENTRIES,
-  GAME_FLOW,
-  GAME_RULES,
-  PHASE_ENTRIES,
-  STATUS_ENTRIES,
-  TEAM_COLORS,
-} from '../dictionary';
-import { ALL_ROLES, EDITION_COLORS, EDITION_LABELS } from '../roles';
-import type { Team } from '../types';
 import { AbilityText } from './AbilityText';
 
 type TabId = 'roles' | 'statuses' | 'rules' | 'flow';
@@ -100,7 +102,10 @@ function GroupedRolesTab() {
                       {editionLabel}
                     </Text>
                   </View>
-                  <AbilityText text={role.ability} style={tabStyles.abilityText} />
+                  <AbilityText
+                    text={role.ability}
+                    style={tabStyles.abilityText}
+                  />
                 </View>
               );
             })}
@@ -161,7 +166,10 @@ function FlatRolesTab() {
                       {editionLabel}
                     </Text>
                   </View>
-                  <AbilityText text={role.ability} style={tabStyles.abilityText} />
+                  <AbilityText
+                    text={role.ability}
+                    style={tabStyles.abilityText}
+                  />
                 </View>
               );
             })}

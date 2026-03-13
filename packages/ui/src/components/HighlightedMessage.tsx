@@ -1,15 +1,9 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text } from 'react-native';
-import type { CandidateCategory, TaggedCandidate } from './QuickSuggestions';
+import { colors } from '../tokens';
+import type { TaggedCandidate } from './QuickSuggestions';
 
-const BADGE_COLORS: Record<
-  CandidateCategory,
-  { bg: string; text: string; border: string }
-> = {
-  player: { bg: '#1a2e1a', text: '#7dce82', border: '#2e4a2e' },
-  role: { bg: '#1a1e2e', text: '#82a8ce', border: '#2e3a4e' },
-  status: { bg: '#2e1a1e', text: '#ce8282', border: '#4e2e2e' },
-};
+const BADGE_COLORS = colors.badge;
 
 interface HighlightedMessageProps {
   message: string;
@@ -25,9 +19,7 @@ export function HighlightedMessage({
   const segments = useMemo(() => {
     if (keywords.length === 0) return [{ text: message, match: null }];
 
-    const sorted = [...keywords].sort(
-      (a, b) => b.word.length - a.word.length,
-    );
+    const sorted = [...keywords].sort((a, b) => b.word.length - a.word.length);
 
     const result: { text: string; match: TaggedCandidate | null }[] = [];
     let remaining = message;
@@ -65,16 +57,16 @@ export function HighlightedMessage({
         if (!seg.match) {
           return <Text key={i}>{seg.text}</Text>;
         }
-        const colors = BADGE_COLORS[seg.match.category];
+        const clr = BADGE_COLORS[seg.match.category];
         return (
           <Text
             key={i}
             style={[
               styles.badge,
               {
-                backgroundColor: colors.bg,
-                color: colors.text,
-                borderColor: colors.border,
+                backgroundColor: clr.bg,
+                color: clr.text,
+                borderColor: clr.border,
               },
             ]}
           >

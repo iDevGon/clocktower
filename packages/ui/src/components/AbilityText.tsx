@@ -60,7 +60,10 @@ function parseAbilityText(text: string): {
     if (!match) break;
 
     if (match.index > lastIndex) {
-      parts.push({ text: text.slice(lastIndex, match.index), highlighted: false });
+      parts.push({
+        text: text.slice(lastIndex, match.index),
+        highlighted: false,
+      });
     }
     parts.push({ text: match[0], highlighted: !!FOOTNOTES[match[0]] });
     if (FOOTNOTES[match[0]]) {

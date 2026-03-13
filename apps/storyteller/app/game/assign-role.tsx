@@ -1,5 +1,4 @@
 import {
-  AbilityText,
   ALL_ROLES,
   EDITION_COLORS,
   EDITION_LABELS,
@@ -7,6 +6,7 @@ import {
   ROLE_DISTRIBUTION,
   type Team,
 } from '@clocktower/shared';
+import { AbilityText } from '@clocktower/ui';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -139,7 +139,8 @@ export default function AssignRoleScreen() {
     if (!gameState) return new Set<Team>();
     const playerCount = gameState.players.length;
     const dist = ROLE_DISTRIBUTION[playerCount];
-    if (!dist) return new Set<Team>(['townsfolk', 'outsider', 'minion', 'demon']);
+    if (!dist)
+      return new Set<Team>(['townsfolk', 'outsider', 'minion', 'demon']);
 
     let [maxTownsfolk, maxOutsider, maxMinion, maxDemon] = dist;
 
@@ -157,7 +158,10 @@ export default function AssignRoleScreen() {
 
     // 남작이 배정되면 외지인 +2, 마을주민 -2
     if (hasBaron) {
-      maxOutsider = Math.min(maxOutsider + 2, playerCount - maxMinion - maxDemon);
+      maxOutsider = Math.min(
+        maxOutsider + 2,
+        playerCount - maxMinion - maxDemon,
+      );
       maxTownsfolk = playerCount - maxOutsider - maxMinion - maxDemon;
     }
 
@@ -191,7 +195,14 @@ export default function AssignRoleScreen() {
       assignRole(playerId, randomRole.id);
     }
     router.back();
-  }, [playerId, availableRoles, roleOwnerMap, allowedTeams, assignRole, router]);
+  }, [
+    playerId,
+    availableRoles,
+    roleOwnerMap,
+    allowedTeams,
+    assignRole,
+    router,
+  ]);
 
   const handleAssign = useCallback(
     (roleId: string) => {

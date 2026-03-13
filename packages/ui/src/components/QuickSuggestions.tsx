@@ -1,50 +1,7 @@
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-
-const CHOSUNG = [
-  'ㄱ',
-  'ㄲ',
-  'ㄴ',
-  'ㄷ',
-  'ㄸ',
-  'ㄹ',
-  'ㅁ',
-  'ㅂ',
-  'ㅃ',
-  'ㅅ',
-  'ㅆ',
-  'ㅇ',
-  'ㅈ',
-  'ㅉ',
-  'ㅊ',
-  'ㅋ',
-  'ㅌ',
-  'ㅍ',
-  'ㅎ',
-];
-
-function getChosung(str: string): string {
-  return [...str]
-    .map((ch) => {
-      const code = ch.charCodeAt(0) - 0xac00;
-      if (code < 0 || code > 11171) return ch;
-      return CHOSUNG[Math.floor(code / 588)];
-    })
-    .join('');
-}
-
-function isChosungOnly(str: string): boolean {
-  return [...str].every((ch) => CHOSUNG.includes(ch));
-}
-
-function matchQuery(candidate: string, query: string): boolean {
-  const lower = query.toLowerCase();
-  if (candidate.toLowerCase().includes(lower)) return true;
-  if (isChosungOnly(query)) {
-    return getChosung(candidate).startsWith(query);
-  }
-  return false;
-}
+import { colors } from '../tokens';
+import { matchQuery } from '../utils/chosung';
 
 export type CandidateCategory = 'player' | 'role' | 'status';
 
@@ -53,14 +10,7 @@ export interface TaggedCandidate {
   category: CandidateCategory;
 }
 
-const CATEGORY_COLORS: Record<
-  CandidateCategory,
-  { bg: string; text: string; border: string }
-> = {
-  player: { bg: '#1a2e1a', text: '#7dce82', border: '#2e4a2e' },
-  role: { bg: '#1a1e2e', text: '#82a8ce', border: '#2e3a4e' },
-  status: { bg: '#2e1a1e', text: '#ce8282', border: '#4e2e2e' },
-};
+const CATEGORY_COLORS = colors.badge;
 
 interface QuickSuggestionsProps {
   text: string;
@@ -94,20 +44,20 @@ export function QuickSuggestions({
         contentContainerStyle={styles.scrollContent}
       >
         {filtered.map((item) => {
-          const colors = CATEGORY_COLORS[item.category];
+          const clr = CATEGORY_COLORS[item.category];
           return (
             <Pressable
               key={item.word}
               style={[
                 styles.chip,
                 {
-                  backgroundColor: colors.bg,
-                  borderColor: colors.border,
+                  backgroundColor: clr.bg,
+                  borderColor: clr.border,
                 },
               ]}
               onPress={() => onSelect(item.word)}
             >
-              <Text style={[styles.chipText, { color: colors.text }]}>
+              <Text style={[styles.chipText, { color: clr.text }]}>
                 {item.word}
               </Text>
             </Pressable>

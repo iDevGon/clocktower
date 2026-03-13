@@ -1,5 +1,5 @@
 import type { Role, Team } from '@clocktower/shared';
-import { AbilityText } from '@clocktower/shared';
+import { AbilityText } from '@clocktower/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {

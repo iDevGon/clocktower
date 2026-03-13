@@ -124,6 +124,30 @@
           }
         }
       }
+    },
+    {
+      "includes": ["packages/ui/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": "warn",
+            "useHookAtTopLevel": "error",
+            "noUnusedVariables": "error",
+            "noUnusedImports": "error"
+          },
+          "suspicious": {
+            "noConsole": "error",
+            "noExplicitAny": "error"
+          },
+          "style": {
+            "noDefaultExport": "error",
+            "noNonNullAssertion": "error"
+          },
+          "complexity": {
+            "noForEach": "error"
+          }
+        }
+      }
     }
   ]
 }
