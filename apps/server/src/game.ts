@@ -9,8 +9,8 @@ import type {
   Player,
   PlayerStatus,
   Role,
-} from '@clocktower/shared';
-import { DEFAULT_GAME_SETTINGS, getRoleById } from '@clocktower/shared';
+} from '@clocktower/shared/logic';
+import { DEFAULT_GAME_SETTINGS, getRoleById } from '@clocktower/shared/logic';
 
 /** 플레이어가 중독 또는 취함 상태인지 확인 (능력 무효화 판정용) */
 function isPoisonedOrDrunk(player: Player): boolean {

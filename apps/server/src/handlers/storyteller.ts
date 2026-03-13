@@ -3,14 +3,14 @@ import type {
   ServerToClientEvents,
   ServerToStorytellerEvents,
   StorytellerToServerEvents,
-} from '@clocktower/shared';
+} from '@clocktower/shared/logic';
 import {
   ALL_ROLES,
   distributeRoles,
   FIRST_NIGHT_ORDER,
   getRoleById,
   OTHER_NIGHT_ORDER,
-} from '@clocktower/shared';
+} from '@clocktower/shared/logic';
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
 import {

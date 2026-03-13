@@ -5,7 +5,7 @@ import type {
   ServerToClientEvents,
   ServerToStorytellerEvents,
   StorytellerToServerEvents,
-} from '@clocktower/shared';
+} from '@clocktower/shared/logic';
 import cors from 'cors';
 import express from 'express';
 // @ts-expect-error no types

@@ -5,7 +5,7 @@ import type {
   ServerToStorytellerEvents,
   StorytellerToServerEvents,
   WhisperMessage,
-} from '@clocktower/shared';
+} from '@clocktower/shared/logic';
 import type { Namespace } from 'socket.io';
 
 type PlayerNamespace = Namespace<ClientToServerEvents, ServerToClientEvents>;
