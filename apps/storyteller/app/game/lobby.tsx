@@ -59,6 +59,7 @@ export default function LobbyScreen() {
   const [mixSearch, setMixSearch] = useState('');
   const [roleSettingsOpen, setRoleSettingsOpen] = useState(false);
   const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
+  const [rolesVeiled, setRolesVeiled] = useState(false);
 
   // 주정뱅이 가짜 역할 변경 모달 상태
   const [drunkModalPlayer, setDrunkModalPlayer] = useState<Player | null>(null);
@@ -353,19 +354,43 @@ export default function LobbyScreen() {
           )}
         </CollapsibleSection>
 
-        <Pressable
-          onPress={handleDistributeRoles}
-          disabled={distributing}
-          style={({ pressed }) => [
-            styles.distributeButton,
-            !canDistribute && styles.distributeButtonDisabled,
-            canDistribute && pressed && styles.distributeButtonPressed,
-          ]}
-        >
-          <Text style={styles.distributeButtonText}>
-            {distributing ? '배분 중...' : '직업 자동 배분'}
-          </Text>
-        </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: s(10) }}>
+          <Pressable
+            onPress={handleDistributeRoles}
+            disabled={distributing}
+            style={({ pressed }) => [
+              styles.distributeButton,
+              { flex: 1 },
+              !canDistribute && styles.distributeButtonDisabled,
+              canDistribute && pressed && styles.distributeButtonPressed,
+            ]}
+          >
+            <Text style={styles.distributeButtonText}>
+              직업 자동 배분
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setRolesVeiled((v) => !v)}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: s(6),
+              paddingVertical: s(12),
+              paddingHorizontal: s(10),
+              backgroundColor: rolesVeiled ? '#3a2a5c' : '#1e1e22',
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: rolesVeiled ? '#7c6caa' : '#3a3a3e',
+            }}
+          >
+            <Text style={{ color: rolesVeiled ? '#c4b0ee' : '#706e6a', fontSize: s(13) }}>
+              {rolesVeiled ? '🙈' : '👁'}
+            </Text>
+            <Text style={{ color: rolesVeiled ? '#c4b0ee' : '#706e6a', fontSize: s(12), fontWeight: '600' }}>
+              가리기
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.listContainer}>
@@ -424,17 +449,17 @@ export default function LobbyScreen() {
                 {item.role && (
                   <Text
                     style={{
-                      color: '#908e8a',
+                      color: rolesVeiled ? '#4a4a4e' : '#908e8a',
                       fontSize: s(14),
                     }}
                   >
-                    {item.role.name}
-                    {item.role.id === 'drunk' && item.drunkAs
+                    {rolesVeiled ? '???' : item.role.name}
+                    {!rolesVeiled && item.role.id === 'drunk' && item.drunkAs
                       ? ` (${getRoleById(item.drunkAs)?.name ?? '?'})`
                       : ''}
                   </Text>
                 )}
-                {item.role?.id === 'drunk' && item.drunkAs && (
+                {!rolesVeiled && item.role?.id === 'drunk' && item.drunkAs && (
                   <Pressable
                     onPress={(e) => {
                       e.stopPropagation();

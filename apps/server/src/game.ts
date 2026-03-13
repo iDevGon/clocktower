@@ -603,6 +603,7 @@ export class GameManager {
     nomineeName: string;
     guilty: boolean;
     votes: Record<string, boolean>;
+    executionCandidate: { playerId: string; playerName: string; guiltyVotes: number } | null;
   } | null {
     const current = this.state.nominations[this.state.nominations.length - 1];
     if (!current) return null;
@@ -639,11 +640,22 @@ export class GameManager {
 
     this.clearVoteTimer();
 
+    const candidateInfo = this.executionCandidate
+      ? {
+          playerId: this.executionCandidate.playerId,
+          playerName:
+            this.getPlayer(this.executionCandidate.playerId)?.name ??
+            this.executionCandidate.playerId,
+          guiltyVotes: this.executionCandidate.guiltyVotes,
+        }
+      : null;
+
     return {
       nomineeId: current.nomineeId,
       nomineeName: nominee?.name ?? current.nomineeId,
       guilty,
       votes: current.votes,
+      executionCandidate: candidateInfo,
     };
   }
 

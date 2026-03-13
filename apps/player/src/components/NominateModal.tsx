@@ -5,6 +5,7 @@ import { styles } from './NominateModal.styles';
 interface NominateModalProps {
   visible: boolean;
   players: PlayerInfo[];
+  nominatedTodayIds?: string[];
   onNominate: (nomineeId: string) => void;
   onClose: () => void;
 }
@@ -12,9 +13,12 @@ interface NominateModalProps {
 export function NominateModal({
   visible,
   players,
+  nominatedTodayIds = [],
   onNominate,
   onClose,
 }: NominateModalProps) {
+  const nominatedSet = new Set(nominatedTodayIds);
+
   return (
     <Modal
       visible={visible}
@@ -34,22 +38,51 @@ export function NominateModal({
           data={players}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <Pressable
-              style={({ pressed }) => [
-                styles.playerItem,
-                pressed && styles.playerItemPressed,
-              ]}
-              onPress={() => onNominate(item.id)}
-            >
-              <View style={styles.playerAvatar}>
-                <Text style={styles.playerAvatarText}>
-                  {item.name.charAt(0)}
-                </Text>
-              </View>
-              <Text style={styles.playerName}>{item.name}</Text>
-            </Pressable>
-          )}
+          renderItem={({ item }) => {
+            const alreadyNominated = nominatedSet.has(item.id);
+            return (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.playerItem,
+                  pressed && !alreadyNominated && styles.playerItemPressed,
+                  alreadyNominated && styles.playerItemDisabled,
+                ]}
+                onPress={() => !alreadyNominated && onNominate(item.id)}
+                disabled={alreadyNominated}
+              >
+                <View
+                  style={[
+                    styles.playerAvatar,
+                    alreadyNominated && styles.playerAvatarDisabled,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.playerAvatarText,
+                      alreadyNominated && styles.playerAvatarTextDisabled,
+                    ]}
+                  >
+                    {item.name.charAt(0)}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.playerName,
+                      alreadyNominated && styles.playerNameDisabled,
+                    ]}
+                  >
+                    {item.name}
+                  </Text>
+                  {alreadyNominated && (
+                    <Text style={styles.alreadyNominatedHint}>
+                      이미 오늘 지목을 당한 플레이어입니다
+                    </Text>
+                  )}
+                </View>
+              </Pressable>
+            );
+          }}
         />
       </View>
     </Modal>

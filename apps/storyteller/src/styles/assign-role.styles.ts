@@ -41,6 +41,29 @@ export function createAssignRoleStyles(scale: number) {
       fontSize: s(15),
       fontWeight: '600',
     },
+    sectionHeader: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      gap: s(8),
+      marginTop: s(16),
+      marginBottom: s(6),
+      paddingBottom: s(6),
+      borderBottomWidth: 1,
+    },
+    sectionDot: {
+      width: s(8),
+      height: s(8),
+      borderRadius: s(4),
+    },
+    sectionTitle: {
+      fontSize: s(15),
+      fontWeight: '700' as const,
+    },
+    sectionCount: {
+      color: '#5c5a58',
+      fontSize: s(12),
+      fontWeight: '500' as const,
+    },
     roleItem: {
       marginBottom: s(8),
       padding: s(16),
@@ -72,11 +95,6 @@ export function createAssignRoleStyles(scale: number) {
       fontSize: s(12),
       fontWeight: '600',
       color: '#c4a050',
-    },
-    teamLabel: {
-      fontSize: s(12),
-      fontWeight: '600',
-      textTransform: 'uppercase',
     },
     abilityText: {
       color: '#908e8a',

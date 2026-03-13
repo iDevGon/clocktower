@@ -57,13 +57,16 @@ export default function WhispersScreen() {
       ) : (
         <FlatList
           data={activeWhispers}
-          keyExtractor={(w) => `${w.player1Id}-${w.player2Id}`}
+          keyExtractor={(w) => w.conversationId}
           contentContainerStyle={ws.list}
           renderItem={({ item }) => (
             <View style={ws.item}>
-              <Text style={ws.player}>{item.player1Name}</Text>
-              <Text style={ws.arrow}>↔</Text>
-              <Text style={ws.player}>{item.player2Name}</Text>
+              {item.participantNames.map((name, i) => (
+                <View key={item.participantIds[i]} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  {i > 0 && <Text style={ws.arrow}> ↔ </Text>}
+                  <Text style={ws.player}>{name}</Text>
+                </View>
+              ))}
             </View>
           )}
         />

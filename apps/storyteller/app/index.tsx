@@ -1,4 +1,5 @@
 import { useCameraPermissions } from 'expo-camera';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -8,7 +9,18 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Animated, {
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { FullScreenVignette } from '../src/components/FullScreenVignette';
 import { QRScannerModal } from '../src/components/QRScannerModal';
+import { SmokeParticles } from '../src/components/SmokeParticles';
 import { useGameActions } from '../src/hooks/useGameActions';
 import { useResponsive } from '../src/hooks/useResponsive';
 import { useSocketConnection } from '../src/hooks/useSocketConnection';
@@ -32,6 +44,32 @@ export default function HomeScreen() {
   const gameState = useGameStore((s) => s.gameState);
   const [permission, requestPermission] = useCameraPermissions();
 
+  // Title glow pulse — golden
+  const glowPulse = useSharedValue(0);
+  useEffect(() => {
+    glowPulse.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 3000, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      false,
+    );
+  }, [glowPulse]);
+
+  const titleGlowStyle = useAnimatedStyle(() => ({
+    textShadowRadius: interpolate(glowPulse.value, [0, 1], [20, 40]),
+    opacity: interpolate(glowPulse.value, [0, 1], [0.9, 1]),
+  }));
+
+  const dividerGlowStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(glowPulse.value, [0, 1], [0.4, 0.8]),
+  }));
+
+  const badgeGlowStyle = useAnimatedStyle(() => ({
+    borderColor: `rgba(196, 160, 80, ${interpolate(glowPulse.value, [0, 1], [0.2, 0.4])})`,
+  }));
+
   const navigateToGame = useCallback(() => {
     const state = useGameStore.getState().gameState;
     if (!state?.id) return;
@@ -45,7 +83,6 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!gameState?.id) return;
 
-    // gameState가 있지만 소켓이 없으면 재연결 시도
     const { socket: existingSocket, serverUrl } = useConnectionStore.getState();
     if (!existingSocket?.connected && serverUrl) {
       connect(serverUrl)
@@ -53,7 +90,6 @@ export default function HomeScreen() {
           navigateToGame();
         })
         .catch(() => {
-          // 재연결 실패 시 상태 초기화
           useGameStore.getState().reset();
         });
     } else {
@@ -101,7 +137,6 @@ export default function HomeScreen() {
 
     const trimmed = data.trim();
     const url = trimmed.startsWith('http') ? trimmed : `http://${trimmed}:3000`;
-    // IP 표시용으로 추출
     try {
       const { host } = new URL(url);
       setServerIp(host);
@@ -113,57 +148,112 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Deep midnight-blue background */}
+      <LinearGradient
+        colors={['#06080f', '#0a0e1a', '#0e1020', '#0a0c18', '#060810']}
+        locations={[0, 0.25, 0.5, 0.75, 1]}
+        style={styles.backgroundGradient}
+      />
+
+      {/* Atmospheric layers */}
+      <SmokeParticles />
+      <FullScreenVignette
+        color="#04060c"
+        opacityRange={[0.5, 0.75]}
+        duration={6000}
+      />
+
       <QRScannerModal
         visible={showScanner}
         onClose={() => setShowScanner(false)}
         onScanned={handleBarCodeScanned}
       />
 
-      <Text style={styles.title}>시계 탑에 흐른</Text>
-      <Text style={styles.subtitle}>피</Text>
+      {/* Main content */}
+      <View style={styles.content}>
+        {/* Role badge */}
+        <Animated.View style={[styles.roleBadge, badgeGlowStyle]}>
+          <Text style={styles.roleBadgeIcon}>◉</Text>
+          <Text style={styles.roleBadgeText}>이야기꾼</Text>
+        </Animated.View>
 
-      <Text style={styles.label}>진행자</Text>
-
-      <View style={styles.form}>
-        <View style={styles.inputRow}>
-          <TextInput
-            style={[styles.input, styles.inputFlex]}
-            placeholder="서버 IP (예: 192.168.0.22)"
-            placeholderTextColor="#5c5a58"
-            value={serverIp}
-            onChangeText={setServerIp}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-          />
-          <Pressable
-            style={({ pressed }) => [
-              styles.qrButton,
-              pressed && styles.qrButtonPressed,
-            ]}
-            onPress={openScanner}
-          >
-            <Text style={styles.qrButtonText}>QR</Text>
-          </Pressable>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>시계 탑에 흐른</Text>
+          <Animated.Text style={[styles.subtitle, titleGlowStyle]}>
+            피
+          </Animated.Text>
+          <View style={styles.titleDivider}>
+            <Animated.View style={dividerGlowStyle}>
+              <LinearGradient
+                colors={['transparent', '#8b7530', '#c4a050', '#8b7530', 'transparent']}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={styles.titleDividerGradient}
+              />
+            </Animated.View>
+          </View>
+          <View style={styles.decorRow}>
+            <Text style={styles.decorStar}>✦</Text>
+            <Text style={styles.decorStar}>✦</Text>
+            <Text style={styles.decorStar}>✦</Text>
+            <Text style={styles.decorDiamond}>◆</Text>
+            <Text style={styles.decorStar}>✦</Text>
+            <Text style={styles.decorStar}>✦</Text>
+            <Text style={styles.decorStar}>✦</Text>
+          </View>
         </View>
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        <View style={styles.form}>
+          <View style={styles.inputRow}>
+            <TextInput
+              style={[styles.input, styles.inputFlex]}
+              placeholder="서버 IP (예: 192.168.0.22)"
+              placeholderTextColor="#3a3850"
+              value={serverIp}
+              onChangeText={setServerIp}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
+            <Pressable
+              style={({ pressed }) => [
+                styles.qrButton,
+                pressed && styles.qrButtonPressed,
+              ]}
+              onPress={openScanner}
+            >
+              <Text style={styles.qrButtonText}>QR</Text>
+            </Pressable>
+          </View>
 
-        <Pressable
-          onPress={handleStart}
-          disabled={isConnecting}
-          style={({ pressed }) => [
-            styles.button,
-            pressed && styles.buttonPressed,
-          ]}
-        >
-          {isConnecting ? (
-            <ActivityIndicator color="#e0ddd8" />
-          ) : (
-            <Text style={styles.buttonText}>게임 생성</Text>
-          )}
-        </Pressable>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+          <Pressable
+            onPress={handleStart}
+            disabled={isConnecting}
+            style={({ pressed }) => [
+              styles.button,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <LinearGradient
+              colors={['#3a3010', '#5a4820', '#3a3010']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.buttonGradient}
+            />
+            {isConnecting ? (
+              <ActivityIndicator color="#e0ddd8" />
+            ) : (
+              <Text style={styles.buttonText}>게임 생성</Text>
+            )}
+          </Pressable>
+        </View>
       </View>
+
+      <Text style={styles.copyright}>
+        Blood on the Clocktower © The Pandemonium Institute.{'\n'}App by DevGon
+      </Text>
     </View>
   );
 }

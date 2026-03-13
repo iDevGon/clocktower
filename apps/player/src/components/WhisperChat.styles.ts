@@ -69,6 +69,12 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#2e2e34',
   },
+  senderName: {
+    color: '#8a9a8a',
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
   messageText: {
     color: '#e0ddd8',
     fontSize: 14,

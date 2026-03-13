@@ -1,7 +1,11 @@
 import { useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useResponsive } from '../../src/hooks/useResponsive';
-import { type GameLogEntry, useLogStore } from '../../src/stores/logStore';
+import {
+  type GameLogEntry,
+  type LogCategory,
+  useLogStore,
+} from '../../src/stores/logStore';
 
 const PHASE_COLORS: Record<string, string> = {
   setup: '#908e8a',
@@ -9,6 +13,12 @@ const PHASE_COLORS: Record<string, string> = {
   day: '#c4a050',
   vote: '#c47070',
   ended: '#6ab04c',
+};
+
+const CATEGORY_COLORS: Record<LogCategory, string> = {
+  death: '#c47070',
+  ability: '#6ab04c',
+  default: '#e0ddd8',
 };
 
 const PHASE_LABELS: Record<string, string> = {
@@ -80,6 +90,8 @@ function LogItem({
   logStyles: ReturnType<typeof createLogStyles>;
 }) {
   const phaseColor = PHASE_COLORS[item.phase] ?? '#908e8a';
+  const messageColor =
+    CATEGORY_COLORS[item.category ?? 'default'] ?? CATEGORY_COLORS.default;
   return (
     <View style={logStyles.item}>
       <View style={logStyles.meta}>
@@ -89,7 +101,9 @@ function LogItem({
           {PHASE_LABELS[item.phase] ?? item.phase}
         </Text>
       </View>
-      <Text style={logStyles.message}>{item.message}</Text>
+      <Text style={[logStyles.message, { color: messageColor }]}>
+        {item.message}
+      </Text>
     </View>
   );
 }

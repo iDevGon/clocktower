@@ -2,11 +2,20 @@ import {
   ALL_ROLES,
   EDITION_COLORS,
   EDITION_LABELS,
+  type Team,
   getRolesForEdition,
 } from '@clocktower/shared';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Modal, Pressable, Text, TextInput, View } from 'react-native';
+import {
+  FlatList,
+  Modal,
+  Pressable,
+  SectionList,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { AbilityText } from '@clocktower/shared';
 import { useGameActions } from '../../src/hooks/useGameActions';
 import { useResponsive } from '../../src/hooks/useResponsive';
@@ -18,13 +27,6 @@ const TEAM_LABEL_COLORS = {
   outsider: '#50a090',
   minion: '#c48850',
   demon: '#b85c5c',
-} as const;
-
-const TEAM_NAMES = {
-  townsfolk: '마을주민',
-  outsider: '외지인',
-  minion: '하수인',
-  demon: '악마',
 } as const;
 
 const TEAM_BORDER_COLORS = {
@@ -106,6 +108,22 @@ export default function AssignRoleScreen() {
     return availableRoles.filter((r) => r.name.toLowerCase().includes(q));
   }, [availableRoles, searchQuery]);
 
+  // 팀별 섹션 데이터
+  const TEAM_ORDER: Array<{ team: Team; label: string }> = [
+    { team: 'townsfolk', label: '마을주민' },
+    { team: 'outsider', label: '외지인' },
+    { team: 'minion', label: '하수인' },
+    { team: 'demon', label: '악마' },
+  ];
+
+  const sections = useMemo(() => {
+    return TEAM_ORDER.map(({ team, label }) => ({
+      team,
+      title: label,
+      data: filteredRoles.filter((r) => r.team === team),
+    })).filter((s) => s.data.length > 0);
+  }, [filteredRoles]);
+
   // 주정뱅이의 가짜 역할로 선택 가능한 마을주민 목록
   const availableTownsfolk = useMemo(
     () => availableRoles.filter((r) => r.team === 'townsfolk'),
@@ -176,10 +194,11 @@ export default function AssignRoleScreen() {
         placeholderTextColor="#5a5a5e"
         style={styles.searchInput}
       />
-      <FlatList
-        data={filteredRoles}
+      <SectionList
+        sections={sections}
         keyExtractor={(r) => r.id}
         contentContainerStyle={styles.listContent}
+        stickySectionHeadersEnabled={false}
         ListHeaderComponent={
           filteredRoles.length > 0 && searchQuery === '' ? (
             <Pressable
@@ -193,6 +212,30 @@ export default function AssignRoleScreen() {
             </Pressable>
           ) : null
         }
+        renderSectionHeader={({ section }) => (
+          <View
+            style={[
+              styles.sectionHeader,
+              { borderColor: TEAM_BORDER_COLORS[section.team] },
+            ]}
+          >
+            <View
+              style={[
+                styles.sectionDot,
+                { backgroundColor: TEAM_LABEL_COLORS[section.team] },
+              ]}
+            />
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: TEAM_LABEL_COLORS[section.team] },
+              ]}
+            >
+              {section.title}
+            </Text>
+            <Text style={styles.sectionCount}>{section.data.length}</Text>
+          </View>
+        )}
         renderItem={({ item }) => {
           const ownerName = roleOwnerMap.get(item.id);
           return (
@@ -225,16 +268,7 @@ export default function AssignRoleScreen() {
                 </View>
                 {ownerName ? (
                   <Text style={styles.assignedLabel}>{ownerName}</Text>
-                ) : (
-                  <Text
-                    style={[
-                      styles.teamLabel,
-                      { color: TEAM_LABEL_COLORS[item.team] },
-                    ]}
-                  >
-                    {TEAM_NAMES[item.team]}
-                  </Text>
-                )}
+                ) : null}
               </View>
               <AbilityText text={item.ability} style={styles.abilityText} />
             </Pressable>

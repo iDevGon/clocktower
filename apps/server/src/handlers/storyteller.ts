@@ -245,6 +245,12 @@ export function registerStorytellerHandlers(
               reason: 'execution',
               detail: `${killedPlayer.name}이(가) 투표로 처형되었습니다`,
             });
+            storytellerIo.emit('execution:announced', {
+              executedId: candidate.playerId,
+              executedName: killedPlayer.name,
+              reason: 'execution',
+              detail: `${killedPlayer.name}이(가) 투표로 처형되었습니다`,
+            });
             playerIo.emit('game:playerUpdate', killedPlayer);
           }
           // 처형 후 승리 조건 체크
@@ -275,12 +281,17 @@ export function registerStorytellerHandlers(
       if (phase === 'day') {
         // 밤 중 사망한 플레이어들 알림
         const pendingKills = game.flushPendingNightKills();
+        const nightDeaths: Array<{ id: string; name: string }> = [];
         for (const killId of pendingKills) {
           const killed = game.getPlayer(killId);
           if (killed) {
             playerIo.emit('game:playerUpdate', killed);
+            nightDeaths.push({ id: killed.id, name: killed.name });
           }
         }
+        // 모든 플레이어에게 간밤 사망자 알림 (오버레이 표시용)
+        // 사망자가 없어도 전송하여 "아무도 사망하지 않았습니다" 표시
+        playerIo.emit('night:deaths', { deaths: nightDeaths });
         playerIo.emit('game:state', game.getState());
         playerIo.emit('day:subPhase', 'whisper');
         whisperTracker.clear();
@@ -577,9 +588,20 @@ export function registerStorytellerHandlers(
           nominatorName: nominator?.name ?? nominatorId,
           nominatorId,
         });
+        storytellerIo.emit('virgin:triggered', {
+          virginName: virgin?.name ?? nomineeId,
+          nominatorName: nominator?.name ?? nominatorId,
+          nominatorId,
+        });
         const killedNominator = game.getPlayer(result.virginKill);
         if (killedNominator) {
           playerIo.emit('execution:announced', {
+            executedId: result.virginKill,
+            executedName: killedNominator.name,
+            reason: 'virgin',
+            detail: `${killedNominator.name}이(가) 성결자를 지목하여 처형되었습니다`,
+          });
+          storytellerIo.emit('execution:announced', {
             executedId: result.virginKill,
             executedName: killedNominator.name,
             reason: 'virgin',
@@ -601,10 +623,11 @@ export function registerStorytellerHandlers(
         return;
       }
 
-      game.setPhase('vote');
+      // 변론 페이즈로 전환 (낮 페이즈 유지, 이야기꾼이 투표 시작을 제어)
+      game.setDaySubPhase('defense');
       const nominator = game.getPlayer(nominatorId);
       const nominee = game.getPlayer(nomineeId);
-      playerIo.emit('game:phase', 'vote');
+      playerIo.emit('day:subPhase', 'defense');
       playerIo.emit('vote:start', {
         nominatorId,
         nomineeId,
@@ -617,9 +640,25 @@ export function registerStorytellerHandlers(
       const allIds = state.players.map((p) => p.id);
       sendPushToAll(
         allIds,
-        '⚖️ 투표가 시작되었습니다',
-        `${nominator?.name ?? '???'}이(가) ${nominee?.name ?? '???'}을(를) 지목했습니다`,
+        '⚖️ 지목되었습니다',
+        `${nominator?.name ?? '???'}이(가) ${nominee?.name ?? '???'}을(를) 지목했습니다. 변론이 진행됩니다.`,
       );
+    });
+
+    socket.on('vote:proceedToVote', () => {
+      const state = game.getState();
+      const currentNomination =
+        state.nominations[state.nominations.length - 1];
+      if (!currentNomination) return;
+
+      const nomineeId = currentNomination.nomineeId;
+
+      // 변론 → 투표 페이즈 전환
+      game.setPhase('vote');
+      playerIo.emit('game:phase', 'vote');
+      playerIo.emit('vote:proceedToVote');
+      storytellerIo.emit('vote:proceedToVote');
+      storytellerIo.emit('game:state', game.getState());
 
       // 시계방향 투표 시작 (온라인 투표 모드일 때만) - 5초 카운트다운 후 시작
       if (state.settings.votingMode === 'online') {

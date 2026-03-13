@@ -6,11 +6,21 @@ import { WhisperChat } from './WhisperChat';
 import { WhisperPlayerList } from './WhisperPlayerList';
 import { WhisperToast } from './WhisperToast';
 
+interface ConversationTarget {
+  conversationId: string;
+  participantIds: string[];
+  participantNames: string[];
+}
+
 interface WhisperModalProps {
   visible: boolean;
   onClose: () => void;
-  onSend: (toId: string, message: string) => void;
-  initialTarget?: { id: string; name: string } | null;
+  onSend: (params: {
+    conversationId?: string;
+    participantIds?: string[];
+    message: string;
+  }) => void;
+  initialTarget?: ConversationTarget | null;
 }
 
 export function WhisperModal({
@@ -19,33 +29,45 @@ export function WhisperModal({
   onSend,
   initialTarget,
 }: WhisperModalProps) {
-  const [whisperTarget, setWhisperTarget] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
+  const [activeConversation, setActiveConversation] =
+    useState<ConversationTarget | null>(null);
   const playerId = usePlayerStore((s) => s.playerId);
 
   useEffect(() => {
     if (visible && initialTarget) {
-      setWhisperTarget(initialTarget);
-      useWhisperStore.getState().setActiveChat(initialTarget.id);
+      setActiveConversation(initialTarget);
+      useWhisperStore
+        .getState()
+        .setActiveChat(initialTarget.conversationId);
     }
   }, [visible, initialTarget]);
 
   const handleClose = () => {
-    setWhisperTarget(null);
+    setActiveConversation(null);
     useWhisperStore.getState().setActiveChat(null);
     onClose();
   };
 
   const handleBack = () => {
-    setWhisperTarget(null);
+    setActiveConversation(null);
     useWhisperStore.getState().setActiveChat(null);
   };
 
-  const handleSelectPlayer = (id: string, name: string) => {
-    setWhisperTarget({ id, name });
-    useWhisperStore.getState().setActiveChat(id);
+  const handleSelectConversation = (target: ConversationTarget) => {
+    setActiveConversation(target);
+    useWhisperStore.getState().setActiveChat(target.conversationId);
+  };
+
+  const handleToastNavigate = (conversationId: string) => {
+    const meta =
+      useWhisperStore.getState().conversationMeta[conversationId];
+    if (meta) {
+      handleSelectConversation({
+        conversationId,
+        participantIds: meta.participantIds,
+        participantNames: meta.participantNames,
+      });
+    }
   };
 
   return (
@@ -56,10 +78,11 @@ export function WhisperModal({
       onRequestClose={handleClose}
     >
       <View style={styles.modalContainer}>
-        {whisperTarget ? (
+        {activeConversation ? (
           <WhisperChat
-            partnerId={whisperTarget.id}
-            partnerName={whisperTarget.name}
+            conversationId={activeConversation.conversationId}
+            participantIds={activeConversation.participantIds}
+            participantNames={activeConversation.participantNames}
             onBack={handleBack}
             onSend={onSend}
           />
@@ -67,11 +90,11 @@ export function WhisperModal({
           <WhisperPlayerList
             players={usePlayerStore.getState().gamePlayers}
             myPlayerId={playerId}
-            onSelectPlayer={handleSelectPlayer}
+            onSelectConversation={handleSelectConversation}
             onClose={handleClose}
           />
         )}
-        <WhisperToast onNavigate={(id, name) => handleSelectPlayer(id, name)} />
+        <WhisperToast onNavigate={handleToastNavigate} />
       </View>
     </Modal>
   );

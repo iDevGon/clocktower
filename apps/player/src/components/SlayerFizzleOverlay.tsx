@@ -117,13 +117,15 @@ function GunIcon() {
         withTiming(0, { duration: 200, easing: Easing.out(Easing.quad) }),
       ),
     );
-    // Smoke puff after recoil
-    smokeOpacity.value = withDelay(
-      380,
+    // Arrow miss — flies right and fades out (반복 테스트)
+    smokeOpacity.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: 150 }),
-        withTiming(0, { duration: 1200, easing: Easing.out(Easing.quad) }),
+        withTiming(1, { duration: 200 }),
+        withTiming(0, { duration: 1500, easing: Easing.out(Easing.quad) }),
+        withTiming(0, { duration: 500 }),
       ),
+      -1,
+      false,
     );
     return () => {
       cancelAnimation(recoil);
@@ -139,21 +141,21 @@ function GunIcon() {
     opacity: interpolate(recoil.value, [-12, -8], [0.8, 1], 'clamp'),
   }));
 
-  const smokeStyle = useAnimatedStyle(() => ({
+  const arrowStyle = useAnimatedStyle(() => ({
     opacity: smokeOpacity.value,
     transform: [
-      { translateY: interpolate(smokeOpacity.value, [1, 0], [0, -30]) },
-      { scale: interpolate(smokeOpacity.value, [1, 0], [0.8, 2]) },
+      { translateY: interpolate(smokeOpacity.value, [1, 0], [15, -20]) },
+      { scale: interpolate(smokeOpacity.value, [1, 0], [0.3, 1.2]) },
     ],
   }));
 
   return (
     <View style={styles.gunContainer}>
-      <Animated.Text style={[styles.smokeText, smokeStyle]}>
-        {'\uD83D\uDCAB'}
-      </Animated.Text>
       <Animated.Text style={[styles.gunText, gunStyle]}>
         {'\uD83C\uDFF9'}
+      </Animated.Text>
+      <Animated.Text style={[styles.arrowText, arrowStyle]}>
+        {'\uD83D\uDCAB'}
       </Animated.Text>
     </View>
   );
@@ -195,7 +197,7 @@ function DissolveLine() {
   );
 }
 
-const SMOKE_COUNT = 14;
+const SMOKE_COUNT = 8;
 
 // ── Effects layer ──
 
@@ -269,7 +271,7 @@ export function SlayerFizzleOverlay({
           entering={FadeIn.delay(1300).duration(700)}
           style={styles.fizzleText}
         >
-          총성이 울렸으나{'\n'}아무 일도 일어나지 않았습니다
+          화살이 발사되었으나{'\n'}아무 일도 일어나지 않았습니다
         </Animated.Text>
 
         <Animated.View
@@ -277,7 +279,7 @@ export function SlayerFizzleOverlay({
           style={styles.hintBadge}
         >
           <Text style={styles.hintText}>
-            대상이 악마가 아니거나, 능력이 무효화되었습니다
+            {'처단자가 아님 · 대상이 악마가 아님 · 능력 무효'}
           </Text>
         </Animated.View>
 
@@ -298,16 +300,18 @@ const styles = StyleSheet.create({
   },
   gunContainer: {
     marginBottom: 4,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   gunText: {
     fontSize: 52,
   },
-  smokeText: {
+  arrowText: {
     fontSize: 28,
     position: 'absolute',
-    top: -10,
-    left: -20,
+    right: -8,
+    top: -4,
   },
   label: {
     fontSize: 11,

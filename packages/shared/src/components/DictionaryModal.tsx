@@ -118,41 +118,57 @@ function GroupedRolesTab() {
 function FlatRolesTab() {
   return (
     <View style={tabStyles.section}>
-      {ALL_ROLES.map((role) => {
-        const editionLabel = EDITION_LABELS[role.edition] ?? role.edition;
-        const editionColor = EDITION_COLORS[role.edition] ?? '#908e8a';
+      {TEAM_ORDER.map(({ team, label }) => {
+        const roles = ALL_ROLES.filter((r) => r.team === team);
+        if (roles.length === 0) return null;
         return (
-          <View key={role.id} style={tabStyles.card}>
-            <View style={tabStyles.cardHeader}>
-              <Text
-                style={[tabStyles.roleName, { color: TEAM_COLORS[role.team] }]}
-              >
-                {role.name}
-              </Text>
-              <Text
+          <View key={team}>
+            <View
+              style={[tabStyles.teamHeader, { borderColor: TEAM_COLORS[team] }]}
+            >
+              <View
                 style={[
-                  tabStyles.teamBadge,
-                  {
-                    color: TEAM_COLORS[role.team],
-                    borderColor: TEAM_COLORS[role.team],
-                  },
+                  tabStyles.teamDot,
+                  { backgroundColor: TEAM_COLORS[team] },
                 ]}
-              >
-                {TEAM_LABELS[role.team]}
-              </Text>
+              />
               <Text
-                style={[
-                  tabStyles.teamBadge,
-                  {
-                    color: editionColor,
-                    borderColor: editionColor,
-                  },
-                ]}
+                style={[tabStyles.teamHeaderText, { color: TEAM_COLORS[team] }]}
               >
-                {editionLabel}
+                {label}
               </Text>
+              <Text style={tabStyles.teamCount}>{roles.length}</Text>
             </View>
-            <Text style={tabStyles.abilityText}>{role.ability}</Text>
+            {roles.map((role) => {
+              const editionLabel = EDITION_LABELS[role.edition] ?? role.edition;
+              const editionColor = EDITION_COLORS[role.edition] ?? '#908e8a';
+              return (
+                <View key={role.id} style={tabStyles.card}>
+                  <View style={tabStyles.cardHeader}>
+                    <Text
+                      style={[
+                        tabStyles.roleName,
+                        { color: TEAM_COLORS[role.team] },
+                      ]}
+                    >
+                      {role.name}
+                    </Text>
+                    <Text
+                      style={[
+                        tabStyles.editionBadge,
+                        {
+                          color: editionColor,
+                          borderColor: editionColor,
+                        },
+                      ]}
+                    >
+                      {editionLabel}
+                    </Text>
+                  </View>
+                  <Text style={tabStyles.abilityText}>{role.ability}</Text>
+                </View>
+              );
+            })}
           </View>
         );
       })}
@@ -448,12 +464,12 @@ const tabStyles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
-  teamBadge: {
-    fontSize: 11,
-    fontWeight: '600',
+  editionBadge: {
+    fontSize: 9,
+    fontWeight: '700',
     borderWidth: 1,
-    borderRadius: 4,
-    paddingHorizontal: 6,
+    borderRadius: 3,
+    paddingHorizontal: 4,
     paddingVertical: 1,
     overflow: 'hidden',
   },

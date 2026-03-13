@@ -10,7 +10,7 @@ export default function GameLayout() {
         contentStyle: { backgroundColor: '#121214' },
       }}
     >
-      <Stack.Screen name="lobby" options={{ title: '대기실' }} />
+      <Stack.Screen name="lobby" options={{ title: '대기실', headerBackVisible: false }} />
       <Stack.Screen
         name="grimoire"
         options={{

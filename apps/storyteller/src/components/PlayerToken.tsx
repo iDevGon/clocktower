@@ -25,6 +25,24 @@ const TEAM_BG_COLORS = {
   demon: '#1e1414',
 } as const;
 
+export type VoteIndicator = 'guilty' | 'innocent' | 'preselected_guilty' | 'preselected_innocent' | 'nominee';
+
+const VOTE_BORDER_COLORS: Record<VoteIndicator, string> = {
+  guilty: '#e05050',
+  innocent: '#5090e0',
+  preselected_guilty: '#e0505080',
+  preselected_innocent: '#5090e080',
+  nominee: '#c43c3c',
+};
+
+const VOTE_GLOW_COLORS: Record<VoteIndicator, string> = {
+  guilty: '#e05050',
+  innocent: '#5090e0',
+  preselected_guilty: '#e0505060',
+  preselected_innocent: '#5090e060',
+  nominee: '#c43c3c',
+};
+
 interface PlayerTokenProps {
   player: Player;
   statuses?: PlayerStatus[];
@@ -32,6 +50,7 @@ interface PlayerTokenProps {
   highlighted?: boolean;
   empathNeighbor?: boolean;
   butlerMasterName?: string;
+  voteIndicator?: VoteIndicator;
   onPress?: () => void;
 }
 
@@ -42,6 +61,7 @@ export function PlayerToken({
   highlighted,
   empathNeighbor,
   butlerMasterName,
+  voteIndicator,
   onPress,
 }: PlayerTokenProps) {
   const [tooltipStatus, setTooltipStatus] = useState<PlayerStatus | null>(null);
@@ -61,8 +81,32 @@ export function PlayerToken({
     xl: Math.round(fontSize.xl * sizeRatio),
   };
   const team = player.role?.team;
-  const borderColor = team ? TEAM_BORDER_COLORS[team] : '#3a3a42';
+  const baseBorderColor = team ? TEAM_BORDER_COLORS[team] : '#3a3a42';
   const bgColor = team ? TEAM_BG_COLORS[team] : '#1a1a1e';
+
+  // Vote state overrides border when active
+  const hasVoteState = !!voteIndicator;
+  const voteBorder = voteIndicator ? VOTE_BORDER_COLORS[voteIndicator] : undefined;
+  const voteGlow = voteIndicator ? VOTE_GLOW_COLORS[voteIndicator] : undefined;
+
+  const borderColor = highlighted
+    ? '#f5c542'
+    : empathNeighbor
+      ? '#2ecc71'
+      : hasVoteState
+        ? voteBorder!
+        : baseBorderColor;
+
+  const glowColor = highlighted
+    ? '#f5c542'
+    : empathNeighbor
+      ? '#2ecc71'
+      : hasVoteState
+        ? voteGlow!
+        : 'transparent';
+
+  const hasGlow = highlighted || empathNeighbor || hasVoteState;
+  const bw = highlighted || empathNeighbor || hasVoteState ? 3 : 2;
 
   return (
     <Pressable onPress={onPress}>
@@ -72,23 +116,15 @@ export function PlayerToken({
           {
             width: s,
             height: s,
-            borderColor: highlighted
-              ? '#f5c542'
-              : empathNeighbor
-                ? '#2ecc71'
-                : borderColor,
-            borderWidth: highlighted || empathNeighbor ? 3 : 2,
+            borderColor,
+            borderWidth: bw,
             backgroundColor: bgColor,
             opacity: player.isAlive ? 1 : 0.4,
-            shadowColor: highlighted
-              ? '#f5c542'
-              : empathNeighbor
-                ? '#2ecc71'
-                : 'transparent',
+            shadowColor: glowColor,
             shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: highlighted || empathNeighbor ? 0.8 : 0,
-            shadowRadius: highlighted || empathNeighbor ? 10 : 0,
-            elevation: highlighted || empathNeighbor ? 10 : 0,
+            shadowOpacity: hasGlow ? 0.8 : 0,
+            shadowRadius: hasGlow ? 10 : 0,
+            elevation: hasGlow ? 10 : 0,
           },
         ]}
       >
@@ -131,6 +167,18 @@ export function PlayerToken({
                 </Text>
               </Pressable>
             ))}
+          </View>
+        )}
+        {voteIndicator && (voteIndicator === 'guilty' || voteIndicator === 'innocent') && (
+          <View style={[
+            styles.voteBadge,
+            {
+              backgroundColor: voteIndicator === 'guilty' ? '#e05050' : '#5090e0',
+            },
+          ]}>
+            <Text style={[styles.voteBadgeText, { fontSize: scaledFont.xs }]}>
+              {voteIndicator === 'guilty' ? '찬성' : '반대'}
+            </Text>
           </View>
         )}
         {butlerMasterName && (

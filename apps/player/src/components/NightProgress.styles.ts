@@ -3,8 +3,9 @@ import { StyleSheet } from 'react-native';
 export const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    alignSelf: 'stretch' as const,
+    width: '100%',
     paddingVertical: 16,
+    overflow: 'hidden' as const,
   },
   myTurnBanner: {
     backgroundColor: '#1e2038',
@@ -24,13 +25,7 @@ export const styles = StyleSheet.create({
   progressBar: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingHorizontal: 16,
-    alignSelf: 'stretch',
-  },
-  progressBarScroll: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: 16,
+    width: '100%',
   },
   stepWrapper: {
     alignItems: 'center',

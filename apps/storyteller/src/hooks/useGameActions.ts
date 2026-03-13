@@ -102,6 +102,11 @@ export function useGameActions() {
 
   const closeVote = useCallback(() => socket?.emit('vote:close'), [socket]);
 
+  const proceedToVote = useCallback(
+    () => socket?.emit('vote:proceedToVote'),
+    [socket],
+  );
+
   const resetGame = useCallback(() => socket?.emit('game:reset'), [socket]);
 
   const restartGame = useCallback(
@@ -173,6 +178,7 @@ export function useGameActions() {
     nominate,
     castVoteForPlayer,
     closeVote,
+    proceedToVote,
     resetGame,
     restartGame,
     sendNightFeedback,

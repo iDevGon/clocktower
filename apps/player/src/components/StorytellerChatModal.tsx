@@ -1,5 +1,5 @@
-import type { StorytellerMessage } from '@clocktower/shared';
-import { useEffect, useRef, useState } from 'react';
+import { type StorytellerMessage, ALL_ROLES } from '@clocktower/shared';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useChatStore } from '../stores/chatStore';
+import { usePlayerStore } from '../stores/playerStore';
+import { QuickSuggestions } from './QuickSuggestions';
 import { styles } from './StorytellerChatModal.styles';
 
 interface StorytellerChatModalProps {
@@ -29,6 +31,19 @@ export function StorytellerChatModal({
   const scrollRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   const messages = useChatStore((s) => s.messages);
+  const gamePlayers = usePlayerStore((s) => s.gamePlayers);
+
+  const candidates = useMemo(() => {
+    const playerNames = gamePlayers.map((p) => p.name);
+    const roleNames = ALL_ROLES.map((r) => r.name);
+    return [...new Set([...playerNames, ...roleNames])];
+  }, [gamePlayers]);
+
+  const handleSuggestionSelect = (word: string) => {
+    const parts = text.split(/(\s+)/);
+    parts[parts.length - 1] = word;
+    setText(parts.join('') + ' ');
+  };
 
   useEffect(() => {
     if (visible) {
@@ -129,6 +144,11 @@ export function StorytellerChatModal({
           })}
         </ScrollView>
 
+        <QuickSuggestions
+          text={text}
+          candidates={candidates}
+          onSelect={handleSuggestionSelect}
+        />
         <View
           style={[
             styles.inputRow,

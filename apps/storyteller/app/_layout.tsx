@@ -34,7 +34,7 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: '#121214' },
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'Clocktower' }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="game" options={{ headerShown: false }} />
       </Stack>
     </GestureHandlerRootView>

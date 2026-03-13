@@ -26,12 +26,19 @@ export function useGameActions() {
     }
   }, []);
 
-  const sendWhisper = useCallback((toId: string, message: string) => {
-    const socket = useConnectionStore.getState().socket;
-    if (socket) {
-      socket.emit('whisper:send', { toId, message });
-    }
-  }, []);
+  const sendWhisper = useCallback(
+    (params: {
+      conversationId?: string;
+      participantIds?: string[];
+      message: string;
+    }) => {
+      const socket = useConnectionStore.getState().socket;
+      if (socket) {
+        socket.emit('whisper:send', params);
+      }
+    },
+    [],
+  );
 
   const sendChatToStoryteller = useCallback((message: string) => {
     const socket = useConnectionStore.getState().socket;

@@ -1,4 +1,5 @@
 import type {
+  ActiveWhisperChat,
   GameResult,
   GameState,
   NightAction,
@@ -8,13 +9,6 @@ import type {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-
-interface ActiveWhisper {
-  player1Id: string;
-  player1Name: string;
-  player2Id: string;
-  player2Name: string;
-}
 
 interface TokenPosition {
   x: number;
@@ -26,6 +20,11 @@ interface VoteResult {
   nomineeName: string;
   guilty: boolean;
   votes: Record<string, boolean>;
+  executionCandidate: {
+    playerId: string;
+    playerName: string;
+    guiltyVotes: number;
+  } | null;
 }
 
 interface GameStore {
@@ -33,7 +32,7 @@ interface GameStore {
   gameState: GameState | null;
   nightActions: NightAction[];
   activeNightRoleId: string | null;
-  activeWhispers: ActiveWhisper[];
+  activeWhispers: ActiveWhisperChat[];
   playerStatuses: Record<string, PlayerStatus[]>;
   tokenPositions: Record<string, TokenPosition>;
   lastExecutedPlayerId: string | null;
@@ -50,11 +49,14 @@ interface GameStore {
   chatToast: { playerName: string; message: string } | null;
   showChatToast: (toast: { playerName: string; message: string }) => void;
   dismissChatToast: () => void;
+  eventToast: { title: string; message: string } | null;
+  showEventToast: (toast: { title: string; message: string }) => void;
+  dismissEventToast: () => void;
   setGameState: (state: GameState) => void;
   addNightAction: (action: NightAction) => void;
   clearNightActions: () => void;
   setActiveNightRoleId: (roleId: string | null) => void;
-  setActiveWhispers: (whispers: ActiveWhisper[]) => void;
+  setActiveWhispers: (whispers: ActiveWhisperChat[]) => void;
   setLastExecutedPlayerId: (id: string | null) => void;
   setVoteClock: (
     clock: { startedAt: number; durationMs: number } | null,
@@ -101,6 +103,9 @@ export const useGameStore = create<GameStore>()(
       chatToast: null,
       showChatToast: (toast) => set({ chatToast: toast }),
       dismissChatToast: () => set({ chatToast: null }),
+      eventToast: null,
+      showEventToast: (toast) => set({ eventToast: toast }),
+      dismissEventToast: () => set({ eventToast: null }),
       setGameState: (state) => {
         // 서버 상태의 player.statuses를 playerStatuses 스토어에 동기화
         const synced: Record<string, PlayerStatus[]> = {};
@@ -117,7 +122,7 @@ export const useGameStore = create<GameStore>()(
           playerOrder: state.playerOrder ?? [],
           ...(phaseChangedToVote
             ? {
-                voteCountdown: { startedAt: Date.now(), durationMs: 5000 },
+                voteCountdown: null,
                 voteResult: null,
               }
             : {}),
@@ -245,6 +250,7 @@ export const useGameStore = create<GameStore>()(
           chatUnreadCounts: {},
           activeChatPlayerId: null,
           chatToast: null,
+          eventToast: null,
         }),
     }),
     {

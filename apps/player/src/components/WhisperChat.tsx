@@ -1,5 +1,5 @@
-import type { WhisperMessage } from '@clocktower/shared';
-import { useEffect, useRef, useState } from 'react';
+import { type WhisperMessage, ALL_ROLES } from '@clocktower/shared';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -12,18 +12,25 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlayerStore } from '../stores/playerStore';
 import { useWhisperStore } from '../stores/whisperStore';
+import { QuickSuggestions } from './QuickSuggestions';
 import { styles } from './WhisperChat.styles';
 
 interface WhisperChatProps {
-  partnerId: string;
-  partnerName: string;
+  conversationId: string;
+  participantIds: string[];
+  participantNames: string[];
   onBack: () => void;
-  onSend: (toId: string, message: string) => void;
+  onSend: (params: {
+    conversationId?: string;
+    participantIds?: string[];
+    message: string;
+  }) => void;
 }
 
 export function WhisperChat({
-  partnerId,
-  partnerName,
+  conversationId,
+  participantIds,
+  participantNames,
   onBack,
   onSend,
 }: WhisperChatProps) {
@@ -31,11 +38,30 @@ export function WhisperChat({
   const scrollRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   const playerId = usePlayerStore((s) => s.playerId);
-  const messages = useWhisperStore((s) => s.conversations[partnerId]) ?? [];
+  const gamePlayers = usePlayerStore((s) => s.gamePlayers);
+  const messages =
+    useWhisperStore((s) => s.conversations[conversationId]) ?? [];
+
+  const isGroup = participantIds.length > 2;
+  const displayName = participantNames
+    .filter((_, i) => participantIds[i] !== playerId)
+    .join(', ');
+
+  const candidates = useMemo(() => {
+    const playerNames = gamePlayers.map((p) => p.name);
+    const roleNames = ALL_ROLES.map((r) => r.name);
+    return [...new Set([...playerNames, ...roleNames])];
+  }, [gamePlayers]);
+
+  const handleSuggestionSelect = (word: string) => {
+    const parts = text.split(/(\s+)/);
+    parts[parts.length - 1] = word;
+    setText(parts.join('') + ' ');
+  };
 
   useEffect(() => {
-    useWhisperStore.getState().clearUnread(partnerId);
-  }, [partnerId]);
+    useWhisperStore.getState().clearUnread(conversationId);
+  }, [conversationId]);
 
   useEffect(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
@@ -44,7 +70,11 @@ export function WhisperChat({
   const handleSend = () => {
     const trimmed = text.trim();
     if (!trimmed) return;
-    onSend(partnerId, trimmed);
+    onSend({
+      conversationId,
+      participantIds,
+      message: trimmed,
+    });
     setText('');
   };
 
@@ -63,7 +93,9 @@ export function WhisperChat({
         <Pressable onPress={onBack} style={styles.backButton}>
           <Text style={styles.backText}>{'<'} 뒤로</Text>
         </Pressable>
-        <Text style={styles.partnerName}>{partnerName}</Text>
+        <Text style={styles.partnerName} numberOfLines={1}>
+          {displayName}
+        </Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -74,9 +106,7 @@ export function WhisperChat({
       >
         {messages.length === 0 && (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              {partnerName}님과의 밀담을 시작하세요
-            </Text>
+            <Text style={styles.emptyText}>밀담을 시작하세요</Text>
           </View>
         )}
         {messages.map((msg: WhisperMessage) => {
@@ -95,6 +125,9 @@ export function WhisperChat({
                   isMine ? styles.messageBubbleMine : styles.messageBubbleOther,
                 ]}
               >
+                {isGroup && !isMine && (
+                  <Text style={styles.senderName}>{msg.fromName}</Text>
+                )}
                 <Text
                   style={[styles.messageText, isMine && styles.messageTextMine]}
                 >
@@ -109,6 +142,11 @@ export function WhisperChat({
         })}
       </ScrollView>
 
+      <QuickSuggestions
+        text={text}
+        candidates={candidates}
+        onSelect={handleSuggestionSelect}
+      />
       <View
         style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 8) }]}
       >

@@ -1,5 +1,6 @@
-import type { StorytellerMessage } from '@clocktower/shared';
-import { useEffect, useRef, useState } from 'react';
+import { ALL_ROLES, type StorytellerMessage, getRoleById } from '@clocktower/shared';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
 import {
   KeyboardAvoidingView,
   Modal,
@@ -12,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGameStore } from '../stores/gameStore';
+import { QuickSuggestions } from './QuickSuggestions';
 import { styles } from './StorytellerChatModal.styles';
 
 interface StorytellerChatModalProps {
@@ -158,9 +160,14 @@ function ChatView({
   const scrollRef = useRef<ScrollView>(null);
   const insets = useSafeAreaInsets();
   const messages = useGameStore((s) => s.chatMessages[playerId]) ?? [];
-  const playerName =
-    useGameStore((s) => s.gameState?.players.find((p) => p.id === playerId))
-      ?.name ?? playerId;
+  const player = useGameStore((s) =>
+    s.gameState?.players.find((p) => p.id === playerId),
+  );
+  const playerRole = player?.role ?? null;
+  const playerName = player?.name ?? playerId;
+  const headerLabel = playerRole
+    ? `${playerName}(${playerRole.name})`
+    : playerName;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on new messages
   useEffect(() => {
@@ -172,6 +179,19 @@ function ChatView({
     if (!trimmed) return;
     onSend(playerId, trimmed);
     setText('');
+  };
+
+  const allPlayers = useGameStore((s) => s.gameState?.players) ?? [];
+  const candidates = useMemo(() => {
+    const playerNames = allPlayers.map((p) => p.name);
+    const roleNames = ALL_ROLES.map((r) => r.name);
+    return [...new Set([...playerNames, ...roleNames])];
+  }, [allPlayers]);
+
+  const handleSuggestionSelect = (word: string) => {
+    const parts = text.split(/(\s+)/);
+    parts[parts.length - 1] = word;
+    setText(parts.join('') + ' ');
   };
 
   const formatTime = (timestamp: number) => {
@@ -189,7 +209,7 @@ function ChatView({
         <Pressable onPress={onBack} style={styles.closeButton}>
           <Text style={styles.backText}>{'<'} 뒤로</Text>
         </Pressable>
-        <Text style={styles.headerTitle}>{playerName}</Text>
+        <Text style={styles.headerTitle}>{headerLabel}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -238,6 +258,7 @@ function ChatView({
         })}
       </ScrollView>
 
+      <QuickSuggestions text={text} candidates={candidates} onSelect={handleSuggestionSelect} />
       <View
         style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 8) }]}
       >

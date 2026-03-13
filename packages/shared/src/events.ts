@@ -1,4 +1,5 @@
 import type {
+  ActiveWhisperChat,
   DaySubPhase,
   ExecutionAnnouncement,
   GameResult,
@@ -35,6 +36,11 @@ export interface ServerToClientEvents {
     nomineeName: string;
     guilty: boolean;
     votes: Record<string, boolean>;
+    executionCandidate: {
+      playerId: string;
+      playerName: string;
+      guiltyVotes: number;
+    } | null;
   }) => void;
   'night:activeRole': (data: {
     roleId: string | null;
@@ -66,14 +72,7 @@ export interface ServerToClientEvents {
     /** 악마에게: 게임에 없는 선한 역할 3개 (블러프용) */
     bluffRoles?: { id: string; name: string }[];
   }) => void;
-  'whisper:activeChats': (
-    chats: Array<{
-      player1Id: string;
-      player1Name: string;
-      player2Id: string;
-      player2Name: string;
-    }>,
-  ) => void;
+  'whisper:activeChats': (chats: ActiveWhisperChat[]) => void;
   'game:settings': (settings: GameSettings) => void;
   'vote:clockStart': (data: { durationMs: number }) => void;
   'vote:preselected': (data: {
@@ -88,7 +87,9 @@ export interface ServerToClientEvents {
   }) => void;
   'chat:receiveFromStoryteller': (message: StorytellerMessage) => void;
   'chat:receiveFromPlayer': (message: StorytellerMessage) => void;
+  'vote:proceedToVote': () => void;
   'execution:announced': (data: ExecutionAnnouncement) => void;
+  'night:deaths': (data: { deaths: Array<{ id: string; name: string }> }) => void;
 }
 
 /**
@@ -106,7 +107,10 @@ export interface ServerToStorytellerEvents {
   'vote:confirmed': ServerToClientEvents['vote:confirmed'];
   'vote:clockStart': ServerToClientEvents['vote:clockStart'];
   'vote:result': ServerToClientEvents['vote:result'];
+  'vote:proceedToVote': ServerToClientEvents['vote:proceedToVote'];
   'chat:receiveFromPlayer': ServerToClientEvents['chat:receiveFromPlayer'];
+  'virgin:triggered': ServerToClientEvents['virgin:triggered'];
+  'execution:announced': ServerToClientEvents['execution:announced'];
 }
 
 export interface ClientToServerEvents {
@@ -144,7 +148,11 @@ export interface ClientToServerEvents {
     data: { targetId: string },
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
-  'whisper:send': (data: { toId: string; message: string }) => void;
+  'whisper:send': (data: {
+    conversationId?: string;
+    participantIds?: string[];
+    message: string;
+  }) => void;
   'nominate:request': (
     data: { nomineeId: string },
     callback: (res: { success: boolean; error?: string }) => void,
@@ -170,6 +178,7 @@ export interface StorytellerToServerEvents {
   'vote:nominate': (data: { nominatorId: string; nomineeId: string }) => void;
   'vote:castForPlayer': (data: { playerId: string; guilty: boolean }) => void;
   'vote:close': () => void;
+  'vote:proceedToVote': () => void;
   'game:reset': () => void;
   'game:restart': (
     callback: (res: { success: boolean; gameId?: string }) => void,

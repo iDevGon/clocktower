@@ -5,7 +5,7 @@ import { useWhisperStore } from '../stores/whisperStore';
 const TOAST_DURATION = 3000;
 
 interface WhisperToastProps {
-  onNavigate?: (playerId: string, playerName: string) => void;
+  onNavigate?: (conversationId: string) => void;
 }
 
 export function WhisperToast({ onNavigate }: WhisperToastProps) {
@@ -46,6 +46,8 @@ export function WhisperToast({ onNavigate }: WhisperToastProps) {
 
   if (!toast) return null;
 
+  const isGroup = toast.participantNames.length > 2;
+
   return (
     <Animated.View
       style={[styles.container, { opacity, transform: [{ translateY }] }]}
@@ -56,12 +58,14 @@ export function WhisperToast({ onNavigate }: WhisperToastProps) {
           if (timerRef.current) clearTimeout(timerRef.current);
           dismissToast();
           if (toast && onNavigate) {
-            onNavigate(toast.fromId, toast.fromName);
+            onNavigate(toast.conversationId);
           }
         }}
       >
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>밀담</Text>
+          <Text style={styles.badgeText}>
+            {isGroup ? '그룹 밀담' : '밀담'}
+          </Text>
         </View>
         <View style={styles.textWrap}>
           <Text style={styles.name} numberOfLines={1}>

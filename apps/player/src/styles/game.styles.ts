@@ -70,9 +70,9 @@ export const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: 24,
   },
   scrollContent: {
+    paddingHorizontal: 24,
     paddingVertical: 24,
     gap: 24,
   },

@@ -90,21 +90,21 @@ export function createVotePanelStyles(scale: number) {
       overflow: 'hidden',
     },
     votedGuilty: {
-      color: '#e05050',
-      backgroundColor: '#2a1414',
+      color: '#ffffff',
+      backgroundColor: '#e05050',
     },
     votedInnocent: {
-      color: '#7070c4',
-      backgroundColor: '#14142a',
+      color: '#ffffff',
+      backgroundColor: '#5090e0',
     },
     preselectedGuilty: {
       color: '#e05050',
-      backgroundColor: '#2a141480',
+      backgroundColor: '#e0505025',
       fontStyle: 'italic',
     },
     preselectedInnocent: {
-      color: '#7070c4',
-      backgroundColor: '#14142a80',
+      color: '#5090e0',
+      backgroundColor: '#5090e025',
       fontStyle: 'italic',
     },
     timerRow: {

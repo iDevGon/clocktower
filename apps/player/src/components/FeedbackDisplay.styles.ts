@@ -152,4 +152,11 @@ export const sharedStyles = StyleSheet.create({
     fontSize: 13,
     fontWeight: 'bold',
   },
+  targetNamesText: {
+    color: '#d0c8f0',
+    fontSize: 15,
+    textAlign: 'center',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
 });

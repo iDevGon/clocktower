@@ -46,6 +46,11 @@ export function FeedbackDisplay({ feedback, compact }: FeedbackDisplayProps) {
           ]}
         >
           {!compact && <Text style={labelStyle}>진행자 안내</Text>}
+          {feedback.targetNames && feedback.targetNames.length > 0 && (
+            <Text style={sharedStyles.targetNamesText}>
+              {feedback.targetNames.join(', ')}
+            </Text>
+          )}
           <Text
             style={[
               compact ? compactStyles.big : inlineStyles.big,

@@ -4,9 +4,14 @@ interface VoteResultProps {
   nomineeName: string;
   guilty: boolean;
   votes: Record<string, boolean>;
+  executionCandidate?: {
+    playerId: string;
+    playerName: string;
+    guiltyVotes: number;
+  } | null;
 }
 
-export function VoteResult({ nomineeName, guilty, votes }: VoteResultProps) {
+export function VoteResult({ nomineeName, guilty, votes, executionCandidate }: VoteResultProps) {
   const yesCount = Object.values(votes).filter(Boolean).length;
   const noCount = Object.values(votes).filter((v) => !v).length;
 
@@ -28,7 +33,9 @@ export function VoteResult({ nomineeName, guilty, votes }: VoteResultProps) {
       <Text style={[styles.sentence, guilty ? styles.sentenceGuilty : styles.sentenceInnocent]}>
         {guilty
           ? `${nomineeName}님이 처형 예정입니다`
-          : '아무도 처형되지 않았습니다'}
+          : executionCandidate
+            ? `기존 처형 예정자 유지: ${executionCandidate.playerName}`
+            : '아무도 처형되지 않았습니다'}
       </Text>
     </View>
   );

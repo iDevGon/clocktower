@@ -1,14 +1,8 @@
+import type { ActiveWhisperChat } from '@clocktower/shared';
 import { StyleSheet, Text, View } from 'react-native';
 
-interface ActiveWhisper {
-  player1Id: string;
-  player1Name: string;
-  player2Id: string;
-  player2Name: string;
-}
-
 interface WhisperStatusPanelProps {
-  whispers: ActiveWhisper[];
+  whispers: ActiveWhisperChat[];
 }
 
 export function WhisperStatusPanel({ whispers }: WhisperStatusPanelProps) {
@@ -18,11 +12,8 @@ export function WhisperStatusPanel({ whispers }: WhisperStatusPanelProps) {
     <View style={styles.whisperPanel}>
       <Text style={styles.whisperPanelTitle}>밀담 현황</Text>
       {whispers.map((w) => (
-        <Text
-          key={`${w.player1Id}-${w.player2Id}`}
-          style={styles.whisperPanelItem}
-        >
-          {w.player1Name} ↔ {w.player2Name}
+        <Text key={w.conversationId} style={styles.whisperPanelItem}>
+          {w.participantNames.join(' ↔ ')}
         </Text>
       ))}
     </View>

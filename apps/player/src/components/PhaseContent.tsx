@@ -130,10 +130,10 @@ export function WhisperPhase({
           <Text style={whisperStyles.activePanelTitle}>진행 중인 밀담</Text>
           {activeWhispers.map((w) => (
             <Text
-              key={`${w.player1Id}-${w.player2Id}`}
+              key={w.conversationId}
               style={whisperStyles.activePanelItem}
             >
-              {w.player1Name} ↔ {w.player2Name}
+              {w.participantNames.join(' ↔ ')}
             </Text>
           ))}
         </View>

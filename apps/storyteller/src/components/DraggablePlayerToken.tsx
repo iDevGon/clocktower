@@ -8,7 +8,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useResponsive } from '../hooks/useResponsive';
-import { PlayerToken } from './PlayerToken';
+import { PlayerToken, type VoteIndicator } from './PlayerToken';
 
 export interface CircularPosition {
   x: number;
@@ -22,6 +22,7 @@ interface DraggablePlayerTokenProps {
   highlighted?: boolean;
   empathNeighbor?: boolean;
   butlerMasterName?: string;
+  voteIndicator?: VoteIndicator;
   tokenSize?: number;
   initialX: number;
   initialY: number;
@@ -32,12 +33,15 @@ interface DraggablePlayerTokenProps {
   positionIndex?: number;
 }
 
+export { type VoteIndicator } from './PlayerToken';
+
 export function DraggablePlayerToken({
   player,
   statuses,
   highlighted,
   empathNeighbor,
   butlerMasterName,
+  voteIndicator,
   tokenSize: tokenSizeProp,
   initialX,
   initialY,
@@ -133,6 +137,7 @@ export function DraggablePlayerToken({
           highlighted={highlighted}
           empathNeighbor={empathNeighbor}
           butlerMasterName={butlerMasterName}
+          voteIndicator={voteIndicator}
           size={tokenSize}
         />
       </Animated.View>

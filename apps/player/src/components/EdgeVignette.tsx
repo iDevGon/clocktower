@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Dimensions, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -12,30 +13,25 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const { width: SW, height: SH } = Dimensions.get('window');
-const EDGE_H = SH * 0.12;
-const SIDE_W = SW * 0.08;
 
-/**
- * A 3-stop gradient layer config for edge overlays.
- * Each entry defines a layer's positional offset, size proportion, and color.
- */
-interface GradientLayer {
-  /** CSS-like offset from the anchor edge (e.g. '0%', '40%') */
-  offset: string;
-  /** Size proportion (e.g. '40%', '30%') */
-  size: string;
-  /** Background color with alpha */
-  color: string;
+/* Smoky edge sizes — generous overlap for soft blending */
+const EDGE_H = SH * 0.22;
+const SIDE_W = SW * 0.18;
+
+interface EdgeColorConfig {
+  /** Gradient color stops from edge inward (outermost → transparent) */
+  stops: readonly [string, string, ...string[]];
+  /** Matching stop positions 0..1  */
+  locations: readonly [number, number, ...number[]];
 }
 
 interface EdgeColors {
-  /** 3-layer gradient colors for the top edge (outermost to innermost) */
-  top: [GradientLayer, GradientLayer, GradientLayer];
-  /** 3-layer gradient colors for the bottom edge */
-  bottom: [GradientLayer, GradientLayer, GradientLayer];
-  /** 2-layer gradient colors for side edges */
-  side: [GradientLayer, GradientLayer];
-  /** Inner border color */
+  top: EdgeColorConfig;
+  bottom: EdgeColorConfig;
+  side: EdgeColorConfig;
+  /** Corner bloom tint (radial-like diagonal gradient) */
+  corner: string;
+  /** Subtle inner border color */
   borderColor: string;
 }
 
@@ -47,9 +43,7 @@ interface EdgeOpacityRanges {
 }
 
 interface EdgeVignetteProps {
-  /** Color configuration for all edges */
   colors: EdgeColors;
-  /** Opacity ranges for each edge group */
   opacityRanges: EdgeOpacityRanges;
   /** Half-cycle duration in ms */
   duration: number;
@@ -57,9 +51,12 @@ interface EdgeVignetteProps {
   zIndex?: number;
 }
 
+const AnimatedLinearGradient =
+  Animated.createAnimatedComponent(LinearGradient);
+
 /**
- * Edge vignette overlay with 4-sided gradient-like falloff and inner border.
- * Provides a persistent colored border effect with pulse animation.
+ * Smoky edge vignette overlay with smooth LinearGradient falloff.
+ * Multiple overlapping layers create a soft, atmospheric haze effect.
  */
 export function EdgeVignette({
   colors,
@@ -98,91 +95,47 @@ export function EdgeVignette({
 
   return (
     <>
-      {/* Top edge */}
-      <Animated.View
+      {/* ── Top edge: smooth vertical gradient ── */}
+      <AnimatedLinearGradient
+        colors={colors.top.stops}
+        locations={colors.top.locations}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
         style={[s.edgeTop, { zIndex }, topStyle]}
         pointerEvents="none"
-      >
-        {colors.top.map((layer, i) => (
-          <Animated.View
-            key={`t-${i}`}
-            style={[
-              s.gradLayer,
-              {
-                top: layer.offset,
-                height: layer.size,
-                backgroundColor: layer.color,
-              },
-            ]}
-          />
-        ))}
-      </Animated.View>
+      />
 
-      {/* Bottom edge */}
-      <Animated.View
+      {/* ── Bottom edge ── */}
+      <AnimatedLinearGradient
+        colors={colors.bottom.stops}
+        locations={colors.bottom.locations}
+        start={{ x: 0.5, y: 1 }}
+        end={{ x: 0.5, y: 0 }}
         style={[s.edgeBottom, { zIndex }, bottomStyle]}
         pointerEvents="none"
-      >
-        {colors.bottom.map((layer, i) => (
-          <Animated.View
-            key={`b-${i}`}
-            style={[
-              s.gradLayer,
-              {
-                bottom: layer.offset,
-                height: layer.size,
-                backgroundColor: layer.color,
-              },
-            ]}
-          />
-        ))}
-      </Animated.View>
+      />
 
-      {/* Left edge */}
-      <Animated.View
+      {/* ── Left edge ── */}
+      <AnimatedLinearGradient
+        colors={colors.side.stops}
+        locations={colors.side.locations}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
         style={[s.edgeLeft, { zIndex }, sideStyle]}
         pointerEvents="none"
-      >
-        {colors.side.map((layer, i) => (
-          <Animated.View
-            key={`l-${i}`}
-            style={[
-              s.gradLayer,
-              {
-                left: layer.offset,
-                width: layer.size,
-                top: 0,
-                bottom: 0,
-                backgroundColor: layer.color,
-              },
-            ]}
-          />
-        ))}
-      </Animated.View>
+      />
 
-      {/* Right edge */}
-      <Animated.View
+      {/* ── Right edge ── */}
+      <AnimatedLinearGradient
+        colors={colors.side.stops}
+        locations={colors.side.locations}
+        start={{ x: 1, y: 0.5 }}
+        end={{ x: 0, y: 0.5 }}
         style={[s.edgeRight, { zIndex }, sideStyle]}
         pointerEvents="none"
-      >
-        {colors.side.map((layer, i) => (
-          <Animated.View
-            key={`r-${i}`}
-            style={[
-              s.gradLayer,
-              {
-                right: layer.offset,
-                width: layer.size,
-                top: 0,
-                bottom: 0,
-                backgroundColor: layer.color,
-              },
-            ]}
-          />
-        ))}
-      </Animated.View>
+      />
 
-      {/* Inner border */}
+      {/* ── Inner border: very subtle glow line ── */}
       <Animated.View
         style={[
           s.innerBorder,
@@ -224,17 +177,12 @@ const s = StyleSheet.create({
     bottom: 0,
     width: SIDE_W,
   },
-  gradLayer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-  },
   innerBorder: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
 });

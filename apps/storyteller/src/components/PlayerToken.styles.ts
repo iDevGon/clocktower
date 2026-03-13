@@ -43,6 +43,21 @@ export const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: '700',
   },
+  voteBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+    minWidth: 20,
+    alignItems: 'center',
+  },
+  voteBadgeText: {
+    color: '#ffffff',
+    fontSize: 8,
+    fontWeight: '800',
+  },
   tooltipOverlay: {
     flex: 1,
     justifyContent: 'center',

@@ -62,6 +62,7 @@ export function attachListeners(socket: AppSocket) {
             hasNominatedToday: false,
             executionHappenedToday: false,
             nightCount: prev.nightCount + 1,
+            nominatedTodayIds: [],
           }
         : {}),
       // 새 게임 시작 (setup): 역할/상태 초기화, 피드백 히스토리 리셋
@@ -80,9 +81,11 @@ export function attachListeners(socket: AppSocket) {
             justDied: false,
             deathReason: null,
             executionAnnouncement: null,
+            nightDeathAnnouncement: null,
             executionHappenedToday: false,
             slayerUsed: false,
             voteResult: null,
+            nominatedTodayIds: [],
           }
         : {}),
     });
@@ -90,6 +93,10 @@ export function attachListeners(socket: AppSocket) {
 
   socket.on('day:subPhase', (subPhase) => {
     usePlayerStore.getState().set({ daySubPhase: subPhase });
+  });
+
+  socket.on('night:deaths', ({ deaths }) => {
+    usePlayerStore.getState().set({ nightDeathAnnouncement: deaths });
   });
 
   socket.on('night:activeRole', ({ roleId, order, players }) => {
@@ -143,16 +150,28 @@ export function attachListeners(socket: AppSocket) {
   });
 
   socket.on('vote:start', (data) => {
+    const prev = usePlayerStore.getState();
     usePlayerStore.getState().set({
       nomination: data,
-      currentPhase: 'vote',
+      daySubPhase: 'defense',
       hasVoted: false,
       voteResult: null,
       votePreselections: {},
       voteClock: null,
-      voteCountdown: { startedAt: Date.now(), durationMs: 5000 },
+      voteCountdown: null,
+      nominatedTodayIds: prev.nominatedTodayIds.includes(data.nomineeId)
+        ? prev.nominatedTodayIds
+        : [...prev.nominatedTodayIds, data.nomineeId],
     });
     vibrateAlert();
+  });
+
+  socket.on('vote:proceedToVote', () => {
+    usePlayerStore.getState().set({
+      currentPhase: 'vote',
+      daySubPhase: null,
+      voteCountdown: { startedAt: Date.now(), durationMs: 5000 },
+    });
   });
 
   socket.on('vote:result', (data) => {
@@ -220,12 +239,15 @@ export function attachListeners(socket: AppSocket) {
     whisperState.addMessage(message, playerId);
 
     // 다른 사람과 채팅 중이거나 채팅 목록에 있을 때, 새 밀담 알림 표시
-    const partnerId =
-      message.fromId === playerId ? message.toId : message.fromId;
-    if (message.fromId !== playerId && whisperState.activeChat !== partnerId) {
+    if (
+      message.fromId !== playerId &&
+      whisperState.activeChat !== message.conversationId
+    ) {
       whisperState.showToast({
         fromId: message.fromId,
         fromName: message.fromName,
+        conversationId: message.conversationId,
+        participantNames: message.participantNames,
         message: message.message,
       });
     }

@@ -10,6 +10,11 @@ interface VoteResultData {
   nomineeName: string;
   guilty: boolean;
   votes: Record<string, boolean>;
+  executionCandidate: {
+    playerId: string;
+    playerName: string;
+    guiltyVotes: number;
+  } | null;
 }
 
 interface VotePanelProps {
@@ -17,6 +22,7 @@ interface VotePanelProps {
   players: Player[];
   onCloseVote: () => void;
   onCastVote?: (playerId: string, guilty: boolean) => void;
+  onProceedToVote?: () => void;
   voteResult?: VoteResultData | null;
   onDismissResult?: () => void;
 }
@@ -26,6 +32,7 @@ export function VotePanel({
   players,
   onCloseVote,
   onCastVote,
+  onProceedToVote,
   voteResult,
   onDismissResult,
 }: VotePanelProps) {
@@ -33,6 +40,8 @@ export function VotePanel({
   const scale = fontSize.md / 12;
   const styles = useMemo(() => createVotePanelStyles(scale), [scale]);
 
+  const gameState = useGameStore((s) => s.gameState);
+  const isDefensePhase = gameState?.daySubPhase === 'defense';
   const voteCountdown = useGameStore((s) => s.voteCountdown);
   const voteClock = useGameStore((s) => s.voteClock);
   const votePreselections = useGameStore((s) => s.votePreselections);
@@ -43,7 +52,7 @@ export function VotePanel({
   // Re-render periodically to update timer and countdown
   useEffect(() => {
     if (!voteClock && !voteCountdown) return;
-    const interval = setInterval(() => forceUpdate((n) => n + 1), 200);
+    const interval = setInterval(() => forceUpdate((n) => n + 1), 1000);
     return () => clearInterval(interval);
   }, [voteClock, voteCountdown]);
 
@@ -86,7 +95,13 @@ export function VotePanel({
           {nominatorName} → {nomineeName}
         </Text>
       </View>
-      {isCountingDown ? (
+      {isDefensePhase ? (
+        <View style={styles.countdownRow}>
+          <Text style={styles.countdownText}>
+            변론 중 — {nomineeName}의 변론을 들어보세요
+          </Text>
+        </View>
+      ) : isCountingDown ? (
         <View style={styles.countdownRow}>
           <Text style={styles.countdownText}>
             잠시 후 투표가 시작됩니다... {countdownRemaining}초
@@ -160,7 +175,7 @@ export function VotePanel({
                   >
                     {preselection ? '찬성?' : '반대?'}
                   </Text>
-                ) : (
+                ) : __DEV__ ? (
                   <View style={styles.voteButtons}>
                     <Pressable
                       onPress={() => onCastVote(player.id, true)}
@@ -175,6 +190,8 @@ export function VotePanel({
                       <Text style={styles.innocentText}>반</Text>
                     </Pressable>
                   </View>
+                ) : (
+                  <Text style={styles.votedBadge}>-</Text>
                 )}
               </View>
             );
@@ -209,7 +226,9 @@ export function VotePanel({
           >
             {voteResult.guilty
               ? `${voteResult.nomineeName}님이 처형 예정입니다`
-              : '아무도 처형되지 않았습니다'}
+              : voteResult.executionCandidate
+                ? `기존 처형 예정자 유지: ${voteResult.executionCandidate.playerName} (${voteResult.executionCandidate.guiltyVotes}표)`
+                : '아무도 처형되지 않았습니다'}
           </Text>
           {onDismissResult && (
             <Pressable onPress={onDismissResult} style={styles.resultDismiss}>
@@ -217,6 +236,10 @@ export function VotePanel({
             </Pressable>
           )}
         </View>
+      ) : isDefensePhase && onProceedToVote ? (
+        <Pressable onPress={onProceedToVote} style={styles.closeVoteButton}>
+          <Text style={styles.closeVoteText}>투표 시작</Text>
+        </Pressable>
       ) : (
         <Pressable onPress={onCloseVote} style={styles.closeVoteButton}>
           <Text style={styles.closeVoteText}>투표 종료</Text>

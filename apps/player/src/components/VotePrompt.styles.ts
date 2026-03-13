@@ -47,10 +47,11 @@ export const styles = StyleSheet.create({
     fontWeight: '800',
   },
   description: {
-    color: COLORS.boneFaded,
-    fontSize: 14,
+    color: '#d4a040',
+    fontSize: 15,
+    fontWeight: '700',
     marginBottom: 16,
-    fontStyle: 'italic',
+    textAlign: 'center',
   },
   votedContainer: {
     alignItems: 'center',
@@ -160,5 +161,12 @@ export const styles = StyleSheet.create({
     textShadowColor: `${COLORS.bloodGlow}60`,
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 12,
+  },
+  countdownHint: {
+    color: COLORS.boneFaded,
+    fontSize: 13,
+    fontStyle: 'italic',
+    marginTop: 12,
+    textAlign: 'center',
   },
 });

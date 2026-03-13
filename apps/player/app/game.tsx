@@ -6,6 +6,7 @@ import { DeadVignette } from '../src/components/DeadVignette';
 import { DeathOverlay } from '../src/components/DeathOverlay';
 import { DictionaryModal } from '@clocktower/shared';
 import { ExecutionOverlay } from '../src/components/ExecutionOverlay';
+import { NightDeathOverlay } from '../src/components/NightDeathOverlay';
 import { FeedbackHistoryModal } from '../src/components/FeedbackHistoryModal';
 import { GameEndOverlay } from '../src/components/GameEndOverlay';
 import { NominateModal } from '../src/components/NominateModal';
@@ -18,11 +19,10 @@ import {
   WhisperPhase,
 } from '../src/components/PhaseContent';
 import { PhaseIndicator } from '../src/components/PhaseIndicator';
-import { RoleCard } from '../src/components/RoleCard';
+import { FlippableRoleCard } from '../src/components/RoleCard';
 import { SlayerFizzleOverlay } from '../src/components/SlayerFizzleOverlay';
 import { StorytellerChatModal } from '../src/components/StorytellerChatModal';
 import { StorytellerChatToast } from '../src/components/StorytellerChatToast';
-import { VeiledRoleCard } from '../src/components/VeiledRoleCard';
 import { VotePrompt, VoteVignette } from '../src/components/VotePrompt';
 import { VoteResult } from '../src/components/VoteResult';
 import { WhisperModal } from '../src/components/WhisperModal';
@@ -37,6 +37,7 @@ const DAY_SUB_PHASE_LABELS: Record<string, string> = {
   whisper: '밀담',
   discussion: '공개 토론',
   nomination: '지목',
+  defense: '변론',
 };
 
 export default function GameScreen() {
@@ -59,11 +60,13 @@ export default function GameScreen() {
     justDied,
     deathReason,
     executionAnnouncement,
+    nightDeathAnnouncement,
     slayerUsed,
     slayerFizzle,
     evilInfo,
     gameSettings,
     executionHappenedToday,
+    nominatedTodayIds,
   } = usePlayerStore();
   const dismissDeath = usePlayerStore((s) => s.set);
   const {
@@ -87,8 +90,9 @@ export default function GameScreen() {
   const [gameEndDismissed, setGameEndDismissed] = useState(false);
   const [whisperModalVisible, setWhisperModalVisible] = useState(false);
   const [whisperInitialTarget, setWhisperInitialTarget] = useState<{
-    id: string;
-    name: string;
+    conversationId: string;
+    participantIds: string[];
+    participantNames: string[];
   } | null>(null);
   const [nominateModalVisible, setNominateModalVisible] = useState(false);
   const [slayerModalVisible, setSlayerModalVisible] = useState(false);
@@ -257,6 +261,13 @@ export default function GameScreen() {
           onOpenNominate={() => setNominateModalVisible(true)}
         />
 
+        {daySubPhase === 'defense' && nomination && (
+          <VotePrompt
+            nominatorName={nomination.nominatorName}
+            nomineeName={nomination.nomineeName}
+          />
+        )}
+
         {currentPhase === 'vote' && nomination && (
           <VotePrompt
             nominatorName={nomination.nominatorName}
@@ -269,6 +280,7 @@ export default function GameScreen() {
             nomineeName={voteResult.nomineeName}
             guilty={voteResult.guilty}
             votes={voteResult.votes}
+            executionCandidate={voteResult.executionCandidate}
           />
         )}
 
@@ -295,10 +307,13 @@ export default function GameScreen() {
           </View>
         )}
 
-        {role && currentPhase !== 'setup' && (
-          <RoleCard role={role} evilInfo={evilInfo} />
+        {(role || currentPhase === 'setup') && (
+          <FlippableRoleCard
+            role={role}
+            evilInfo={evilInfo}
+            veiled={currentPhase === 'setup'}
+          />
         )}
-        {role && currentPhase === 'setup' && <VeiledRoleCard />}
       </ScrollView>
 
       {justDied && (
@@ -312,6 +327,13 @@ export default function GameScreen() {
         <ExecutionOverlay
           announcement={executionAnnouncement}
           onDismiss={() => dismissDeath({ executionAnnouncement: null })}
+        />
+      )}
+
+      {nightDeathAnnouncement && !justDied && !executionAnnouncement && (
+        <NightDeathOverlay
+          deaths={nightDeathAnnouncement}
+          onDismiss={() => dismissDeath({ nightDeathAnnouncement: null })}
         />
       )}
 
@@ -332,9 +354,17 @@ export default function GameScreen() {
       )}
 
       <WhisperToast
-        onNavigate={(id, name) => {
-          setWhisperInitialTarget({ id, name });
-          setWhisperModalVisible(true);
+        onNavigate={(conversationId) => {
+          const meta =
+            useWhisperStore.getState().conversationMeta[conversationId];
+          if (meta) {
+            setWhisperInitialTarget({
+              conversationId,
+              participantIds: meta.participantIds,
+              participantNames: meta.participantNames,
+            });
+            setWhisperModalVisible(true);
+          }
         }}
       />
 
@@ -351,6 +381,7 @@ export default function GameScreen() {
       <NominateModal
         visible={nominateModalVisible}
         players={nominatablePlayers}
+        nominatedTodayIds={nominatedTodayIds}
         onNominate={handleNominate}
         onClose={() => setNominateModalVisible(false)}
       />

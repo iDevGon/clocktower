@@ -1,5 +1,5 @@
 export type Phase = 'setup' | 'night' | 'day' | 'vote' | 'ended';
-export type DaySubPhase = 'whisper' | 'discussion' | 'nomination';
+export type DaySubPhase = 'whisper' | 'discussion' | 'nomination' | 'defense';
 
 export type Team = 'townsfolk' | 'outsider' | 'minion' | 'demon';
 
@@ -81,7 +81,7 @@ export interface NightFeedbackDef {
 
 export type NightFeedbackPayload =
   | { type: 'number'; value: number }
-  | { type: 'yes_no'; value: boolean }
+  | { type: 'yes_no'; value: boolean; targetNames?: string[] }
   | { type: 'players_and_role'; playerNames: string[]; roleName: string }
   | { type: 'no_match'; message: string }
   | { type: 'role'; roleName: string }
@@ -141,10 +141,17 @@ export interface WhisperMessage {
   id: string;
   fromId: string;
   fromName: string;
-  toId: string;
-  toName: string;
+  conversationId: string;
+  participantIds: string[];
+  participantNames: string[];
   message: string;
   timestamp: number;
+}
+
+export interface ActiveWhisperChat {
+  conversationId: string;
+  participantIds: string[];
+  participantNames: string[];
 }
 
 export interface GameSettings {

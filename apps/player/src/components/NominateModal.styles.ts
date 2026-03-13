@@ -64,4 +64,22 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  playerItemDisabled: {
+    opacity: 0.45,
+  },
+  playerAvatarDisabled: {
+    backgroundColor: '#2a2a2e',
+    borderColor: '#3a3a3e',
+  },
+  playerAvatarTextDisabled: {
+    color: '#5c5a58',
+  },
+  playerNameDisabled: {
+    color: '#5c5a58',
+  },
+  alreadyNominatedHint: {
+    color: '#706e6a',
+    fontSize: 12,
+    marginLeft: 'auto',
+  },
 });

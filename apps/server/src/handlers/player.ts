@@ -8,8 +8,7 @@ import type {
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
 import { registerPushToken } from '../pushNotifications.js';
-import type { WhisperTracker } from '../whisper.js';
-import { startClockwiseVote } from './storyteller.js';
+import { WhisperTracker } from '../whisper.js';
 
 type PlayerNamespace = Namespace<ClientToServerEvents, ServerToClientEvents>;
 type StorytellerNamespace = Namespace<
@@ -145,9 +144,20 @@ export function registerPlayerHandlers(
           nominatorName: nominator?.name ?? playerId,
           nominatorId: playerId,
         });
+        storytellerIo.emit('virgin:triggered', {
+          virginName: virgin?.name ?? nomineeId,
+          nominatorName: nominator?.name ?? playerId,
+          nominatorId: playerId,
+        });
         const killedNominator = game.getPlayer(result.virginKill);
         if (killedNominator) {
           playerIo.emit('execution:announced', {
+            executedId: result.virginKill,
+            executedName: killedNominator.name,
+            reason: 'virgin',
+            detail: `${killedNominator.name}이(가) 성결자를 지목하여 처형되었습니다`,
+          });
+          storytellerIo.emit('execution:announced', {
             executedId: result.virginKill,
             executedName: killedNominator.name,
             reason: 'virgin',
@@ -169,10 +179,11 @@ export function registerPlayerHandlers(
         return;
       }
 
-      game.setPhase('vote');
+      // 변론 페이즈로 전환 (낮 페이즈 유지, 이야기꾼이 투표 시작을 제어)
+      game.setDaySubPhase('defense');
       const nominator = game.getPlayer(playerId);
       const nominee = game.getPlayer(nomineeId);
-      playerIo.emit('game:phase', 'vote');
+      playerIo.emit('day:subPhase', 'defense');
       playerIo.emit('vote:start', {
         nominatorId: playerId,
         nomineeId,
@@ -180,14 +191,6 @@ export function registerPlayerHandlers(
         nomineeName: nominee?.name ?? nomineeId,
       });
       storytellerIo.emit('game:state', game.getState());
-
-      // 시계방향 투표 시작 (온라인 투표 모드일 때) - 5초 카운트다운 후 시작
-      if (game.getState().settings.votingMode === 'online') {
-        const countdownTimeout = setTimeout(() => {
-          startClockwiseVote(game, playerIo, storytellerIo, nomineeId);
-        }, 5000);
-        game.setVoteCountdownTimeout(countdownTimeout);
-      }
     });
 
     socket.on('vote:cast', ({ guilty }) => {
@@ -330,6 +333,12 @@ export function registerPlayerHandlers(
             reason: 'slayer',
             detail: `${player.name}의 처단자 능력으로 ${killedTarget.name}이(가) 사망했습니다`,
           });
+          storytellerIo.emit('execution:announced', {
+            executedId: targetId,
+            executedName: killedTarget.name,
+            reason: 'slayer',
+            detail: `${player.name}의 처단자 능력으로 ${killedTarget.name}이(가) 사망했습니다`,
+          });
           playerIo.emit('game:playerUpdate', killedTarget);
         }
         storytellerIo.emit('game:state', game.getState());
@@ -358,7 +367,7 @@ export function registerPlayerHandlers(
       console.log(`Slayer: ${player.name} -> ${target.name}`);
     });
 
-    socket.on('whisper:send', ({ toId, message }) => {
+    socket.on('whisper:send', ({ conversationId, participantIds, message }) => {
       const state = game.getState();
       if (state.phase !== 'day' || state.daySubPhase !== 'whisper') return;
       // 오프라인 밀담 모드에서는 채팅 밀담 차단
@@ -368,26 +377,55 @@ export function registerPlayerHandlers(
       if (!fromId) return;
 
       const fromPlayer = game.getPlayer(fromId);
-      const toPlayer = game.getPlayer(toId);
-      if (!fromPlayer || !toPlayer) return;
+      if (!fromPlayer) return;
+
+      // Resolve participant list
+      let resolvedIds: string[];
+      if (participantIds && participantIds.length >= 2) {
+        // New or existing group conversation
+        resolvedIds = participantIds.includes(fromId)
+          ? participantIds
+          : [fromId, ...participantIds];
+      } else if (conversationId) {
+        // Existing conversation - extract participant IDs from conversationId
+        resolvedIds = conversationId.split(':');
+        if (!resolvedIds.includes(fromId)) return;
+      } else {
+        return;
+      }
+
+      // Validate all participants exist
+      const resolvedNames: string[] = [];
+      for (const pid of resolvedIds) {
+        const p = game.getPlayer(pid);
+        if (!p) return;
+        resolvedNames.push(p.name);
+      }
+
+      const resolvedConversationId =
+        conversationId || WhisperTracker.makeConversationId(...resolvedIds);
 
       const whisperMsg: WhisperMessage = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         fromId,
         fromName: fromPlayer.name,
-        toId,
-        toName: toPlayer.name,
+        conversationId: resolvedConversationId,
+        participantIds: resolvedIds,
+        participantNames: resolvedNames,
         message,
         timestamp: Date.now(),
       };
 
-      // Send to recipient
-      playerIo.to(toId).emit('whisper:receive', whisperMsg);
-      // Echo back to sender
-      playerIo.to(fromId).emit('whisper:receive', whisperMsg);
+      // Send to all participants
+      for (const pid of resolvedIds) {
+        playerIo.to(pid).emit('whisper:receive', whisperMsg);
+      }
 
       whisperTracker.update(whisperMsg);
-      console.log(`Whisper: ${fromPlayer.name} -> ${toPlayer.name}`);
+      const otherNames = resolvedNames
+        .filter((_, i) => resolvedIds[i] !== fromId)
+        .join(', ');
+      console.log(`Whisper: ${fromPlayer.name} -> [${otherNames}]`);
     });
 
     socket.on('chat:sendToStoryteller', ({ message }) => {

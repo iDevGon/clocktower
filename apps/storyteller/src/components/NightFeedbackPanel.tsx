@@ -118,6 +118,20 @@ export function NightFeedbackPanel({
   }
 
   const handleSend = (fb: NightFeedbackPayload) => {
+    // 점쟁이 yes_no 피드백에 지목 대상 이름 포함
+    if (activeRoleId === 'fortune_teller' && fb.type === 'yes_no') {
+      const ftAction = nightActions?.find(
+        (a) => a.roleId === 'fortune_teller',
+      );
+      if (ftAction) {
+        const targetNames = ftAction.targets
+          .map((id) => players.find((p) => p.id === id)?.name ?? id)
+          .filter(Boolean);
+        if (targetNames.length > 0) {
+          fb = { ...fb, targetNames };
+        }
+      }
+    }
     onSendFeedback(targetPlayer.id, fb);
     setSent(activeRoleId);
   };

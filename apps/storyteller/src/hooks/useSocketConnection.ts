@@ -1,4 +1,8 @@
-import { getRoleById } from '@clocktower/shared';
+import {
+  type ExecutionAnnouncement,
+  getRoleById,
+  type StorytellerMessage,
+} from '@clocktower/shared';
 import { useCallback } from 'react';
 import { io } from 'socket.io-client';
 import {
@@ -58,13 +62,61 @@ export function useSocketConnection() {
               gs?.day ?? 0,
               'night',
               `${role?.name ?? action.roleId}(${action.playerName}) → ${targetNames || '(대상 없음)'}`,
+              'ability',
             );
         });
         newSocket.on('whisper:activeChats', (chats) => {
           useGameStore.getState().setActiveWhispers(chats);
         });
-        newSocket.on('slayer:declared', () => {
-          // handled via game:state
+        newSocket.on('slayer:declared', (data) => {
+          const gs = useGameStore.getState().gameState;
+          const msg = `${data.slayerName}이(가) ${data.targetName}에게 처단자 능력 선언!`;
+          useGameStore.getState().showEventToast({
+            title: '처단자 선언',
+            message: msg,
+          });
+          useLogStore
+            .getState()
+            .addLog(gs?.day ?? 0, 'day', `⚔️ ${msg}`, 'ability');
+        });
+        newSocket.on(
+          'virgin:triggered',
+          (data: {
+            virginName: string;
+            nominatorName: string;
+            nominatorId: string;
+          }) => {
+            const gs = useGameStore.getState().gameState;
+            const msg = `${data.nominatorName}이(가) 성결자 ${data.virginName}을(를) 지목하여 처형!`;
+            useGameStore.getState().showEventToast({
+              title: '성결자 발동',
+              message: msg,
+            });
+            useLogStore
+              .getState()
+              .addLog(gs?.day ?? 0, 'day', `✝️ ${msg}`, 'death');
+          },
+        );
+        newSocket.on(
+          'execution:announced',
+          (data: ExecutionAnnouncement) => {
+            const gs = useGameStore.getState().gameState;
+            useGameStore.getState().showEventToast({
+              title: '사망',
+              message: data.detail,
+            });
+            useLogStore
+              .getState()
+              .addLog(
+                gs?.day ?? 0,
+                gs?.phase ?? 'day',
+                `💀 ${data.detail}`,
+                'death',
+              );
+          },
+        );
+        newSocket.on('vote:proceedToVote', () => {
+          // 투표 페이즈 전환은 game:state 이벤트로 처리됨
         });
         newSocket.on('vote:clockStart', (data) => {
           useGameStore.getState().setVoteClock({

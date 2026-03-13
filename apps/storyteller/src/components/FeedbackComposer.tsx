@@ -1,5 +1,5 @@
 import type { NightFeedbackPayload, Player, Team } from '@clocktower/shared';
-import { TROUBLE_BREWING_ROLES } from '@clocktower/shared';
+import { ALL_ROLES } from '@clocktower/shared';
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
@@ -136,7 +136,7 @@ function PlayersAndRoleFeedback({
   const [warningVisible, setWarningVisible] = useState(false);
   const [pendingRoleName, setPendingRoleName] = useState<string | null>(null);
 
-  const roles = TROUBLE_BREWING_ROLES.filter((r) => r.team === teamFilter);
+  const roles = ALL_ROLES.filter((r) => r.team === teamFilter);
 
   const togglePlayer = (name: string) => {
     setNoneSelected(false);
@@ -375,7 +375,7 @@ function RoleFeedback({
     <View style={styles.composerVertical}>
       <Text style={styles.composerLabel}>캐릭터 선택</Text>
       <View style={styles.composerChips}>
-        {TROUBLE_BREWING_ROLES.map((r) => (
+        {ALL_ROLES.map((r) => (
           <Pressable
             key={r.id}
             onPress={() => onSend({ type: 'role', roleName: r.name })}

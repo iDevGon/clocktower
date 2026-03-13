@@ -13,6 +13,7 @@ import {
   type ActionModalOption,
 } from '../../src/components/ActionModal';
 import { ChatToast } from '../../src/components/ChatToast';
+import { EventToast } from '../../src/components/EventToast';
 import { DaySubPhaseBar } from '../../src/components/DaySubPhaseBar';
 import { DictionaryModal } from '@clocktower/shared';
 import {
@@ -26,6 +27,7 @@ import {
 import { NightOrderPanel } from '../../src/components/NightOrderPanel';
 import { PhaseBar } from '../../src/components/PhaseBar';
 import { StorytellerChatModal } from '../../src/components/StorytellerChatModal';
+import { VoteClockFace } from '../../src/components/VoteClockFace';
 import { VoteClockHand } from '../../src/components/VoteClockHand';
 import { VotePanel } from '../../src/components/VotePanel';
 import { useGameActions } from '../../src/hooks/useGameActions';
@@ -70,6 +72,7 @@ export default function GrimoireScreen() {
     restartGame,
     castVoteForPlayer,
     closeVote: rawCloseVote,
+    proceedToVote,
     setActiveNightRole: rawSetActiveNightRole,
     sendNightFeedback,
     createGame,
@@ -90,6 +93,8 @@ export default function GrimoireScreen() {
   const voteClock = useGameStore((s) => s.voteClock);
   const voteResult = useGameStore((s) => s.voteResult);
   const setVoteResult = useGameStore((s) => s.setVoteResult);
+  const votePreselections = useGameStore((s) => s.votePreselections);
+  const voteConfirmed = useGameStore((s) => s.voteConfirmed);
 
   // Modal state
   const [modal, setModal] = useState<{
@@ -109,7 +114,7 @@ export default function GrimoireScreen() {
 
   const kill = (playerId: string) => {
     rawKill(playerId);
-    addLog(getDay(), getPhase(), `${getPlayerName(playerId)} 사망`);
+    addLog(getDay(), getPhase(), `${getPlayerName(playerId)} 사망`, 'death');
   };
 
   const setPlayerStatus = (playerId: string, status: PlayerStatus) => {
@@ -160,7 +165,7 @@ export default function GrimoireScreen() {
     useGameStore.getState().setActiveNightRoleId(roleId);
     if (roleId) {
       const role = getRoleById(roleId);
-      addLog(getDay(), 'night', `${role?.name ?? roleId} 활성화`);
+      addLog(getDay(), 'night', `${role?.name ?? roleId} 활성화`, 'ability');
     }
   };
 
@@ -624,7 +629,30 @@ export default function GrimoireScreen() {
     ? gameState.nominations[gameState.nominations.length - 1]
     : null;
 
-  const hasActiveVote = gameState?.phase === 'vote' && !!currentNomination;
+  const hasActiveVote =
+    (gameState?.phase === 'vote' || gameState?.daySubPhase === 'defense') &&
+    !!currentNomination;
+
+  // Compute vote indicators per player for token display
+  const voteIndicators = useMemo(() => {
+    if (!hasActiveVote || !currentNomination) return {};
+    const indicators: Record<string, 'guilty' | 'innocent' | 'preselected_guilty' | 'preselected_innocent' | 'nominee'> = {};
+    const votes = currentNomination.votes;
+
+    indicators[currentNomination.nomineeId] = 'nominee';
+
+    for (const p of gameState?.players ?? []) {
+      if (p.id === currentNomination.nomineeId) continue;
+      if (votes[p.id] !== undefined) {
+        indicators[p.id] = votes[p.id] ? 'guilty' : 'innocent';
+      } else if (voteConfirmed[p.id] !== undefined) {
+        indicators[p.id] = voteConfirmed[p.id] ? 'guilty' : 'innocent';
+      } else if (votePreselections[p.id] != null) {
+        indicators[p.id] = votePreselections[p.id] ? 'preselected_guilty' : 'preselected_innocent';
+      }
+    }
+    return indicators;
+  }, [hasActiveVote, currentNomination, gameState?.players, votePreselections, voteConfirmed]);
 
   const executedPlayer = executedPlayerId
     ? (gameState?.players.find((p) => p.id === executedPlayerId) ?? null)
@@ -653,7 +681,8 @@ export default function GrimoireScreen() {
               </Text>
             </Pressable>
           )}
-          {gameState.phase === 'day' &&
+          {__DEV__ &&
+            gameState.phase === 'day' &&
             gameState.daySubPhase === 'nomination' && (
               <Pressable
                 onPress={() => router.push('/game/nominate')}
@@ -691,7 +720,7 @@ export default function GrimoireScreen() {
         </View>
       </View>
 
-      {gameState.phase === 'day' && (
+      {gameState.phase === 'day' && gameState.daySubPhase !== 'defense' && (
         <DaySubPhaseBar
           currentSubPhase={gameState.daySubPhase}
           onSetSubPhase={setDaySubPhase}
@@ -725,6 +754,7 @@ export default function GrimoireScreen() {
                   chefEvilPairIds.has(player.id)
                 }
                 butlerMasterName={butlerMasterNames[player.id]}
+                voteIndicator={voteIndicators[player.id]}
                 tokenSize={dynamicTokenSize}
                 initialX={pos.x}
                 initialY={pos.y}
@@ -741,9 +771,8 @@ export default function GrimoireScreen() {
             );
           })}
 
-        {/* Vote clock hand overlay */}
+        {/* Vote clock face + hand overlay */}
         {hasActiveVote &&
-          voteClock &&
           areaSize.width > 0 &&
           (() => {
             const nomination =
@@ -755,15 +784,24 @@ export default function GrimoireScreen() {
             if (total === 0) return null;
             const cX = areaSize.width / 2;
             const cY = areaSize.height / 2;
-            const r = Math.min(cX, cY) - dynamicTokenSize * 0.6;
+            const r = Math.min(cX, cY) - dynamicTokenSize * 0.35;
             return (
-              <VoteClockHand
-                nomineeIndex={nomineeIndex}
-                totalPlayers={total}
-                centerX={cX}
-                centerY={cY}
-                radius={r}
-              />
+              <>
+                <VoteClockFace
+                  centerX={cX}
+                  centerY={cY}
+                  radius={r}
+                />
+                {voteClock && (
+                  <VoteClockHand
+                    nomineeIndex={nomineeIndex}
+                    totalPlayers={total}
+                    centerX={cX}
+                    centerY={cY}
+                    radius={r}
+                  />
+                )}
+              </>
             );
           })()}
       </View>
@@ -905,6 +943,7 @@ export default function GrimoireScreen() {
           players={gameState.players}
           onCloseVote={closeVote}
           onCastVote={castVoteForPlayer}
+          onProceedToVote={proceedToVote}
           voteResult={voteResult}
           onDismissResult={() => setVoteResult(null)}
         />
@@ -1189,6 +1228,7 @@ export default function GrimoireScreen() {
           setChatModalVisible(true);
         }}
       />
+      <EventToast />
 
       <ActionModal
         visible={modal.visible}
