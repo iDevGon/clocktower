@@ -1,16 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useGameStore } from '../stores/gameStore';
-
-const COLORS = {
-  brass: '#b8964e',
-  brassLight: '#d4b06a',
-  brassDark: '#8a6e38',
-  bloodGlow: '#c43c3c',
-  iron: '#4a4a52',
-  ironDark: '#2a2a30',
-  active: '#e8c44a',
-};
+import { COLORS, styles } from './VoteClockHand.styles';
 
 interface VoteClockHandProps {
   nomineeIndex: number;
@@ -63,7 +54,7 @@ export function VoteClockHand({
   const wedgeInnerHalf = radius * 0.22;
 
   return (
-    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
+    <View style={[StyleSheet.absoluteFill, styles.pointerEventsNone]}>
       {/* Active voter wedge glow */}
       {voteClock && (
         <View
@@ -80,34 +71,27 @@ export function VoteClockHand({
           ]}
         >
           <View
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              width: 0,
-              height: 0,
-              borderLeftWidth: wedgeHalfWidth,
-              borderRightWidth: wedgeHalfWidth,
-              borderBottomWidth: radius,
-              borderLeftColor: 'transparent',
-              borderRightColor: 'transparent',
-              borderBottomColor: `${COLORS.active}08`,
-            }}
+            style={[
+              styles.outerTriangle,
+              {
+                borderLeftWidth: wedgeHalfWidth,
+                borderRightWidth: wedgeHalfWidth,
+                borderBottomWidth: radius,
+                borderBottomColor: `${COLORS.active}08`,
+              },
+            ]}
           />
           <View
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: wedgeHalfWidth - wedgeInnerHalf,
-              width: 0,
-              height: 0,
-              borderLeftWidth: wedgeInnerHalf,
-              borderRightWidth: wedgeInnerHalf,
-              borderBottomWidth: radius * 0.7,
-              borderLeftColor: 'transparent',
-              borderRightColor: 'transparent',
-              borderBottomColor: `${COLORS.active}12`,
-            }}
+            style={[
+              styles.innerTriangle,
+              {
+                left: wedgeHalfWidth - wedgeInnerHalf,
+                borderLeftWidth: wedgeInnerHalf,
+                borderRightWidth: wedgeInnerHalf,
+                borderBottomWidth: radius * 0.7,
+                borderBottomColor: `${COLORS.active}12`,
+              },
+            ]}
           />
         </View>
       )}
@@ -144,67 +128,3 @@ export function VoteClockHand({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wedgeContainer: {
-    position: 'absolute',
-    zIndex: 40,
-  },
-  handContainer: {
-    position: 'absolute',
-    alignItems: 'center',
-    zIndex: 50,
-  },
-  handGlow: {
-    position: 'absolute',
-    width: 10,
-    borderRadius: 5,
-    backgroundColor: `${COLORS.bloodGlow}25`,
-  },
-  hand: {
-    position: 'absolute',
-    width: 3,
-    borderRadius: 2,
-    backgroundColor: COLORS.brass,
-    shadowColor: COLORS.brassLight,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  handTip: {
-    position: 'absolute',
-    top: -5,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 5,
-    borderRightWidth: 5,
-    borderBottomWidth: 8,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: COLORS.brassLight,
-  },
-  centerHub: {
-    position: 'absolute',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: COLORS.ironDark,
-    borderWidth: 2,
-    borderColor: COLORS.brassDark,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 51,
-    shadowColor: COLORS.brass,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  centerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.brass,
-  },
-});

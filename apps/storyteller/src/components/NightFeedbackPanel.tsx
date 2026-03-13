@@ -11,6 +11,12 @@ import { AbilityText } from '@clocktower/shared';
 import { AnimatedBorderCard } from './AnimatedBorderCard';
 import { FeedbackComposer } from './FeedbackComposer';
 import { createNightActionLogStyles } from './NightActionLog.styles';
+import {
+  getAbilityTextStyle,
+  getContentPadding,
+  panelStyles,
+  webScrollbarStyle,
+} from './NightFeedbackPanel.styles';
 import { TEAM_COLORS } from './NightOrderPanel.styles';
 
 /** Map team → gradient colors for the animated border card */
@@ -119,12 +125,8 @@ export function NightFeedbackPanel({
   return (
     <ScrollView
       style={[
-        { flex: 1 },
-        Platform.OS === 'web' &&
-          ({
-            scrollbarWidth: 'thin',
-            scrollbarColor: '#2a2a34 transparent',
-          } as Record<string, string>),
+        panelStyles.scrollViewFlex,
+        Platform.OS === 'web' && webScrollbarStyle,
       ]}
     >
       <AnimatedBorderCard
@@ -135,7 +137,7 @@ export function NightFeedbackPanel({
         borderRadius={0}
         borderWidth={1.5}
       >
-        <View style={{ padding: scale * 12 }}>
+        <View style={getContentPadding(scale)}>
           <Text style={[styles.feedbackPanelTitle, { color: teamColor.text }]}>
             {role?.name ?? activeRoleId} → {targetPlayer.name}
           </Text>
@@ -143,13 +145,7 @@ export function NightFeedbackPanel({
           {role?.ability && (
             <AbilityText
               text={role.ability}
-              style={{
-                fontSize: scale * 11,
-                lineHeight: scale * 17,
-                color: '#a0a0a8',
-                marginTop: scale * 4,
-                marginBottom: scale * 4,
-              }}
+              style={getAbilityTextStyle(scale)}
             />
           )}
 
