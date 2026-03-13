@@ -1,9 +1,10 @@
 import {
+  AbilityText,
   ALL_ROLES,
   EDITION_COLORS,
   EDITION_LABELS,
-  type Team,
   getRolesForEdition,
+  type Team,
 } from '@clocktower/shared';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -16,7 +17,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { AbilityText } from '@clocktower/shared';
 import { useGameActions } from '../../src/hooks/useGameActions';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import { useGameStore } from '../../src/stores/gameStore';
@@ -41,12 +41,15 @@ export default function AssignRoleScreen() {
   const { fontSize } = useResponsive();
   const scale = fontSize.md / 12;
   const styles = useMemo(() => createAssignRoleStyles(scale), [scale]);
-  const { playerId, editionId, additionalRoleIds: additionalRoleIdsParam } =
-    useLocalSearchParams<{
-      playerId: string;
-      editionId?: string;
-      additionalRoleIds?: string;
-    }>();
+  const {
+    playerId,
+    editionId,
+    additionalRoleIds: additionalRoleIdsParam,
+  } = useLocalSearchParams<{
+    playerId: string;
+    editionId?: string;
+    additionalRoleIds?: string;
+  }>();
   const { assignRole } = useGameActions();
   const gameState = useGameStore((s) => s.gameState);
 
@@ -122,7 +125,7 @@ export default function AssignRoleScreen() {
       title: label,
       data: filteredRoles.filter((r) => r.team === team),
     })).filter((s) => s.data.length > 0);
-  }, [filteredRoles]);
+  }, [filteredRoles, TEAM_ORDER.map]);
 
   // 주정뱅이의 가짜 역할로 선택 가능한 마을주민 목록
   const availableTownsfolk = useMemo(

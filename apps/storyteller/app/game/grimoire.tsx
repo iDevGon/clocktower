@@ -1,4 +1,5 @@
 import {
+  DictionaryModal,
   type GameSettings,
   getRoleById,
   NIGHT_FEEDBACK,
@@ -13,13 +14,12 @@ import {
   type ActionModalOption,
 } from '../../src/components/ActionModal';
 import { ChatToast } from '../../src/components/ChatToast';
-import { EventToast } from '../../src/components/EventToast';
 import { DaySubPhaseBar } from '../../src/components/DaySubPhaseBar';
-import { DictionaryModal } from '@clocktower/shared';
 import {
   type CircularPosition,
   DraggablePlayerToken,
 } from '../../src/components/DraggablePlayerToken';
+import { EventToast } from '../../src/components/EventToast';
 import {
   NightActionLog,
   NightFeedbackPanel,
@@ -636,7 +636,14 @@ export default function GrimoireScreen() {
   // Compute vote indicators per player for token display
   const voteIndicators = useMemo(() => {
     if (!hasActiveVote || !currentNomination) return {};
-    const indicators: Record<string, 'guilty' | 'innocent' | 'preselected_guilty' | 'preselected_innocent' | 'nominee'> = {};
+    const indicators: Record<
+      string,
+      | 'guilty'
+      | 'innocent'
+      | 'preselected_guilty'
+      | 'preselected_innocent'
+      | 'nominee'
+    > = {};
     const votes = currentNomination.votes;
 
     indicators[currentNomination.nomineeId] = 'nominee';
@@ -648,11 +655,19 @@ export default function GrimoireScreen() {
       } else if (voteConfirmed[p.id] !== undefined) {
         indicators[p.id] = voteConfirmed[p.id] ? 'guilty' : 'innocent';
       } else if (votePreselections[p.id] != null) {
-        indicators[p.id] = votePreselections[p.id] ? 'preselected_guilty' : 'preselected_innocent';
+        indicators[p.id] = votePreselections[p.id]
+          ? 'preselected_guilty'
+          : 'preselected_innocent';
       }
     }
     return indicators;
-  }, [hasActiveVote, currentNomination, gameState?.players, votePreselections, voteConfirmed]);
+  }, [
+    hasActiveVote,
+    currentNomination,
+    gameState?.players,
+    votePreselections,
+    voteConfirmed,
+  ]);
 
   const executedPlayer = executedPlayerId
     ? (gameState?.players.find((p) => p.id === executedPlayerId) ?? null)
@@ -787,11 +802,7 @@ export default function GrimoireScreen() {
             const r = Math.min(cX, cY) - dynamicTokenSize * 0.35;
             return (
               <>
-                <VoteClockFace
-                  centerX={cX}
-                  centerY={cY}
-                  radius={r}
-                />
+                <VoteClockFace centerX={cX} centerY={cY} radius={r} />
                 {voteClock && (
                   <VoteClockHand
                     nomineeIndex={nomineeIndex}

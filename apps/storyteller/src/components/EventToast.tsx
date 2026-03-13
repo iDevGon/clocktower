@@ -46,10 +46,13 @@ export function EventToast() {
     <Animated.View
       style={[styles.container, { opacity, transform: [{ translateY }] }]}
     >
-      <Pressable style={styles.content} onPress={() => {
-        if (timerRef.current) clearTimeout(timerRef.current);
-        dismissEventToast();
-      }}>
+      <Pressable
+        style={styles.content}
+        onPress={() => {
+          if (timerRef.current) clearTimeout(timerRef.current);
+          dismissEventToast();
+        }}
+      >
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{eventToast.title}</Text>
         </View>

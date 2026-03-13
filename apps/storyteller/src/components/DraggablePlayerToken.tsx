@@ -33,7 +33,7 @@ interface DraggablePlayerTokenProps {
   positionIndex?: number;
 }
 
-export { type VoteIndicator } from './PlayerToken';
+export type { VoteIndicator } from './PlayerToken';
 
 export function DraggablePlayerToken({
   player,

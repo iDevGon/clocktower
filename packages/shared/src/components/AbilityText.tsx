@@ -38,22 +38,24 @@ export function AbilityText({ text, style }: AbilityTextProps) {
     const description = GLOSSARY[keyword];
     if (!description || !ref) return;
 
-    ref.measureInWindow((x: number, y: number, _width: number, _height: number) => {
-      const screenWidth = Dimensions.get('window').width;
-      const centerX = x + _width / 2;
+    ref.measureInWindow(
+      (x: number, y: number, _width: number, _height: number) => {
+        const screenWidth = Dimensions.get('window').width;
+        const centerX = x + _width / 2;
 
-      const halfTooltip = TOOLTIP_MAX_WIDTH / 2;
-      const clampedX = Math.max(
-        SCREEN_PADDING + halfTooltip,
-        Math.min(centerX, screenWidth - SCREEN_PADDING - halfTooltip),
-      );
+        const halfTooltip = TOOLTIP_MAX_WIDTH / 2;
+        const clampedX = Math.max(
+          SCREEN_PADDING + halfTooltip,
+          Math.min(centerX, screenWidth - SCREEN_PADDING - halfTooltip),
+        );
 
-      setTooltip({
-        text: description,
-        x: clampedX,
-        y: y,
-      });
-    });
+        setTooltip({
+          text: description,
+          x: clampedX,
+          y: y,
+        });
+      },
+    );
   }, []);
 
   const dismissTooltip = useCallback(() => {

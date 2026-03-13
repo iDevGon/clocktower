@@ -1,15 +1,15 @@
-import {
-  distributeRoles,
-  FIRST_NIGHT_ORDER,
-  ALL_ROLES,
-  getRoleById,
-  OTHER_NIGHT_ORDER,
-} from '@clocktower/shared';
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
   ServerToStorytellerEvents,
   StorytellerToServerEvents,
+} from '@clocktower/shared';
+import {
+  ALL_ROLES,
+  distributeRoles,
+  FIRST_NIGHT_ORDER,
+  getRoleById,
+  OTHER_NIGHT_ORDER,
 } from '@clocktower/shared';
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
@@ -35,10 +35,7 @@ function getNightOrder(day: number): string[] {
  * - 악마: 하수인 이름 + 블러프용 선한 역할 3개
  * - 하수인: 악마 이름 + 다른 하수인 이름
  */
-function sendEvilInfo(
-  playerIo: PlayerNamespace,
-  game: GameManager,
-): void {
+function sendEvilInfo(playerIo: PlayerNamespace, game: GameManager): void {
   const state = game.getState();
   const assignedRoleIds = new Set(
     state.players.map((p) => p.role?.id).filter(Boolean),
@@ -647,8 +644,7 @@ export function registerStorytellerHandlers(
 
     socket.on('vote:proceedToVote', () => {
       const state = game.getState();
-      const currentNomination =
-        state.nominations[state.nominations.length - 1];
+      const currentNomination = state.nominations[state.nominations.length - 1];
       if (!currentNomination) return;
 
       const nomineeId = currentNomination.nomineeId;

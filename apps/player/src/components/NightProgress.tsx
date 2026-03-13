@@ -30,9 +30,7 @@ function ActiveGlow({ isMine }: { isMine: boolean }) {
 
   const animStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress.value, [0, 1], [0.6, 0]),
-    transform: [
-      { scale: interpolate(progress.value, [0, 1], [1, 2.4]) },
-    ],
+    transform: [{ scale: interpolate(progress.value, [0, 1], [1, 2.4]) }],
   }));
 
   return (

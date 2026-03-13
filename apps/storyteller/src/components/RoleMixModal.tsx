@@ -1,5 +1,12 @@
 import type { Team } from '@clocktower/shared';
-import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { EditionBadge } from './EditionBadge';
 
 const TEAM_SECTIONS = [
@@ -15,7 +22,13 @@ interface RoleMixModalProps {
   additionalRoleIds: Set<string>;
   onToggleAdditional: (roleId: string) => void;
   onResetAdditional: () => void;
-  mixableRoles: { id: string; name: string; ability: string; team: Team; edition: string }[];
+  mixableRoles: {
+    id: string;
+    name: string;
+    ability: string;
+    team: Team;
+    edition: string;
+  }[];
   searchText: string;
   onSearchChange: (text: string) => void;
   scale: number;

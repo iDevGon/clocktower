@@ -48,7 +48,12 @@ export function VoteClockFace({
   }, [centerX, centerY, radius]);
 
   return (
-    <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none', overflow: 'visible' }]}>
+    <View
+      style={[
+        StyleSheet.absoluteFill,
+        { pointerEvents: 'none', overflow: 'visible' },
+      ]}
+    >
       {/* Outer glow */}
       <View
         style={{

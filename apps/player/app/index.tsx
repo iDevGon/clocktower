@@ -1,3 +1,4 @@
+import { FullScreenVignette } from '@clocktower/shared';
 import { useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -19,7 +20,6 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { FullScreenVignette } from '@clocktower/shared';
 import { QrScannerModal } from '../src/components/QrScannerModal';
 import { SmokeParticles } from '../src/components/SmokeParticles';
 import { useConnection } from '../src/hooks/useConnection';
@@ -189,7 +189,13 @@ export default function JoinScreen() {
           <View style={styles.titleDivider}>
             <Animated.View style={dividerGlowStyle}>
               <LinearGradient
-                colors={['transparent', '#8b1a1a', '#cc3333', '#8b1a1a', 'transparent']}
+                colors={[
+                  'transparent',
+                  '#8b1a1a',
+                  '#cc3333',
+                  '#8b1a1a',
+                  'transparent',
+                ]}
                 start={{ x: 0, y: 0.5 }}
                 end={{ x: 1, y: 0.5 }}
                 style={styles.titleDividerGradient}

@@ -1,3 +1,4 @@
+import { FullScreenVignette } from '@clocktower/shared';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
 import Animated, {
@@ -13,7 +14,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { BaseOverlay } from './BaseOverlay';
-import { FullScreenVignette } from '@clocktower/shared';
 
 // ── Moon icon animation ──
 
@@ -147,7 +147,10 @@ interface NightDeathOverlayProps {
   onDismiss: () => void;
 }
 
-export function NightDeathOverlay({ deaths, onDismiss }: NightDeathOverlayProps) {
+export function NightDeathOverlay({
+  deaths,
+  onDismiss,
+}: NightDeathOverlayProps) {
   useEffect(() => {
     Vibration.vibrate([0, 200, 100, 300]);
   }, []);
@@ -198,7 +201,11 @@ export function NightDeathOverlay({ deaths, onDismiss }: NightDeathOverlayProps)
 
         <DividerLine />
 
-        <Animated.View entering={FadeIn.delay(noDeaths ? 1000 : 700 + deaths.length * 300 + 200).duration(500)}>
+        <Animated.View
+          entering={FadeIn.delay(
+            noDeaths ? 1000 : 700 + deaths.length * 300 + 200,
+          ).duration(500)}
+        >
           <Pressable style={s.confirmButton} onPress={onDismiss}>
             <Text style={s.confirmText}>확인</Text>
           </Pressable>

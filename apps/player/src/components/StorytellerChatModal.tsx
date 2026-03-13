@@ -1,4 +1,4 @@
-import { type StorytellerMessage, ALL_ROLES } from '@clocktower/shared';
+import { ALL_ROLES, type StorytellerMessage } from '@clocktower/shared';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -42,7 +42,7 @@ export function StorytellerChatModal({
   const handleSuggestionSelect = (word: string) => {
     const parts = text.split(/(\s+)/);
     parts[parts.length - 1] = word;
-    setText(parts.join('') + ' ');
+    setText(`${parts.join('')} `);
   };
 
   useEffect(() => {

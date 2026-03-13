@@ -11,7 +11,12 @@ interface VoteResultProps {
   } | null;
 }
 
-export function VoteResult({ nomineeName, guilty, votes, executionCandidate }: VoteResultProps) {
+export function VoteResult({
+  nomineeName,
+  guilty,
+  votes,
+  executionCandidate,
+}: VoteResultProps) {
   const yesCount = Object.values(votes).filter(Boolean).length;
   const noCount = Object.values(votes).filter((v) => !v).length;
 
@@ -30,7 +35,12 @@ export function VoteResult({ nomineeName, guilty, votes, executionCandidate }: V
         찬성 {yesCount}표 / 반대 {noCount}표
       </Text>
       <View style={styles.sentenceDivider} />
-      <Text style={[styles.sentence, guilty ? styles.sentenceGuilty : styles.sentenceInnocent]}>
+      <Text
+        style={[
+          styles.sentence,
+          guilty ? styles.sentenceGuilty : styles.sentenceInnocent,
+        ]}
+      >
         {guilty
           ? `${nomineeName}님이 처형 예정입니다`
           : executionCandidate

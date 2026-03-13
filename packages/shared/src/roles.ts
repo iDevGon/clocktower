@@ -541,14 +541,19 @@ export function distributeRoles(
   let [townsfolkCount, outsiderCount, minionCount, demonCount] = dist;
 
   const excluded = new Set(options?.excludedRoleIds ?? []);
-  const editionRoles = getRolesForEdition(options?.editionId ?? 'trouble_brewing');
+  const editionRoles = getRolesForEdition(
+    options?.editionId ?? 'trouble_brewing',
+  );
 
   // 크로스 에디션 믹싱: 다른 에디션 역할 추가
   const additionalIds = new Set(options?.additionalRoleIds ?? []);
   const editionRoleIds = new Set(editionRoles.map((r) => r.id));
-  const additionalRoles = additionalIds.size > 0
-    ? ALL_ROLES.filter((r) => additionalIds.has(r.id) && !editionRoleIds.has(r.id))
-    : [];
+  const additionalRoles =
+    additionalIds.size > 0
+      ? ALL_ROLES.filter(
+          (r) => additionalIds.has(r.id) && !editionRoleIds.has(r.id),
+        )
+      : [];
   const allRoles = [...editionRoles, ...additionalRoles];
 
   const townsfolk = allRoles.filter(

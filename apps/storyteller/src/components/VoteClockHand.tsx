@@ -56,7 +56,7 @@ function SmokeParticle({
         -1,
       ),
     );
-  }, []);
+  }, [config.delay, config.duration, progress]);
 
   const rad = (config.angle * Math.PI) / 180;
   const size = circleRadius * config.sizeFactor;
@@ -149,7 +149,7 @@ export function VoteClockHand({
         easing: Easing.linear,
       });
     }
-  }, [voteClock, nomineeAngle, halfSlot]);
+  }, [voteClock, nomineeAngle, halfSlot, handAngleSV]);
 
   const daggerStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${handAngleSV.value}deg` }],

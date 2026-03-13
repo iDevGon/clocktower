@@ -2,8 +2,25 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 const CHOSUNG = [
-  'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ',
-  'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ',
+  'ㄱ',
+  'ㄲ',
+  'ㄴ',
+  'ㄷ',
+  'ㄸ',
+  'ㄹ',
+  'ㅁ',
+  'ㅂ',
+  'ㅃ',
+  'ㅅ',
+  'ㅆ',
+  'ㅇ',
+  'ㅈ',
+  'ㅉ',
+  'ㅊ',
+  'ㅋ',
+  'ㅌ',
+  'ㅍ',
+  'ㅎ',
 ];
 
 function getChosung(str: string): string {

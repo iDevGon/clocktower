@@ -14,12 +14,11 @@ import { usePlayerStore } from '../stores/playerStore';
 import {
   CENTER,
   COLORS,
-  HAND_LENGTH,
   NODE_SIZE,
   RADIUS,
   RING_SIZE,
-  TICK_COUNT,
   styles,
+  TICK_COUNT,
 } from './VoteClockRing.styles';
 
 // Pre-computed tick mark data (avoid recalculating 60 trig ops per render)
@@ -78,7 +77,7 @@ function SmokeParticle({ config }: { config: (typeof SMOKE_CONFIGS)[0] }) {
         -1,
       ),
     );
-  }, []);
+  }, [config.delay, config.duration, progress]);
 
   const rad = (config.angle * Math.PI) / 180;
   const borderR = RING_SIZE / 2 + 1;
@@ -93,7 +92,8 @@ function SmokeParticle({ config }: { config: (typeof SMOKE_CONFIGS)[0] }) {
   const animStyle = useAnimatedStyle(() => {
     'worklet';
     const p = progress.value;
-    const fade = p < 0.15 ? (p / 0.15) * maxOp : maxOp * (1 - (p - 0.15) / 0.85);
+    const fade =
+      p < 0.15 ? (p / 0.15) * maxOp : maxOp * (1 - (p - 0.15) / 0.85);
     return {
       opacity: Math.max(0, fade),
       transform: [
@@ -204,7 +204,7 @@ export function VoteClockRing() {
     }, 50);
 
     return () => clearInterval(interval);
-  }, [hasVoteOrder, voteClock, nomineeAngle, halfSlot]);
+  }, [hasVoteOrder, voteClock, nomineeAngle, halfSlot, handAngleSV]);
 
   const daggerStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${handAngleSV.value}deg` }],
@@ -235,7 +235,12 @@ export function VoteClockRing() {
   if (voteClock && myNodeIdx >= 0 && totalNodes > 0) {
     const myAngleDeg = (myNodeIdx / totalNodes) * 360;
     const myOffset = (myAngleDeg - nomineeAngle + 360) % 360;
-    const myConfirmFraction = myOffset === 0 && playerId !== nomineeId ? 0 : myOffset === 0 ? 1 : myOffset / 360;
+    const myConfirmFraction =
+      myOffset === 0 && playerId !== nomineeId
+        ? 0
+        : myOffset === 0
+          ? 1
+          : myOffset / 360;
     const slotFraction = 1 / totalNodes;
     const mySlotStart = myConfirmFraction - slotFraction;
     const elapsed = Date.now() - voteClock.startedAt;
@@ -282,34 +287,18 @@ export function VoteClockRing() {
           <View style={styles.innerRing} />
 
           {/* Dagger hand */}
-          <Animated.View
-            style={[
-              styles.daggerContainer,
-              daggerStyle,
-            ]}
-          >
+          <Animated.View style={[styles.daggerContainer, daggerStyle]}>
             {/* Blade tip (triangle) */}
             <View
-              style={[
-                styles.bladeTip,
-                isUrgent && styles.bladeTipUrgent,
-              ]}
+              style={[styles.bladeTip, isUrgent && styles.bladeTipUrgent]}
             />
             {/* Blade body */}
-            <View
-              style={[
-                styles.blade,
-                isUrgent && styles.bladeUrgent,
-              ]}
-            />
+            <View style={[styles.blade, isUrgent && styles.bladeUrgent]} />
             {/* Blood groove (fuller) */}
             <View style={styles.bloodGroove} />
             {/* Crossguard */}
             <View
-              style={[
-                styles.crossguard,
-                isUrgent && styles.crossguardUrgent,
-              ]}
+              style={[styles.crossguard, isUrgent && styles.crossguardUrgent]}
             />
             {/* Grip */}
             <View style={styles.grip} />
@@ -330,9 +319,7 @@ export function VoteClockRing() {
           {/* My turn timer — above center */}
           {voteClock && isMyTurnNow && (
             <View style={styles.myTurnTimerContainer}>
-              <Text style={styles.myTurnTimerText}>
-                {myTurnDisplay}
-              </Text>
+              <Text style={styles.myTurnTimerText}>{myTurnDisplay}</Text>
             </View>
           )}
 
@@ -376,7 +363,9 @@ export function VoteClockRing() {
 
             // Is the hand currently near this player? (account for halfSlot visual offset)
             const distToHand = Math.abs(
-              (handProgress + halfSlot) - (nodeOffset === 0 && isNominee ? 360 : nodeOffset),
+              handProgress +
+                halfSlot -
+                (nodeOffset === 0 && isNominee ? 360 : nodeOffset),
             );
             const isNearHand =
               distToHand < (360 / totalNodes) * 0.5 && !hasPassed;
@@ -411,8 +400,12 @@ export function VoteClockRing() {
                   // My node: golden double-ring (unless active or nominee)
                   isMe && !isNearHand && !isNominee && styles.myNode,
                   // Preselected: soft tinted fill (no dashed lines)
-                  !isNearHand && showPreselectedGuilty && styles.preselectedGuiltyNode,
-                  !isNearHand && showPreselectedInnocent && styles.preselectedInnocentNode,
+                  !isNearHand &&
+                    showPreselectedGuilty &&
+                    styles.preselectedGuiltyNode,
+                  !isNearHand &&
+                    showPreselectedInnocent &&
+                    styles.preselectedInnocentNode,
                   // Confirmed votes: solid fill
                   hasPassed && showConfirmedGuilty && styles.guiltyNode,
                   hasPassed && showConfirmedInnocent && styles.innocentNode,

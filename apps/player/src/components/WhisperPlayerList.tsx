@@ -67,8 +67,7 @@ export function WhisperPlayerList({
     }
     // 1:1 conversation
     const convId = makeConversationId(myPlayerId, player.id);
-    const myName =
-      players.find((p) => p.id === myPlayerId)?.name ?? myPlayerId;
+    const myName = players.find((p) => p.id === myPlayerId)?.name ?? myPlayerId;
     onSelectConversation({
       conversationId: convId,
       participantIds: [myPlayerId, player.id],
@@ -176,10 +175,7 @@ export function WhisperPlayerList({
                         {getConversationDisplayName(meta)}
                       </Text>
                       {lastMsg && (
-                        <Text
-                          style={groupStyles.lastMessage}
-                          numberOfLines={1}
-                        >
+                        <Text style={groupStyles.lastMessage} numberOfLines={1}>
                           {lastMsg.fromId === myPlayerId
                             ? `나: ${lastMsg.message}`
                             : isGroup
@@ -255,13 +251,15 @@ export function WhisperPlayerList({
                 </View>
                 <Text style={styles.playerName}>{player.name}</Text>
               </View>
-              {!groupMode && (unreadCounts[makeConversationId(myPlayerId, player.id)] ?? 0) > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
-                    {unreadCounts[makeConversationId(myPlayerId, player.id)]}
-                  </Text>
-                </View>
-              )}
+              {!groupMode &&
+                (unreadCounts[makeConversationId(myPlayerId, player.id)] ?? 0) >
+                  0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>
+                      {unreadCounts[makeConversationId(myPlayerId, player.id)]}
+                    </Text>
+                  </View>
+                )}
             </Pressable>
           );
         })}

@@ -1,6 +1,6 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -12,8 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-const AnimatedLinearGradient =
-  Animated.createAnimatedComponent(LinearGradient);
+const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
 interface FullScreenVignetteProps {
   color: string;

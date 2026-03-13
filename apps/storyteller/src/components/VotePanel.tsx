@@ -108,12 +108,10 @@ export function VotePanel({
           </Text>
         </View>
       ) : (
-        <>
-          <Text style={styles.votePanelCount}>
-            투표: {voteCount}명 (찬성 {guiltyCount} / 반대{' '}
-            {voteCount - guiltyCount})
-          </Text>
-        </>
+        <Text style={styles.votePanelCount}>
+          투표: {voteCount}명 (찬성 {guiltyCount} / 반대{' '}
+          {voteCount - guiltyCount})
+        </Text>
       )}
       {voteClock && remainingSec != null && (
         <View style={styles.timerRow}>
@@ -213,8 +211,7 @@ export function VotePanel({
           </Text>
           <Text style={styles.resultCount}>
             찬성 {Object.values(voteResult.votes).filter(Boolean).length}표 /
-            반대{' '}
-            {Object.values(voteResult.votes).filter((v) => !v).length}표
+            반대 {Object.values(voteResult.votes).filter((v) => !v).length}표
           </Text>
           <Text
             style={[

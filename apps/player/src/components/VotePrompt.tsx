@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
 import Animated, {
@@ -6,7 +7,6 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import type { ComponentProps } from 'react';
 import { useGameActions } from '../hooks/useGameActions';
 import { usePlayerStore } from '../stores/playerStore';
 import { EdgeVignette } from './EdgeVignette';
@@ -128,7 +128,8 @@ export function VoteVignette() {
     const myFullIdx = fullOrder.findIndex((p) => p.id === playerId);
 
     if (nomineeFullIdx >= 0 && myFullIdx >= 0) {
-      const myOffset = (myFullIdx - nomineeFullIdx + totalPlayers) % totalPlayers;
+      const myOffset =
+        (myFullIdx - nomineeFullIdx + totalPlayers) % totalPlayers;
       const myConfirmFraction = myOffset === 0 ? 1 : myOffset / totalPlayers;
 
       const elapsed = Date.now() - voteClock.startedAt;
@@ -166,7 +167,9 @@ export function VoteVignette() {
   }));
 
   const colors = isMyTurn ? VOTE_COLORS_MY_TURN : VOTE_COLORS_DEFAULT;
-  const opacityRanges = isMyTurn ? VOTE_OPACITY_RANGES_MY_TURN : VOTE_OPACITY_RANGES;
+  const opacityRanges = isMyTurn
+    ? VOTE_OPACITY_RANGES_MY_TURN
+    : VOTE_OPACITY_RANGES;
 
   return (
     <Animated.View
@@ -197,7 +200,7 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
   const voteOrder = usePlayerStore((s) => s.voteOrder);
   const votePreselections = usePlayerStore((s) => s.votePreselections);
 
-  const [tick, forceUpdate] = useState(0);
+  const [_tick, forceUpdate] = useState(0);
 
   // Periodic re-render to track hand position and countdown
   useEffect(() => {
@@ -211,14 +214,17 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
     if (!voteCountdown) return 0;
     const elapsed = Date.now() - voteCountdown.startedAt;
     return Math.max(0, Math.ceil((voteCountdown.durationMs - elapsed) / 1000));
-  }, [voteCountdown, tick]);
+  }, [voteCountdown]);
 
   const isCountingDown = voteCountdown !== null && countdownRemaining > 0;
 
   // 카운트다운 숫자 변경 시 진동
   const prevCountdownRef = useRef(0);
   useEffect(() => {
-    if (countdownRemaining > 0 && countdownRemaining !== prevCountdownRef.current) {
+    if (
+      countdownRemaining > 0 &&
+      countdownRemaining !== prevCountdownRef.current
+    ) {
       Vibration.vibrate(80);
       prevCountdownRef.current = countdownRemaining;
     }
@@ -271,7 +277,7 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
 
   const myPreselection = votePreselections[playerId] ?? null;
 
-  const handleToggle = (guilty: boolean) => {
+  const _handleToggle = (guilty: boolean) => {
     if (!myVoteState.canVote) return;
     const newValue = myPreselection === guilty ? null : guilty;
     preselectVote(newValue);
@@ -314,7 +320,9 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
       {!isDefensePhase && !isCountingDown && <VoteClockRing />}
 
       {/* Vote buttons — available during countdown AND active voting (not during defense) */}
-      {!isDefensePhase && (isCountingDown || myVoteState.canVote) && !myVoteState.hasPassed ? (
+      {!isDefensePhase &&
+      (isCountingDown || myVoteState.canVote) &&
+      !myVoteState.hasPassed ? (
         <>
           <Text style={styles.description}>
             {isCountingDown

@@ -1,6 +1,13 @@
 import type { Team } from '@clocktower/shared';
 import { ALL_ROLES } from '@clocktower/shared';
-import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { EditionBadge } from './EditionBadge';
 
 const TEAM_SECTIONS = [
@@ -16,7 +23,13 @@ interface RoleExcludeModalProps {
   excludedRoleIds: Set<string>;
   onToggleExclude: (roleId: string) => void;
   onResetExclude: () => void;
-  editionRoles: { id: string; name: string; ability: string; team: Team; edition: string }[];
+  editionRoles: {
+    id: string;
+    name: string;
+    ability: string;
+    team: Team;
+    edition: string;
+  }[];
   additionalRoleIds: Set<string>;
   searchText: string;
   onSearchChange: (text: string) => void;

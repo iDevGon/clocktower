@@ -603,7 +603,11 @@ export class GameManager {
     nomineeName: string;
     guilty: boolean;
     votes: Record<string, boolean>;
-    executionCandidate: { playerId: string; playerName: string; guiltyVotes: number } | null;
+    executionCandidate: {
+      playerId: string;
+      playerName: string;
+      guiltyVotes: number;
+    } | null;
   } | null {
     const current = this.state.nominations[this.state.nominations.length - 1];
     if (!current) return null;

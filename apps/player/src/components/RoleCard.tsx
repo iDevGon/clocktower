@@ -1,25 +1,24 @@
+import type { Role, Team } from '@clocktower/shared';
+import { AbilityText } from '@clocktower/shared';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated as RNAnimated,
   Easing,
   Pressable,
+  Animated as RNAnimated,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import Animated, {
-  Easing as REasing,
   interpolate,
+  Easing as REasing,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-
-import type { Role, Team } from '@clocktower/shared';
 import type { EvilInfo } from '../stores/playerStore';
-import { AbilityText } from '@clocktower/shared';
 
 // ─── Constants ───────────────────────────────────────────────
 
@@ -74,7 +73,13 @@ interface RoleCardProps {
 
 // ─── Main Component ──────────────────────────────────────────
 
-export function RoleCard({ role, evilInfo, mode, flipHint, isHidden }: RoleCardProps) {
+export function RoleCard({
+  role,
+  evilInfo,
+  mode,
+  flipHint,
+  isHidden,
+}: RoleCardProps) {
   // 0 = front (role visible), 1 = back (hidden)
   const flip = useSharedValue(mode === 'revealed' ? 0 : 1);
   const prevModeRef = useRef(mode);
@@ -130,14 +135,18 @@ export function RoleCard({ role, evilInfo, mode, flipHint, isHidden }: RoleCardP
     <View style={styles.container}>
       {/* Front face — role info */}
       <Animated.View style={[styles.face, frontStyle]}>
-        <FrontFace role={role} evilInfo={evilInfo} teamStyle={teamStyle} flipHint={flipHint} isHidden={isHidden} />
+        <FrontFace
+          role={role}
+          evilInfo={evilInfo}
+          teamStyle={teamStyle}
+          flipHint={flipHint}
+          isHidden={isHidden}
+        />
       </Animated.View>
 
       {/* Back face — card back or veiled */}
       <Animated.View style={[styles.face, styles.faceBack, backStyle]}>
-        <BackFace
-          isVeiled={mode === 'veiled'}
-        />
+        <BackFace isVeiled={mode === 'veiled'} />
       </Animated.View>
     </View>
   );
@@ -164,7 +173,10 @@ function FrontFace({
     <View style={[styles.card, { borderColor: teamStyle.borderColor }]}>
       {/* Team accent stripe */}
       <View
-        style={[styles.accentStripe, { backgroundColor: teamStyle.borderColor }]}
+        style={[
+          styles.accentStripe,
+          { backgroundColor: teamStyle.borderColor },
+        ]}
       />
 
       <Text style={[styles.teamLabel, { color: teamStyle.labelColor }]}>
@@ -357,13 +369,22 @@ function BackFace({ isVeiled }: { isVeiled: boolean }) {
               ???
             </Text>
             <View style={styles.mysteryRow}>
-              <View style={[styles.mysteryLine, { backgroundColor: '#3a4060' }]} />
-              <Text style={[styles.questionMark, { color: accentColor }]}>?</Text>
-              <View style={[styles.mysteryLine, { backgroundColor: '#3a4060' }]} />
+              <View
+                style={[styles.mysteryLine, { backgroundColor: '#3a4060' }]}
+              />
+              <Text style={[styles.questionMark, { color: accentColor }]}>
+                ?
+              </Text>
+              <View
+                style={[styles.mysteryLine, { backgroundColor: '#3a4060' }]}
+              />
             </View>
             <View style={styles.backDivider} />
             <RNAnimated.Text
-              style={[styles.phrase, { opacity: phraseOpacity, color: '#7080b0' }]}
+              style={[
+                styles.phrase,
+                { opacity: phraseOpacity, color: '#7080b0' },
+              ]}
             >
               {VEIL_PHRASES[phraseIndex]}
             </RNAnimated.Text>
@@ -371,13 +392,15 @@ function BackFace({ isVeiled }: { isVeiled: boolean }) {
         ) : (
           <>
             <View style={styles.mysteryRow}>
-              <View style={[styles.mysteryLine, { backgroundColor: accentColor }]} />
+              <View
+                style={[styles.mysteryLine, { backgroundColor: accentColor }]}
+              />
               <View style={[styles.sealOuter, { borderColor: accentColor }]}>
-                <Text style={[styles.sealIcon, { color: accentColor }]}>
-                  ✦
-                </Text>
+                <Text style={[styles.sealIcon, { color: accentColor }]}>✦</Text>
               </View>
-              <View style={[styles.mysteryLine, { backgroundColor: accentColor }]} />
+              <View
+                style={[styles.mysteryLine, { backgroundColor: accentColor }]}
+              />
             </View>
             <View style={styles.backDivider} />
             <Text style={[styles.hiddenHint, { color: `${accentColor}cc` }]}>

@@ -14,13 +14,8 @@ import {
   PHASE_ENTRIES,
   STATUS_ENTRIES,
   TEAM_COLORS,
-  TEAM_LABELS,
 } from '../dictionary';
-import {
-  ALL_ROLES,
-  EDITION_COLORS,
-  EDITION_LABELS,
-} from '../roles';
+import { ALL_ROLES, EDITION_COLORS, EDITION_LABELS } from '../roles';
 import type { Team } from '../types';
 
 type TabId = 'roles' | 'statuses' | 'rules' | 'flow';

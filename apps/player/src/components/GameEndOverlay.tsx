@@ -3,7 +3,6 @@ import { useEffect, useMemo } from 'react';
 import { Pressable, Text, Vibration, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { BaseOverlay } from './BaseOverlay';
-import { FullScreenVignette } from '@clocktower/shared';
 import { DefeatEffects, SlayerEffects, VictoryEffects } from './GameEndEffects';
 import { styles as s } from './GameEndOverlay.styles';
 

@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { Dimensions, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect } from 'react';
+import { StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -12,10 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-const { width: SW, height: SH } = Dimensions.get('window');
-
-const AnimatedLinearGradient =
-  Animated.createAnimatedComponent(LinearGradient);
+const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
 interface FullScreenVignetteProps {
   /** Base tint color of the overlay (e.g. '#0d0500') */

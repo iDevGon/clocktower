@@ -1,8 +1,4 @@
-import {
-  type ExecutionAnnouncement,
-  getRoleById,
-  type StorytellerMessage,
-} from '@clocktower/shared';
+import { type ExecutionAnnouncement, getRoleById } from '@clocktower/shared';
 import { useCallback } from 'react';
 import { io } from 'socket.io-client';
 import {
@@ -97,24 +93,21 @@ export function useSocketConnection() {
               .addLog(gs?.day ?? 0, 'day', `✝️ ${msg}`, 'death');
           },
         );
-        newSocket.on(
-          'execution:announced',
-          (data: ExecutionAnnouncement) => {
-            const gs = useGameStore.getState().gameState;
-            useGameStore.getState().showEventToast({
-              title: '사망',
-              message: data.detail,
-            });
-            useLogStore
-              .getState()
-              .addLog(
-                gs?.day ?? 0,
-                gs?.phase ?? 'day',
-                `💀 ${data.detail}`,
-                'death',
-              );
-          },
-        );
+        newSocket.on('execution:announced', (data: ExecutionAnnouncement) => {
+          const gs = useGameStore.getState().gameState;
+          useGameStore.getState().showEventToast({
+            title: '사망',
+            message: data.detail,
+          });
+          useLogStore
+            .getState()
+            .addLog(
+              gs?.day ?? 0,
+              gs?.phase ?? 'day',
+              `💀 ${data.detail}`,
+              'death',
+            );
+        });
         newSocket.on('vote:proceedToVote', () => {
           // 투표 페이즈 전환은 game:state 이벤트로 처리됨
         });
@@ -130,9 +123,7 @@ export function useSocketConnection() {
             .setVotePreselection(data.playerId, data.guilty);
         });
         newSocket.on('vote:confirmed', (data) => {
-          useGameStore
-            .getState()
-            .setVoteConfirmed(data.playerId, data.guilty);
+          useGameStore.getState().setVoteConfirmed(data.playerId, data.guilty);
         });
         newSocket.on('vote:result', (data) => {
           const store = useGameStore.getState();

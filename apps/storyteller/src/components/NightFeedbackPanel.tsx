@@ -3,11 +3,10 @@ import type {
   NightFeedbackPayload,
   Player,
 } from '@clocktower/shared';
-import { getRoleById, NIGHT_FEEDBACK } from '@clocktower/shared';
+import { AbilityText, getRoleById, NIGHT_FEEDBACK } from '@clocktower/shared';
 import { useMemo, useState } from 'react';
 import { Platform, ScrollView, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
-import { AbilityText } from '@clocktower/shared';
 import { AnimatedBorderCard } from './AnimatedBorderCard';
 import { FeedbackComposer } from './FeedbackComposer';
 import { createNightActionLogStyles } from './NightActionLog.styles';
@@ -120,9 +119,7 @@ export function NightFeedbackPanel({
   const handleSend = (fb: NightFeedbackPayload) => {
     // 점쟁이 yes_no 피드백에 지목 대상 이름 포함
     if (activeRoleId === 'fortune_teller' && fb.type === 'yes_no') {
-      const ftAction = nightActions?.find(
-        (a) => a.roleId === 'fortune_teller',
-      );
+      const ftAction = nightActions?.find((a) => a.roleId === 'fortune_teller');
       if (ftAction) {
         const targetNames = ftAction.targets
           .map((id) => players.find((p) => p.id === id)?.name ?? id)

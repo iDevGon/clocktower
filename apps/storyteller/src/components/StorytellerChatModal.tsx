@@ -1,4 +1,4 @@
-import { ALL_ROLES, type StorytellerMessage, getRoleById } from '@clocktower/shared';
+import { ALL_ROLES, type StorytellerMessage } from '@clocktower/shared';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -191,7 +191,7 @@ function ChatView({
   const handleSuggestionSelect = (word: string) => {
     const parts = text.split(/(\s+)/);
     parts[parts.length - 1] = word;
-    setText(parts.join('') + ' ');
+    setText(`${parts.join('')} `);
   };
 
   const formatTime = (timestamp: number) => {
@@ -258,7 +258,11 @@ function ChatView({
         })}
       </ScrollView>
 
-      <QuickSuggestions text={text} candidates={candidates} onSelect={handleSuggestionSelect} />
+      <QuickSuggestions
+        text={text}
+        candidates={candidates}
+        onSelect={handleSuggestionSelect}
+      />
       <View
         style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 8) }]}
       >

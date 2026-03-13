@@ -63,9 +63,7 @@ export function WhisperToast({ onNavigate }: WhisperToastProps) {
         }}
       >
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>
-            {isGroup ? '그룹 밀담' : '밀담'}
-          </Text>
+          <Text style={styles.badgeText}>{isGroup ? '그룹 밀담' : '밀담'}</Text>
         </View>
         <View style={styles.textWrap}>
           <Text style={styles.name} numberOfLines={1}>

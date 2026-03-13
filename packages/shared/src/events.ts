@@ -89,7 +89,9 @@ export interface ServerToClientEvents {
   'chat:receiveFromPlayer': (message: StorytellerMessage) => void;
   'vote:proceedToVote': () => void;
   'execution:announced': (data: ExecutionAnnouncement) => void;
-  'night:deaths': (data: { deaths: Array<{ id: string; name: string }> }) => void;
+  'night:deaths': (data: {
+    deaths: Array<{ id: string; name: string }>;
+  }) => void;
 }
 
 /**

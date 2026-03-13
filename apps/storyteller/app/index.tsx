@@ -185,7 +185,13 @@ export default function HomeScreen() {
           <View style={styles.titleDivider}>
             <Animated.View style={dividerGlowStyle}>
               <LinearGradient
-                colors={['transparent', '#8b7530', '#c4a050', '#8b7530', 'transparent']}
+                colors={[
+                  'transparent',
+                  '#8b7530',
+                  '#c4a050',
+                  '#8b7530',
+                  'transparent',
+                ]}
                 start={{ x: 0, y: 0.5 }}
                 end={{ x: 1, y: 0.5 }}
                 style={styles.titleDividerGradient}

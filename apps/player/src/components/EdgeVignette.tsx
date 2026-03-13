@@ -1,6 +1,6 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect } from 'react';
 import { Dimensions, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -51,8 +51,7 @@ interface EdgeVignetteProps {
   zIndex?: number;
 }
 
-const AnimatedLinearGradient =
-  Animated.createAnimatedComponent(LinearGradient);
+const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
 /**
  * Smoky edge vignette overlay with smooth LinearGradient falloff.

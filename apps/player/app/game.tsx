@@ -1,14 +1,14 @@
+import { DictionaryModal } from '@clocktower/shared';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { DeadVignette } from '../src/components/DeadVignette';
 import { DeathOverlay } from '../src/components/DeathOverlay';
-import { DictionaryModal } from '@clocktower/shared';
 import { ExecutionOverlay } from '../src/components/ExecutionOverlay';
-import { NightDeathOverlay } from '../src/components/NightDeathOverlay';
 import { FeedbackHistoryModal } from '../src/components/FeedbackHistoryModal';
 import { GameEndOverlay } from '../src/components/GameEndOverlay';
+import { NightDeathOverlay } from '../src/components/NightDeathOverlay';
 import { NominateModal } from '../src/components/NominateModal';
 import {
   DiscussionPhase,
@@ -127,8 +127,7 @@ export default function GameScreen() {
     }
   };
 
-  const canUseSlayer =
-    isAlive && !slayerUsed && currentPhase === 'day';
+  const canUseSlayer = isAlive && !slayerUsed && currentPhase === 'day';
 
   const nominatablePlayers = gamePlayers.filter(
     (p) => p.isAlive && p.id !== playerId,

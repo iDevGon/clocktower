@@ -62,7 +62,10 @@ export default function WhispersScreen() {
           renderItem={({ item }) => (
             <View style={ws.item}>
               {item.participantNames.map((name, i) => (
-                <View key={item.participantIds[i]} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View
+                  key={item.participantIds[i]}
+                  style={{ flexDirection: 'row', alignItems: 'center' }}
+                >
                   {i > 0 && <Text style={ws.arrow}> ↔ </Text>}
                   <Text style={ws.player}>{name}</Text>
                 </View>

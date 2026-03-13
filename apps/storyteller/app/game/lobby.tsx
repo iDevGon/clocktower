@@ -8,16 +8,8 @@ import {
 } from '@clocktower/shared';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import {
-  Alert,
-  FlatList,
-  Platform,
-  Pressable,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, FlatList, Platform, Pressable, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import { AbilityText } from '@clocktower/shared';
 import { ClockSpeedSetting } from '../../src/components/ClockSpeedSetting';
 import { CollapsibleSection } from '../../src/components/CollapsibleSection';
 import { DrunkFakeRoleModal } from '../../src/components/DrunkFakeRoleModal';
@@ -291,9 +283,9 @@ export default function LobbyScreen() {
           {/* 직업 제외 버튼 */}
           <Pressable
             onPress={() => {
-            setExcludeSearch('');
-            setShowExcludeModal(true);
-          }}
+              setExcludeSearch('');
+              setShowExcludeModal(true);
+            }}
             style={({ pressed }) => ({
               flexDirection: 'row',
               alignItems: 'center',
@@ -322,9 +314,9 @@ export default function LobbyScreen() {
           {mixableRoles.length > 0 && (
             <Pressable
               onPress={() => {
-              setMixSearch('');
-              setShowMixModal(true);
-            }}
+                setMixSearch('');
+                setShowMixModal(true);
+              }}
               style={({ pressed }) => ({
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -334,8 +326,7 @@ export default function LobbyScreen() {
                 borderRadius: 6,
                 backgroundColor: pressed ? '#2a2a30' : '#1e1e22',
                 borderWidth: 1,
-                borderColor:
-                  additionalRoleIds.size > 0 ? '#a569bd' : '#3a3a3e',
+                borderColor: additionalRoleIds.size > 0 ? '#a569bd' : '#3a3a3e',
               })}
             >
               <Text
@@ -354,7 +345,9 @@ export default function LobbyScreen() {
           )}
         </CollapsibleSection>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: s(10) }}>
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', gap: s(10) }}
+        >
           <Pressable
             onPress={handleDistributeRoles}
             disabled={distributing}
@@ -365,9 +358,7 @@ export default function LobbyScreen() {
               canDistribute && pressed && styles.distributeButtonPressed,
             ]}
           >
-            <Text style={styles.distributeButtonText}>
-              직업 자동 배분
-            </Text>
+            <Text style={styles.distributeButtonText}>직업 자동 배분</Text>
           </Pressable>
           <Pressable
             onPress={() => setRolesVeiled((v) => !v)}
@@ -383,10 +374,21 @@ export default function LobbyScreen() {
               borderColor: rolesVeiled ? '#7c6caa' : '#3a3a3e',
             }}
           >
-            <Text style={{ color: rolesVeiled ? '#c4b0ee' : '#706e6a', fontSize: s(13) }}>
+            <Text
+              style={{
+                color: rolesVeiled ? '#c4b0ee' : '#706e6a',
+                fontSize: s(13),
+              }}
+            >
               {rolesVeiled ? '🙈' : '👁'}
             </Text>
-            <Text style={{ color: rolesVeiled ? '#c4b0ee' : '#706e6a', fontSize: s(12), fontWeight: '600' }}>
+            <Text
+              style={{
+                color: rolesVeiled ? '#c4b0ee' : '#706e6a',
+                fontSize: s(12),
+                fontWeight: '600',
+              }}
+            >
               가리기
             </Text>
           </Pressable>
@@ -623,4 +625,3 @@ export default function LobbyScreen() {
     </View>
   );
 }
-

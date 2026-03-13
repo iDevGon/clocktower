@@ -281,7 +281,7 @@ export function registerPlayerHandlers(
 
       // 누구나 처단자 선언 가능 (블러프). 실제 효과는 역할에 따라 결정
       const isSlayer = player.role?.id === 'slayer';
-      const isDrunkAsSlayer =
+      const _isDrunkAsSlayer =
         player.role?.id === 'drunk' && player.drunkAs === 'slayer';
 
       if (game.isSlayerUsed(playerId)) {

@@ -78,9 +78,7 @@ export function BaseOverlay({
   }));
 
   const Wrapper = dismissOnBackdropPress ? Pressable : View;
-  const wrapperProps = dismissOnBackdropPress
-    ? { onPress: onDismiss }
-    : {};
+  const wrapperProps = dismissOnBackdropPress ? { onPress: onDismiss } : {};
 
   const contentNode = scrollable ? (
     <Animated.ScrollView
@@ -105,10 +103,7 @@ export function BaseOverlay({
     <Animated.View
       style={[StyleSheet.absoluteFill, { zIndex }, containerAnimStyle]}
     >
-      <Wrapper
-        style={[StyleSheet.absoluteFill, s.overlay]}
-        {...wrapperProps}
-      >
+      <Wrapper style={[StyleSheet.absoluteFill, s.overlay]} {...wrapperProps}>
         {/* 배경 색상 레이어 */}
         <View
           style={[StyleSheet.absoluteFill, { backgroundColor }]}

@@ -25,7 +25,12 @@ const TEAM_BG_COLORS = {
   demon: '#1e1414',
 } as const;
 
-export type VoteIndicator = 'guilty' | 'innocent' | 'preselected_guilty' | 'preselected_innocent' | 'nominee';
+export type VoteIndicator =
+  | 'guilty'
+  | 'innocent'
+  | 'preselected_guilty'
+  | 'preselected_innocent'
+  | 'nominee';
 
 const VOTE_BORDER_COLORS: Record<VoteIndicator, string> = {
   guilty: '#e05050',
@@ -86,7 +91,9 @@ export function PlayerToken({
 
   // Vote state overrides border when active
   const hasVoteState = !!voteIndicator;
-  const voteBorder = voteIndicator ? VOTE_BORDER_COLORS[voteIndicator] : undefined;
+  const voteBorder = voteIndicator
+    ? VOTE_BORDER_COLORS[voteIndicator]
+    : undefined;
   const voteGlow = voteIndicator ? VOTE_GLOW_COLORS[voteIndicator] : undefined;
 
   const borderColor = highlighted
@@ -94,7 +101,7 @@ export function PlayerToken({
     : empathNeighbor
       ? '#2ecc71'
       : hasVoteState
-        ? voteBorder!
+        ? (voteBorder ?? baseBorderColor)
         : baseBorderColor;
 
   const glowColor = highlighted
@@ -102,7 +109,7 @@ export function PlayerToken({
     : empathNeighbor
       ? '#2ecc71'
       : hasVoteState
-        ? voteGlow!
+        ? (voteGlow ?? 'transparent')
         : 'transparent';
 
   const hasGlow = highlighted || empathNeighbor || hasVoteState;
@@ -169,18 +176,22 @@ export function PlayerToken({
             ))}
           </View>
         )}
-        {voteIndicator && (voteIndicator === 'guilty' || voteIndicator === 'innocent') && (
-          <View style={[
-            styles.voteBadge,
-            {
-              backgroundColor: voteIndicator === 'guilty' ? '#e05050' : '#5090e0',
-            },
-          ]}>
-            <Text style={[styles.voteBadgeText, { fontSize: scaledFont.xs }]}>
-              {voteIndicator === 'guilty' ? '찬성' : '반대'}
-            </Text>
-          </View>
-        )}
+        {voteIndicator &&
+          (voteIndicator === 'guilty' || voteIndicator === 'innocent') && (
+            <View
+              style={[
+                styles.voteBadge,
+                {
+                  backgroundColor:
+                    voteIndicator === 'guilty' ? '#e05050' : '#5090e0',
+                },
+              ]}
+            >
+              <Text style={[styles.voteBadgeText, { fontSize: scaledFont.xs }]}>
+                {voteIndicator === 'guilty' ? '찬성' : '반대'}
+              </Text>
+            </View>
+          )}
         {butlerMasterName && (
           <View style={[styles.statusRow, { marginTop: 1 }]}>
             <Pressable

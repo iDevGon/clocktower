@@ -1,4 +1,4 @@
-import { type WhisperMessage, ALL_ROLES } from '@clocktower/shared';
+import { ALL_ROLES, type WhisperMessage } from '@clocktower/shared';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -56,7 +56,7 @@ export function WhisperChat({
   const handleSuggestionSelect = (word: string) => {
     const parts = text.split(/(\s+)/);
     parts[parts.length - 1] = word;
-    setText(parts.join('') + ' ');
+    setText(`${parts.join('')} `);
   };
 
   useEffect(() => {

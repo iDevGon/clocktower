@@ -36,9 +36,7 @@ export function WhisperModal({
   useEffect(() => {
     if (visible && initialTarget) {
       setActiveConversation(initialTarget);
-      useWhisperStore
-        .getState()
-        .setActiveChat(initialTarget.conversationId);
+      useWhisperStore.getState().setActiveChat(initialTarget.conversationId);
     }
   }, [visible, initialTarget]);
 
@@ -59,8 +57,7 @@ export function WhisperModal({
   };
 
   const handleToastNavigate = (conversationId: string) => {
-    const meta =
-      useWhisperStore.getState().conversationMeta[conversationId];
+    const meta = useWhisperStore.getState().conversationMeta[conversationId];
     if (meta) {
       handleSelectConversation({
         conversationId,
