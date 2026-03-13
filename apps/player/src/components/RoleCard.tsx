@@ -97,15 +97,15 @@ export function RoleCard({
         });
       } else {
         flip.value = withTiming(0, {
-          duration: 500,
-          easing: REasing.out(REasing.cubic),
+          duration: 800,
+          easing: REasing.inOut(REasing.cubic),
         });
       }
     } else {
       // hidden
       flip.value = withTiming(1, {
-        duration: 500,
-        easing: REasing.out(REasing.cubic),
+        duration: 800,
+        easing: REasing.inOut(REasing.cubic),
       });
     }
     prevModeRef.current = mode;
@@ -171,14 +171,6 @@ function FrontFace({
 
   return (
     <View style={[styles.card, { borderColor: teamStyle.borderColor }]}>
-      {/* Team accent stripe */}
-      <View
-        style={[
-          styles.accentStripe,
-          { backgroundColor: teamStyle.borderColor },
-        ]}
-      />
-
       <Text style={[styles.teamLabel, { color: teamStyle.labelColor }]}>
         {teamStyle.label}
       </Text>
@@ -554,15 +546,6 @@ const styles = StyleSheet.create({
   },
   cardBack: {
     backgroundColor: '#14141a',
-  },
-  accentStripe: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
   },
   teamLabel: {
     fontSize: 12,
