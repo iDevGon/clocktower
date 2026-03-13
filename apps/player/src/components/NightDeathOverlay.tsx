@@ -13,7 +13,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { BaseOverlay } from './BaseOverlay';
-import { FullScreenVignette } from './FullScreenVignette';
+import { FullScreenVignette } from '@clocktower/shared';
 
 // ── Moon icon animation ──
 

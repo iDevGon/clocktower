@@ -1,6 +1,6 @@
 import type { Player } from '@clocktower/shared';
 import { FlatList, Modal, Pressable, Text, View } from 'react-native';
-import { AbilityText } from './AbilityText';
+import { AbilityText } from '@clocktower/shared';
 
 interface DrunkFakeRoleModalProps {
   drunkModalPlayer: Player | null;

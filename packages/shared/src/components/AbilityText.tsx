@@ -38,7 +38,7 @@ export function AbilityText({ text, style }: AbilityTextProps) {
     const description = GLOSSARY[keyword];
     if (!description || !ref) return;
 
-    ref.measureInWindow((x, y, _width, _height) => {
+    ref.measureInWindow((x: number, y: number, _width: number, _height: number) => {
       const screenWidth = Dimensions.get('window').width;
       const centerX = x + _width / 2;
 
@@ -69,7 +69,7 @@ export function AbilityText({ text, style }: AbilityTextProps) {
           part.isKeyword ? (
             <View
               key={`${part.display}-${i}`}
-              ref={(ref) => {
+              ref={(ref: View | null) => {
                 keywordRefs.current[`${i}`] = ref;
               }}
               style={styles.keywordWrapper}
