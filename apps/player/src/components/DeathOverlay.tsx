@@ -1,6 +1,6 @@
 import { DEATH_REASON_LABELS, type DeathReason } from '@clocktower/shared';
 import { useEffect } from 'react';
-import { Dimensions, StyleSheet, Text, Vibration, View } from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, Vibration, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -13,8 +13,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { BaseOverlay } from './BaseOverlay';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // ── Skull icon (text-based) ──
 
@@ -43,10 +41,11 @@ function SkullIcon() {
 // ── Blood drip ──
 
 function BloodDrip({ index }: { index: number }) {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const progress = useSharedValue(0);
-  const x = ((index * 37 + 13) % 100) * (SCREEN_WIDTH / 100);
+  const x = ((index * 37 + 13) % 100) * (screenWidth / 100);
   const dripWidth = 3 + (index % 4) * 2;
-  const dripHeight = SCREEN_HEIGHT * (0.4 + (index % 5) * 0.12);
+  const dripHeight = screenHeight * (0.4 + (index % 5) * 0.12);
   const delay = (index * 150) % 2000;
 
   useEffect(() => {

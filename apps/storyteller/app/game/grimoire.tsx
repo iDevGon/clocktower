@@ -8,7 +8,7 @@ import {
 } from '@clocktower/shared';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, Switch, Text, View } from 'react-native';
 import {
   ActionModal,
   type ActionModalOption,
@@ -111,8 +111,12 @@ export default function GrimoireScreen() {
 
   const getDay = () => useGameStore.getState().gameState?.day ?? 0;
   const getPhase = () => useGameStore.getState().gameState?.phase ?? 'setup';
-  const getPlayerName = (id: string) =>
-    gameState?.players.find((p) => p.id === id)?.name ?? id;
+  const playerNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    gameState?.players?.forEach((p) => map.set(p.id, p.name));
+    return map;
+  }, [gameState?.players]);
+  const getPlayerName = (id: string) => playerNameMap.get(id) ?? id;
 
   const kill = (playerId: string) => {
     rawKill(playerId);
@@ -146,8 +150,10 @@ export default function GrimoireScreen() {
     useGameStore.getState().setVoteClock(null);
     if (nom) {
       const nomineeName = getPlayerName(nom.nomineeId);
-      const guiltyCount = Object.values(nom.votes).filter(Boolean).length;
-      const totalVotes = Object.keys(nom.votes).length;
+      const entries = Object.entries(nom.votes);
+      const totalVotes = entries.length;
+      let guiltyCount = 0;
+      for (const [, v] of entries) { if (v) guiltyCount++; }
       const alivePlayers =
         gameState?.players.filter((p) => p.isAlive).length ?? 0;
       const isGuilty = guiltyCount >= Math.ceil(alivePlayers / 2);
@@ -1046,7 +1052,9 @@ export default function GrimoireScreen() {
                   try {
                     await restartGame();
                     router.replace('/game/lobby');
-                  } catch {}
+                  } catch {
+                    Alert.alert('오류', '게임 재시작에 실패했습니다.');
+                  }
                 },
               },
               { text: '취소', style: 'cancel' },
@@ -1176,6 +1184,7 @@ export default function GrimoireScreen() {
                     ? '#2ecc71'
                     : '#908e8a'
                 }
+                accessibilityLabel="채팅 밀담 모드"
               />
             </View>
 
@@ -1209,6 +1218,7 @@ export default function GrimoireScreen() {
                     ? '#2ecc71'
                     : '#908e8a'
                 }
+                accessibilityLabel="온라인 투표"
               />
             </View>
 

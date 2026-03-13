@@ -226,6 +226,8 @@ export default function JoinScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="url"
+                autoComplete="url"
+                textContentType="URL"
               />
               <Pressable
                 style={({ pressed }) => [
@@ -249,6 +251,8 @@ export default function JoinScreen() {
               onChangeText={setPlayerName}
               autoCapitalize="words"
               maxLength={20}
+              autoComplete="name"
+              textContentType="name"
             />
           </View>
 

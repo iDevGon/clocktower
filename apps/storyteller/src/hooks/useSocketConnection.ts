@@ -49,8 +49,9 @@ export function useSocketConnection() {
           useGameStore.getState().addNightAction(action);
           const role = getRoleById(action.roleId);
           const gs = useGameStore.getState().gameState;
+          const playerMap = new Map(gs?.players?.map((p) => [p.id, p.name]) ?? []);
           const targetNames = action.targets
-            .map((tid) => gs?.players.find((p) => p.id === tid)?.name ?? tid)
+            .map((tid) => playerMap.get(tid) ?? tid)
             .join(', ');
           useLogStore
             .getState()

@@ -158,6 +158,7 @@ export const styles = StyleSheet.create({
     color: COLORS.bloodGlow,
     fontSize: 48,
     fontWeight: '900',
+    fontVariant: ['tabular-nums'],
     textShadowColor: `${COLORS.bloodGlow}60`,
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 12,

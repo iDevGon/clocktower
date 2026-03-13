@@ -5,11 +5,11 @@ import {
 } from '@clocktower/shared';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  FlatList,
   KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   Text,
   TextInput,
   View,
@@ -34,7 +34,7 @@ export function StorytellerChatModal({
   onSend,
 }: StorytellerChatModalProps) {
   const [text, setText] = useState('');
-  const scrollRef = useRef<ScrollView>(null);
+  const listRef = useRef<FlatList<StorytellerMessage>>(null);
   const insets = useSafeAreaInsets();
   const messages = useChatStore((s) => s.messages);
   const gamePlayers = usePlayerStore((s) => s.gamePlayers);
@@ -86,7 +86,7 @@ export function StorytellerChatModal({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on new messages
   useEffect(() => {
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
   }, [messages]);
 
   const handleSend = () => {
@@ -126,23 +126,13 @@ export function StorytellerChatModal({
           <View style={styles.headerSpacer} />
         </View>
 
-        <ScrollView
-          ref={scrollRef}
-          style={styles.messageList}
-          contentContainerStyle={styles.messageListContent}
-        >
-          {messages.length === 0 && (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
-                진행자에게 메시지를 보내보세요
-              </Text>
-            </View>
-          )}
-          {messages.map((msg: StorytellerMessage) => {
+        <FlatList
+          ref={listRef}
+          data={messages}
+          renderItem={({ item: msg }) => {
             const isMine = !msg.fromStoryteller;
             return (
               <View
-                key={msg.id}
                 style={[
                   styles.messageBubbleRow,
                   isMine && styles.messageBubbleRowMine,
@@ -171,8 +161,19 @@ export function StorytellerChatModal({
                 </View>
               </View>
             );
-          })}
-        </ScrollView>
+          }}
+          keyExtractor={(item) => item.id}
+          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+          style={styles.messageList}
+          contentContainerStyle={styles.messageListContent}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                진행자에게 메시지를 보내보세요
+              </Text>
+            </View>
+          }
+        />
 
         <QuickSuggestions
           text={text}
@@ -192,6 +193,7 @@ export function StorytellerChatModal({
             placeholder="진행자에게 메시지..."
             placeholderTextColor="#5c5a58"
             returnKeyType="send"
+            blurOnSubmit={false}
             onSubmitEditing={handleSend}
           />
           <Pressable

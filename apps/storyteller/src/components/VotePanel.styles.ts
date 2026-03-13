@@ -29,6 +29,7 @@ export function createVotePanelStyles(scale: number) {
     votePanelCount: {
       color: '#908e8a',
       fontSize: s(13),
+      fontVariant: ['tabular-nums'] as const,
       marginBottom: s(12),
     },
     voterList: {
@@ -180,6 +181,7 @@ export function createVotePanelStyles(scale: number) {
     resultCount: {
       color: '#908e8a',
       fontSize: s(12),
+      fontVariant: ['tabular-nums'] as const,
     },
     resultSentence: {
       fontSize: s(14),

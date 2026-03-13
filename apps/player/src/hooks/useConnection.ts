@@ -60,17 +60,17 @@ export function useConnection() {
           5000,
         );
 
-        socket.emit('game:join', { playerName }, async (res) => {
+        socket.emit('game:join', { playerName }, (res) => {
           clearTimeout(timeout);
           if (res.success && res.playerId) {
             usePlayerStore.getState().set({ playerId: res.playerId });
-
-            const token = await registerForPushNotifications();
-            if (token) {
-              socket.emit('push:register', { token });
-            }
-
             resolve({ success: true });
+            // Fire and forget
+            registerForPushNotifications().then((token) => {
+              if (token && socket.connected) {
+                socket.emit('push:register', { token });
+              }
+            });
           } else {
             resolve({ success: false, error: res.error });
           }
@@ -90,7 +90,7 @@ export function useConnection() {
 
       const timeout = setTimeout(() => resolve(false), 5000);
 
-      socket.emit('game:rejoin', { playerId }, async (res) => {
+      socket.emit('game:rejoin', { playerId }, (res) => {
         clearTimeout(timeout);
         if (res.success && res.playerName) {
           usePlayerStore.getState().set({
@@ -106,13 +106,13 @@ export function useConnection() {
             nightProgress: res.nightProgress ?? null,
             gamePlayers: res.gamePlayers ?? [],
           });
-
-          const token = await registerForPushNotifications();
-          if (token) {
-            socket.emit('push:register', { token });
-          }
-
           resolve(true);
+          // Fire and forget
+          registerForPushNotifications().then((token) => {
+            if (token && socket.connected) {
+              socket.emit('push:register', { token });
+            }
+          });
         } else {
           resolve(false);
         }

@@ -220,6 +220,8 @@ export default function HomeScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
+              autoComplete="url"
+              textContentType="URL"
             />
             <Pressable
               style={({ pressed }) => [

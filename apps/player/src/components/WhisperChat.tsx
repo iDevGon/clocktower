@@ -5,10 +5,10 @@ import {
 } from '@clocktower/shared';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  FlatList,
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   Text,
   TextInput,
   View,
@@ -43,7 +43,7 @@ export function WhisperChat({
   readOnly = false,
 }: WhisperChatProps) {
   const [text, setText] = useState('');
-  const scrollRef = useRef<ScrollView>(null);
+  const listRef = useRef<FlatList<WhisperMessage>>(null);
   const insets = useSafeAreaInsets();
   const playerId = usePlayerStore((s) => s.playerId);
   const gamePlayers = usePlayerStore((s) => s.gamePlayers);
@@ -96,7 +96,7 @@ export function WhisperChat({
   }, [conversationId]);
 
   useEffect(() => {
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
   }, []);
 
   const handleSend = () => {
@@ -131,21 +131,13 @@ export function WhisperChat({
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView
-        ref={scrollRef}
-        style={styles.messageList}
-        contentContainerStyle={styles.messageListContent}
-      >
-        {messages.length === 0 && (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>밀담을 시작하세요</Text>
-          </View>
-        )}
-        {messages.map((msg: WhisperMessage) => {
+      <FlatList
+        ref={listRef}
+        data={messages}
+        renderItem={({ item: msg }) => {
           const isMine = msg.fromId === playerId;
           return (
             <View
-              key={msg.id}
               style={[
                 styles.messageBubbleRow,
                 isMine && styles.messageBubbleRowMine,
@@ -174,8 +166,17 @@ export function WhisperChat({
               </View>
             </View>
           );
-        })}
-      </ScrollView>
+        }}
+        keyExtractor={(item) => item.id}
+        onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+        style={styles.messageList}
+        contentContainerStyle={styles.messageListContent}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>밀담을 시작하세요</Text>
+          </View>
+        }
+      />
 
       {readOnly ? (
         <View
@@ -211,6 +212,7 @@ export function WhisperChat({
               placeholder="메시지를 입력하세요..."
               placeholderTextColor="#5c5a58"
               returnKeyType="send"
+              blurOnSubmit={false}
               onSubmitEditing={handleSend}
             />
             <Pressable

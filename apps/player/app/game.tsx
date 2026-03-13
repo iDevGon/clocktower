@@ -159,6 +159,8 @@ export default function GameScreen() {
             <Pressable
               onPress={() => setDictionaryVisible(true)}
               style={styles.feedbackHistoryButton}
+              accessibilityLabel="역할 사전"
+              accessibilityRole="button"
             >
               <Text style={styles.feedbackHistoryIcon}>📖</Text>
             </Pressable>
@@ -166,6 +168,8 @@ export default function GameScreen() {
               <Pressable
                 onPress={() => setChatModalVisible(true)}
                 style={styles.feedbackHistoryButton}
+                accessibilityLabel="밀담"
+                accessibilityRole="button"
               >
                 <Text style={styles.feedbackHistoryIcon}>💬</Text>
                 {chatUnreadCount > 0 && (
@@ -199,6 +203,8 @@ export default function GameScreen() {
               <Pressable
                 onPress={() => setFeedbackHistoryVisible(true)}
                 style={styles.feedbackHistoryButton}
+                accessibilityLabel="피드백 기록"
+                accessibilityRole="button"
               >
                 <Text style={styles.feedbackHistoryIcon}>📜</Text>
                 <Text style={styles.feedbackHistoryCount}>
@@ -206,7 +212,7 @@ export default function GameScreen() {
                 </Text>
               </Pressable>
             )}
-            {!isAlive && <Text style={styles.deadSkull}>💀</Text>}
+            {!isAlive && <Text style={styles.deadSkull} accessibilityLabel="사망자 목록">💀</Text>}
           </View>
         </View>
       </View>

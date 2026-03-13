@@ -229,6 +229,8 @@ export function WhisperPlayerList({
         )}
         {availablePlayers.map((player) => {
           const isSelected = selectedIds.includes(player.id);
+          const convId = makeConversationId(myPlayerId, player.id);
+          const unreadCount = unreadCounts[convId] ?? 0;
           return (
             <Pressable
               key={player.id}
@@ -253,15 +255,11 @@ export function WhisperPlayerList({
                 </View>
                 <Text style={styles.playerName}>{player.name}</Text>
               </View>
-              {!groupMode &&
-                (unreadCounts[makeConversationId(myPlayerId, player.id)] ?? 0) >
-                  0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>
-                      {unreadCounts[makeConversationId(myPlayerId, player.id)]}
-                    </Text>
-                  </View>
-                )}
+              {!groupMode && unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount}</Text>
+                </View>
+              )}
             </Pressable>
           );
         })}
