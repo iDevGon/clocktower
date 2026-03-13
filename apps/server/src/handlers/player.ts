@@ -1,9 +1,21 @@
-import type { WhisperMessage } from '@clocktower/shared';
+import type {
+  ClientToServerEvents,
+  ServerToClientEvents,
+  ServerToStorytellerEvents,
+  StorytellerToServerEvents,
+  WhisperMessage,
+} from '@clocktower/shared';
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
 import { registerPushToken } from '../pushNotifications.js';
 import type { WhisperTracker } from '../whisper.js';
 import { startClockwiseVote } from './storyteller.js';
+
+type PlayerNamespace = Namespace<ClientToServerEvents, ServerToClientEvents>;
+type StorytellerNamespace = Namespace<
+  StorytellerToServerEvents,
+  ServerToStorytellerEvents
+>;
 
 function getPlayerIdFromSocket(socket: {
   id: string;
@@ -14,8 +26,8 @@ function getPlayerIdFromSocket(socket: {
 }
 
 export function registerPlayerHandlers(
-  storytellerIo: Namespace,
-  playerIo: Namespace,
+  storytellerIo: StorytellerNamespace,
+  playerIo: PlayerNamespace,
   game: GameManager,
   whisperTracker: WhisperTracker,
 ): void {
@@ -203,7 +215,7 @@ export function registerPlayerHandlers(
       game.preselectVote(playerId, guilty);
       // 모든 플레이어와 이야기꾼에게 프리셀렉트 알림
       playerIo.emit('vote:preselected', { playerId, guilty });
-      storytellerIo.emit('vote:preselected' as string, { playerId, guilty });
+      storytellerIo.emit('vote:preselected', { playerId, guilty });
     });
 
     socket.on('night:action', ({ targets }) => {
@@ -295,7 +307,7 @@ export function registerPlayerHandlers(
         targetName: target.name,
         targetId,
       });
-      storytellerIo.emit('slayer:declared' as string, {
+      storytellerIo.emit('slayer:declared', {
         slayerName: player.name,
         targetName: target.name,
         targetId,
@@ -337,7 +349,7 @@ export function registerPlayerHandlers(
           slayerName: player.name,
           targetName: target.name,
         });
-        storytellerIo.emit('slayer:noEffect' as string, {
+        storytellerIo.emit('slayer:noEffect', {
           slayerName: player.name,
           targetName: target.name,
         });
@@ -395,7 +407,7 @@ export function registerPlayerHandlers(
       };
 
       // Send to storyteller
-      storytellerIo.emit('chat:receiveFromPlayer' as string, chatMsg);
+      storytellerIo.emit('chat:receiveFromPlayer', chatMsg);
       // Echo back to sender
       playerIo.to(playerId).emit('chat:receiveFromStoryteller', chatMsg);
       console.log(`Chat ${player.name} -> ST: ${message}`);

@@ -1,5 +1,17 @@
-import type { WhisperMessage } from '@clocktower/shared';
+import type {
+  ClientToServerEvents,
+  ServerToClientEvents,
+  ServerToStorytellerEvents,
+  StorytellerToServerEvents,
+  WhisperMessage,
+} from '@clocktower/shared';
 import type { Namespace } from 'socket.io';
+
+type PlayerNamespace = Namespace<ClientToServerEvents, ServerToClientEvents>;
+type StorytellerNamespace = Namespace<
+  StorytellerToServerEvents,
+  ServerToStorytellerEvents
+>;
 
 interface ActiveWhisperEntry {
   player1Id: string;
@@ -13,10 +25,10 @@ const WHISPER_TIMEOUT = 60_000; // 60 seconds
 
 export class WhisperTracker {
   private activeWhispers: Map<string, ActiveWhisperEntry> = new Map();
-  private storytellerIo: Namespace;
-  private playerIo: Namespace;
+  private storytellerIo: StorytellerNamespace;
+  private playerIo: PlayerNamespace;
 
-  constructor(storytellerIo: Namespace, playerIo: Namespace) {
+  constructor(storytellerIo: StorytellerNamespace, playerIo: PlayerNamespace) {
     this.storytellerIo = storytellerIo;
     this.playerIo = playerIo;
   }

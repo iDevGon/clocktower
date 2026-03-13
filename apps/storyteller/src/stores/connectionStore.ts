@@ -1,13 +1,22 @@
+import type {
+  ServerToStorytellerEvents,
+  StorytellerToServerEvents,
+} from '@clocktower/shared';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Socket } from 'socket.io-client';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+export type StorytellerSocket = Socket<
+  ServerToStorytellerEvents,
+  StorytellerToServerEvents
+>;
+
 interface ConnectionStore {
-  socket: Socket | null;
+  socket: StorytellerSocket | null;
   isConnected: boolean;
   serverUrl: string | null;
-  setSocket: (socket: Socket | null) => void;
+  setSocket: (socket: StorytellerSocket | null) => void;
   setConnected: (connected: boolean) => void;
   setServerUrl: (url: string) => void;
 }

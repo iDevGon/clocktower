@@ -91,6 +91,24 @@ export interface ServerToClientEvents {
   'execution:announced': (data: ExecutionAnnouncement) => void;
 }
 
+/**
+ * 서버 → 이야기꾼 앱으로 전송되는 이벤트.
+ * ServerToClientEvents 중 이야기꾼이 수신하는 이벤트만 포함합니다.
+ */
+export interface ServerToStorytellerEvents {
+  'game:state': ServerToClientEvents['game:state'];
+  'game:end': ServerToClientEvents['game:end'];
+  'night:actionReceived': ServerToClientEvents['night:actionReceived'];
+  'whisper:activeChats': ServerToClientEvents['whisper:activeChats'];
+  'slayer:declared': ServerToClientEvents['slayer:declared'];
+  'slayer:noEffect': ServerToClientEvents['slayer:noEffect'];
+  'vote:preselected': ServerToClientEvents['vote:preselected'];
+  'vote:confirmed': ServerToClientEvents['vote:confirmed'];
+  'vote:clockStart': ServerToClientEvents['vote:clockStart'];
+  'vote:result': ServerToClientEvents['vote:result'];
+  'chat:receiveFromPlayer': ServerToClientEvents['chat:receiveFromPlayer'];
+}
+
 export interface ClientToServerEvents {
   'game:join': (
     data: { playerName: string },

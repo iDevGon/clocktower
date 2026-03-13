@@ -1,12 +1,10 @@
-import {
-  type GameResult,
-  getRoleById,
-  type NightAction,
-  type StorytellerMessage,
-} from '@clocktower/shared';
+import { getRoleById } from '@clocktower/shared';
 import { useCallback } from 'react';
 import { io } from 'socket.io-client';
-import { useConnectionStore } from '../stores/connectionStore';
+import {
+  type StorytellerSocket,
+  useConnectionStore,
+} from '../stores/connectionStore';
 import { useGameStore } from '../stores/gameStore';
 import { useLogStore } from '../stores/logStore';
 
@@ -23,7 +21,9 @@ export function useSocketConnection() {
         }
 
         const url = `${serverUrl}/storyteller`;
-        const newSocket = io(url, { transports: ['websocket', 'polling'] });
+        const newSocket: StorytellerSocket = io(url, {
+          transports: ['websocket', 'polling'],
+        }) as StorytellerSocket;
 
         const timer = setTimeout(() => {
           newSocket.disconnect();
@@ -42,10 +42,10 @@ export function useSocketConnection() {
 
         newSocket.on('disconnect', () => setConnected(false));
         newSocket.on('game:state', setGameState);
-        newSocket.on('game:end', (result: GameResult) => {
+        newSocket.on('game:end', (result) => {
           useGameStore.getState().setGameResult(result);
         });
-        newSocket.on('night:actionReceived', (action: NightAction) => {
+        newSocket.on('night:actionReceived', (action) => {
           useGameStore.getState().addNightAction(action);
           const role = getRoleById(action.roleId);
           const gs = useGameStore.getState().gameState;
@@ -60,78 +60,51 @@ export function useSocketConnection() {
               `${role?.name ?? action.roleId}(${action.playerName}) → ${targetNames || '(대상 없음)'}`,
             );
         });
-        newSocket.on(
-          'whisper:activeChats',
-          (
-            chats: Array<{
-              player1Id: string;
-              player1Name: string;
-              player2Id: string;
-              player2Name: string;
-            }>,
-          ) => {
-            useGameStore.getState().setActiveWhispers(chats);
-          },
-        );
+        newSocket.on('whisper:activeChats', (chats) => {
+          useGameStore.getState().setActiveWhispers(chats);
+        });
         newSocket.on('slayer:declared', () => {
           // handled via game:state
         });
-        newSocket.on('vote:clockStart', (data: { durationMs: number }) => {
+        newSocket.on('vote:clockStart', (data) => {
           useGameStore.getState().setVoteClock({
             startedAt: Date.now(),
             durationMs: data.durationMs,
           });
         });
-        newSocket.on(
-          'vote:preselected',
-          (data: { playerId: string; guilty: boolean | null }) => {
-            useGameStore
-              .getState()
-              .setVotePreselection(data.playerId, data.guilty);
-          },
-        );
-        newSocket.on(
-          'vote:confirmed',
-          (data: { playerId: string; guilty: boolean }) => {
-            useGameStore
-              .getState()
-              .setVoteConfirmed(data.playerId, data.guilty);
-          },
-        );
-        newSocket.on(
-          'vote:result',
-          (data: {
-            nomineeId: string;
-            nomineeName: string;
-            guilty: boolean;
-            votes: Record<string, boolean>;
-          }) => {
-            const store = useGameStore.getState();
-            store.setVoteResult(data);
-            store.setVoteClock(null);
-            store.clearVotePreselections();
-            if (data.guilty) {
-              store.setLastExecutedPlayerId(data.nomineeId);
-            }
-          },
-        );
-        newSocket.on(
-          'chat:receiveFromPlayer' as string,
-          (message: StorytellerMessage) => {
-            const store = useGameStore.getState();
-            store.addChatMessage(message);
-            // 플레이어가 보낸 메시지이고 해당 채팅이 열려있지 않으면 토스트 표시
-            if (
-              !message.fromStoryteller &&
-              store.activeChatPlayerId !== message.playerId
-            ) {
-              store.showChatToast({
-                playerName: message.playerName,
-                message: message.message,
-              });
-            }
-          },
-        );
+        newSocket.on('vote:preselected', (data) => {
+          useGameStore
+            .getState()
+            .setVotePreselection(data.playerId, data.guilty);
+        });
+        newSocket.on('vote:confirmed', (data) => {
+          useGameStore
+            .getState()
+            .setVoteConfirmed(data.playerId, data.guilty);
+        });
+        newSocket.on('vote:result', (data) => {
+          const store = useGameStore.getState();
+          store.setVoteResult(data);
+          store.setVoteClock(null);
+          store.clearVotePreselections();
+          if (data.guilty) {
+            store.setLastExecutedPlayerId(data.nomineeId);
+          }
+        });
+        newSocket.on('chat:receiveFromPlayer', (message) => {
+          const store = useGameStore.getState();
+          store.addChatMessage(message);
+          // 플레이어가 보낸 메시지이고 해당 채팅이 열려있지 않으면 토스트 표시
+          if (
+            !message.fromStoryteller &&
+            store.activeChatPlayerId !== message.playerId
+          ) {
+            store.showChatToast({
+              playerName: message.playerName,
+              message: message.message,
+            });
+          }
+        });
 
         setSocket(newSocket);
         useConnectionStore.getState().setServerUrl(serverUrl);

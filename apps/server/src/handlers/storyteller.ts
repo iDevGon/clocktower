@@ -5,6 +5,12 @@ import {
   getRoleById,
   OTHER_NIGHT_ORDER,
 } from '@clocktower/shared';
+import type {
+  ClientToServerEvents,
+  ServerToClientEvents,
+  ServerToStorytellerEvents,
+  StorytellerToServerEvents,
+} from '@clocktower/shared';
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
 import {
@@ -13,6 +19,12 @@ import {
   sendPushToAll,
 } from '../pushNotifications.js';
 import type { WhisperTracker } from '../whisper.js';
+
+type PlayerNamespace = Namespace<ClientToServerEvents, ServerToClientEvents>;
+type StorytellerNamespace = Namespace<
+  StorytellerToServerEvents,
+  ServerToStorytellerEvents
+>;
 
 function getNightOrder(day: number): string[] {
   return day <= 1 ? FIRST_NIGHT_ORDER : OTHER_NIGHT_ORDER;
@@ -24,7 +36,7 @@ function getNightOrder(day: number): string[] {
  * - 하수인: 악마 이름 + 다른 하수인 이름
  */
 function sendEvilInfo(
-  playerIo: import('socket.io').Namespace,
+  playerIo: PlayerNamespace,
   game: GameManager,
 ): void {
   const state = game.getState();
@@ -74,8 +86,8 @@ function getPlayerInfoList(game: GameManager) {
 
 export function startClockwiseVote(
   game: GameManager,
-  playerIo: import('socket.io').Namespace,
-  storytellerIo: import('socket.io').Namespace,
+  playerIo: PlayerNamespace,
+  storytellerIo: StorytellerNamespace,
   nomineeId: string,
 ): void {
   const voteOrder = game.getClockwiseVoteOrder(nomineeId);
@@ -102,7 +114,7 @@ export function startClockwiseVote(
 
   // 시계 바늘 시작 알림
   playerIo.emit('vote:clockStart', { durationMs });
-  storytellerIo.emit('vote:clockStart' as string, { durationMs });
+  storytellerIo.emit('vote:clockStart', { durationMs });
 
   // 각 투표자의 확정 시점 계산 (nominee 기준 상대 각도 → 시간)
   const nomineeFullIdx = fullOrder.indexOf(nomineeId);
@@ -134,7 +146,7 @@ export function startClockwiseVote(
         const guilty = game.getPreselectedVote(next.playerId);
         game.castVote(next.playerId, guilty, true);
         playerIo.emit('vote:confirmed', { playerId: next.playerId, guilty });
-        storytellerIo.emit('vote:confirmed' as string, {
+        storytellerIo.emit('vote:confirmed', {
           playerId: next.playerId,
           guilty,
         });
@@ -151,7 +163,7 @@ export function startClockwiseVote(
       const result = game.closeVote();
       if (result) {
         playerIo.emit('vote:result', result);
-        storytellerIo.emit('vote:result' as string, result);
+        storytellerIo.emit('vote:result', result);
         game.returnToNomination();
         playerIo.emit('game:phase', 'day');
         playerIo.emit('day:subPhase', 'nomination');
@@ -164,8 +176,8 @@ export function startClockwiseVote(
 }
 
 export function registerStorytellerHandlers(
-  storytellerIo: Namespace,
-  playerIo: Namespace,
+  storytellerIo: StorytellerNamespace,
+  playerIo: PlayerNamespace,
   game: GameManager,
   whisperTracker: WhisperTracker,
 ): void {
@@ -622,14 +634,14 @@ export function registerStorytellerHandlers(
       // 시계방향 투표 중이면 프리셀렉트로 처리
       game.preselectVote(playerId, guilty);
       playerIo.emit('vote:preselected', { playerId, guilty });
-      storytellerIo.emit('vote:preselected' as string, { playerId, guilty });
+      storytellerIo.emit('vote:preselected', { playerId, guilty });
     });
 
     socket.on('vote:close', () => {
       const result = game.closeVote();
       if (result) {
         playerIo.emit('vote:result', result);
-        storytellerIo.emit('vote:result' as string, result);
+        storytellerIo.emit('vote:result', result);
 
         // 투표 종료 후 → 지목 단계로 복귀 (처형은 밤 전환 시 수행)
         game.returnToNomination();
@@ -655,7 +667,7 @@ export function registerStorytellerHandlers(
       // Send to the target player
       playerIo.to(playerId).emit('chat:receiveFromStoryteller', chatMsg);
       // Echo back to storyteller
-      storytellerIo.emit('chat:receiveFromPlayer' as string, chatMsg);
+      storytellerIo.emit('chat:receiveFromPlayer', chatMsg);
       console.log(`ST Chat -> ${player.name}: ${message}`);
     });
 
