@@ -4,6 +4,7 @@ import {
   EDITION_COLORS,
   EDITION_LABELS,
   getRolesForEdition,
+  ROLE_DISTRIBUTION,
   type Team,
 } from '@clocktower/shared';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -133,10 +134,45 @@ export default function AssignRoleScreen() {
     [availableRoles],
   );
 
+  // 인원수별 팀 구성 제약에 따라 아직 슬롯이 남은 팀 계산
+  const allowedTeams = useMemo(() => {
+    if (!gameState) return new Set<Team>();
+    const playerCount = gameState.players.length;
+    const dist = ROLE_DISTRIBUTION[playerCount];
+    if (!dist) return new Set<Team>(['townsfolk', 'outsider', 'minion', 'demon']);
+
+    let [maxTownsfolk, maxOutsider, maxMinion, maxDemon] = dist;
+
+    // 현재 플레이어(배정 대상)를 제외하고 이미 배정된 팀별 인원수
+    const assigned = { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
+    let hasBaron = false;
+    for (const p of gameState.players) {
+      if (p.id === playerId) continue;
+      if (p.role?.id === 'baron') hasBaron = true;
+      if (p.role?.team) {
+        assigned[p.role.team as keyof typeof assigned] =
+          (assigned[p.role.team as keyof typeof assigned] ?? 0) + 1;
+      }
+    }
+
+    // 남작이 배정되면 외지인 +2, 마을주민 -2
+    if (hasBaron) {
+      maxOutsider = Math.min(maxOutsider + 2, playerCount - maxMinion - maxDemon);
+      maxTownsfolk = playerCount - maxOutsider - maxMinion - maxDemon;
+    }
+
+    const teams = new Set<Team>();
+    if (assigned.townsfolk < maxTownsfolk) teams.add('townsfolk');
+    if (assigned.outsider < maxOutsider) teams.add('outsider');
+    if (assigned.minion < maxMinion) teams.add('minion');
+    if (assigned.demon < maxDemon) teams.add('demon');
+    return teams;
+  }, [gameState, playerId]);
+
   const handleRandomAssign = useCallback(() => {
     if (!playerId) return;
     const unassignedRoles = availableRoles.filter(
-      (r) => !roleOwnerMap.has(r.id),
+      (r) => !roleOwnerMap.has(r.id) && allowedTeams.has(r.team),
     );
     if (unassignedRoles.length === 0) return;
     const randomRole =
@@ -155,7 +191,7 @@ export default function AssignRoleScreen() {
       assignRole(playerId, randomRole.id);
     }
     router.back();
-  }, [playerId, availableRoles, roleOwnerMap, assignRole, router]);
+  }, [playerId, availableRoles, roleOwnerMap, allowedTeams, assignRole, router]);
 
   const handleAssign = useCallback(
     (roleId: string) => {
