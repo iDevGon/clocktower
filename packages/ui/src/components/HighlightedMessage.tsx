@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../tokens';
 import type { TaggedCandidate } from './QuickSuggestions';
 
@@ -8,7 +8,7 @@ const BADGE_COLORS = colors.badge;
 interface HighlightedMessageProps {
   message: string;
   keywords: TaggedCandidate[];
-  baseStyle?: object;
+  baseStyle?: object | object[];
 }
 
 export function HighlightedMessage({
@@ -16,6 +16,8 @@ export function HighlightedMessage({
   keywords,
   baseStyle,
 }: HighlightedMessageProps) {
+  const baseStyleFlat = StyleSheet.flatten(baseStyle);
+
   const segments = useMemo(() => {
     if (keywords.length === 0) return [{ text: message, match: null }];
 
@@ -52,40 +54,52 @@ export function HighlightedMessage({
   }, [message, keywords]);
 
   return (
-    <Text style={baseStyle}>
+    <View style={styles.container}>
       {segments.map((seg, i) => {
         if (!seg.match) {
-          return <Text key={i}>{seg.text}</Text>;
+          return (
+            <Text key={i} style={baseStyleFlat}>
+              {seg.text}
+            </Text>
+          );
         }
         const clr = BADGE_COLORS[seg.match.category];
         return (
-          <Text
+          <View
             key={i}
             style={[
               styles.badge,
               {
                 backgroundColor: clr.bg,
-                color: clr.text,
                 borderColor: clr.border,
               },
             ]}
           >
-            {seg.text}
-          </Text>
+            <Text style={[styles.badgeText, { color: clr.text }]}>
+              {seg.text}
+            </Text>
+          </View>
         );
       })}
-    </Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
   badge: {
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderWidth: 1,
+    marginVertical: 1,
+  },
+  badgeText: {
     fontSize: 13,
     fontWeight: '600',
-    borderRadius: 6,
-    overflow: 'hidden',
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderWidth: 1,
   },
 });
