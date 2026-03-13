@@ -11,14 +11,8 @@ import {
   type Team,
 } from '@clocktower/shared';
 import { useState } from 'react';
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { styles, tabStyles } from './DictionaryModal.styles';
 
 type TabId = 'roles' | 'statuses' | 'rules' | 'flow';
 
@@ -80,17 +74,10 @@ function RolesTab() {
                       {role.name}
                     </Text>
                     <Text
-                      style={{
-                        fontSize: 9,
-                        fontWeight: '700',
-                        color: editionColor,
-                        borderWidth: 1,
-                        borderColor: editionColor,
-                        borderRadius: 3,
-                        paddingHorizontal: 4,
-                        paddingVertical: 1,
-                        overflow: 'hidden',
-                      }}
+                      style={[
+                        tabStyles.editionBadge,
+                        { color: editionColor, borderColor: editionColor },
+                      ]}
                     >
                       {editionLabel}
                     </Text>
@@ -139,9 +126,7 @@ function RulesTab() {
         </View>
       ))}
 
-      <Text style={[tabStyles.sectionTitle, { marginTop: 20 }]}>
-        낮 세부 단계
-      </Text>
+      <Text style={tabStyles.sectionTitleWithMargin}>낮 세부 단계</Text>
       {DAY_SUB_PHASE_ENTRIES.map((sub) => (
         <View key={sub.id} style={tabStyles.card}>
           <Text style={[tabStyles.roleName, { color: sub.color }]}>
@@ -151,7 +136,7 @@ function RulesTab() {
         </View>
       ))}
 
-      <Text style={[tabStyles.sectionTitle, { marginTop: 20 }]}>상세 규칙</Text>
+      <Text style={tabStyles.sectionTitleWithMargin}>상세 규칙</Text>
       {GAME_RULES.map((rule) => (
         <View key={rule.title} style={tabStyles.card}>
           <Text style={tabStyles.ruleTitle}>{rule.title}</Text>
@@ -229,148 +214,3 @@ export function DictionaryModal({ visible, onClose }: DictionaryModalProps) {
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'flex-end',
-  },
-  dismissArea: {
-    flex: 1,
-  },
-  container: {
-    backgroundColor: '#1a1a1e',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    height: '85%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderColor: '#2e2e34',
-  },
-  title: {
-    color: '#e0ddd8',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  closeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: '#2a2a30',
-  },
-  closeText: {
-    color: '#908e8a',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  tabBar: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderColor: '#2e2e34',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#5dade2',
-  },
-  tabText: {
-    color: '#5c5a58',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  tabTextActive: {
-    color: '#5dade2',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-});
-
-const tabStyles = StyleSheet.create({
-  section: {
-    gap: 10,
-  },
-  teamHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 16,
-    marginBottom: 4,
-    paddingBottom: 6,
-    borderBottomWidth: 1,
-  },
-  teamDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  teamHeaderText: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  teamCount: {
-    color: '#5c5a58',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  sectionTitle: {
-    color: '#e0ddd8',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  card: {
-    backgroundColor: '#121214',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#2e2e34',
-    padding: 14,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
-  },
-  roleName: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  statusDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  abilityText: {
-    color: '#908e8a',
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  ruleTitle: {
-    color: '#c4a050',
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  flowStep: {
-    color: '#5dade2',
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-});

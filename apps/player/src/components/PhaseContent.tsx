@@ -3,12 +3,17 @@ import type {
   NightFeedbackPayload,
   Role,
 } from '@clocktower/shared';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import type { NightProgress as NightProgressData } from '../stores/playerStore';
 import { useWhisperStore } from '../stores/whisperStore';
 import { styles } from '../styles/game.styles';
 import { NightActionPrompt } from './NightActionPrompt';
 import { NightProgress } from './NightProgress';
+import {
+  endedStyles,
+  getPlayerRowOpacity,
+  whisperStyles,
+} from './PhaseContent.styles';
 
 interface SetupPhaseProps {
   visible: boolean;
@@ -137,30 +142,6 @@ export function WhisperPhase({
   );
 }
 
-const whisperStyles = StyleSheet.create({
-  activePanel: {
-    marginTop: 16,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    width: '100%',
-  },
-  activePanelTitle: {
-    color: '#8a8a8a',
-    fontSize: 12,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 6,
-  },
-  activePanelItem: {
-    color: '#e0ddd8',
-    fontSize: 14,
-    paddingVertical: 3,
-  },
-});
-
 interface DiscussionPhaseProps {
   visible: boolean;
 }
@@ -275,28 +256,21 @@ export function EndedPhase({ visible, gameResult }: EndedPhaseProps) {
       {gameResult && (
         <>
           <Text style={styles.phaseDescription}>{gameResult.reason}</Text>
-          <View style={{ marginTop: 16, width: '100%' }}>
+          <View style={endedStyles.playerListContainer}>
             {gameResult.players.map((p) => (
               <View
                 key={p.id}
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  paddingVertical: 6,
-                  paddingHorizontal: 12,
-                  opacity: p.isAlive ? 1 : 0.5,
-                }}
+                style={[endedStyles.playerRow, getPlayerRowOpacity(p.isAlive)]}
               >
-                <Text style={{ color: '#e0ddd8', fontSize: 14 }}>
+                <Text style={endedStyles.playerName}>
                   {p.name}
                   {!p.isAlive ? ' (사망)' : ''}
                 </Text>
                 <Text
-                  style={{
-                    color: TEAM_COLORS[p.team] ?? '#888',
-                    fontSize: 14,
-                    fontWeight: '600',
-                  }}
+                  style={[
+                    endedStyles.playerRole,
+                    { color: TEAM_COLORS[p.team] ?? '#888' },
+                  ]}
                 >
                   {p.role.name} ({TEAM_LABELS[p.team] ?? p.team})
                 </Text>
