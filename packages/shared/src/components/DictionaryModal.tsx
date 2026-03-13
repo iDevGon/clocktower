@@ -17,6 +17,7 @@ import {
 } from '../dictionary';
 import { ALL_ROLES, EDITION_COLORS, EDITION_LABELS } from '../roles';
 import type { Team } from '../types';
+import { AbilityText } from './AbilityText';
 
 type TabId = 'roles' | 'statuses' | 'rules' | 'flow';
 
@@ -99,7 +100,7 @@ function GroupedRolesTab() {
                       {editionLabel}
                     </Text>
                   </View>
-                  <Text style={tabStyles.abilityText}>{role.ability}</Text>
+                  <AbilityText text={role.ability} style={tabStyles.abilityText} />
                 </View>
               );
             })}
@@ -160,7 +161,7 @@ function FlatRolesTab() {
                       {editionLabel}
                     </Text>
                   </View>
-                  <Text style={tabStyles.abilityText}>{role.ability}</Text>
+                  <AbilityText text={role.ability} style={tabStyles.abilityText} />
                 </View>
               );
             })}
