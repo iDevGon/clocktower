@@ -816,7 +816,7 @@ export default function GrimoireScreen() {
             })()}
 
           {/* NightOrderPanel + NightFeedbackPanel overlay container */}
-          <View style={{ position: 'relative' }}>
+          <View style={styles.nightOrderRelative}>
             <NightOrderPanel
               day={gameState.day}
               activeRoleIds={gameState.players.flatMap((p) => {
@@ -939,13 +939,11 @@ export default function GrimoireScreen() {
       )}
       {gameState.phase === 'ended' && gameResult && (
         <View
-          style={{
-            backgroundColor:
-              gameResult.winningTeam === 'good' ? '#1a3a5c' : '#4a1a1a',
-            paddingVertical: 12,
-            paddingHorizontal: 16,
-            alignItems: 'center',
-          }}
+          style={
+            gameResult.winningTeam === 'good'
+              ? styles.gameEndBannerGood
+              : styles.gameEndBannerEvil
+          }
         >
           <Text
             style={{
@@ -1005,19 +1003,7 @@ export default function GrimoireScreen() {
 
       {/* 초공감자 이웃 정보 힌트 */}
       {empathNeighborIds.size > 0 && (
-        <View
-          style={{
-            backgroundColor: '#1a2a1a',
-            borderTopWidth: 1,
-            borderColor: '#2a4a2a',
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-          }}
-        >
+        <View style={styles.empathHintBar}>
           <Text
             style={{
               color: '#2ecc71',
@@ -1047,19 +1033,7 @@ export default function GrimoireScreen() {
 
       {/* 요리사 인접 악한 쌍 힌트 */}
       {chefEvilPairIds.size > 0 && (
-        <View
-          style={{
-            backgroundColor: '#2a1a0a',
-            borderTopWidth: 1,
-            borderColor: '#4a2a0a',
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-          }}
-        >
+        <View style={styles.chefHintBar}>
           <Text
             style={{
               color: '#e67e22',
@@ -1101,30 +1075,8 @@ export default function GrimoireScreen() {
 
       {/* 게임 설정 패널 */}
       {settingsVisible && (
-        <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.7)',
-            zIndex: 500,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: '#1e1e24',
-              borderRadius: 12,
-              padding: 24,
-              width: '80%',
-              maxWidth: 400,
-              borderWidth: 1,
-              borderColor: '#3a3a42',
-            }}
-          >
+        <View style={styles.settingsOverlay}>
+          <View style={styles.settingsPanel}>
             <Text
               style={{
                 color: '#e0ddd8',
@@ -1137,14 +1089,7 @@ export default function GrimoireScreen() {
               게임 설정
             </Text>
 
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 16,
-              }}
-            >
+            <View style={styles.settingsRow}>
               <View>
                 <Text
                   style={{
@@ -1177,14 +1122,7 @@ export default function GrimoireScreen() {
               />
             </View>
 
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 24,
-              }}
-            >
+            <View style={styles.settingsRowLast}>
               <View>
                 <Text
                   style={{
@@ -1219,12 +1157,7 @@ export default function GrimoireScreen() {
 
             <Pressable
               onPress={() => setSettingsVisible(false)}
-              style={{
-                backgroundColor: '#2a2a34',
-                paddingVertical: 12,
-                borderRadius: 8,
-                alignItems: 'center',
-              }}
+              style={styles.settingsCloseButton}
             >
               <Text
                 style={{
