@@ -9,6 +9,7 @@ Blood on the Clocktower (Trouble Brewing 에디션) 디지털 구현체. 이야�
 - **Language**: TypeScript (strict mode)
 - **State Management**: Zustand (AsyncStorage 영속화)
 - **Package Manager**: pnpm workspaces (monorepo)
+- **Build**: Turborepo (의존 패키지 자동 빌드, 캐싱)
 - **Animation**: react-native-reanimated, react-native-gesture-handler
 - **Push Notifications**: Expo Push API
 - **Linter/Formatter**: Biome
@@ -25,8 +26,8 @@ clocktower/
 │   ├── shared/            # 공유 타입, 이벤트, 역할 정의, 게임 사전
 │   └── ui/                # 공유 UI 컴포넌트, 디자인 토큰
 ├── biome.json             # Biome 린터/포맷터 설정
-├── pnpm-workspace.yaml
-└── tsconfig.base.json
+├── turbo.json             # Turborepo 빌드 파이프라인 설정
+└── pnpm-workspace.yaml
 ```
 
 ### apps/server
@@ -84,7 +85,7 @@ clocktower/
 
 - `types.ts`: Phase, DaySubPhase, Team, Role, Player, GameState, NightAction, NightFeedback, WhisperMessage, PlayerStatus, GameResult, GameSettings, StorytellerMessage, DeathReason, ExecutionAnnouncement, Edition 등
 - `events.ts`: Socket.io 이벤트 타입 (ServerToClient, ServerToStoryteller, ClientToServer, StorytellerToServer)
-- `roles.ts`: Trouble Brewing 역할 22종 정의, 역할 배분 알고리즘, 밤 행동 순서
+- `roles.ts`: Trouble Brewing 역할 22종 + Sects & Violets 25종(부분 구현) 정의, 역할 배분 알고리즘, 밤 행동 순서
 - `dictionary.ts`: 팀 라벨/색상, 상태/페이즈/서브페이즈 사전, 게임 규칙, 게임 흐름
 - `logic.ts`: 서버용 non-RN re-export
 
@@ -154,6 +155,8 @@ pnpm dev:player
 pnpm dev:storyteller
 ```
 
+> **`pnpm dev` vs `pnpm start`**: `dev`는 `EXPO_PUBLIC_DEV_MODE=true`를 설정하여 더미 플레이어 추가 등 개발 전용 기능이 활성화됩니다. `start`는 개발 기능 없이 실행됩니다.
+
 ## 아키텍처 특징
 
 - **Socket.io 네임스페이스 분리**: 플레이어와 이야기꾼이 별도 네임스페이스로 통신
@@ -170,4 +173,5 @@ pnpm dev:storyteller
 - **게임 설정**: 밀담 모드, 투표 모드, 시계 속도 커스터마이징
 - **시계 방향 투표**: 순차 투표 + 사전선택 지원
 - **한국어 UI**: 전체 인터페이스 한국어 지원
+- **Turborepo 빌드**: `^build` 의존으로 shared/ui → apps 순서 자동 빌드 및 캐싱
 - **Biome**: 코드 포맷팅 및 린팅 (워크스페이스별 규칙 오버라이드)

@@ -2,7 +2,7 @@
 
 ## 프로젝트 개요
 
-Blood on the Clocktower 디지털 구현체. pnpm 워크스페이스 기반 모노레포로, 서버 / 플레이어 앱 / 이야기꾼 앱 / 공유 패키지로 구성됨.
+Blood on the Clocktower 디지털 구현체. pnpm 워크스페이스 + Turborepo 기반 모노레포로, 서버 / 플레이어 앱 / 이야기꾼 앱 / 공유 패키지로 구성됨.
 
 ## 코드베이스 구조
 
@@ -28,6 +28,7 @@ apps/storyteller/app/game/whispers.tsx # 밀담 현황 뷰
 apps/storyteller/src/stores/        # Zustand 스토어 (game, connection, log) - AsyncStorage 영속
 apps/storyteller/src/hooks/         # 소켓 훅 + useResponsive (반응형 레이아웃)
 apps/storyteller/src/components/    # UI 컴포넌트
+apps/storyteller/src/constants.ts   # IS_DEV 상수 (개발 모드 판별)
 packages/shared/src/types.ts        # 핵심 타입 정의
 packages/shared/src/events.ts       # Socket.io 이벤트 타입
 packages/shared/src/roles.ts        # 역할 정의, 배분 알고리즘, 밤 행동 순서
@@ -35,6 +36,7 @@ packages/shared/src/dictionary.ts   # 상태/페이즈 사전, 팀 라벨/색상
 packages/shared/src/logic.ts        # 서버용 non-RN re-export
 packages/ui/src/                    # 공유 UI 컴포넌트 (AbilityText, DictionaryModal 등)
 packages/ui/src/tokens.ts           # 디자인 토큰 (colors)
+packages/ui/src/chatStyles.ts       # 채팅 스타일 팩토리
 packages/ui/src/components/         # 공유 컴포넌트 (AbilityText, HighlightedMessage 등)
 packages/ui/src/utils/chosung.ts    # 초성 검색 유틸
 ```
@@ -47,6 +49,7 @@ packages/ui/src/utils/chosung.ts    # 초성 검색 유틸
 - **소켓 네임스페이스**: `/player`와 `/storyteller`는 별도 네임스페이스. 이벤트 타입도 분리됨
 - **공유 패키지 우선**: 타입, 이벤트, 역할 정의 변경은 반드시 `packages/shared`에서 수행
 - **UI 패키지**: 앱 간 공유 컴포넌트는 `packages/ui`에서 관리 (AbilityText, DictionaryModal 등)
+- **빌드 오케스트레이션**: Turborepo 사용. `^build` 의존으로 shared/ui 패키지가 앱보다 먼저 자동 빌드됨
 - **코드 포맷팅**: Biome 사용 (2-space indent, single quotes, always semicolons)
 
 ## 이벤트 흐름
@@ -65,10 +68,10 @@ Player App       ──(ClientToServerEvents)────────>  Server
 
 ### 주요 이벤트
 
-**Client → Server**: `game:join`, `game:rejoin`, `slayer:use`, `whisper:send`, `nominate:request`, `vote:cast`, `vote:preselect`, `night:action`, `chat:sendToStoryteller`, `push:register`
-**Server → Client**: `game:state`, `game:phase`, `game:playerUpdate`, `role:assign`, `evil:info`, `night:activeRole`, `night:feedback`, `night:deaths`, `vote:start`, `vote:result`, `vote:order`, `vote:clockStart`, `vote:confirmed`, `execution:announced`, `slayer:declared`, `slayer:noEffect`, `virgin:triggered`, `whisper:receive`, `whisper:activeChats`, `whisper:clockStart`, `day:subPhase`, `game:settings`, `game:end`, `chat:receiveFromStoryteller`
+**Client → Server**: `game:join`, `game:rejoin`, `slayer:use`, `slayer:ack`, `whisper:send`, `nominate:request`, `vote:cast`, `vote:preselect`, `night:action`, `chat:sendToStoryteller`, `push:register`
+**Server → Client**: `game:state`, `game:phase`, `game:playerUpdate`, `role:assign`, `evil:info`, `night:activeRole`, `night:actionReceived`, `night:feedback`, `night:deaths`, `vote:start`, `vote:result`, `vote:order`, `vote:clockStart`, `vote:clockPause`, `vote:confirmed`, `vote:preselected`, `vote:proceedToVote`, `execution:announced`, `slayer:declared`, `slayer:noEffect`, `slayer:allAcked`, `virgin:triggered`, `whisper:receive`, `whisper:activeChats`, `whisper:clockStart`, `day:subPhase`, `game:settings`, `game:end`, `chat:receiveFromStoryteller`, `chat:receiveFromPlayer`
 **Server → Storyteller**: `ServerToStorytellerEvents` (ServerToClientEvents 중 이야기꾼 관련 이벤트 서브셋 + `chat:receiveFromPlayer`)
-**Storyteller → Server**: `game:create`, `game:start`, `game:setPhase`, `day:setSubPhase`, `game:assignRole` (drunkAs 지원), `game:distributeRoles`, `game:kill`, `game:revive`, `game:reset`, `game:restart`, `vote:nominate`, `vote:proceedToVote`, `vote:close`, `vote:castForPlayer`, `night:setActiveRole`, `night:sendFeedback`, `player:setStatuses`, `game:setSettings`, `game:setPlayerOrder`, `chat:sendToPlayer`
+**Storyteller → Server**: `game:create`, `game:start`, `game:setPhase`, `day:setSubPhase`, `game:assignRole` (drunkAs 지원), `game:distributeRoles`, `game:kill`, `game:revive`, `game:reset`, `game:restart`, `vote:nominate`, `vote:proceedToVote`, `vote:close`, `vote:castForPlayer`, `night:setActiveRole`, `night:sendFeedback`, `player:setStatuses`, `game:setSettings`, `game:setPlayerOrder`, `chat:sendToPlayer`, `game:addDummyPlayers`, `game:removeDummyPlayers`, `slayer:forceAck`
 
 ## 역할 시스템
 
@@ -124,8 +127,11 @@ Player App       ──(ClientToServerEvents)────────>  Server
 - `VotePrompt` / `VoteResult` / `VoteClockRing`: 투표 UI
 - `WhisperModal` / `WhisperChat` / `WhisperPlayerList` / `WhisperToast`: 밀담 채팅 시스템
 - `StorytellerChatModal` / `StorytellerChatToast`: 이야기꾼 채팅
+- `NightFallOverlay`: 밤 전환 오버레이
 - `DeathOverlay` / `NightDeathOverlay` / `ExecutionOverlay` / `SlayerFizzleOverlay`: 사망 연출
 - `DeadVignette` / `EdgeVignette` / `BaseOverlay`: 비네트 및 오버레이
+- `GameStartReveal`: 게임 시작 역할 공개 애니메이션
+- `RolePromotionReveal`: 역할 승계 공개 (예: 탕녀 → 임프)
 - `GameEndOverlay` / `GameEndEffects`: 게임 종료 결과 및 효과
 - `QrScannerModal`: QR 스캔으로 게임 참가
 
@@ -142,7 +148,7 @@ Player App       ──(ClientToServerEvents)────────>  Server
 - `ActionModal`: 범용 확인/취소 모달
 - `AnimatedBorderCard`: 애니메이션 테두리 카드 (활성 상태 강조)
 - `CollapsibleSection` / `EditionBadge` / `SettingToggle` / `EventToast`: 유틸리티 UI
-- `QRScannerModal`: QR 코드 표시
+- `QRScannerModal`: QR 스캔으로 서버 접속
 
 ### 공유 UI 패키지 (`@clocktower/ui`)
 - `AbilityText`: 능력 텍스트 키워드 하이라이트 + 각주
@@ -167,7 +173,7 @@ Player App       ──(ClientToServerEvents)────────>  Server
 - 플레이어 앱과 이야기꾼 앱은 독립적인 Expo 프로젝트. 각각 별도의 소켓 훅을 가짐
 - 서버는 인메모리 상태. 재시작하면 게임 데이터 소실
 - 이야기꾼 앱은 AsyncStorage로 `gameId`, `gameState`, `serverUrl`, `gameLogs`를 영속화
-- `__DEV__` 모드에서 더미 플레이어 추가/삭제 및 페이즈/역할 테스트 가능
+- `IS_DEV` 플래그(`EXPO_PUBLIC_DEV_MODE` 환경변수)로 개발 전용 기능 제어. `pnpm dev`에서만 활성화되고 `pnpm start`에서는 비활성화됨
 - 다크 테마 기반 UI. 페이즈별 색상: night=#8090c0, day=#c4a050, vote=#c47070
 - 애니메이션: `react-native-reanimated` 사용. 제스처: `react-native-gesture-handler` 사용
 - 반응형 레이아웃: `useResponsive` 훅으로 디바이스별 (phone/tablet/desktop) 크기 조정
