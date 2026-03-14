@@ -23,6 +23,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { QRScannerModal } from '../src/components/QRScannerModal';
 import { useGameActions } from '../src/hooks/useGameActions';
 import { useResponsive } from '../src/hooks/useResponsive';
@@ -30,6 +31,28 @@ import { useSocketConnection } from '../src/hooks/useSocketConnection';
 import { useConnectionStore } from '../src/stores/connectionStore';
 import { useGameStore } from '../src/stores/gameStore';
 import { createIndexStyles } from '../src/styles/index.styles';
+
+function useAutoReconnect(
+  connect: (url: string) => Promise<void>,
+  navigateToGame: () => void,
+) {
+  const gameId = useGameStore((s) => s.gameState?.id);
+  const serverUrl = useConnectionStore((s) => s.serverUrl);
+
+  useEffect(() => {
+    if (!gameId || !serverUrl) return;
+
+    const { socket } = useConnectionStore.getState();
+    if (socket?.connected) {
+      navigateToGame();
+      return;
+    }
+
+    connect(serverUrl)
+      .then(() => navigateToGame())
+      .catch(() => useGameStore.getState().reset());
+  }, [gameId, serverUrl, connect, navigateToGame]);
+}
 
 export default function HomeScreen() {
   const { fontSize } = useResponsive();
@@ -44,8 +67,19 @@ export default function HomeScreen() {
   const router = useRouter();
   const { connect } = useSocketConnection();
   const { createGame } = useGameActions();
-  const gameState = useGameStore((s) => s.gameState);
   const [permission, requestPermission] = useCameraPermissions();
+
+  const navigateToGame = useCallback(() => {
+    const state = useGameStore.getState().gameState;
+    if (!state?.id) return;
+    if (!state.started) {
+      router.replace('/game/lobby');
+    } else {
+      router.replace('/game/grimoire');
+    }
+  }, [router]);
+
+  useAutoReconnect(connect, navigateToGame);
 
   // Title glow pulse — golden
   const glowPulse = useSharedValue(0);
@@ -72,33 +106,6 @@ export default function HomeScreen() {
   const badgeGlowStyle = useAnimatedStyle(() => ({
     borderColor: `rgba(196, 160, 80, ${interpolate(glowPulse.value, [0, 1], [0.2, 0.4])})`,
   }));
-
-  const navigateToGame = useCallback(() => {
-    const state = useGameStore.getState().gameState;
-    if (!state?.id) return;
-    if (!state.started) {
-      router.replace('/game/lobby');
-    } else {
-      router.replace('/game/grimoire');
-    }
-  }, [router]);
-
-  useEffect(() => {
-    if (!gameState?.id) return;
-
-    const { socket: existingSocket, serverUrl } = useConnectionStore.getState();
-    if (!existingSocket?.connected && serverUrl) {
-      connect(serverUrl)
-        .then(() => {
-          navigateToGame();
-        })
-        .catch(() => {
-          useGameStore.getState().reset();
-        });
-    } else {
-      navigateToGame();
-    }
-  }, [gameState?.id, connect, navigateToGame]);
 
   const connectAndCreate = async (url: string) => {
     setError('');
@@ -150,7 +157,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Deep midnight-blue background */}
       <LinearGradient
         colors={['#06080f', '#0a0e1a', '#0e1020', '#0a0c18', '#060810']}
@@ -265,6 +272,6 @@ export default function HomeScreen() {
       <Text style={styles.copyright}>
         Blood on the Clocktower © The Pandemonium Institute.{'\n'}App by DevGon
       </Text>
-    </View>
+    </SafeAreaView>
   );
 }

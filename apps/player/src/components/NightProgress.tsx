@@ -49,6 +49,7 @@ interface NightProgressProps {
   order: string[];
   myRole: Role | null;
   drunkAs?: string | null;
+  isAlive?: boolean;
 }
 
 export function NightProgress({
@@ -56,8 +57,10 @@ export function NightProgress({
   order,
   myRole,
   drunkAs,
+  isAlive = true,
 }: NightProgressProps) {
   const isMyTurn =
+    isAlive &&
     myRole != null &&
     (activeRoleId === myRole.id ||
       (drunkAs != null && activeRoleId === drunkAs));

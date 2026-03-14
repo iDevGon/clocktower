@@ -23,7 +23,12 @@ import { usePlayerStore } from '../stores/playerStore';
 
 // ─── Constants ───────────────────────────────────────────────
 
-type TeamStyleEntry = { borderColor: string; label: string; labelColor: string; accentDim: string };
+type TeamStyleEntry = {
+  borderColor: string;
+  label: string;
+  labelColor: string;
+  accentDim: string;
+};
 
 const TEAM_STYLES: Record<Team, TeamStyleEntry> = {
   townsfolk: {
@@ -104,7 +109,7 @@ export function RoleCard({
         });
       } else {
         flip.value = withTiming(0, {
-          duration: 800,
+          duration: 400,
           easing: REasing.inOut(REasing.cubic),
         });
       }
@@ -137,7 +142,11 @@ export function RoleCard({
   });
 
   const isDead = !usePlayerStore((s) => s.isAlive);
-  const teamStyle = role ? (isDead ? { ...DEAD_TEAM_STYLE, label: TEAM_STYLES[role.team].label } : TEAM_STYLES[role.team]) : null;
+  const teamStyle = role
+    ? isDead
+      ? { ...DEAD_TEAM_STYLE, label: TEAM_STYLES[role.team].label }
+      : TEAM_STYLES[role.team]
+    : null;
 
   return (
     <View style={styles.container}>
@@ -185,7 +194,9 @@ function FrontFace({
       <Text style={[styles.teamLabel, { color: teamStyle.labelColor }]}>
         {teamStyle.label}
       </Text>
-      <Text style={[styles.roleName, isDead && styles.roleNameDead]}>{role.name}</Text>
+      <Text style={[styles.roleName, isDead && styles.roleNameDead]}>
+        {role.name}
+      </Text>
       <View style={styles.divider} />
       <AbilityText text={role.ability} style={styles.ability} />
 
@@ -500,7 +511,7 @@ export function FlippableRoleCard({
     if (prev === 'night' && currentPhase === 'day' && !isHidden) {
       setIsHidden(true);
     }
-  }, [currentPhase]);
+  }, [currentPhase, isHidden]);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const mode: CardMode = veiled ? 'veiled' : isHidden ? 'hidden' : 'revealed';
@@ -517,7 +528,7 @@ export function FlippableRoleCard({
     holdTimer.current = setTimeout(() => {
       holdTimer.current = null;
       setIsHidden((h) => !h);
-    }, 1000);
+    }, 500);
   }, [veiled]);
 
   const handlePressOut = useCallback(() => {

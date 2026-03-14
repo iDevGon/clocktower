@@ -24,6 +24,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { QrScannerModal } from '../src/components/QrScannerModal';
 import { useConnection } from '../src/hooks/useConnection';
 import { useConnectionStore } from '../src/stores/connectionStore';
@@ -158,7 +159,7 @@ export default function JoinScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
 
       {/* Deep dark-crimson background gradient */}
@@ -291,6 +292,6 @@ export default function JoinScreen() {
       <Text style={styles.copyright}>
         Blood on the Clocktower © The Pandemonium Institute.{'\n'}App by DevGon
       </Text>
-    </View>
+    </SafeAreaView>
   );
 }

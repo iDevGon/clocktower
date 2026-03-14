@@ -35,8 +35,8 @@ export function VoteResult({
         찬성 {yesCount}표 / 반대 {noCount}표
       </Text>
       <Text style={styles.threshold}>
-        *찬성표가 <Text style={styles.thresholdHighlight}>생존자 수</Text>의 절반
-        이상이면 처형
+        *찬성표가 <Text style={styles.thresholdHighlight}>생존자 수</Text>의
+        절반 이상이면 처형
       </Text>
       <View style={styles.sentenceDivider} />
       <Text

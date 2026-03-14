@@ -8,7 +8,13 @@ import {
 import { DictionaryModal } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActionModal,
   type ActionModalOption,
@@ -36,6 +42,80 @@ import { useConnectionStore } from '../../src/stores/connectionStore';
 import { useGameStore } from '../../src/stores/gameStore';
 import { useLogStore } from '../../src/stores/logStore';
 import { createGrimoireStyles } from '../../src/styles/grimoire.styles';
+
+function VoteCountdownOverlay({
+  countdown,
+  centerX,
+  centerY,
+}: {
+  countdown: { startedAt: number; durationMs: number };
+  centerX: number;
+  centerY: number;
+}) {
+  const [remaining, setRemaining] = useState(
+    Math.ceil(
+      Math.max(0, countdown.durationMs - (Date.now() - countdown.startedAt)) /
+        1000,
+    ),
+  );
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const ms = countdown.durationMs - (Date.now() - countdown.startedAt);
+      const sec = Math.ceil(Math.max(0, ms) / 1000);
+      setRemaining(sec);
+      if (sec <= 0) clearInterval(interval);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [countdown]);
+
+  useEffect(() => {
+    scale.value = 1.4;
+    scale.value = withSpring(1, { damping: 8, stiffness: 200 });
+  }, [scale]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  if (remaining <= 0) return null;
+
+  return (
+    <View
+      style={[
+        StyleSheet.absoluteFill,
+        {
+          alignItems: 'center',
+          justifyContent: 'center',
+          pointerEvents: 'none',
+          zIndex: 100,
+        },
+      ]}
+    >
+      <Animated.Text
+        style={[
+          {
+            position: 'absolute',
+            left: centerX - 40,
+            top: centerY - 40,
+            width: 80,
+            textAlign: 'center',
+            fontSize: 56,
+            fontWeight: '900',
+            color: '#c47070',
+            textShadowColor: '#c4707060',
+            textShadowOffset: { width: 0, height: 0 },
+            textShadowRadius: 16,
+          },
+          animStyle,
+        ]}
+      >
+        {remaining}
+      </Animated.Text>
+    </View>
+  );
+}
 
 const ALL_STATUSES: PlayerStatus[] = [
   'poisoned',
@@ -94,6 +174,7 @@ export default function GrimoireScreen() {
   const executedPlayerId = useGameStore((s) => s.lastExecutedPlayerId);
   const setExecutedPlayerId = useGameStore((s) => s.setLastExecutedPlayerId);
   const voteClock = useGameStore((s) => s.voteClock);
+  const voteCountdown = useGameStore((s) => s.voteCountdown);
   const voteResult = useGameStore((s) => s.voteResult);
   const setVoteResult = useGameStore((s) => s.setVoteResult);
   const executionCandidateData = useGameStore((s) => s.executionCandidate);
@@ -449,8 +530,18 @@ export default function GrimoireScreen() {
     );
     // 영역 높이가 작으면 추가로 축소
     const heightFit = Math.floor(minDim * 0.35);
-    return Math.max(40, Math.min(defaultTokenSize, fitSize, heightFit));
-  }, [areaSize, defaultTokenSize, gameState?.players.length]);
+    const base = Math.max(40, Math.min(defaultTokenSize, fitSize, heightFit));
+    // 투표 페이즈에서는 시계 페이스가 보이도록 토큰 축소
+    const isVotePhase =
+      gameState?.phase === 'vote' || gameState?.daySubPhase === 'defense';
+    return isVotePhase ? Math.round(base * 0.7) : base;
+  }, [
+    areaSize,
+    defaultTokenSize,
+    gameState?.players.length,
+    gameState?.phase,
+    gameState?.daySubPhase,
+  ]);
 
   // 원형 위치 계산 (playerOrder 기준)
   const circularPositions = useMemo(() => {
@@ -459,7 +550,13 @@ export default function GrimoireScreen() {
     if (total === 0) return [];
     const centerX = areaSize.width / 2;
     const centerY = areaSize.height / 2;
-    const radius = Math.min(centerX, centerY) - dynamicTokenSize * 0.6;
+    // 투표 페이즈에서는 토큰을 시계 안쪽에 배치
+    const isVotePhase =
+      gameState?.phase === 'vote' || gameState?.daySubPhase === 'defense';
+    const radiusOffset = isVotePhase
+      ? dynamicTokenSize * 1.1
+      : dynamicTokenSize * 0.6;
+    const radius = Math.min(centerX, centerY) - radiusOffset;
     const positions: CircularPosition[] = [];
     for (let i = 0; i < total; i++) {
       const angle = (i / total) * 2 * Math.PI - Math.PI / 2;
@@ -475,6 +572,8 @@ export default function GrimoireScreen() {
     dynamicTokenSize,
     playerOrder.length,
     gameState?.players.length,
+    gameState?.phase,
+    gameState?.daySubPhase,
   ]);
 
   const getTokenPosition = useCallback(
@@ -693,7 +792,7 @@ export default function GrimoireScreen() {
   if (!gameState) return null;
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.topBar}>
         <Text style={styles.dayText}>{gameState.day}일차</Text>
         <View style={styles.topBarRight}>
@@ -791,7 +890,9 @@ export default function GrimoireScreen() {
                 }
                 butlerMasterName={butlerMasterNames[player.id]}
                 voteIndicator={voteIndicators[player.id]}
-                isExecutionCandidate={executionCandidateData?.playerId === player.id}
+                isExecutionCandidate={
+                  executionCandidateData?.playerId === player.id
+                }
                 tokenSize={dynamicTokenSize}
                 initialX={pos.x}
                 initialY={pos.y}
@@ -821,7 +922,7 @@ export default function GrimoireScreen() {
             if (total === 0) return null;
             const cX = areaSize.width / 2;
             const cY = areaSize.height / 2;
-            const r = Math.min(cX, cY) - dynamicTokenSize * 0.35;
+            const r = Math.min(cX, cY) - dynamicTokenSize * 0.6;
             return (
               <>
                 <VoteClockFace centerX={cX} centerY={cY} radius={r} />
@@ -837,6 +938,15 @@ export default function GrimoireScreen() {
               </>
             );
           })()}
+
+        {/* Vote countdown overlay */}
+        {hasActiveVote && voteCountdown && !voteClock && (
+          <VoteCountdownOverlay
+            countdown={voteCountdown}
+            centerX={areaSize.width / 2}
+            centerY={areaSize.height / 2}
+          />
+        )}
       </View>
 
       {gameState.phase === 'night' && nightActions.length > 0 && (
@@ -1279,6 +1389,6 @@ export default function GrimoireScreen() {
         onClose={() => setDictionaryVisible(false)}
         groupRolesByTeam={false}
       />
-    </View>
+    </SafeAreaView>
   );
 }

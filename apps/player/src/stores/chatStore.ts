@@ -30,25 +30,27 @@ const initialState = {
 export const useChatStore = create<ChatState>()(
   persist(
     (set, get) => ({
-  ...initialState,
-  addMessage: (message) => {
-    const { isOpen } = get();
-    set((s) => ({
-      messages: [...s.messages, message],
-      unreadCount:
-        !message.fromStoryteller || isOpen ? s.unreadCount : s.unreadCount + 1,
-    }));
-  },
-  setOpen: (open) => {
-    set({ isOpen: open });
-    if (open) {
-      set({ unreadCount: 0 });
-    }
-  },
-  clearUnread: () => set({ unreadCount: 0 }),
-  showToast: (toast) => set({ toast }),
-  dismissToast: () => set({ toast: null }),
-  reset: () => set(initialState),
+      ...initialState,
+      addMessage: (message) => {
+        const { isOpen } = get();
+        set((s) => ({
+          messages: [...s.messages, message],
+          unreadCount:
+            !message.fromStoryteller || isOpen
+              ? s.unreadCount
+              : s.unreadCount + 1,
+        }));
+      },
+      setOpen: (open) => {
+        set({ isOpen: open });
+        if (open) {
+          set({ unreadCount: 0 });
+        }
+      },
+      clearUnread: () => set({ unreadCount: 0 }),
+      showToast: (toast) => set({ toast }),
+      dismissToast: () => set({ toast: null }),
+      reset: () => set(initialState),
     }),
     {
       name: 'chat-store',

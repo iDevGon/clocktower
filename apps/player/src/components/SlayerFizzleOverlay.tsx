@@ -301,17 +301,11 @@ export function SlayerFizzleOverlay({
 
         <Animated.View entering={FadeIn.delay(2200).duration(500)}>
           <Pressable
-            style={[
-              styles.confirmButton,
-              acked && styles.confirmButtonAcked,
-            ]}
+            style={[styles.confirmButton, acked && styles.confirmButtonAcked]}
             onPress={handleConfirm}
           >
             <Text
-              style={[
-                styles.confirmText,
-                acked && styles.confirmTextAcked,
-              ]}
+              style={[styles.confirmText, acked && styles.confirmTextAcked]}
             >
               {acked ? '대기 중...' : '확인'}
             </Text>

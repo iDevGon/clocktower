@@ -27,9 +27,7 @@ export function PhaseIndicator({ phase, desaturated }: PhaseIndicatorProps) {
   return (
     <View style={styles.container}>
       <View style={[styles.dot, { backgroundColor: dotColor }]} />
-      <Text style={[styles.label, { color }]}>
-        {config.label}
-      </Text>
+      <Text style={[styles.label, { color }]}>{config.label}</Text>
     </View>
   );
 }

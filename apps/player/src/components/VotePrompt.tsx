@@ -214,7 +214,7 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
     if (!voteCountdown) return 0;
     const elapsed = Date.now() - voteCountdown.startedAt;
     return Math.max(0, Math.ceil((voteCountdown.durationMs - elapsed) / 1000));
-  }, [voteCountdown, _tick]);
+  }, [voteCountdown]);
 
   const isCountingDown = voteCountdown !== null && countdownRemaining > 0;
 

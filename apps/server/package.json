@@ -7,7 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "dev:app": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "tsc && node dist/index.js"
   },
   "dependencies": {
     "@clocktower/shared": "workspace:*",

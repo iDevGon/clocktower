@@ -44,49 +44,50 @@ const initialState = {
 export const useWhisperStore = create<WhisperState>()(
   persist(
     (set, get) => ({
-  ...initialState,
-  setActiveChat: (conversationId) => {
-    set({ activeChat: conversationId });
-    if (conversationId) {
-      const { unreadCounts } = get();
-      set({ unreadCounts: { ...unreadCounts, [conversationId]: 0 } });
-    }
-  },
-  addMessage: (message, myPlayerId) => {
-    const { conversations, conversationMeta, activeChat, unreadCounts } = get();
-    const convId = message.conversationId;
-    const prev = conversations[convId] ?? [];
-    set({
-      conversations: {
-        ...conversations,
-        [convId]: [...prev, message],
+      ...initialState,
+      setActiveChat: (conversationId) => {
+        set({ activeChat: conversationId });
+        if (conversationId) {
+          const { unreadCounts } = get();
+          set({ unreadCounts: { ...unreadCounts, [conversationId]: 0 } });
+        }
       },
-      conversationMeta: {
-        ...conversationMeta,
-        [convId]: {
-          participantIds: message.participantIds,
-          participantNames: message.participantNames,
-        },
+      addMessage: (message, myPlayerId) => {
+        const { conversations, conversationMeta, activeChat, unreadCounts } =
+          get();
+        const convId = message.conversationId;
+        const prev = conversations[convId] ?? [];
+        set({
+          conversations: {
+            ...conversations,
+            [convId]: [...prev, message],
+          },
+          conversationMeta: {
+            ...conversationMeta,
+            [convId]: {
+              participantIds: message.participantIds,
+              participantNames: message.participantNames,
+            },
+          },
+        });
+        // Increment unread if not currently viewing this chat
+        if (activeChat !== convId && message.fromId !== myPlayerId) {
+          set({
+            unreadCounts: {
+              ...unreadCounts,
+              [convId]: (unreadCounts[convId] ?? 0) + 1,
+            },
+          });
+        }
       },
-    });
-    // Increment unread if not currently viewing this chat
-    if (activeChat !== convId && message.fromId !== myPlayerId) {
-      set({
-        unreadCounts: {
-          ...unreadCounts,
-          [convId]: (unreadCounts[convId] ?? 0) + 1,
-        },
-      });
-    }
-  },
-  clearUnread: (conversationId) => {
-    const { unreadCounts } = get();
-    set({ unreadCounts: { ...unreadCounts, [conversationId]: 0 } });
-  },
-  showToast: (toast) => set({ toast }),
-  dismissToast: () => set({ toast: null }),
-  setActiveWhispers: (whispers) => set({ activeWhispers: whispers }),
-  reset: () => set(initialState),
+      clearUnread: (conversationId) => {
+        const { unreadCounts } = get();
+        set({ unreadCounts: { ...unreadCounts, [conversationId]: 0 } });
+      },
+      showToast: (toast) => set({ toast }),
+      dismissToast: () => set({ toast: null }),
+      setActiveWhispers: (whispers) => set({ activeWhispers: whispers }),
+      reset: () => set(initialState),
     }),
     {
       name: 'whisper-store',

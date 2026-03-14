@@ -2,6 +2,10 @@
   "name": "clocktower",
   "private": true,
   "scripts": {
+    "start": "pnpm -r --parallel start",
+    "start:server": "pnpm --filter @clocktower/server start",
+    "start:storyteller": "pnpm --filter @clocktower/storyteller start",
+    "start:player": "pnpm --filter @clocktower/player start",
     "dev": "pnpm -r --parallel dev",
     "dev:server": "pnpm --filter @clocktower/server dev",
     "dev:storyteller": "pnpm --filter @clocktower/storyteller dev",

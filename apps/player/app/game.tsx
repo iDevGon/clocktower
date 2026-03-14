@@ -1,14 +1,17 @@
 import { DictionaryModal } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { DeadVignette } from '../src/components/DeadVignette';
 import { DeathOverlay } from '../src/components/DeathOverlay';
 import { ExecutionOverlay } from '../src/components/ExecutionOverlay';
 import { FeedbackHistoryModal } from '../src/components/FeedbackHistoryModal';
 import { GameEndOverlay } from '../src/components/GameEndOverlay';
+import { GameStartReveal } from '../src/components/GameStartReveal';
 import { NightDeathOverlay } from '../src/components/NightDeathOverlay';
+import { NightFallOverlay } from '../src/components/NightFallOverlay';
 import { NominateModal } from '../src/components/NominateModal';
 import {
   DiscussionPhase,
@@ -20,6 +23,7 @@ import {
 } from '../src/components/PhaseContent';
 import { PhaseIndicator } from '../src/components/PhaseIndicator';
 import { FlippableRoleCard } from '../src/components/RoleCard';
+import { RolePromotionReveal } from '../src/components/RolePromotionReveal';
 import { SlayerFizzleOverlay } from '../src/components/SlayerFizzleOverlay';
 import { StorytellerChatModal } from '../src/components/StorytellerChatModal';
 import { StorytellerChatToast } from '../src/components/StorytellerChatToast';
@@ -68,6 +72,7 @@ export default function GameScreen() {
     executionHappenedToday,
     executionCandidate,
     nominatedTodayIds,
+    rolePromotion,
   } = usePlayerStore();
   const dismissDeath = usePlayerStore((s) => s.set);
   const {
@@ -97,6 +102,39 @@ export default function GameScreen() {
     }
   }, [currentPhase, daySubPhase]);
 
+  // ── Game start reveal (setup → first night) ──
+  const [showStartReveal, setShowStartReveal] = useState(false);
+  const [showNightFall, setShowNightFall] = useState(false);
+  const prevPhaseForReveal = useRef(currentPhase);
+  const nightCount = usePlayerStore((s) => s.nightCount);
+
+  const pendingRolePromotion = usePlayerStore((s) => s.pendingRolePromotion);
+
+  useEffect(() => {
+    const prev = prevPhaseForReveal.current;
+    prevPhaseForReveal.current = currentPhase;
+    // Show reveal when transitioning from setup to night (first night only)
+    if (
+      prev === 'setup' &&
+      currentPhase === 'night' &&
+      nightCount === 1 &&
+      role
+    ) {
+      setShowStartReveal(true);
+    }
+    // Show nightfall overlay when transitioning from day to night
+    if (prev === 'day' && currentPhase === 'night') {
+      setShowNightFall(true);
+    }
+    // Show deferred role promotion when transitioning from night to day
+    if (prev === 'night' && currentPhase === 'day' && pendingRolePromotion) {
+      dismissDeath({
+        rolePromotion: pendingRolePromotion,
+        pendingRolePromotion: null,
+      });
+    }
+  }, [currentPhase, nightCount, role, pendingRolePromotion, dismissDeath]);
+
   const [gameEndDismissed, setGameEndDismissed] = useState(false);
   const [whisperModalVisible, setWhisperModalVisible] = useState(false);
   const [whisperInitialTarget, setWhisperInitialTarget] = useState<{
@@ -115,8 +153,15 @@ export default function GameScreen() {
     Object.values(s.unreadCounts).reduce((a, b) => a + b, 0),
   );
 
+  const dismissStartReveal = useCallback(() => setShowStartReveal(false), []);
+  const dismissRolePromotion = useCallback(
+    () => dismissDeath({ rolePromotion: null }),
+    [dismissDeath],
+  );
+
   const drunkAs = usePlayerStore((s) => s.drunkAs);
   const isMyTurn =
+    isAlive &&
     role != null &&
     (nightProgress?.activeRoleId === role.id ||
       (drunkAs != null && nightProgress?.activeRoleId === drunkAs));
@@ -137,14 +182,17 @@ export default function GameScreen() {
     }
   };
 
-  const canUseSlayer = isAlive && !slayerUsed && (currentPhase === 'day' || currentPhase === 'vote');
+  const canUseSlayer =
+    isAlive &&
+    !slayerUsed &&
+    (currentPhase === 'day' || currentPhase === 'vote');
 
   const nominatablePlayers = gamePlayers.filter(
     (p) => p.isAlive && p.id !== playerId,
   );
 
   return (
-    <View style={[styles.container, !isAlive && styles.containerDead]}>
+    <SafeAreaView style={[styles.container, !isAlive && styles.containerDead]}>
       <StatusBar style="light" />
 
       {/* Persistent ghostly blue vignette when dead */}
@@ -168,7 +216,10 @@ export default function GameScreen() {
           <View style={styles.headerRight}>
             <Pressable
               onPress={() => setDictionaryVisible(true)}
-              style={[styles.feedbackHistoryButton, !isAlive && styles.feedbackHistoryButtonDead]}
+              style={[
+                styles.feedbackHistoryButton,
+                !isAlive && styles.feedbackHistoryButtonDead,
+              ]}
               accessibilityLabel="역할 사전"
               accessibilityRole="button"
             >
@@ -177,7 +228,10 @@ export default function GameScreen() {
             {currentPhase !== 'setup' && (
               <Pressable
                 onPress={() => setChatModalVisible(true)}
-                style={[styles.feedbackHistoryButton, !isAlive && styles.feedbackHistoryButtonDead]}
+                style={[
+                  styles.feedbackHistoryButton,
+                  !isAlive && styles.feedbackHistoryButtonDead,
+                ]}
                 accessibilityLabel="밀담"
                 accessibilityRole="button"
               >
@@ -212,12 +266,20 @@ export default function GameScreen() {
             {feedbackHistory.length > 0 && currentPhase !== 'setup' && (
               <Pressable
                 onPress={() => setFeedbackHistoryVisible(true)}
-                style={[styles.feedbackHistoryButton, !isAlive && styles.feedbackHistoryButtonDead]}
+                style={[
+                  styles.feedbackHistoryButton,
+                  !isAlive && styles.feedbackHistoryButtonDead,
+                ]}
                 accessibilityLabel="피드백 기록"
                 accessibilityRole="button"
               >
                 <Text style={styles.feedbackHistoryIcon}>📜</Text>
-                <Text style={[styles.feedbackHistoryCount, !isAlive && styles.feedbackHistoryCountDead]}>
+                <Text
+                  style={[
+                    styles.feedbackHistoryCount,
+                    !isAlive && styles.feedbackHistoryCountDead,
+                  ]}
+                >
                   {feedbackHistory.length}
                 </Text>
               </Pressable>
@@ -238,8 +300,18 @@ export default function GameScreen() {
         <View style={styles.phaseRow}>
           <PhaseIndicator phase={currentPhase} desaturated={!isAlive} />
           {currentPhase === 'day' && daySubPhase && (
-            <View style={[styles.subPhaseBadge, !isAlive && styles.subPhaseBadgeDead]}>
-              <Text style={[styles.subPhaseText, !isAlive && styles.subPhaseTextDead]}>
+            <View
+              style={[
+                styles.subPhaseBadge,
+                !isAlive && styles.subPhaseBadgeDead,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.subPhaseText,
+                  !isAlive && styles.subPhaseTextDead,
+                ]}
+              >
                 {DAY_SUB_PHASE_LABELS[daySubPhase] ?? ''}
               </Text>
             </View>
@@ -303,28 +375,51 @@ export default function GameScreen() {
           />
         )}
 
-        {!voteResult && !nomination && executionCandidate && currentPhase !== 'night' && currentPhase !== 'ended' && (
-          <View style={{
-            backgroundColor: '#1a1a1e',
-            borderRadius: 12,
-            borderWidth: 1,
-            borderColor: '#c4707060',
-            padding: 14,
-            alignItems: 'center',
-            marginHorizontal: 20,
-            marginVertical: 8,
-          }}>
-            <Text style={{ color: '#908e8a', fontSize: 11, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 6 }}>
-              처형 예정
-            </Text>
-            <Text style={{ color: '#c47070', fontSize: 18, fontWeight: '700', textShadowColor: '#c4707040', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 }}>
-              {executionCandidate.playerName}
-            </Text>
-            <Text style={{ color: '#706e6a', fontSize: 12, marginTop: 4 }}>
-              찬성 {executionCandidate.guiltyVotes}표
-            </Text>
-          </View>
-        )}
+        {!voteResult &&
+          !nomination &&
+          executionCandidate &&
+          currentPhase !== 'night' &&
+          currentPhase !== 'ended' && (
+            <View
+              style={{
+                backgroundColor: '#1a1a1e',
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: '#c4707060',
+                padding: 14,
+                alignItems: 'center',
+                marginHorizontal: 20,
+                marginVertical: 8,
+              }}
+            >
+              <Text
+                style={{
+                  color: '#908e8a',
+                  fontSize: 11,
+                  textTransform: 'uppercase',
+                  letterSpacing: 2,
+                  marginBottom: 6,
+                }}
+              >
+                처형 예정
+              </Text>
+              <Text
+                style={{
+                  color: '#c47070',
+                  fontSize: 18,
+                  fontWeight: '700',
+                  textShadowColor: '#c4707040',
+                  textShadowOffset: { width: 0, height: 1 },
+                  textShadowRadius: 6,
+                }}
+              >
+                {executionCandidate.playerName}
+              </Text>
+              <Text style={{ color: '#706e6a', fontSize: 12, marginTop: 4 }}>
+                찬성 {executionCandidate.guiltyVotes}표
+              </Text>
+            </View>
+          )}
 
         <EndedPhase
           visible={currentPhase === 'ended'}
@@ -359,18 +454,45 @@ export default function GameScreen() {
         )}
       </ScrollView>
 
+      {showStartReveal && role && (
+        <GameStartReveal
+          role={role}
+          evilInfo={evilInfo}
+          onDismiss={dismissStartReveal}
+        />
+      )}
+
+      {rolePromotion && !showStartReveal && (
+        <RolePromotionReveal
+          role={rolePromotion}
+          onDismiss={dismissRolePromotion}
+        />
+      )}
+
       {justDied && (
         <DeathOverlay
-          onDismiss={() => dismissDeath({ justDied: false, deathReason: null, nightDeathAnnouncement: null })}
+          onDismiss={() =>
+            dismissDeath({
+              justDied: false,
+              deathReason: null,
+              nightDeathAnnouncement: null,
+            })
+          }
           reason={deathReason}
         />
       )}
 
-      {executionAnnouncement && !justDied && !(currentPhase === 'ended' && gameResult) && (
-        <ExecutionOverlay
-          announcement={executionAnnouncement}
-          onDismiss={() => dismissDeath({ executionAnnouncement: null })}
-        />
+      {executionAnnouncement &&
+        !justDied &&
+        !(currentPhase === 'ended' && gameResult) && (
+          <ExecutionOverlay
+            announcement={executionAnnouncement}
+            onDismiss={() => dismissDeath({ executionAnnouncement: null })}
+          />
+        )}
+
+      {showNightFall && (
+        <NightFallOverlay onDismiss={() => setShowNightFall(false)} />
       )}
 
       {nightDeathAnnouncement && !justDied && !executionAnnouncement && (
@@ -455,6 +577,6 @@ export default function GameScreen() {
       />
 
       <StorytellerChatToast onPress={() => setChatModalVisible(true)} />
-    </View>
+    </SafeAreaView>
   );
 }
