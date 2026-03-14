@@ -103,6 +103,8 @@ export function NightFeedbackPanel({
   if (!targetPlayer) return null;
 
   const isDrunk = targetPlayer.role?.id === 'drunk';
+  const isPoisoned = targetPlayer.statuses.includes('poisoned');
+  const isMalfunctioning = isDrunk || isPoisoned;
   const role = getRoleById(activeRoleId);
   const team = role?.team ?? 'townsfolk';
   const cardColors = TEAM_CARD_COLORS[team] ?? FALLBACK_CARD_COLORS;
@@ -161,10 +163,26 @@ export function NightFeedbackPanel({
             />
           )}
 
-          {isDrunk && (
-            <View style={styles.drunkBanner}>
-              <Text style={styles.drunkBannerText}>
-                ⚠️ 주정뱅이 - 가짜 정보를 제공하세요
+          {isMalfunctioning && (
+            <View
+              style={[
+                styles.drunkBanner,
+                isPoisoned &&
+                  !isDrunk && {
+                    backgroundColor: 'rgba(155,89,182,0.15)',
+                    borderColor: '#9b59b6',
+                  },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.drunkBannerText,
+                  isPoisoned && !isDrunk && { color: '#9b59b6' },
+                ]}
+              >
+                {isDrunk
+                  ? '⚠️ 주정뱅이 - 가짜 정보를 제공하세요'
+                  : '⚠️ 중독 상태 - 가짜 정보를 제공하세요'}
               </Text>
             </View>
           )}
@@ -229,7 +247,7 @@ export function NightFeedbackPanel({
                 <Text style={[styles.drunkBannerText, { color: '#2ecc71' }]}>
                   이웃: {empathHint.neighbors.map((n) => n.name).join(', ')} →
                   악한 {empathHint.evilCount}명
-                  {isDrunk ? ' (주정뱅이 - 가짜 정보 제공)' : ''}
+                  {isMalfunctioning ? ' (가짜 정보 제공 필요)' : ''}
                 </Text>
               </View>
             )}
@@ -249,7 +267,7 @@ export function NightFeedbackPanel({
                 {chefHint.evilPairNames.length > 0
                   ? ` (${chefHint.evilPairNames.map((pair) => pair.join('-')).join(', ')})`
                   : ''}
-                {isDrunk ? ' (주정뱅이 - 가짜 정보 제공)' : ''}
+                {isMalfunctioning ? ' (가짜 정보 제공 필요)' : ''}
               </Text>
             </View>
           )}
@@ -257,7 +275,7 @@ export function NightFeedbackPanel({
           <FeedbackComposer
             feedbackDef={feedbackDef}
             players={players.filter((p) => p.id !== targetPlayer.id)}
-            isDrunkUser={isDrunk}
+            isDrunkUser={isMalfunctioning}
             suggestedNumber={
               isDrunk
                 ? undefined

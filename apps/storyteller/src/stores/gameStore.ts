@@ -66,6 +66,9 @@ interface GameStore {
   setActiveNightRoleId: (roleId: string | null) => void;
   setActiveWhispers: (whispers: ActiveWhisperChat[]) => void;
   setLastExecutedPlayerId: (id: string | null) => void;
+  setVoteCountdown: (
+    countdown: { startedAt: number; durationMs: number } | null,
+  ) => void;
   setVoteClock: (
     clock: { startedAt: number; durationMs: number } | null,
   ) => void;
@@ -79,7 +82,13 @@ interface GameStore {
   removePlayerStatus: (playerId: string, status: PlayerStatus) => void;
   clearPlayerStatuses: (playerId: string) => void;
   setVoteResult: (result: VoteResult | null) => void;
-  setExecutionCandidate: (candidate: { playerId: string; playerName: string; guiltyVotes: number } | null) => void;
+  setExecutionCandidate: (
+    candidate: {
+      playerId: string;
+      playerName: string;
+      guiltyVotes: number;
+    } | null,
+  ) => void;
   setGameResult: (result: GameResult | null) => void;
   setTokenPosition: (playerId: string, pos: TokenPosition) => void;
   clearTokenPositions: () => void;
@@ -147,7 +156,6 @@ export const useGameStore = create<GameStore>()(
             : {}),
           ...(phaseChangedToVote
             ? {
-                voteCountdown: null,
                 voteResult: null,
               }
             : {}),
@@ -166,6 +174,7 @@ export const useGameStore = create<GameStore>()(
       setActiveNightRoleId: (roleId) => set({ activeNightRoleId: roleId }),
       setActiveWhispers: (whispers) => set({ activeWhispers: whispers }),
       setLastExecutedPlayerId: (id) => set({ lastExecutedPlayerId: id }),
+      setVoteCountdown: (countdown) => set({ voteCountdown: countdown }),
       setVoteClock: (clock) => set({ voteClock: clock, voteCountdown: null }),
       setWhisperClock: (clock) => set({ whisperClock: clock }),
       setVotePreselection: (playerId, guilty) =>
@@ -205,7 +214,8 @@ export const useGameStore = create<GameStore>()(
           return { playerStatuses: rest };
         }),
       setVoteResult: (result) => set({ voteResult: result }),
-      setExecutionCandidate: (candidate) => set({ executionCandidate: candidate }),
+      setExecutionCandidate: (candidate) =>
+        set({ executionCandidate: candidate }),
       setGameResult: (result) => set({ gameResult: result }),
       addChatMessage: (message) =>
         set((s) => {

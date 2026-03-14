@@ -63,6 +63,10 @@ export class GameManager {
   private currentNightOrder: string[] = [];
   // 점쟁이 Red Herring (악마로 감지되는 선한 플레이어)
   private fortuneTellerRedHerring: string | null = null;
+  // 탕녀 승계로 역할이 변경된 플레이어 (checkWinCondition 호출 후 소비)
+  private lastPromotedPlayer: Player | null = null;
+  // 임프 자해 시 지연된 승계 (밤→낮 전환 시 실행)
+  private pendingImpPromotion: { minionId: string } | null = null;
 
   create(): string {
     const id = randomUUID().slice(0, 8);
@@ -508,23 +512,43 @@ export class GameManager {
     this.state.daySubPhase = 'nomination';
   }
 
+  /** 탕녀 승계로 역할이 변경된 플레이어를 반환하고 내부 상태를 초기화 */
+  consumePromotedPlayer(): Player | null {
+    const p = this.lastPromotedPlayer;
+    this.lastPromotedPlayer = null;
+    return p;
+  }
+
   // ── 임프 자해 → 하수인 승계 ──
 
-  handleImpSelfKill(impPlayerId: string): Player | null {
+  handleImpSelfKill(impPlayerId: string): boolean {
     const targets = this.nightActionTargets.get(impPlayerId);
-    if (!targets || !targets.includes(impPlayerId)) return null;
+    if (!targets || !targets.includes(impPlayerId)) return false;
 
-    // 살아있는 하수인 중 한 명을 임프로 승격
+    // 살아있는 하수인 중 한 명을 찾아 승계 예약 (낮 전환 시 실행)
     const livingMinion = this.state.players.find(
       (p) => p.isAlive && p.role?.team === 'minion',
     );
-    if (!livingMinion) return null;
+    if (!livingMinion) return false;
+
+    this.pendingImpPromotion = { minionId: livingMinion.id };
+    return true;
+  }
+
+  /** 밤→낮 전환 시 호출: 임프 자해 승계를 실행하고 승계된 플레이어를 반환 */
+  flushImpPromotion(): Player | null {
+    if (!this.pendingImpPromotion) return null;
+    const { minionId } = this.pendingImpPromotion;
+    this.pendingImpPromotion = null;
+
+    const minion = this.state.players.find((p) => p.id === minionId);
+    if (!minion || !minion.isAlive) return null;
 
     const impRole = getRoleById('imp');
     if (impRole) {
-      livingMinion.role = impRole;
+      minion.role = impRole;
     }
-    return livingMinion;
+    return minion;
   }
 
   /**
@@ -576,13 +600,23 @@ export class GameManager {
     // 악마 사망 체크
     const aliveDemon = alivePlayers.find((p) => p.role?.team === 'demon');
     if (!aliveDemon) {
+      // 임프 자해 승계가 예약되어 있으면 게임 계속
+      if (this.pendingImpPromotion) {
+        return null;
+      }
       // 탕녀 승계: 생존자 5명 이상이고 살아있는 (중독되지 않은) 탕녀가 있으면 게임 계속
       const aliveScarletWoman = alivePlayers.find(
         (p) =>
           p.role?.id === 'scarlet_woman' && !p.statuses.includes('poisoned'),
       );
       if (aliveScarletWoman && aliveCount >= 5) {
-        return null; // 탕녀가 악마가 됨 — 이야기꾼이 수동 처리
+        // 탕녀를 임프로 자동 승계
+        const impRole = getRoleById('imp');
+        if (impRole) {
+          aliveScarletWoman.role = impRole;
+          this.lastPromotedPlayer = aliveScarletWoman;
+        }
+        return null;
       }
       return buildResult('good', '악마가 사망했습니다');
     }

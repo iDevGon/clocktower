@@ -197,7 +197,7 @@ export function VoteClockHand({
             top: centerY - handLength,
             width: daggerW,
             height: handLength,
-            transformOrigin: `${daggerW / 2}px ${handLength}px`,
+            transformOrigin: [daggerW / 2, handLength, 0],
           },
           daggerStyle,
         ]}

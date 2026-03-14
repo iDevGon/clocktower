@@ -107,6 +107,10 @@ interface PlayerState {
     guiltyVotes: number;
   } | null;
   nominatedTodayIds: string[];
+  /** Set when role changes mid-game (e.g. Scarlet Woman → Imp promotion) */
+  rolePromotion: Role | null;
+  /** Deferred promotion reveal: set during night, shown when day arrives */
+  pendingRolePromotion: Role | null;
   set: (partial: Partial<PlayerState>) => void;
   addFeedback: (day: number, feedback: NightFeedbackPayload) => void;
   reset: () => void;
@@ -157,6 +161,8 @@ const initialState = {
     guiltyVotes: number;
   } | null,
   nominatedTodayIds: [] as string[],
+  rolePromotion: null as Role | null,
+  pendingRolePromotion: null as Role | null,
 };
 
 export const usePlayerStore = create<PlayerState>()(

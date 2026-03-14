@@ -185,13 +185,24 @@ export function NightActionLog({
                   })}
                 </View>
               )}
-              {isExpanded && feedbackDef && (
-                <FeedbackComposer
-                  feedbackDef={feedbackDef}
-                  players={players}
-                  onSend={(fb) => handleSend(action, i, fb)}
-                />
-              )}
+              {isExpanded &&
+                feedbackDef &&
+                (() => {
+                  const actionPlayer = players.find(
+                    (p) => p.id === action.playerId,
+                  );
+                  const isActionPlayerMalfunctioning =
+                    actionPlayer?.role?.id === 'drunk' ||
+                    actionPlayer?.statuses.includes('poisoned');
+                  return (
+                    <FeedbackComposer
+                      feedbackDef={feedbackDef}
+                      players={players}
+                      isDrunkUser={isActionPlayerMalfunctioning}
+                      onSend={(fb) => handleSend(action, i, fb)}
+                    />
+                  );
+                })()}
             </Pressable>
           );
         })}

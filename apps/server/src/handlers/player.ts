@@ -8,8 +8,8 @@ import type {
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
 import { registerPushToken } from '../pushNotifications.js';
-import { startClockwiseVote } from './storyteller.js';
 import { WhisperTracker } from '../whisper.js';
+import { startClockwiseVote } from './storyteller.js';
 
 type PlayerNamespace = Namespace<ClientToServerEvents, ServerToClientEvents>;
 type StorytellerNamespace = Namespace<

@@ -114,8 +114,13 @@ export function attachListeners(socket: AppSocket) {
       nightFeedback: null,
     });
 
-    const { role: myRole, drunkAs } = usePlayerStore.getState();
-    if (roleId && myRole && (myRole.id === roleId || drunkAs === roleId)) {
+    const { role: myRole, drunkAs, isAlive } = usePlayerStore.getState();
+    if (
+      isAlive &&
+      roleId &&
+      myRole &&
+      (myRole.id === roleId || drunkAs === roleId)
+    ) {
       vibrateAlert();
     }
   });
@@ -148,8 +153,25 @@ export function attachListeners(socket: AppSocket) {
   });
 
   socket.on('role:assign', ({ roleId, drunkAs }) => {
+    const { role: prevRole, currentPhase } = usePlayerStore.getState();
     const role = getRoleById(roleId) ?? null;
-    usePlayerStore.getState().set({ role, drunkAs: drunkAs ?? null });
+    // Detect mid-game role promotion (e.g. Scarlet Woman → Imp)
+    const isPromotion =
+      prevRole && role && currentPhase !== 'setup' && prevRole.id !== role.id;
+    if (isPromotion && currentPhase === 'night') {
+      // During night: defer the reveal until day
+      usePlayerStore.getState().set({
+        role,
+        drunkAs: drunkAs ?? null,
+        pendingRolePromotion: role,
+      });
+    } else {
+      usePlayerStore.getState().set({
+        role,
+        drunkAs: drunkAs ?? null,
+        rolePromotion: isPromotion ? role : null,
+      });
+    }
   });
 
   socket.on('evil:info', (data) => {
@@ -183,7 +205,8 @@ export function attachListeners(socket: AppSocket) {
 
   socket.on('vote:result', (data) => {
     // 처형 예정자 추적: 유죄 판결이면 새 후보, 아니면 기존 유지
-    const newCandidate = data.executionCandidate ?? usePlayerStore.getState().executionCandidate;
+    const newCandidate =
+      data.executionCandidate ?? usePlayerStore.getState().executionCandidate;
     usePlayerStore.getState().set({
       voteResult: data,
       nomination: null,

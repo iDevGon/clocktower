@@ -118,7 +118,9 @@ export function useSocketConnection() {
             );
         });
         newSocket.on('vote:proceedToVote', () => {
-          // 투표 페이즈 전환은 game:state 이벤트로 처리됨
+          useGameStore
+            .getState()
+            .setVoteCountdown({ startedAt: Date.now(), durationMs: 5000 });
         });
         newSocket.on('vote:clockStart', (data) => {
           useGameStore.getState().setVoteClock({

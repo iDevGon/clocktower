@@ -30,6 +30,25 @@ function getNightOrder(day: number): string[] {
   return day <= 1 ? FIRST_NIGHT_ORDER : OTHER_NIGHT_ORDER;
 }
 
+/** 탕녀 승계가 발생했으면 승계 플레이어에게 role:assign 전송 */
+function emitPromotionIfAny(
+  game: GameManager,
+  playerIo: PlayerNamespace,
+  storytellerIo: StorytellerNamespace,
+): void {
+  const promoted = game.consumePromotedPlayer();
+  if (promoted?.role) {
+    console.log(
+      `Scarlet Woman promotion: ${promoted.name} promoted to ${promoted.role.name}`,
+    );
+    playerIo.to(promoted.id).emit('role:assign', {
+      roleId: promoted.role.id,
+      roleName: promoted.role.name,
+    });
+    storytellerIo.emit('game:state', game.getState());
+  }
+}
+
 /**
  * 악한 팀에게 정보 전송:
  * - 악마: 하수인 이름 + 블러프용 선한 역할 3개
@@ -261,6 +280,7 @@ export function registerStorytellerHandlers(
             storytellerIo.emit('game:state', game.getState());
             return;
           }
+          emitPromotionIfAny(game, playerIo, storytellerIo);
         }
       }
 
@@ -276,6 +296,18 @@ export function registerStorytellerHandlers(
         sendPushToAll(allIds, '🌙 밤이 되었습니다', '눈을 감으세요...');
       }
       if (phase === 'day') {
+        // 임프 자해 승계 실행
+        const impPromoted = game.flushImpPromotion();
+        if (impPromoted?.role) {
+          console.log(
+            `Imp self-kill promotion: ${impPromoted.name} promoted to ${impPromoted.role.name}`,
+          );
+          playerIo.to(impPromoted.id).emit('role:assign', {
+            roleId: impPromoted.role.id,
+            roleName: impPromoted.role.name,
+          });
+        }
+
         // 밤 중 사망한 플레이어들 알림
         const pendingKills = game.flushPendingNightKills();
         const nightDeaths: Array<{ id: string; name: string }> = [];
@@ -334,7 +366,9 @@ export function registerStorytellerHandlers(
 
       // Push notification to the active role's player
       if (roleId) {
-        const activePlayer = state.players.find((p) => p.role?.id === roleId);
+        const activePlayer = state.players.find(
+          (p) => p.isAlive && p.role?.id === roleId,
+        );
         if (activePlayer) {
           const role = getRoleById(roleId);
           const roleName = role?.name ?? roleId;
@@ -361,7 +395,9 @@ export function registerStorytellerHandlers(
 
       // Spy: automatically send grimoire
       if (roleId === 'spy') {
-        const spyPlayer = state.players.find((p) => p.role?.id === 'spy');
+        const spyPlayer = state.players.find(
+          (p) => p.isAlive && p.role?.id === 'spy',
+        );
         if (spyPlayer) {
           const entries = state.players.map((p) => ({
             name: p.name,
@@ -547,13 +583,9 @@ export function registerStorytellerHandlers(
 
       game.kill(playerId);
 
-      // 임프 자해 → 하수인 승계
+      // 임프 자해 → 하수인 승계 예약 (낮 전환 시 실행)
       if (isImpSelfKill) {
-        const promoted = game.handleImpSelfKill(playerId);
-        if (promoted) {
-          console.log(`Imp self-kill: ${promoted.name} promoted to Imp`);
-          storytellerIo.emit('game:state', game.getState());
-        }
+        game.handleImpSelfKill(playerId);
       }
 
       storytellerIo.emit('game:state', game.getState());
@@ -565,13 +597,17 @@ export function registerStorytellerHandlers(
         playerIo.emit('game:phase', 'ended');
         storytellerIo.emit('game:end', winResult);
         storytellerIo.emit('game:state', game.getState());
-      } else if (killedPlayer) {
-        if (isNight) {
-          // 밤 중 사망: 낮 전환 시까지 플레이어 알림 보류
-          game.addPendingNightKill(playerId);
-        } else {
-          const updatedPlayer = game.getPlayer(playerId);
-          if (updatedPlayer) playerIo.emit('game:playerUpdate', updatedPlayer);
+      } else {
+        emitPromotionIfAny(game, playerIo, storytellerIo);
+        if (killedPlayer) {
+          if (isNight) {
+            // 밤 중 사망: 낮 전환 시까지 플레이어 알림 보류
+            game.addPendingNightKill(playerId);
+          } else {
+            const updatedPlayer = game.getPlayer(playerId);
+            if (updatedPlayer)
+              playerIo.emit('game:playerUpdate', updatedPlayer);
+          }
         }
       }
     });
@@ -631,6 +667,8 @@ export function registerStorytellerHandlers(
           playerIo.emit('game:phase', 'ended');
           storytellerIo.emit('game:end', winResult);
           storytellerIo.emit('game:state', game.getState());
+        } else {
+          emitPromotionIfAny(game, playerIo, storytellerIo);
         }
         return;
       }
