@@ -2,19 +2,20 @@
   "name": "clocktower",
   "private": true,
   "scripts": {
-    "start": "pnpm -r --parallel start",
-    "start:server": "pnpm --filter @clocktower/server start",
-    "start:storyteller": "pnpm --filter @clocktower/storyteller start",
-    "start:player": "pnpm --filter @clocktower/player start",
-    "dev": "pnpm -r --parallel dev",
-    "dev:server": "pnpm --filter @clocktower/server dev",
-    "dev:storyteller": "pnpm --filter @clocktower/storyteller dev",
-    "dev:player": "pnpm --filter @clocktower/player dev",
-    "build": "pnpm -r build",
+    "start": "turbo start",
+    "start:server": "turbo start --filter=@clocktower/server",
+    "start:storyteller": "turbo start --filter=@clocktower/storyteller",
+    "start:player": "turbo start --filter=@clocktower/player",
+    "dev": "turbo dev",
+    "dev:server": "turbo dev --filter=@clocktower/server",
+    "dev:storyteller": "turbo dev --filter=@clocktower/storyteller",
+    "dev:player": "turbo dev --filter=@clocktower/player",
+    "build": "turbo build",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write ."
   },
+  "packageManager": "pnpm@10.30.3",
   "engines": {
     "node": ">=18"
   },
@@ -27,6 +28,7 @@
     }
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.6"
+    "@biomejs/biome": "^2.4.6",
+    "turbo": "^2.8.17"
   }
 }
