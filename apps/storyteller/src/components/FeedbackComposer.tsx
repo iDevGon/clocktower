@@ -157,10 +157,10 @@ function PlayersAndRoleFeedback({
     const real = new Set<string>();
     let teamMatch = false;
     for (const p of selected) {
-      if (p.role?.id === 'drunk' && p.drunkAs) {
-        // 주정뱅이는 drunkAs 역할로 등록됨
-        if (roles.some((r) => r.id === p.drunkAs)) {
-          real.add(p.drunkAs);
+      if (p.role?.id === 'drunk') {
+        // 주정뱅이는 외지인이므로 외지인 필터에 매치
+        if (roles.some((r) => r.id === 'drunk')) {
+          real.add('drunk');
           teamMatch = true;
         }
       } else if (p.role && roles.some((r) => r.id === p.role?.id)) {
