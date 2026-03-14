@@ -253,6 +253,7 @@ export class GameManager {
       name: roleId,
       team: 'townsfolk',
       ability: '',
+      edition: '',
     };
     player.role = role;
     player.drunkAs = drunkAs;
@@ -580,6 +581,7 @@ export class GameManager {
             name: '???',
             team: 'townsfolk',
             ability: '',
+            edition: '',
           },
           isAlive: p.isAlive,
           team: p.role?.team ?? 'townsfolk',
