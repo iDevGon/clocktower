@@ -1,4 +1,4 @@
-import type { PlayerStatus, Team } from './types';
+import type { PlayerStatus, Team } from './types.js';
 
 export interface StatusEntry {
   id: PlayerStatus;

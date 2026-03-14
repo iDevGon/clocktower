@@ -1,4 +1,4 @@
-import type { Edition, NightActionDef, NightFeedbackDef, Role } from './types';
+import type { Edition, NightActionDef, NightFeedbackDef, Role } from './types.js';
 
 // 밤 행동이 있는 전체 역할 (순서대로)
 export const ALL_NIGHT_ROLES: string[] = [
