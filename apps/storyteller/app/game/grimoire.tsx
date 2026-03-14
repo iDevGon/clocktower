@@ -6,6 +6,7 @@ import {
   type PlayerStatus,
 } from '@clocktower/shared';
 import { DictionaryModal } from '@clocktower/ui';
+import { IS_DEV } from '../../src/constants';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
@@ -807,7 +808,7 @@ export default function GrimoireScreen() {
               </Text>
             </Pressable>
           )}
-          {__DEV__ &&
+          {IS_DEV &&
             gameState.phase === 'day' &&
             gameState.daySubPhase === 'nomination' && (
               <Pressable
@@ -817,7 +818,7 @@ export default function GrimoireScreen() {
                 <Text style={styles.nominateText}>지목 (수동)</Text>
               </Pressable>
             )}
-          {__DEV__ && slayerWaitingAck && (
+          {IS_DEV && slayerWaitingAck && (
             <Pressable
               onPress={() => socket?.emit('slayer:forceAck')}
               style={[styles.nominateButton, { backgroundColor: '#7a2a2a' }]}

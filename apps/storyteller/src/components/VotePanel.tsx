@@ -1,6 +1,7 @@
 import type { Nomination, Player } from '@clocktower/shared';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { IS_DEV } from '../constants';
 import { useResponsive } from '../hooks/useResponsive';
 import { useGameStore } from '../stores/gameStore';
 import { createVotePanelStyles } from './VotePanel.styles';
@@ -173,7 +174,7 @@ export function VotePanel({
                   >
                     {preselection ? '찬성?' : '반대?'}
                   </Text>
-                ) : __DEV__ ? (
+                ) : IS_DEV ? (
                   <View style={styles.voteButtons}>
                     <Pressable
                       onPress={() => onCastVote(player.id, true)}

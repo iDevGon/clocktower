@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, Platform, Pressable, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import { IS_DEV } from '../../src/constants';
 import { ClockSpeedSetting } from '../../src/components/ClockSpeedSetting';
 import { CollapsibleSection } from '../../src/components/CollapsibleSection';
 import { DrunkFakeRoleModal } from '../../src/components/DrunkFakeRoleModal';
@@ -184,7 +185,7 @@ export default function LobbyScreen() {
       <View style={styles.participantHeader}>
         <View style={styles.participantLabelRow}>
           <Text style={styles.participantLabel}>참가자 ({playerCount})</Text>
-          {__DEV__ && (
+          {IS_DEV && (
             <>
               <Pressable
                 onPress={() =>
