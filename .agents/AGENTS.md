@@ -16,7 +16,9 @@ apps/server/src/pushNotifications.ts # Expo 푸시 알림 관리
 apps/player/app/                    # 플레이어 Expo Router 페이지
 apps/player/src/stores/             # Zustand 스토어 (player, connection, whisper, chat)
 apps/player/src/hooks/              # 소켓 연결, 이벤트 리스너, 게임 액션 훅
+apps/player/src/hooks/socketListeners/ # 도메인별 소켓 리스너 (game, role, night, vote, social)
 apps/player/src/components/         # UI 컴포넌트
+apps/player/src/components/phases/  # 페이즈별 컴포넌트 (Setup, Night, Whisper, Discussion, Nomination, Ended)
 apps/player/src/notifications.ts    # 푸시 알림 등록 및 진동 알림
 apps/storyteller/app/               # 이야기꾼 Expo Router 페이지
 apps/storyteller/app/game/lobby.tsx  # 로비 (플레이어 대기)
@@ -28,6 +30,7 @@ apps/storyteller/app/game/whispers.tsx # 밀담 현황 뷰
 apps/storyteller/src/stores/        # Zustand 스토어 (game, connection, log) - AsyncStorage 영속
 apps/storyteller/src/hooks/         # 소켓 훅 + useResponsive (반응형 레이아웃)
 apps/storyteller/src/components/    # UI 컴포넌트
+apps/storyteller/src/components/feedback/ # 피드백 타입별 컴포넌트 (Number, PlayersAndRole, Role, YesNo)
 apps/storyteller/src/constants.ts   # IS_DEV 상수 (개발 모드 판별)
 packages/shared/src/types.ts        # 핵심 타입 정의
 packages/shared/src/events.ts       # Socket.io 이벤트 타입
@@ -70,8 +73,8 @@ Player App       ──(ClientToServerEvents)────────>  Server
 
 **Client → Server**: `game:join`, `game:rejoin`, `slayer:use`, `slayer:ack`, `whisper:send`, `nominate:request`, `vote:cast`, `vote:preselect`, `night:action`, `chat:sendToStoryteller`, `push:register`
 **Server → Client**: `game:state`, `game:phase`, `game:playerUpdate`, `role:assign`, `evil:info`, `night:activeRole`, `night:actionReceived`, `night:feedback`, `night:deaths`, `vote:start`, `vote:result`, `vote:order`, `vote:clockStart`, `vote:clockPause`, `vote:confirmed`, `vote:preselected`, `vote:proceedToVote`, `execution:announced`, `slayer:declared`, `slayer:noEffect`, `slayer:allAcked`, `virgin:triggered`, `whisper:receive`, `whisper:activeChats`, `whisper:clockStart`, `day:subPhase`, `game:settings`, `game:end`, `chat:receiveFromStoryteller`, `chat:receiveFromPlayer`
-**Server → Storyteller**: `ServerToStorytellerEvents` (ServerToClientEvents 중 이야기꾼 관련 이벤트 서브셋 + `chat:receiveFromPlayer`)
-**Storyteller → Server**: `game:create`, `game:start`, `game:setPhase`, `day:setSubPhase`, `game:assignRole` (drunkAs 지원), `game:distributeRoles`, `game:kill`, `game:revive`, `game:reset`, `game:restart`, `vote:nominate`, `vote:proceedToVote`, `vote:close`, `vote:castForPlayer`, `night:setActiveRole`, `night:sendFeedback`, `player:setStatuses`, `game:setSettings`, `game:setPlayerOrder`, `chat:sendToPlayer`, `game:addDummyPlayers`, `game:removeDummyPlayers`, `slayer:forceAck`
+**Server → Storyteller**: `ServerToStorytellerEvents` (ServerToClientEvents 서브셋 + `sweetheart:died`, `mayor:nightDeath`, `chat:receiveFromPlayer`)
+**Storyteller → Server**: `game:create`, `game:start`, `game:setPhase`, `day:setSubPhase`, `game:assignRole` (drunkAs 지원), `game:distributeRoles`, `game:kill`, `game:revive`, `game:reset`, `game:restart`, `vote:nominate`, `vote:proceedToVote`, `vote:close`, `vote:castForPlayer`, `night:setActiveRole`, `night:sendFeedback`, `player:setStatuses`, `game:setSettings`, `game:setPlayerOrder`, `chat:sendToPlayer`, `game:addDummyPlayers`, `game:removeDummyPlayers`, `slayer:forceAck`, `game:assignRedHerring`, `game:mayorRedirect`, `game:sweetheartDrunk`
 
 ## 역할 시스템
 
@@ -91,10 +94,15 @@ Player App       ──(ClientToServerEvents)────────>  Server
 - **임프(Imp)**: 자기 자신 선택 시 하수인에게 악마 역할 승계 (탕녀 우선)
 - **점쟁이(Fortune Teller)**: Red Herring (저주 상태) 자동 배정, 중독/취함 시 결과 반전
 - **집사(Butler)**: 투표 시 주인(master)만 따라 투표 가능
+- **탕녀(Scarlet Woman)**: 악마 사망 시 5인 이상 생존 + 중독 아닌 상태면 악마 역할 승계
+- **초공감자(Empath)**: playerOrder 기반 양옆 이웃의 악 진영 수 계산
+- **성자(Saint)**: 처형 시 (중독/취함 아닌 경우) 악 진영 승리
+- **시장(Mayor)**: 밤 사망 시 다른 플레이어로 리디렉트 가능, 최종 3인 + 처형 미발생 시 선 진영 승리
+- **사랑꾼(Sweetheart)**: 사망 시 이야기꾼이 지정한 플레이어에게 취함 상태 부여 (S&V 에디션)
 
 ## 플레이어 상태 시스템
 
-`PlayerStatus`: `'poisoned'` | `'drunk'` | `'protected'` | `'cursed'`
+`PlayerStatus`: `'poisoned'` | `'drunk'` | `'protected'` | `'cursed'` | `'master'`
 
 - 이야기꾼이 `player:setStatuses`로 수동 설정 가능
 - UI 색상: poisoned=#9b59b6, drunk=#e67e22, protected=#2ecc71, cursed=#8e44ad
@@ -133,7 +141,9 @@ Player App       ──(ClientToServerEvents)────────>  Server
 - `GameStartReveal`: 게임 시작 역할 공개 애니메이션
 - `RolePromotionReveal`: 역할 승계 공개 (예: 탕녀 → 임프)
 - `GameEndOverlay` / `GameEndEffects`: 게임 종료 결과 및 효과
+- `SeatingChart`: 좌석 배치 시각화
 - `QrScannerModal`: QR 스캔으로 게임 참가
+- `phases/`: 페이즈별 컴포넌트 (`SetupPhase`, `NightPhase`, `WhisperPhase`, `DiscussionPhase`, `NominationPhase`, `EndedPhase`)
 
 ### 이야기꾼 앱
 - `PlayerToken` / `DraggablePlayerToken`: 플레이어 토큰 (드래그 앤 드롭 지원)
@@ -141,6 +151,8 @@ Player App       ──(ClientToServerEvents)────────>  Server
 - `PhaseBar` / `DaySubPhaseBar`: 페이즈 전환 컨트롤
 - `NightOrderPanel` / `NightActionLog`: 밤 순서 관리 및 행동 기록
 - `NightFeedbackPanel` / `FeedbackComposer`: 피드백 작성 도구
+- `feedback/`: 피드백 타입별 컴포넌트 (`NumberFeedback`, `PlayersAndRoleFeedback`, `RoleFeedback`, `YesNoFeedback`)
+- `PlayerPickerModal`: 플레이어 선택 모달 (액션 대상 지정 등)
 - `VotePanel` / `VoteClockFace` / `VoteClockHand` / `ClockSpeedSetting`: 투표 관리 및 시계
 - `RoleMixModal` / `RoleExcludeModal` / `DrunkFakeRoleModal`: 역할 배분 모달
 - `StorytellerChatModal` / `ChatToast`: 이야기꾼-플레이어 채팅
@@ -157,6 +169,7 @@ Player App       ──(ClientToServerEvents)────────>  Server
 - `QuickSuggestions`: 자동완성 제안
 - `SmokeParticles`: 연기 파티클 효과
 - `FullScreenVignette`: 전체화면 비네트 오버레이
+- `BaseToast`: 공통 토스트 알림 컴포넌트 (auto-dismiss, fade 애니메이션)
 - `colors`: 디자인 토큰 (surface, border, text, phase, status, badge, chat)
 - `createChatStyles`: 채팅 스타일 팩토리
 - `chosung` utils: 초성 검색

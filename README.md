@@ -85,7 +85,7 @@ clocktower/
 
 - `types.ts`: Phase, DaySubPhase, Team, Role, Player, GameState, NightAction, NightFeedback, WhisperMessage, PlayerStatus, GameResult, GameSettings, StorytellerMessage, DeathReason, ExecutionAnnouncement, Edition 등
 - `events.ts`: Socket.io 이벤트 타입 (ServerToClient, ServerToStoryteller, ClientToServer, StorytellerToServer)
-- `roles.ts`: Trouble Brewing 역할 22종 + Sects & Violets 25종(부분 구현) 정의, 역할 배분 알고리즘, 밤 행동 순서
+- `roles.ts`: Trouble Brewing 역할 22종 + Sects & Violets 25종(아기만 활성화, 나머지 disabled) 정의, 역할 배분 알고리즘, 밤 행동 순서
 - `dictionary.ts`: 팀 라벨/색상, 상태/페이즈/서브페이즈 사전, 게임 규칙, 게임 흐름
 - `logic.ts`: 서버용 non-RN re-export
 
@@ -125,6 +125,11 @@ clocktower/
 | 임프 | 자기 자신 선택 시 하수인에게 악마 역할 승계 (탕녀 우선) |
 | 점쟁이 | Red Herring 자동 배정, 중독/취함 시 결과 반전 |
 | 집사 | 투표 시 주인(master)만 따라 투표 가능 |
+| 탕녀 | 악마 사망 시 5인 이상 생존 + 중독 아닌 상태면 악마 역할 승계 |
+| 초공감자 | 양옆 이웃의 악 진영 수 계산 (playerOrder 기반) |
+| 성자 | 처형 시 (중독/취함 아닌 경우) 악 진영 승리 |
+| 시장 | 밤 사망 시 다른 플레이어로 리디렉트, 최종 3인 + 처형 미발생 시 선 진영 승리 |
+| 아기 | 사망 시 지정 플레이어에게 취함 상태 부여 (Sects & Violets) |
 | 악 진영 | 악마↔하수인 서로 인지, 악마에게 블러프 역할 3개 제공 |
 
 ## 역할 (Trouble Brewing)
