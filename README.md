@@ -41,6 +41,7 @@ clocktower/
 - 핸들러 분리: `handlers/player.ts`, `handlers/storyteller.ts`
 - QR 코드 생성으로 플레이어 접속 편의 제공
 - Expo Push API를 통한 푸시 알림 전송
+- `createApp()` 팩토리 함수로 서버 인스턴스 생성 (E2E 테스트용 프로그래밍 방식 시작/중지)
 - 인메모리 상태 관리 (DB 없음)
 - 포트 3000에서 실행
 
@@ -160,8 +161,14 @@ pnpm dev:player
 # 이야기꾼 앱 실행 (포트 8082)
 pnpm dev:storyteller
 
-# 전체 테스트 실행 (Turborepo 병렬)
+# 단위 테스트 실행 (Turborepo 병렬)
 pnpm test
+
+# E2E 테스트 실행 (소켓 통합 테스트)
+pnpm test:e2e
+
+# 전체 테스트 실행 (단위 + E2E)
+pnpm test:all
 ```
 
 > **`pnpm dev` vs `pnpm start`**: `dev`는 `EXPO_PUBLIC_DEV_MODE=true`를 설정하여 더미 플레이어 추가 등 개발 전용 기능이 활성화됩니다. `start`는 개발 기능 없이 실행됩니다.
@@ -184,4 +191,4 @@ pnpm test
 - **한국어 UI**: 전체 인터페이스 한국어 지원
 - **Turborepo 빌드**: `^build` 의존으로 shared/ui → apps 순서 자동 빌드 및 캐싱
 - **Biome**: 코드 포맷팅 및 린팅 (워크스페이스별 규칙 오버라이드)
-- **Vitest**: 전 패키지 통일 테스트 프레임워크 (Turborepo 병렬 실행)
+- **Vitest**: 전 패키지 통일 테스트 프레임워크 (단위 테스트 + 소켓 기반 E2E 테스트, Turborepo 병렬 실행)

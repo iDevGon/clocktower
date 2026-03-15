@@ -12,8 +12,10 @@ apps/server/src/game.ts             # GameManager 클래스 (게임 상태 관�
 apps/server/src/whisper.ts          # WhisperTracker 클래스 (밀담 추적)
 apps/server/src/handlers/player.ts  # 플레이어 소켓 이벤트 핸들러
 apps/server/src/handlers/storyteller.ts # 이야기꾼 소켓 이벤트 핸들러
+apps/server/src/createApp.ts        # 서버 팩토리 함수 (테스트용 프로그래밍 방식 시작/중지)
 apps/server/src/pushNotifications.ts # Expo 푸시 알림 관리
 apps/server/src/__tests__/          # 서버 단위 테스트 (game, whisper, pushNotifications)
+apps/server/src/__tests__/e2e/      # 소켓 기반 E2E 테스트 (socket.io-client로 전체 흐름 검증)
 apps/player/app/                    # 플레이어 Expo Router 페이지
 apps/player/src/stores/             # Zustand 스토어 (player, connection, whisper, chat)
 apps/player/src/hooks/              # 소켓 연결, 이벤트 리스너, 게임 액션 훅 (useVoteProgress, useWhisperExpired 포함)
@@ -57,7 +59,7 @@ packages/ui/src/utils/chosung.ts    # 초성 검색 유틸
 - **UI 패키지**: 앱 간 공유 컴포넌트는 `packages/ui`에서 관리 (AbilityText, DictionaryModal 등)
 - **빌드 오케스트레이션**: Turborepo 사용. `^build` 의존으로 shared/ui 패키지가 앱보다 먼저 자동 빌드됨
 - **코드 포맷팅**: Biome 사용 (2-space indent, single quotes, always semicolons)
-- **테스팅**: Vitest 사용 (전 패키지 통일). `pnpm test`로 Turborepo 병렬 실행
+- **테스팅**: Vitest 사용 (전 패키지 통일). `pnpm test`(단위), `pnpm test:e2e`(소켓 E2E), `pnpm test:all`(전체)
 
 ## 이벤트 흐름
 
