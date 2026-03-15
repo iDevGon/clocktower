@@ -70,21 +70,13 @@ export const styles = StyleSheet.create({
     marginTop: 6,
     fontStyle: 'italic',
   },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 14,
-  },
   guiltyButton: {
-    flex: 1,
     backgroundColor: '#1a1a20',
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: '#3a3a42',
-  },
-  guiltyButtonPressed: {
-    backgroundColor: `${COLORS.blood}60`,
   },
   guiltyButtonSelected: {
     backgroundColor: COLORS.blood,
@@ -98,42 +90,10 @@ export const styles = StyleSheet.create({
   guiltyText: {
     color: '#5c5a58',
     fontWeight: '900',
-    fontSize: 16,
-    textTransform: 'uppercase',
+    fontSize: 18,
     letterSpacing: 3,
   },
   guiltyTextSelected: {
-    color: '#ffffff',
-  },
-  innocentButton: {
-    flex: 1,
-    backgroundColor: '#1a1a20',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#3a3a42',
-  },
-  innocentButtonPressed: {
-    backgroundColor: `${COLORS.iron}60`,
-  },
-  innocentButtonSelected: {
-    backgroundColor: '#2a3a5c',
-    borderColor: '#6080b0',
-    shadowColor: '#6080b0',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  innocentText: {
-    color: '#5c5a58',
-    fontWeight: '800',
-    fontSize: 16,
-    textTransform: 'uppercase',
-    letterSpacing: 3,
-  },
-  innocentTextSelected: {
     color: '#ffffff',
   },
   noSelectionHint: {

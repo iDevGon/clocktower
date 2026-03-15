@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -126,6 +126,98 @@ function SmokeParticle({ config }: { config: (typeof SMOKE_CONFIGS)[0] }) {
   );
 }
 
+interface PlayerNodeProps {
+  node: { id: string; name: string; isAlive: boolean; deadVoteUsed?: boolean };
+  index: number;
+  totalNodes: number;
+  nomineeId: string;
+  playerId: string;
+  nomineeAngle: number;
+  halfSlot: number;
+  handProgress: number;
+  isVoter: boolean;
+  preselection: boolean | null | undefined;
+}
+
+const PlayerNode = React.memo(function PlayerNode({
+  node,
+  index,
+  totalNodes,
+  nomineeId,
+  playerId,
+  nomineeAngle,
+  halfSlot,
+  handProgress,
+  isVoter,
+  preselection,
+}: PlayerNodeProps) {
+  const angle = (index / totalNodes) * 2 * Math.PI - Math.PI / 2;
+  const x = CENTER + RADIUS * Math.cos(angle) - NODE_SIZE / 2;
+  const y = CENTER + RADIUS * Math.sin(angle) - NODE_SIZE / 2;
+  const isNominee = node.id === nomineeId;
+  const isMe = node.id === playerId;
+
+  const nodeAngleDeg = (index / totalNodes) * 360;
+  const nodeOffset = (nodeAngleDeg - nomineeAngle + 360) % 360;
+  const confirmOffset =
+    nodeOffset === 0 && !isNominee ? 0 : nodeOffset === 0 ? 360 : nodeOffset;
+  const hasPassed = handProgress >= confirmOffset;
+
+  const distToHand = Math.abs(
+    handProgress +
+      halfSlot -
+      (nodeOffset === 0 && isNominee ? 360 : nodeOffset),
+  );
+  const isNearHand = distToHand < (360 / totalNodes) * 0.5 && !hasPassed;
+
+  const showVoted = preselection === true && hasPassed;
+  const showPreselectedVote =
+    !hasPassed && preselection === true && isVoter && !isNominee;
+
+  return (
+    <View
+      style={[
+        styles.node,
+        {
+          left: x,
+          top: y,
+          width: NODE_SIZE,
+          height: NODE_SIZE,
+        },
+        !node.isAlive && !isNominee && node.deadVoteUsed && styles.deadNode,
+        !node.isAlive &&
+          !isNominee &&
+          !node.deadVoteUsed &&
+          styles.deadWithVoteNode,
+        !isVoter && !isNominee && styles.nonVoterNode,
+        isNominee && styles.nomineeNode,
+        isMe && !isNearHand && !isNominee && styles.myNode,
+        !isNearHand && showPreselectedVote && styles.preselectedGuiltyNode,
+        hasPassed && showVoted && styles.guiltyNode,
+        hasPassed && !showVoted && styles.pastNode,
+        isNearHand && isVoter && styles.activeNode,
+      ]}
+    >
+      <Text
+        style={[
+          styles.nodeText,
+          isNominee && styles.nomineeText,
+          isMe && !isNearHand && styles.myText,
+          hasPassed && showVoted && { color: '#fff' },
+          isNearHand && isVoter && styles.activeText,
+        ]}
+        numberOfLines={1}
+      >
+        {node.name.charAt(0)}
+      </Text>
+      {hasPassed && showVoted && <Text style={styles.voteEmoji}>✋🏻</Text>}
+      {!hasPassed && showPreselectedVote && (
+        <Text style={styles.preselectedVoteEmoji}>✋🏻</Text>
+      )}
+    </View>
+  );
+});
+
 export function VoteClockRing() {
   const voteOrder = usePlayerStore((s) => s.voteOrder);
   const voteClock = usePlayerStore((s) => s.voteClock);
@@ -134,7 +226,8 @@ export function VoteClockRing() {
   const votePreselections = usePlayerStore((s) => s.votePreselections);
 
   const handAngleSV = useSharedValue(0);
-  const [handProgress, setHandProgress] = useState(0);
+  const handProgressRef = useRef(0);
+  const [, forceRenderNodes] = useState(0);
 
   const hasVoteOrder = !!voteOrder && voteOrder.order.length > 0;
 
@@ -176,7 +269,8 @@ export function VoteClockRing() {
     if (!hasVoteOrder || !voteClock) {
       cancelAnimation(handAngleSV);
       handAngleSV.value = nomineeAngle + halfSlot;
-      setHandProgress(0);
+      handProgressRef.current = 0;
+      forceRenderNodes((n) => n + 1);
       return;
     }
 
@@ -193,15 +287,17 @@ export function VoteClockRing() {
       });
     }
 
-    setHandProgress(initialProgress * 360);
+    handProgressRef.current = initialProgress * 360;
+    forceRenderNodes((n) => n + 1);
     if (initialProgress >= 1) return;
 
     const interval = setInterval(() => {
       const e = Date.now() - voteClock.startedAt;
       const p = Math.min(e / voteClock.durationMs, 1);
-      setHandProgress(p * 360);
+      handProgressRef.current = p * 360;
+      forceRenderNodes((n) => n + 1);
       if (p >= 1) clearInterval(interval);
-    }, 50);
+    }, 500);
 
     return () => clearInterval(interval);
   }, [hasVoteOrder, voteClock, nomineeAngle, halfSlot, handAngleSV]);
@@ -341,106 +437,21 @@ export function VoteClockRing() {
           )}
 
           {/* Player nodes */}
-          {allNodes.map((node, index) => {
-            const angle = (index / totalNodes) * 2 * Math.PI - Math.PI / 2;
-            const x = CENTER + RADIUS * Math.cos(angle) - NODE_SIZE / 2;
-            const y = CENTER + RADIUS * Math.sin(angle) - NODE_SIZE / 2;
-            const isNominee = node.id === nomineeId;
-            const isMe = node.id === playerId;
-            const isVoter = voteOrderIds.has(node.id);
-            const preselection = votePreselections[node.id];
-
-            // Has the hand passed this player?
-            const nodeAngleDeg = (index / totalNodes) * 360;
-            const nodeOffset = (nodeAngleDeg - nomineeAngle + 360) % 360;
-            const confirmOffset =
-              nodeOffset === 0 && !isNominee
-                ? 0
-                : nodeOffset === 0
-                  ? 360
-                  : nodeOffset;
-            const hasPassed = handProgress >= confirmOffset;
-
-            // Is the hand currently near this player? (account for halfSlot visual offset)
-            const distToHand = Math.abs(
-              handProgress +
-                halfSlot -
-                (nodeOffset === 0 && isNominee ? 360 : nodeOffset),
-            );
-            const isNearHand =
-              distToHand < (360 / totalNodes) * 0.5 && !hasPassed;
-
-            const showGuilty = preselection === true && hasPassed;
-            const showInnocent = preselection === false && hasPassed;
-            const showDefaultInnocent =
-              hasPassed && preselection == null && isVoter && !isNominee;
-            const showPreselectedGuilty =
-              !hasPassed && preselection === true && isVoter && !isNominee;
-            const showPreselectedInnocent =
-              !hasPassed && preselection === false && isVoter && !isNominee;
-
-            // Determine the confirmed vote indicator
-            const showConfirmedGuilty = showGuilty;
-            const showConfirmedInnocent = showInnocent || showDefaultInnocent;
-
-            return (
-              <View
-                key={node.id}
-                style={[
-                  styles.node,
-                  {
-                    left: x,
-                    top: y,
-                    width: NODE_SIZE,
-                    height: NODE_SIZE,
-                  },
-                  !node.isAlive && !isNominee && styles.deadNode,
-                  !isVoter && !isNominee && styles.nonVoterNode,
-                  isNominee && styles.nomineeNode,
-                  // My node: golden double-ring (unless active or nominee)
-                  isMe && !isNearHand && !isNominee && styles.myNode,
-                  // Preselected: soft tinted fill (no dashed lines)
-                  !isNearHand &&
-                    showPreselectedGuilty &&
-                    styles.preselectedGuiltyNode,
-                  !isNearHand &&
-                    showPreselectedInnocent &&
-                    styles.preselectedInnocentNode,
-                  // Confirmed votes: solid fill
-                  hasPassed && showConfirmedGuilty && styles.guiltyNode,
-                  hasPassed && showConfirmedInnocent && styles.innocentNode,
-                  // Past but no vote data
-                  hasPassed &&
-                    !showConfirmedGuilty &&
-                    !showConfirmedInnocent &&
-                    styles.pastNode,
-                  // Active = golden highlight (last to override)
-                  isNearHand && isVoter && styles.activeNode,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.nodeText,
-                    isNominee && styles.nomineeText,
-                    isMe && !isNearHand && styles.myText,
-                    hasPassed && showConfirmedGuilty && { color: '#fff' },
-                    hasPassed && showConfirmedInnocent && { color: '#fff' },
-                    isNearHand && isVoter && styles.activeText,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {node.name.charAt(0)}
-                </Text>
-                {/* Inner vote indicator dot */}
-                {hasPassed && showConfirmedGuilty && (
-                  <View style={styles.guiltyDot} />
-                )}
-                {hasPassed && showConfirmedInnocent && (
-                  <View style={styles.innocentDot} />
-                )}
-              </View>
-            );
-          })}
+          {allNodes.map((node, index) => (
+            <PlayerNode
+              key={node.id}
+              node={node}
+              index={index}
+              totalNodes={totalNodes}
+              nomineeId={nomineeId}
+              playerId={playerId}
+              nomineeAngle={nomineeAngle}
+              halfSlot={halfSlot}
+              handProgress={handProgressRef.current}
+              isVoter={voteOrderIds.has(node.id)}
+              preselection={votePreselections[node.id]}
+            />
+          ))}
         </View>
 
         {/* Smoke particles — only when clock is active */}
@@ -466,7 +477,7 @@ export function VoteClockRing() {
             const nodeOffset = (nodeAngleDeg - nomineeAngle + 360) % 360;
             const confirmOffset =
               nodeOffset === 0 && isNominee ? 360 : nodeOffset;
-            const hasPassed = handProgress >= confirmOffset;
+            const hasPassed = handProgressRef.current >= confirmOffset;
 
             const isVoter = voteOrderIds.has(node.id);
 
@@ -479,19 +490,11 @@ export function VoteClockRing() {
                   isMe && !hasPassed && { color: COLORS.myGold },
                   hasPassed &&
                     preselection === true && { color: COLORS.guilty },
-                  hasPassed &&
-                    preselection !== true && { color: COLORS.innocent },
                   !hasPassed &&
                     !isNominee &&
                     isVoter &&
                     preselection === true && {
                       color: `${COLORS.guilty}90`,
-                    },
-                  !hasPassed &&
-                    !isNominee &&
-                    isVoter &&
-                    preselection === false && {
-                      color: `${COLORS.innocent}90`,
                     },
                 ]}
                 numberOfLines={1}

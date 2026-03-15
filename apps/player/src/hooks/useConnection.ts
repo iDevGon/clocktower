@@ -105,6 +105,7 @@ export function useConnection() {
             deadVoteUsed: res.deadVoteUsed ?? false,
             nightProgress: res.nightProgress ?? null,
             gamePlayers: res.gamePlayers ?? [],
+            butlerMasterName: res.butlerMasterName ?? null,
           });
           resolve(true);
           // Fire and forget

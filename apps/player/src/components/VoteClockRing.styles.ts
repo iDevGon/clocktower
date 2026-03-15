@@ -265,6 +265,11 @@ export const styles = StyleSheet.create({
   deadNode: {
     opacity: 0.25,
   },
+  deadWithVoteNode: {
+    opacity: 0.6,
+    borderColor: '#5aa0d0',
+    borderWidth: 1.5,
+  },
   nonVoterNode: {
     opacity: 0.3,
     borderColor: `${COLORS.iron}60`,
@@ -334,24 +339,19 @@ export const styles = StyleSheet.create({
   myText: {
     color: COLORS.myGold,
   },
-  // Inner dot indicators for confirmed votes
-  guiltyDot: {
+  // Vote indicator emoji
+  voteEmoji: {
     position: 'absolute',
-    bottom: 1,
-    right: 1,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: COLORS.guilty,
+    bottom: -6,
+    right: -6,
+    fontSize: 12,
   },
-  innocentDot: {
+  preselectedVoteEmoji: {
     position: 'absolute',
-    bottom: 1,
-    right: 1,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: COLORS.innocent,
+    bottom: -6,
+    right: -6,
+    fontSize: 10,
+    opacity: 0.5,
   },
   legend: {
     flexDirection: 'row',

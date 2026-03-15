@@ -3,11 +3,14 @@ import { useConnectionStore } from '../stores/connectionStore';
 import { usePlayerStore } from '../stores/playerStore';
 
 export function useGameActions() {
-  const castVote = useCallback((guilty: boolean) => {
+  const castVote = useCallback(() => {
     const socket = useConnectionStore.getState().socket;
     if (socket) {
-      socket.emit('vote:cast', { guilty });
-      usePlayerStore.getState().set({ hasVoted: true });
+      socket.emit('vote:cast', (result) => {
+        if (result?.success) {
+          usePlayerStore.getState().set({ hasVoted: true });
+        }
+      });
     }
   }, []);
 
@@ -22,7 +25,17 @@ export function useGameActions() {
     const socket = useConnectionStore.getState().socket;
     if (socket) {
       socket.emit('night:action', { targets });
-      usePlayerStore.getState().set({ nightActionSubmitted: true });
+      const store = usePlayerStore.getState();
+      const roleId = store.drunkAs ?? store.role?.id;
+      if (roleId === 'butler' && targets.length > 0) {
+        const master = store.gamePlayers.find((p) => p.id === targets[0]);
+        store.set({
+          nightActionSubmitted: true,
+          butlerMasterName: master?.name ?? null,
+        });
+      } else {
+        store.set({ nightActionSubmitted: true });
+      }
     }
   }, []);
 

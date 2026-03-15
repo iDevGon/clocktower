@@ -81,6 +81,7 @@ interface RoleCardProps {
   mode: CardMode;
   flipHint?: boolean;
   isHidden?: boolean;
+  butlerMasterName?: string | null;
 }
 
 // ─── Main Component ──────────────────────────────────────────
@@ -91,6 +92,7 @@ export function RoleCard({
   mode,
   flipHint,
   isHidden,
+  butlerMasterName,
 }: RoleCardProps) {
   // 0 = front (role visible), 1 = back (hidden)
   const flip = useSharedValue(mode === 'revealed' ? 0 : 1);
@@ -159,6 +161,7 @@ export function RoleCard({
           flipHint={flipHint}
           isHidden={isHidden}
           isDead={isDead}
+          butlerMasterName={butlerMasterName}
         />
       </Animated.View>
 
@@ -179,6 +182,7 @@ function FrontFace({
   flipHint,
   isHidden,
   isDead,
+  butlerMasterName,
 }: {
   role?: Role | null;
   evilInfo?: EvilInfo | null;
@@ -186,6 +190,7 @@ function FrontFace({
   flipHint?: boolean;
   isHidden?: boolean;
   isDead?: boolean;
+  butlerMasterName?: string | null;
 }) {
   if (!role || !teamStyle) return null;
 
@@ -240,6 +245,16 @@ function FrontFace({
                 </Text>
               </View>
             )}
+        </View>
+      )}
+
+      {butlerMasterName && (
+        <View style={styles.evilInfoSection}>
+          <View style={styles.divider} />
+          <View style={styles.infoRow}>
+            <Text style={[styles.infoLabel, { color: '#3a7ca5' }]}>주인</Text>
+            <Text style={styles.infoValue}>{butlerMasterName}</Text>
+          </View>
         </View>
       )}
 
@@ -494,6 +509,7 @@ interface FlippableRoleCardProps {
   veiled?: boolean;
   /** Current game phase – used to auto-hide card on night→day transition */
   currentPhase?: string | null;
+  butlerMasterName?: string | null;
 }
 
 export function FlippableRoleCard({
@@ -501,6 +517,7 @@ export function FlippableRoleCard({
   evilInfo,
   veiled,
   currentPhase,
+  butlerMasterName,
 }: FlippableRoleCardProps) {
   const [isHidden, setIsHidden] = useState(false);
   const prevPhaseRef = useRef(currentPhase);
@@ -540,6 +557,13 @@ export function FlippableRoleCard({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       style={styles.pressable}
+      accessibilityLabel={
+        veiled
+          ? '역할 카드 (미공개)'
+          : `역할 카드${role ? `: ${role.name}` : ''}`
+      }
+      accessibilityRole="button"
+      accessibilityHint={veiled ? undefined : '길게 눌러서 카드를 뒤집습니다'}
     >
       <RoleCard
         role={role}
@@ -547,6 +571,7 @@ export function FlippableRoleCard({
         mode={mode}
         flipHint={!veiled}
         isHidden={isHidden}
+        butlerMasterName={butlerMasterName}
       />
     </Pressable>
   );

@@ -228,4 +228,76 @@ export const styles = StyleSheet.create({
   whisperBadgeDead: {
     backgroundColor: '#6a6c74',
   },
+
+  /* ── Chat unread badge ── */
+  unreadBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unreadBadgeAlive: {
+    backgroundColor: '#c44',
+  },
+  unreadBadgeDead: {
+    backgroundColor: '#6a6c74',
+  },
+  unreadBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+
+  /* ── Execution candidate card ── */
+  executionCard: {
+    backgroundColor: '#1a1a1e',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#c4707060',
+    padding: 14,
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginVertical: 8,
+  },
+  executionCardLabel: {
+    color: '#908e8a',
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginBottom: 6,
+  },
+  executionCardName: {
+    color: '#c47070',
+    fontSize: 18,
+    fontWeight: '700',
+    textShadowColor: '#c4707040',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
+  },
+  executionCardVotes: {
+    color: '#706e6a',
+    fontSize: 12,
+    marginTop: 4,
+  },
+
+  /* ── Slayer button ── */
+  slayerContainer: {
+    alignItems: 'center',
+    marginVertical: 12,
+  },
+  slayerButton: {
+    backgroundColor: '#b85c5c',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  slayerButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
 });

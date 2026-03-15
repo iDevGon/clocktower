@@ -24,6 +24,7 @@ import {
 import { PhaseIndicator } from '../src/components/PhaseIndicator';
 import { FlippableRoleCard } from '../src/components/RoleCard';
 import { RolePromotionReveal } from '../src/components/RolePromotionReveal';
+import { SeatingChart } from '../src/components/SeatingChart';
 import { SlayerFizzleOverlay } from '../src/components/SlayerFizzleOverlay';
 import { StorytellerChatModal } from '../src/components/StorytellerChatModal';
 import { StorytellerChatToast } from '../src/components/StorytellerChatToast';
@@ -46,34 +47,37 @@ const DAY_SUB_PHASE_LABELS: Record<string, string> = {
 
 export default function GameScreen() {
   const router = useRouter();
-  const {
-    playerName,
-    playerId,
-    role,
-    isAlive,
-    currentPhase,
-    daySubPhase,
-    nomination,
-    voteResult,
-    nightProgress,
-    nightActionSubmitted,
-    nightFeedback,
-    hasNominatedToday,
-    gamePlayers,
-    gameResult,
-    justDied,
-    deathReason,
-    executionAnnouncement,
-    nightDeathAnnouncement,
-    slayerUsed,
-    slayerFizzle,
-    evilInfo,
-    gameSettings,
-    executionHappenedToday,
-    executionCandidate,
-    nominatedTodayIds,
-    rolePromotion,
-  } = usePlayerStore();
+  const playerName = usePlayerStore((s) => s.playerName);
+  const playerId = usePlayerStore((s) => s.playerId);
+  const role = usePlayerStore((s) => s.role);
+  const isAlive = usePlayerStore((s) => s.isAlive);
+  const currentPhase = usePlayerStore((s) => s.currentPhase);
+  const daySubPhase = usePlayerStore((s) => s.daySubPhase);
+  const nomination = usePlayerStore((s) => s.nomination);
+  const voteResult = usePlayerStore((s) => s.voteResult);
+  const nightProgress = usePlayerStore((s) => s.nightProgress);
+  const nightActionSubmitted = usePlayerStore((s) => s.nightActionSubmitted);
+  const nightFeedback = usePlayerStore((s) => s.nightFeedback);
+  const hasNominatedToday = usePlayerStore((s) => s.hasNominatedToday);
+  const gamePlayers = usePlayerStore((s) => s.gamePlayers);
+  const gameResult = usePlayerStore((s) => s.gameResult);
+  const justDied = usePlayerStore((s) => s.justDied);
+  const deathReason = usePlayerStore((s) => s.deathReason);
+  const executionAnnouncement = usePlayerStore((s) => s.executionAnnouncement);
+  const nightDeathAnnouncement = usePlayerStore(
+    (s) => s.nightDeathAnnouncement,
+  );
+  const slayerUsed = usePlayerStore((s) => s.slayerUsed);
+  const slayerFizzle = usePlayerStore((s) => s.slayerFizzle);
+  const evilInfo = usePlayerStore((s) => s.evilInfo);
+  const gameSettings = usePlayerStore((s) => s.gameSettings);
+  const executionHappenedToday = usePlayerStore(
+    (s) => s.executionHappenedToday,
+  );
+  const executionCandidate = usePlayerStore((s) => s.executionCandidate);
+  const nominatedTodayIds = usePlayerStore((s) => s.nominatedTodayIds);
+  const rolePromotion = usePlayerStore((s) => s.rolePromotion);
+  const butlerMasterName = usePlayerStore((s) => s.butlerMasterName);
   const dismissDeath = usePlayerStore((s) => s.set);
   const {
     submitNightAction,
@@ -147,6 +151,7 @@ export default function GameScreen() {
   const [feedbackHistoryVisible, setFeedbackHistoryVisible] = useState(false);
   const [dictionaryVisible, setDictionaryVisible] = useState(false);
   const [chatModalVisible, setChatModalVisible] = useState(false);
+  const [seatingChartVisible, setSeatingChartVisible] = useState(false);
   const feedbackHistory = usePlayerStore((s) => s.feedbackHistory);
   const chatUnreadCount = useChatStore((s) => s.unreadCount);
   const totalUnread = useWhisperStore((s) =>
@@ -214,6 +219,19 @@ export default function GameScreen() {
             </Text>
           </View>
           <View style={styles.headerRight}>
+            {gamePlayers.length > 0 && currentPhase !== 'setup' && (
+              <Pressable
+                onPress={() => setSeatingChartVisible(true)}
+                style={[
+                  styles.feedbackHistoryButton,
+                  !isAlive && styles.feedbackHistoryButtonDead,
+                ]}
+                accessibilityLabel="좌석 배치"
+                accessibilityRole="button"
+              >
+                <Text style={styles.feedbackHistoryIcon}>🪑</Text>
+              </Pressable>
+            )}
             <Pressable
               onPress={() => setDictionaryVisible(true)}
               style={[
@@ -238,25 +256,14 @@ export default function GameScreen() {
                 <Text style={styles.feedbackHistoryIcon}>💬</Text>
                 {chatUnreadCount > 0 && (
                   <View
-                    style={{
-                      position: 'absolute',
-                      top: -4,
-                      right: -4,
-                      backgroundColor: !isAlive ? '#6a6c74' : '#c44',
-                      borderRadius: 8,
-                      minWidth: 16,
-                      height: 16,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
+                    style={[
+                      styles.unreadBadge,
+                      isAlive
+                        ? styles.unreadBadgeAlive
+                        : styles.unreadBadgeDead,
+                    ]}
                   >
-                    <Text
-                      style={{
-                        color: '#fff',
-                        fontSize: 10,
-                        fontWeight: '700',
-                      }}
-                    >
+                    <Text style={styles.unreadBadgeText}>
                       {chatUnreadCount}
                     </Text>
                   </View>
@@ -380,42 +387,12 @@ export default function GameScreen() {
           executionCandidate &&
           currentPhase !== 'night' &&
           currentPhase !== 'ended' && (
-            <View
-              style={{
-                backgroundColor: '#1a1a1e',
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: '#c4707060',
-                padding: 14,
-                alignItems: 'center',
-                marginHorizontal: 20,
-                marginVertical: 8,
-              }}
-            >
-              <Text
-                style={{
-                  color: '#908e8a',
-                  fontSize: 11,
-                  textTransform: 'uppercase',
-                  letterSpacing: 2,
-                  marginBottom: 6,
-                }}
-              >
-                처형 예정
-              </Text>
-              <Text
-                style={{
-                  color: '#c47070',
-                  fontSize: 18,
-                  fontWeight: '700',
-                  textShadowColor: '#c4707040',
-                  textShadowOffset: { width: 0, height: 1 },
-                  textShadowRadius: 6,
-                }}
-              >
+            <View style={styles.executionCard}>
+              <Text style={styles.executionCardLabel}>처형 예정</Text>
+              <Text style={styles.executionCardName}>
                 {executionCandidate.playerName}
               </Text>
-              <Text style={{ color: '#706e6a', fontSize: 12, marginTop: 4 }}>
+              <Text style={styles.executionCardVotes}>
                 찬성 {executionCandidate.guiltyVotes}표
               </Text>
             </View>
@@ -427,19 +404,12 @@ export default function GameScreen() {
         />
 
         {canUseSlayer && (
-          <View style={{ alignItems: 'center', marginVertical: 12 }}>
+          <View style={styles.slayerContainer}>
             <Pressable
               onPress={() => setSlayerModalVisible(true)}
-              style={{
-                backgroundColor: '#b85c5c',
-                paddingHorizontal: 24,
-                paddingVertical: 12,
-                borderRadius: 8,
-              }}
+              style={styles.slayerButton}
             >
-              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>
-                처단자 선언
-              </Text>
+              <Text style={styles.slayerButtonText}>처단자 선언</Text>
             </Pressable>
           </View>
         )}
@@ -450,6 +420,7 @@ export default function GameScreen() {
             evilInfo={evilInfo}
             veiled={currentPhase === 'setup'}
             currentPhase={currentPhase}
+            butlerMasterName={butlerMasterName}
           />
         )}
       </ScrollView>
@@ -577,6 +548,14 @@ export default function GameScreen() {
       />
 
       <StorytellerChatToast onPress={() => setChatModalVisible(true)} />
+
+      <SeatingChart
+        visible={seatingChartVisible}
+        players={gamePlayers}
+        myId={playerId}
+        phase={currentPhase}
+        onClose={() => setSeatingChartVisible(false)}
+      />
     </SafeAreaView>
   );
 }

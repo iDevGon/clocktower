@@ -111,6 +111,8 @@ interface PlayerState {
   rolePromotion: Role | null;
   /** Deferred promotion reveal: set during night, shown when day arrives */
   pendingRolePromotion: Role | null;
+  /** 집사가 선택한 주인 이름 */
+  butlerMasterName: string | null;
   set: (partial: Partial<PlayerState>) => void;
   addFeedback: (day: number, feedback: NightFeedbackPayload) => void;
   reset: () => void;
@@ -163,6 +165,7 @@ const initialState = {
   nominatedTodayIds: [] as string[],
   rolePromotion: null as Role | null,
   pendingRolePromotion: null as Role | null,
+  butlerMasterName: null as string | null,
 };
 
 export const usePlayerStore = create<PlayerState>()(
