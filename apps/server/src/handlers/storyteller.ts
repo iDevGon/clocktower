@@ -93,10 +93,11 @@ function sendEvilInfo(playerIo: PlayerNamespace, game: GameManager): void {
 }
 
 function getPlayerInfoList(game: GameManager) {
-  return game.getState().players.map(({ id, name, isAlive }) => ({
+  return game.getState().players.map(({ id, name, isAlive, deadVoteUsed }) => ({
     id,
     name,
     isAlive,
+    deadVoteUsed,
   }));
 }
 
@@ -120,7 +121,12 @@ export function startClockwiseVote(
   });
   const fullOrderInfo = fullOrder.map((id) => {
     const p = game.getPlayer(id);
-    return { id, name: p?.name ?? id, isAlive: p?.isAlive ?? false };
+    return {
+      id,
+      name: p?.name ?? id,
+      isAlive: p?.isAlive ?? false,
+      deadVoteUsed: p?.deadVoteUsed ?? false,
+    };
   });
   playerIo.emit('vote:order', {
     nomineeId,
@@ -158,13 +164,22 @@ export function startClockwiseVote(
     while (nextConfirmIdx < confirmTimes.length) {
       const next = confirmTimes[nextConfirmIdx];
       if (elapsed >= next.timeMs) {
-        // 프리셀렉트된 값으로 확정 (없으면 반대)
-        const guilty = game.getPreselectedVote(next.playerId);
-        game.castVote(next.playerId, guilty, true);
-        playerIo.emit('vote:confirmed', { playerId: next.playerId, guilty });
+        // 프리셀렉트된 값으로 확정 (없으면 불참)
+        // 집사 투표 제한: 주인이 투표하지 않았으면 강제 불참
+        let voted = game.getPreselectedVote(next.playerId);
+        if (voted && game.isButlerRestricted(next.playerId)) {
+          voted = false;
+        }
+        if (voted) {
+          game.castVote(next.playerId);
+        }
+        playerIo.emit('vote:confirmed', {
+          playerId: next.playerId,
+          guilty: voted,
+        });
         storytellerIo.emit('vote:confirmed', {
           playerId: next.playerId,
-          guilty,
+          guilty: voted,
         });
         nextConfirmIdx++;
       } else {
@@ -426,7 +441,9 @@ export function registerStorytellerHandlers(
 
     socket.on('game:setPlayerOrder', (order) => {
       game.setPlayerOrder(order);
-      storytellerIo.emit('game:state', game.getState());
+      const state = game.getState();
+      storytellerIo.emit('game:state', state);
+      playerIo.emit('game:state', state);
     });
 
     socket.on('game:addDummyPlayers', (count) => {
@@ -454,13 +471,13 @@ export function registerStorytellerHandlers(
       ];
       const existing = game.getState().players.length;
       for (let i = 0; i < count && existing + i < names.length; i++) {
-        game.addPlayer(names[existing + i]);
+        game.addPlayer(names[existing + i], true);
       }
       storytellerIo.emit('game:state', game.getState());
     });
 
     socket.on('game:removeDummyPlayers', () => {
-      game.clearPlayers();
+      game.removeDummyPlayers();
       storytellerIo.emit('game:state', game.getState());
     });
 
@@ -479,7 +496,29 @@ export function registerStorytellerHandlers(
         });
         return;
       }
-      for (const { playerId, role, drunkAs } of result.assignments) {
+      for (const {
+        playerId,
+        role,
+        drunkAs: origDrunkAs,
+      } of result.assignments) {
+        let drunkAs = origDrunkAs;
+        // 주정뱅이인데 가짜 역할이 없으면 자동 배정
+        if (role.id === 'drunk' && !drunkAs) {
+          const assignedRoleIds = result.assignments
+            .filter((a) => a.playerId !== playerId)
+            .map((a) => a.role.id);
+          const availableTownsfolk = ALL_ROLES.filter(
+            (r) => r.team === 'townsfolk' && !assignedRoleIds.includes(r.id),
+          );
+          const candidates =
+            availableTownsfolk.length > 0
+              ? availableTownsfolk
+              : ALL_ROLES.filter((r) => r.team === 'townsfolk');
+          if (candidates.length > 0) {
+            drunkAs =
+              candidates[Math.floor(Math.random() * candidates.length)].id;
+          }
+        }
         game.assignRole(playerId, role.id, drunkAs);
         if (role.id === 'drunk' && drunkAs) {
           // 주정뱅이에게는 가짜 마을주민 역할을 전송
@@ -498,9 +537,10 @@ export function registerStorytellerHandlers(
       }
       sendEvilInfo(playerIo, game);
       // 점쟁이가 배정되면 Red Herring 자동 지정
-      game.assignFortuneTellerRedHerring();
+      const redHerringPlayerId =
+        game.assignFortuneTellerRedHerring() ?? undefined;
       storytellerIo.emit('game:state', game.getState());
-      callback({ success: true });
+      callback({ success: true, redHerringPlayerId });
     });
 
     socket.on('game:assignRole', ({ playerId, roleId, drunkAs }) => {
@@ -581,6 +621,12 @@ export function registerStorytellerHandlers(
       // 임프 자해 감지: 사망 처리 전에 체크
       const isImpSelfKill = killedPlayer?.role?.id === 'imp' && isNight;
 
+      // 사랑꾼 사망 감지: 사망 처리 전에 체크
+      const isSweetheartDeath = killedPlayer?.role?.id === 'sweetheart';
+
+      // 시장 밤 사망 감지: 사망 처리 전에 체크
+      const isMayorNightDeath = killedPlayer?.role?.id === 'mayor' && isNight;
+
       game.kill(playerId);
 
       // 임프 자해 → 하수인 승계 예약 (낮 전환 시 실행)
@@ -589,6 +635,21 @@ export function registerStorytellerHandlers(
       }
 
       storytellerIo.emit('game:state', game.getState());
+
+      // 사랑꾼 사망 → 이야기꾼에게 취하게 할 대상 선택 요청
+      if (isSweetheartDeath && killedPlayer) {
+        storytellerIo.emit('sweetheart:died', {
+          sweetheartName: killedPlayer.name,
+        });
+      }
+
+      // 시장 밤 사망 → 이야기꾼에게 대신 죽일 대상 선택 요청
+      if (isMayorNightDeath && killedPlayer) {
+        storytellerIo.emit('mayor:nightDeath', {
+          mayorId: playerId,
+          mayorName: killedPlayer.name,
+        });
+      }
 
       // 승리 조건 체크
       const winResult = game.checkWinCondition();
@@ -749,6 +810,30 @@ export function registerStorytellerHandlers(
         startClockwiseVote(game, playerIo, storytellerIo, pausedNomineeId);
       }
       console.log('Storyteller forced slayer ack');
+    });
+
+    socket.on('game:assignRedHerring', (playerId) => {
+      game.setRedHerring(playerId);
+      storytellerIo.emit('game:state', game.getState());
+    });
+
+    socket.on('game:mayorRedirect', ({ mayorId, redirectTargetId }) => {
+      // 시장 부활
+      game.revive(mayorId);
+      game.removePendingNightKill(mayorId);
+      // 대신 사망할 플레이어 처리
+      game.kill(redirectTargetId);
+      game.addPendingNightKill(redirectTargetId);
+      storytellerIo.emit('game:state', game.getState());
+    });
+
+    socket.on('game:sweetheartDrunk', (playerId) => {
+      const player = game.getPlayer(playerId);
+      if (!player) return;
+      if (!player.statuses.includes('drunk')) {
+        player.statuses.push('drunk');
+      }
+      storytellerIo.emit('game:state', game.getState());
     });
 
     socket.on('chat:sendToPlayer', ({ playerId, message }) => {

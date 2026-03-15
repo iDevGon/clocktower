@@ -95,7 +95,22 @@ export function registerPlayerHandlers(
         id: p.id,
         name: p.name,
         isAlive: p.isAlive,
+        deadVoteUsed: p.deadVoteUsed,
       }));
+
+      // 집사의 주인 이름 조회
+      const effectiveRoleId =
+        player.role?.id === 'drunk' && player.drunkAs
+          ? player.drunkAs
+          : player.role?.id;
+      let butlerMasterName: string | undefined;
+      if (effectiveRoleId === 'butler') {
+        const masterId = game.getButlerMaster(playerId);
+        if (masterId) {
+          const master = game.getPlayer(masterId);
+          if (master) butlerMasterName = master.name;
+        }
+      }
 
       callback({
         success: true,
@@ -109,6 +124,7 @@ export function registerPlayerHandlers(
         deadVoteUsed: player.deadVoteUsed,
         nightProgress,
         gamePlayers,
+        butlerMasterName,
       });
       // 설정 전송
       socket.emit('game:settings', state.settings);
@@ -201,18 +217,19 @@ export function registerPlayerHandlers(
       storytellerIo.emit('game:state', game.getState());
     });
 
-    socket.on('vote:cast', ({ guilty }) => {
+    socket.on('vote:cast', (callback) => {
       const playerId = getPlayerIdFromSocket(socket);
       if (!playerId) return;
 
       const state = game.getState();
       if (state.settings.votingMode === 'offline') return;
 
-      // 오프라인 모드가 아닌 비-시계방향 투표 시 즉시 확정
-      const result = game.castVote(playerId, guilty);
+      // 오프라인 모드가 아닌 비-시계방향 투표 시 즉시 확정 (항상 찬성)
+      const result = game.castVote(playerId);
       if (result.success) {
         storytellerIo.emit('game:state', game.getState());
       }
+      if (typeof callback === 'function') callback(result);
     });
 
     socket.on('vote:preselect', ({ guilty }) => {
@@ -223,8 +240,10 @@ export function registerPlayerHandlers(
       const current = game.getState().nominations.at(-1);
       if (current && playerId in current.votes) return;
 
+      // 집사 투표 제한: 찬성 프리셀렉트 시 주인이 투표/프리셀렉트하지 않았으면 거부
+      if (guilty && game.isButlerRestricted(playerId)) return;
+
       game.preselectVote(playerId, guilty);
-      // 모든 플레이어와 이야기꾼에게 프리셀렉트 알림
       playerIo.emit('vote:preselected', { playerId, guilty });
       storytellerIo.emit('vote:preselected', { playerId, guilty });
     });
@@ -495,7 +514,24 @@ export function registerPlayerHandlers(
     });
 
     socket.on('disconnect', () => {
-      console.log('Player disconnected');
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) {
+        console.log('Player disconnected (no room)');
+        return;
+      }
+
+      const state = game.getState();
+      if (!state.started) {
+        // 게임 시작 전: 대기실에서 나간 플레이어를 목록에서 제거
+        const player = game.getPlayer(playerId);
+        const playerName = player?.name ?? playerId;
+        game.removePlayer(playerId);
+        storytellerIo.emit('game:state', game.getState());
+        console.log(`Player left lobby: ${playerName}`);
+      } else {
+        const player = game.getPlayer(playerId);
+        console.log(`Player disconnected: ${player?.name ?? playerId}`);
+      }
     });
   });
 }

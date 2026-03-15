@@ -171,7 +171,7 @@ export class GameManager {
     return this.state.players.find((p) => p.id === playerId);
   }
 
-  addPlayer(name: string): Player | null {
+  addPlayer(name: string, isDummy?: boolean): Player | null {
     if (this.state.started) return null;
 
     const player: Player = {
@@ -182,15 +182,31 @@ export class GameManager {
       hasBeenNominatedToday: false,
       deadVoteUsed: false,
       statuses: [],
+      ...(isDummy ? { isDummy: true } : {}),
     };
     this.state.players.push(player);
     this.state.playerOrder.push(player.id);
     return player;
   }
 
-  clearPlayers(): void {
-    this.state.players = [];
-    this.state.playerOrder = [];
+  removePlayer(playerId: string): boolean {
+    const index = this.state.players.findIndex((p) => p.id === playerId);
+    if (index === -1) return false;
+    this.state.players.splice(index, 1);
+    this.state.playerOrder = this.state.playerOrder.filter(
+      (id) => id !== playerId,
+    );
+    return true;
+  }
+
+  removeDummyPlayers(): void {
+    const dummyIds = new Set(
+      this.state.players.filter((p) => p.isDummy).map((p) => p.id),
+    );
+    this.state.players = this.state.players.filter((p) => !p.isDummy);
+    this.state.playerOrder = this.state.playerOrder.filter(
+      (id) => !dummyIds.has(id),
+    );
   }
 
   start(): { success: boolean; error?: string } {
@@ -277,6 +293,12 @@ export class GameManager {
     }
   }
 
+  removePendingNightKill(playerId: string): void {
+    this.pendingNightKills = this.pendingNightKills.filter(
+      (id) => id !== playerId,
+    );
+  }
+
   flushPendingNightKills(): string[] {
     const kills = [...this.pendingNightKills];
     this.pendingNightKills = [];
@@ -345,6 +367,28 @@ export class GameManager {
     return chosen.id;
   }
 
+  /**
+   * 이야기꾼이 직접 Red Herring 대상을 지정합니다.
+   */
+  setRedHerring(playerId: string): boolean {
+    const player = this.getPlayer(playerId);
+    if (!player) return false;
+
+    // 기존 red herring의 cursed 상태 제거
+    if (this.fortuneTellerRedHerring) {
+      const prev = this.getPlayer(this.fortuneTellerRedHerring);
+      if (prev) {
+        prev.statuses = prev.statuses.filter((s) => s !== 'cursed');
+      }
+    }
+
+    this.fortuneTellerRedHerring = playerId;
+    if (!player.statuses.includes('cursed')) {
+      player.statuses.push('cursed');
+    }
+    return true;
+  }
+
   getRedHerringId(): string | null {
     return this.fortuneTellerRedHerring;
   }
@@ -377,7 +421,29 @@ export class GameManager {
   // ── 집사 주인 관리 ──
 
   setButlerMaster(butlerId: string, masterId: string): void {
+    // 이전 주인에게서 'master' 상태 제거 (다른 집사의 주인이 아닌 경우에만)
+    const prevMasterId = this.butlerMasters.get(butlerId);
+    if (prevMasterId && prevMasterId !== masterId) {
+      const stillMasterForOther = [...this.butlerMasters.entries()].some(
+        ([bid, mid]) => bid !== butlerId && mid === prevMasterId,
+      );
+      if (!stillMasterForOther) {
+        const prevMaster = this.getPlayer(prevMasterId);
+        if (prevMaster) {
+          prevMaster.statuses = prevMaster.statuses.filter(
+            (s) => s !== 'master',
+          );
+        }
+      }
+    }
+
     this.butlerMasters.set(butlerId, masterId);
+
+    // 새 주인에게 'master' 상태 추가
+    const newMaster = this.getPlayer(masterId);
+    if (newMaster && !newMaster.statuses.includes('master')) {
+      newMaster.statuses.push('master');
+    }
   }
 
   getButlerMaster(butlerId: string): string | undefined {
@@ -464,11 +530,7 @@ export class GameManager {
 
   // ── 집사 투표 제한 포함 ──
 
-  castVote(
-    playerId: string,
-    guilty: boolean,
-    bypassButlerCheck = false,
-  ): { success: boolean; error?: string } {
+  castVote(playerId: string): { success: boolean; error?: string } {
     const player = this.getPlayer(playerId);
     if (!player)
       return { success: false, error: '플레이어를 찾을 수 없습니다' };
@@ -483,29 +545,34 @@ export class GameManager {
     }
 
     // 집사 투표 제한: 주인이 투표해야만 투표 가능 (중독된 집사는 제한 없음)
-    if (
-      !bypassButlerCheck &&
-      player.role?.id === 'butler' &&
-      !isPoisonedOrDrunk(player)
-    ) {
-      const masterId = this.butlerMasters.get(playerId);
-      if (masterId) {
-        const current =
-          this.state.nominations[this.state.nominations.length - 1];
-        if (current && !(masterId in current.votes)) {
-          return {
-            success: false,
-            error: '주인이 아직 투표하지 않았습니다',
-          };
-        }
-      }
+    if (this.isButlerRestricted(playerId)) {
+      return {
+        success: false,
+        error: '주인이 투표하지 않았습니다',
+      };
     }
 
     const current = this.state.nominations[this.state.nominations.length - 1];
     if (current) {
-      current.votes[playerId] = guilty;
+      current.votes[playerId] = true;
     }
     return { success: true };
+  }
+
+  /** 집사인 플레이어가 투표 제한 상태인지 확인 */
+  isButlerRestricted(playerId: string): boolean {
+    const player = this.getPlayer(playerId);
+    if (!player || player.role?.id !== 'butler' || isPoisonedOrDrunk(player)) {
+      return false;
+    }
+    const masterId = this.butlerMasters.get(playerId);
+    if (!masterId) return false;
+    const current = this.state.nominations[this.state.nominations.length - 1];
+    if (!current) return false;
+    // 주인이 투표했거나(votes) 손을 들었으면(preselect true) 허용
+    if (masterId in current.votes) return false;
+    if (this.votePreselections.get(masterId) === true) return false;
+    return true;
   }
 
   returnToNomination(): void {
@@ -655,8 +722,19 @@ export class GameManager {
     const current = this.state.nominations[this.state.nominations.length - 1];
     if (!current) return null;
 
+    // 집사 최종 검증: 주인이 최종적으로 투표하지 않았으면 집사 투표 제거
+    for (const [butlerId, masterId] of this.butlerMasters) {
+      if (!(butlerId in current.votes)) continue;
+      const butler = this.getPlayer(butlerId);
+      if (!butler || butler.role?.id !== 'butler' || isPoisonedOrDrunk(butler))
+        continue;
+      if (!(masterId in current.votes)) {
+        delete current.votes[butlerId];
+      }
+    }
+
     const alivePlayers = this.state.players.filter((p) => p.isAlive).length;
-    const guiltyVotes = Object.values(current.votes).filter(Boolean).length;
+    const guiltyVotes = Object.keys(current.votes).length;
     const reachedMajority = guiltyVotes >= Math.ceil(alivePlayers / 2);
 
     // 과반수를 넘겼고, 이전 최다 투표보다 많으면 처형 대상 교체
