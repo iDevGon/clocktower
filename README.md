@@ -1,6 +1,6 @@
 # Clocktower
 
-Blood on the Clocktower (Trouble Brewing 에디션) 디지털 구현체. 이야기꾼와 플레이어가 각각의 앱을 통해 실시간으로 게임을 진행합니다.
+Blood on the Clocktower (Trouble Brewing 에디션) 디지털 구현체. 이야기꾼과 플레이어가 각각의 앱을 통해 실시간으로 게임을 진행합니다.
 
 ## 기술 스택
 
