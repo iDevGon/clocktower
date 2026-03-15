@@ -8,7 +8,8 @@
     "dev:app": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "tsc && node dist/index.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts"
   },
   "dependencies": {
     "@clocktower/shared": "workspace:*",
@@ -20,6 +21,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "socket.io-client": "^4.8.3",
     "tsx": "^4.19.0",
     "typescript": "^5.4.0",
     "vitest": "^2.1.9"
