@@ -1,4 +1,9 @@
 import { Pressable, Text, View } from 'react-native';
+import {
+  createClockSpeedSettingStyles,
+  optionButtonStyle,
+  optionTextStyle,
+} from './ClockSpeedSetting.styles';
 
 export function ClockSpeedSetting({
   value,
@@ -18,59 +23,32 @@ export function ClockSpeedSetting({
   formatOption?: (val: number) => string;
 }) {
   const s = (v: number) => Math.round(v * scale);
+  const st = createClockSpeedSettingStyles(s);
   const defaultFormat = (sec: number) => `${sec}초`;
   const fmt = formatOption ?? defaultFormat;
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: s(6) }}>
-      <Text style={{ color: '#908e8a', fontSize: s(12), fontWeight: '600' }}>
-        {label}
-      </Text>
+    <View style={st.container}>
+      <Text style={st.label}>{label}</Text>
       {showOff && (
         <Pressable
           onPress={() => onChange(0)}
-          style={{
-            paddingVertical: s(4),
-            paddingHorizontal: s(8),
-            borderRadius: 4,
-            backgroundColor: value === 0 ? '#3a2a2a' : '#242428',
-            borderWidth: 1,
-            borderColor: value === 0 ? '#6a3a3a' : '#3a3a3e',
-          }}
+          style={optionButtonStyle(s, value === 0, true)}
+          accessibilityLabel={`${label} 없음`}
+          accessibilityRole="button"
         >
-          <Text
-            style={{
-              color: value === 0 ? '#e08080' : '#706e6a',
-              fontSize: s(11),
-              fontWeight: '600',
-            }}
-          >
-            없음
-          </Text>
+          <Text style={optionTextStyle(s, value === 0, true)}>없음</Text>
         </Pressable>
       )}
       {options.map((sec) => (
         <Pressable
           key={sec}
           onPress={() => onChange(sec)}
-          style={{
-            paddingVertical: s(4),
-            paddingHorizontal: s(8),
-            borderRadius: 4,
-            backgroundColor: value === sec ? '#2a3a5c' : '#242428',
-            borderWidth: 1,
-            borderColor: value === sec ? '#4a6a9c' : '#3a3a3e',
-          }}
+          style={optionButtonStyle(s, value === sec)}
+          accessibilityLabel={`${label} ${fmt(sec)}`}
+          accessibilityRole="button"
         >
-          <Text
-            style={{
-              color: value === sec ? '#8ab4f8' : '#706e6a',
-              fontSize: s(11),
-              fontWeight: '600',
-            }}
-          >
-            {fmt(sec)}
-          </Text>
+          <Text style={optionTextStyle(s, value === sec)}>{fmt(sec)}</Text>
         </Pressable>
       ))}
     </View>

@@ -21,7 +21,6 @@ interface DraggablePlayerTokenProps {
   statuses?: PlayerStatus[];
   highlighted?: boolean;
   empathNeighbor?: boolean;
-  butlerMasterName?: string;
   voteIndicator?: VoteIndicator;
   isExecutionCandidate?: boolean;
   tokenSize?: number;
@@ -41,7 +40,6 @@ export function DraggablePlayerToken({
   statuses,
   highlighted,
   empathNeighbor,
-  butlerMasterName,
   voteIndicator,
   isExecutionCandidate,
   tokenSize: tokenSizeProp,
@@ -138,7 +136,6 @@ export function DraggablePlayerToken({
           statuses={statuses}
           highlighted={highlighted}
           empathNeighbor={empathNeighbor}
-          butlerMasterName={butlerMasterName}
           voteIndicator={voteIndicator}
           isExecutionCandidate={isExecutionCandidate}
           size={tokenSize}

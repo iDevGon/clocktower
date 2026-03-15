@@ -139,9 +139,23 @@ export function NightActionLog({
                 <View style={styles.killRow}>
                   {action.targets.map((targetId) => {
                     const targetStatuses = playerStatuses?.[targetId] ?? [];
+                    const targetPlayer = players.find((p) => p.id === targetId);
+                    const isSoldier =
+                      actionConfig.isKill &&
+                      targetPlayer?.role?.id === 'soldier';
                     const isProtected =
                       actionConfig.isKill &&
                       targetStatuses.includes('protected');
+
+                    if (isSoldier) {
+                      return (
+                        <View key={targetId} style={styles.protectedBadge}>
+                          <Text style={styles.protectedText}>
+                            {getPlayerName(targetId)} 군인 — 악마에 면역!
+                          </Text>
+                        </View>
+                      );
+                    }
 
                     if (isProtected) {
                       return (

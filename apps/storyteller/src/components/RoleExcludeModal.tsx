@@ -9,6 +9,13 @@ import {
   View,
 } from 'react-native';
 import { EditionBadge } from './EditionBadge';
+import {
+  checkboxStyle,
+  createRoleExcludeModalStyles,
+  roleAbilityStyle,
+  roleItemStyle,
+  roleNameStyle,
+} from './RoleExcludeModal.styles';
 
 const TEAM_SECTIONS = [
   { team: 'townsfolk' as Team, label: '마을주민', color: '#7090c4' },
@@ -49,6 +56,7 @@ export function RoleExcludeModal({
   scale,
 }: RoleExcludeModalProps) {
   const s = (v: number) => Math.round(v * scale);
+  const st = createRoleExcludeModalStyles(s);
   return (
     <Modal
       visible={visible}
@@ -56,94 +64,26 @@ export function RoleExcludeModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <Pressable
-        style={{
-          flex: 1,
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-        onPress={onClose}
-      >
-        <Pressable
-          style={{
-            backgroundColor: '#1e1e22',
-            borderRadius: 12,
-            width: '90%',
-            maxHeight: '80%',
-            borderWidth: 2,
-            borderColor: '#4a4a5a',
-          }}
-          onPress={(e) => e.stopPropagation()}
-        >
-          <View
-            style={{
-              paddingHorizontal: s(16),
-              paddingTop: s(16),
-              paddingBottom: s(12),
-              borderBottomWidth: 1,
-              borderBottomColor: '#3a3a42',
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <Text
-              style={{
-                color: '#e0ddd8',
-                fontSize: s(18),
-                fontWeight: '700',
-              }}
-            >
-              직업 제외 설정
-            </Text>
+      <Pressable style={st.overlay} onPress={onClose}>
+        <Pressable style={st.modal} onPress={(e) => e.stopPropagation()}>
+          <View style={st.header}>
+            <Text style={st.headerTitle}>직업 제외 설정</Text>
             {excludedRoleIds.size > 0 && (
-              <Pressable
-                onPress={onResetExclude}
-                style={{
-                  paddingVertical: s(4),
-                  paddingHorizontal: s(10),
-                  borderRadius: 4,
-                  backgroundColor: '#3a2020',
-                }}
-              >
-                <Text
-                  style={{
-                    color: '#c47070',
-                    fontSize: s(12),
-                    fontWeight: '600',
-                  }}
-                >
-                  초기화
-                </Text>
+              <Pressable onPress={onResetExclude} style={st.resetButton}>
+                <Text style={st.resetText}>초기화</Text>
               </Pressable>
             )}
           </View>
           <TextInput
             value={searchText}
             onChangeText={onSearchChange}
-            placeholder="역할 검색..."
+            placeholder="역할 검색…"
             placeholderTextColor="#5a5a5e"
-            style={{
-              marginHorizontal: s(12),
-              marginTop: s(8),
-              marginBottom: s(4),
-              paddingVertical: s(8),
-              paddingHorizontal: s(12),
-              backgroundColor: '#252528',
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: '#3a3a3e',
-              color: '#e0ddd8',
-              fontSize: s(14),
-            }}
+            style={st.searchInput}
+            autoCapitalize="none"
+            autoCorrect={false}
           />
-          <ScrollView
-            contentContainerStyle={{
-              paddingHorizontal: s(12),
-              paddingVertical: s(8),
-            }}
-          >
+          <ScrollView contentContainerStyle={st.scrollContent}>
             {TEAM_SECTIONS.map(({ team, label, color }) => {
               // 현재 에디션 + 믹스된 역할
               const additionalRolesArr = ALL_ROLES.filter(
@@ -164,83 +104,24 @@ export function RoleExcludeModal({
               );
               if (teamRoles.length === 0) return null;
               return (
-                <View key={team} style={{ marginBottom: s(12) }}>
-                  <Text
-                    style={{
-                      color,
-                      fontSize: s(14),
-                      fontWeight: '700',
-                      marginBottom: s(6),
-                    }}
-                  >
-                    {label}
-                  </Text>
+                <View key={team} style={st.teamSection}>
+                  <Text style={[st.teamLabel, { color }]}>{label}</Text>
                   {teamRoles.map((role) => {
                     const isExcluded = excludedRoleIds.has(role.id);
                     return (
                       <Pressable
                         key={role.id}
                         onPress={() => onToggleExclude(role.id)}
-                        style={({ pressed }) => ({
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          paddingVertical: s(8),
-                          paddingHorizontal: s(10),
-                          marginBottom: s(2),
-                          borderRadius: 6,
-                          backgroundColor: isExcluded
-                            ? '#2a1a1a'
-                            : pressed
-                              ? '#2a2a30'
-                              : '#252528',
-                        })}
+                        style={({ pressed }) =>
+                          roleItemStyle(s, isExcluded, pressed)
+                        }
                       >
-                        <View
-                          style={{
-                            width: s(18),
-                            height: s(18),
-                            borderRadius: 4,
-                            borderWidth: 2,
-                            borderColor: isExcluded ? '#c47070' : '#5a5a5e',
-                            backgroundColor: isExcluded
-                              ? '#c47070'
-                              : 'transparent',
-                            marginRight: s(10),
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {isExcluded && (
-                            <Text
-                              style={{
-                                color: '#1e1e22',
-                                fontSize: s(12),
-                                fontWeight: '900',
-                                lineHeight: s(14),
-                              }}
-                            >
-                              ✕
-                            </Text>
-                          )}
+                        <View style={checkboxStyle(s, isExcluded)}>
+                          {isExcluded && <Text style={st.checkmark}>✕</Text>}
                         </View>
-                        <View style={{ flex: 1 }}>
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              gap: s(6),
-                            }}
-                          >
-                            <Text
-                              style={{
-                                color: isExcluded ? '#706060' : '#e0ddd8',
-                                fontSize: s(14),
-                                fontWeight: '600',
-                                textDecorationLine: isExcluded
-                                  ? 'line-through'
-                                  : 'none',
-                              }}
-                            >
+                        <View style={st.roleContent}>
+                          <View style={st.roleNameRow}>
+                            <Text style={roleNameStyle(s, isExcluded)}>
                               {role.name}
                             </Text>
                             <EditionBadge
@@ -249,11 +130,7 @@ export function RoleExcludeModal({
                             />
                           </View>
                           <Text
-                            style={{
-                              color: isExcluded ? '#504848' : '#787674',
-                              fontSize: s(11),
-                              lineHeight: s(15),
-                            }}
+                            style={roleAbilityStyle(s, isExcluded)}
                             numberOfLines={2}
                           >
                             {role.ability}
@@ -266,22 +143,8 @@ export function RoleExcludeModal({
               );
             })}
           </ScrollView>
-          <Pressable
-            style={{
-              paddingVertical: s(14),
-              borderTopWidth: 1,
-              borderTopColor: '#3a3a42',
-            }}
-            onPress={onClose}
-          >
-            <Text
-              style={{
-                color: '#7070c4',
-                fontSize: s(15),
-                fontWeight: '600',
-                textAlign: 'center',
-              }}
-            >
+          <Pressable style={st.footer} onPress={onClose}>
+            <Text style={st.footerText}>
               {excludedRoleIds.size > 0
                 ? `선택 완료 (${excludedRoleIds.size}개 제외)`
                 : '선택 완료'}

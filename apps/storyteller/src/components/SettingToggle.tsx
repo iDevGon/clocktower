@@ -1,4 +1,5 @@
 import { Switch, Text, View } from 'react-native';
+import { createSettingToggleStyles, labelStyle } from './SettingToggle.styles';
 
 export function SettingToggle({
   label,
@@ -11,28 +12,17 @@ export function SettingToggle({
   onValueChange: (val: boolean) => void;
   scale: number;
 }) {
+  const s = (v: number) => Math.round(v * scale);
+  const st = createSettingToggleStyles(s);
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: Math.round(8 * scale),
-      }}
-    >
-      <Text
-        style={{
-          color: value ? '#e0ddd8' : '#5c5a58',
-          fontSize: Math.round(12 * scale),
-          fontWeight: '600',
-        }}
-      >
-        {label}
-      </Text>
+    <View style={st.container}>
+      <Text style={labelStyle(s, value)}>{label}</Text>
       <Switch
         value={value}
         onValueChange={onValueChange}
         trackColor={{ false: '#3a3a42', true: '#2a4a2a' }}
         thumbColor={value ? '#2ecc71' : '#908e8a'}
+        accessibilityLabel={label}
       />
     </View>
   );

@@ -1,10 +1,15 @@
 import type React from 'react';
+import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import {
+  createCollapsibleSectionStyles,
+  toggleButtonStyle,
+} from './CollapsibleSection.styles';
 
 export function CollapsibleSection({
   label,
@@ -20,12 +25,14 @@ export function CollapsibleSection({
   children: React.ReactNode;
 }) {
   const s = (v: number) => Math.round(v * scale);
+  const st = createCollapsibleSectionStyles(s);
   const chevronRotation = useSharedValue(0);
   const contentHeight = useSharedValue(0);
 
-  // Update animation values when isOpen changes
-  chevronRotation.value = withTiming(isOpen ? 180 : 0, { duration: 250 });
-  contentHeight.value = withTiming(isOpen ? 1 : 0, { duration: 250 });
+  useEffect(() => {
+    chevronRotation.value = withTiming(isOpen ? 180 : 0, { duration: 250 });
+    contentHeight.value = withTiming(isOpen ? 1 : 0, { duration: 250 });
+  }, [isOpen, chevronRotation, contentHeight]);
 
   const chevronStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${chevronRotation.value}deg` }],
@@ -38,43 +45,15 @@ export function CollapsibleSection({
   }));
 
   return (
-    <View style={{ marginBottom: s(8) }}>
+    <View style={st.container}>
       <Pressable
         onPress={onToggle}
-        style={({ pressed }) => ({
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingVertical: s(8),
-          borderRadius: 6,
-          backgroundColor: pressed ? '#2a2a30' : '#1e1e22',
-          borderWidth: 1,
-          borderColor: '#3a3a3e',
-          gap: s(6),
-        })}
+        style={({ pressed }) => toggleButtonStyle(s, pressed)}
       >
-        <Text
-          style={{
-            color: '#908e8a',
-            fontSize: s(13),
-            fontWeight: '600',
-          }}
-        >
-          {label}
-        </Text>
-        <Animated.Text
-          style={[
-            {
-              color: '#908e8a',
-              fontSize: s(11),
-            },
-            chevronStyle,
-          ]}
-        >
-          ▼
-        </Animated.Text>
+        <Text style={st.label}>{label}</Text>
+        <Animated.Text style={[st.chevron, chevronStyle]}>▼</Animated.Text>
       </Pressable>
-      <Animated.View style={[{ marginTop: s(8) }, contentStyle]}>
+      <Animated.View style={[st.contentWrapper, contentStyle]}>
         {children}
       </Animated.View>
     </View>

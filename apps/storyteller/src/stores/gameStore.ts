@@ -54,6 +54,15 @@ interface GameStore {
   activeChatPlayerId: string | null;
   slayerWaitingAck: boolean;
   setSlayerWaitingAck: (waiting: boolean) => void;
+  sweetheartDiedPending: boolean;
+  sweetheartDiedName: string | null;
+  setSweetheartDied: (name: string) => void;
+  clearSweetheartDied: () => void;
+  mayorNightDeathPending: boolean;
+  mayorNightDeathId: string | null;
+  mayorNightDeathName: string | null;
+  setMayorNightDeath: (id: string, name: string) => void;
+  clearMayorNightDeath: () => void;
   chatToast: { playerName: string; message: string } | null;
   showChatToast: (toast: { playerName: string; message: string }) => void;
   dismissChatToast: () => void;
@@ -125,6 +134,27 @@ export const useGameStore = create<GameStore>()(
       activeChatPlayerId: null,
       slayerWaitingAck: false,
       setSlayerWaitingAck: (waiting) => set({ slayerWaitingAck: waiting }),
+      sweetheartDiedPending: false,
+      sweetheartDiedName: null,
+      setSweetheartDied: (name) =>
+        set({ sweetheartDiedPending: true, sweetheartDiedName: name }),
+      clearSweetheartDied: () =>
+        set({ sweetheartDiedPending: false, sweetheartDiedName: null }),
+      mayorNightDeathPending: false,
+      mayorNightDeathId: null,
+      mayorNightDeathName: null,
+      setMayorNightDeath: (id, name) =>
+        set({
+          mayorNightDeathPending: true,
+          mayorNightDeathId: id,
+          mayorNightDeathName: name,
+        }),
+      clearMayorNightDeath: () =>
+        set({
+          mayorNightDeathPending: false,
+          mayorNightDeathId: null,
+          mayorNightDeathName: null,
+        }),
       chatToast: null,
       showChatToast: (toast) => set({ chatToast: toast }),
       dismissChatToast: () => set({ chatToast: null }),

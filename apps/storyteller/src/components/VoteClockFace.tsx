@@ -1,12 +1,16 @@
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
+import {
+  clockFaceBgStyle,
+  innerRingStyle,
+  outerGlowStyle,
+  outerRingStyle,
+  styles,
+} from './VoteClockFace.styles';
 
 const COLORS = {
-  brass: '#8b2020',
   brassDark: '#6a1818',
   iron: '#4a4a52',
-  midnight: '#0d0d12',
-  blood: '#8b1a1a',
 };
 
 const TICK_COUNT = 60;
@@ -48,87 +52,36 @@ export function VoteClockFace({
   }, [centerX, centerY, radius]);
 
   return (
-    <View
-      style={[
-        StyleSheet.absoluteFill,
-        { pointerEvents: 'none', overflow: 'visible' },
-      ]}
-    >
+    <View style={[StyleSheet.absoluteFill, styles.root]}>
       {/* Outer glow */}
-      <View
-        style={{
-          position: 'absolute',
-          left: centerX - (ringSize + 30) / 2,
-          top: centerY - (ringSize + 30) / 2,
-          width: ringSize + 30,
-          height: ringSize + 30,
-          borderRadius: (ringSize + 30) / 2,
-          backgroundColor: `${COLORS.blood}10`,
-        }}
-      />
+      <View style={outerGlowStyle(centerX, centerY, ringSize)} />
 
       {/* Clock face background */}
-      <View
-        style={{
-          position: 'absolute',
-          left: centerX - ringSize / 2,
-          top: centerY - ringSize / 2,
-          width: ringSize,
-          height: ringSize,
-          borderRadius: ringSize / 2,
-          backgroundColor: `${COLORS.midnight}90`,
-        }}
-      />
+      <View style={clockFaceBgStyle(centerX, centerY, ringSize)} />
 
       {/* Outer ring border */}
-      <View
-        style={{
-          position: 'absolute',
-          left: centerX - ringSize / 2,
-          top: centerY - ringSize / 2,
-          width: ringSize,
-          height: ringSize,
-          borderRadius: ringSize / 2,
-          borderWidth: 2.5,
-          borderColor: COLORS.brassDark,
-          shadowColor: COLORS.brass,
-          shadowOffset: { width: 0, height: 0 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 5,
-        }}
-      />
+      <View style={outerRingStyle(centerX, centerY, ringSize)} />
 
       {/* Tick marks */}
       {ticks.map((t) => (
         <View
           key={t.key}
-          style={{
-            position: 'absolute',
-            left: t.left,
-            top: t.top,
-            width: t.width,
-            height: t.height,
-            backgroundColor: t.backgroundColor,
-            transform: [{ rotate: t.rotate }],
-            transformOrigin: 'top',
-          }}
+          style={[
+            styles.tick,
+            {
+              left: t.left,
+              top: t.top,
+              width: t.width,
+              height: t.height,
+              backgroundColor: t.backgroundColor,
+              transform: [{ rotate: t.rotate }],
+            },
+          ]}
         />
       ))}
 
       {/* Inner ring */}
-      <View
-        style={{
-          position: 'absolute',
-          left: centerX - innerRingRadius,
-          top: centerY - innerRingRadius,
-          width: innerRingRadius * 2,
-          height: innerRingRadius * 2,
-          borderRadius: innerRingRadius,
-          borderWidth: 0.8,
-          borderColor: `${COLORS.brassDark}40`,
-        }}
-      />
+      <View style={innerRingStyle(centerX, centerY, innerRingRadius)} />
     </View>
   );
 }

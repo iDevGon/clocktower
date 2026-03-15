@@ -25,26 +25,17 @@ const TEAM_BG_COLORS = {
   demon: '#1e1414',
 } as const;
 
-export type VoteIndicator =
-  | 'guilty'
-  | 'innocent'
-  | 'preselected_guilty'
-  | 'preselected_innocent'
-  | 'nominee';
+export type VoteIndicator = 'guilty' | 'preselected_guilty' | 'nominee';
 
 const VOTE_BORDER_COLORS: Record<VoteIndicator, string> = {
   guilty: '#e05050',
-  innocent: '#5090e0',
   preselected_guilty: '#e0505080',
-  preselected_innocent: '#5090e080',
   nominee: '#c43c3c',
 };
 
 const VOTE_GLOW_COLORS: Record<VoteIndicator, string> = {
   guilty: '#e05050',
-  innocent: '#5090e0',
   preselected_guilty: '#e0505060',
-  preselected_innocent: '#5090e060',
   nominee: '#c43c3c',
 };
 
@@ -54,7 +45,6 @@ interface PlayerTokenProps {
   size?: number;
   highlighted?: boolean;
   empathNeighbor?: boolean;
-  butlerMasterName?: string;
   voteIndicator?: VoteIndicator;
   isExecutionCandidate?: boolean;
   onPress?: () => void;
@@ -66,7 +56,6 @@ export function PlayerToken({
   size,
   highlighted,
   empathNeighbor,
-  butlerMasterName,
   voteIndicator,
   isExecutionCandidate,
   onPress,
@@ -98,13 +87,18 @@ export function PlayerToken({
     : undefined;
   const voteGlow = voteIndicator ? VOTE_GLOW_COLORS[voteIndicator] : undefined;
 
+  // 사망자 중 투표권이 남아있으면 푸른 글로우
+  const hasGhostVote = !player.isAlive && !player.deadVoteUsed;
+
   const borderColor = highlighted
     ? '#f5c542'
     : empathNeighbor
       ? '#2ecc71'
       : hasVoteState
         ? (voteBorder ?? baseBorderColor)
-        : baseBorderColor;
+        : hasGhostVote
+          ? '#5aa0d0'
+          : baseBorderColor;
 
   const glowColor = highlighted
     ? '#f5c542'
@@ -112,13 +106,19 @@ export function PlayerToken({
       ? '#2ecc71'
       : hasVoteState
         ? (voteGlow ?? 'transparent')
-        : 'transparent';
+        : hasGhostVote
+          ? '#5aa0d0'
+          : 'transparent';
 
-  const hasGlow = highlighted || empathNeighbor || hasVoteState;
+  const hasGlow = highlighted || empathNeighbor || hasVoteState || hasGhostVote;
   const bw = highlighted || empathNeighbor || hasVoteState ? 3 : 2;
 
   return (
-    <Pressable onPress={onPress}>
+    <Pressable
+      onPress={onPress}
+      accessibilityLabel={`${player.name} 토큰`}
+      accessibilityRole="button"
+    >
       <View
         style={[
           styles.token,
@@ -155,7 +155,9 @@ export function PlayerToken({
           </Text>
         )}
         {!player.isAlive && (
-          <Text style={[styles.dead, { fontSize: scaledFont.sm }]}>사망</Text>
+          <View style={styles.deadRow}>
+            <Text style={[styles.dead, { fontSize: scaledFont.sm }]}>사망</Text>
+          </View>
         )}
         {statuses && statuses.length > 0 && (
           <View style={styles.statusRow}>
@@ -166,6 +168,7 @@ export function PlayerToken({
                   e.stopPropagation?.();
                   showTooltip(status);
                 }}
+                accessibilityLabel={`${PLAYER_STATUS_LABELS[status]} 상태 정보`}
                 style={[
                   styles.statusBadge,
                   { backgroundColor: PLAYER_STATUS_COLORS[status] },
@@ -178,36 +181,10 @@ export function PlayerToken({
             ))}
           </View>
         )}
-        {voteIndicator &&
-          (voteIndicator === 'guilty' || voteIndicator === 'innocent') && (
-            <View
-              style={[
-                styles.voteBadge,
-                {
-                  backgroundColor:
-                    voteIndicator === 'guilty' ? '#e05050' : '#5090e0',
-                },
-              ]}
-            >
-              <Text style={[styles.voteBadgeText, { fontSize: scaledFont.xs }]}>
-                {voteIndicator === 'guilty' ? '찬성' : '반대'}
-              </Text>
-            </View>
-          )}
-        {butlerMasterName && (
-          <View style={[styles.statusRow, { marginTop: 1 }]}>
-            <Pressable
-              onPress={(e) => {
-                e.stopPropagation?.();
-                setTooltipStatus('butler_master' as PlayerStatus);
-              }}
-              style={[styles.statusBadge, { backgroundColor: '#2c3e50' }]}
-            >
-              <Text style={[styles.statusText, { fontSize: scaledFont.xs }]}>
-                주인: {butlerMasterName}
-              </Text>
-            </Pressable>
-          </View>
+        {voteIndicator === 'guilty' && (
+          <Text style={[styles.voteBadgeText, { fontSize: scaledFont.lg }]}>
+            ✋🏻
+          </Text>
         )}
         {isExecutionCandidate && (
           <View style={[styles.statusRow, { marginTop: 1 }]}>
@@ -230,15 +207,13 @@ export function PlayerToken({
           <Pressable
             style={styles.tooltipOverlay}
             onPress={() => setTooltipStatus(null)}
+            accessibilityLabel="상태 정보 닫기"
           >
             <View
               style={[
                 styles.tooltipBox,
                 {
-                  borderColor:
-                    tooltipStatus === ('butler_master' as string)
-                      ? '#2c3e50'
-                      : PLAYER_STATUS_COLORS[tooltipStatus],
+                  borderColor: PLAYER_STATUS_COLORS[tooltipStatus],
                 },
               ]}
             >
@@ -246,21 +221,14 @@ export function PlayerToken({
                 style={[
                   styles.tooltipTitle,
                   {
-                    color:
-                      tooltipStatus === ('butler_master' as string)
-                        ? '#5a8aaa'
-                        : PLAYER_STATUS_COLORS[tooltipStatus],
+                    color: PLAYER_STATUS_COLORS[tooltipStatus],
                   },
                 ]}
               >
-                {tooltipStatus === ('butler_master' as string)
-                  ? `주인: ${butlerMasterName}`
-                  : PLAYER_STATUS_LABELS[tooltipStatus]}
+                {PLAYER_STATUS_LABELS[tooltipStatus]}
               </Text>
               <Text style={styles.tooltipDesc}>
-                {tooltipStatus === ('butler_master' as string)
-                  ? '집사의 주인. 이 주인이 투표해야만 집사도 투표할 수 있습니다.'
-                  : PLAYER_STATUS_DESCRIPTIONS[tooltipStatus]}
+                {PLAYER_STATUS_DESCRIPTIONS[tooltipStatus]}
               </Text>
             </View>
           </Pressable>

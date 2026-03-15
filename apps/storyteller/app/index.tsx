@@ -32,28 +32,6 @@ import { useConnectionStore } from '../src/stores/connectionStore';
 import { useGameStore } from '../src/stores/gameStore';
 import { createIndexStyles } from '../src/styles/index.styles';
 
-function useAutoReconnect(
-  connect: (url: string) => Promise<void>,
-  navigateToGame: () => void,
-) {
-  const gameId = useGameStore((s) => s.gameState?.id);
-  const serverUrl = useConnectionStore((s) => s.serverUrl);
-
-  useEffect(() => {
-    if (!gameId || !serverUrl) return;
-
-    const { socket } = useConnectionStore.getState();
-    if (socket?.connected) {
-      navigateToGame();
-      return;
-    }
-
-    connect(serverUrl)
-      .then(() => navigateToGame())
-      .catch(() => useGameStore.getState().reset());
-  }, [gameId, serverUrl, connect, navigateToGame]);
-}
-
 export default function HomeScreen() {
   const { fontSize } = useResponsive();
   const scale = fontSize.md / 12;
@@ -69,6 +47,9 @@ export default function HomeScreen() {
   const { createGame } = useGameActions();
   const [permission, requestPermission] = useCameraPermissions();
 
+  const isConnected = useConnectionStore((s) => s.isConnected);
+  const gameId = useGameStore((s) => s.gameState?.id);
+
   const navigateToGame = useCallback(() => {
     const state = useGameStore.getState().gameState;
     if (!state?.id) return;
@@ -79,7 +60,11 @@ export default function HomeScreen() {
     }
   }, [router]);
 
-  useAutoReconnect(connect, navigateToGame);
+  // _layout.tsx가 재접속을 처리함 → 여기서는 연결 완료 시 네비게이션만
+  useEffect(() => {
+    if (!isConnected || !gameId) return;
+    navigateToGame();
+  }, [isConnected, gameId, navigateToGame]);
 
   // Title glow pulse — golden
   const glowPulse = useSharedValue(0);

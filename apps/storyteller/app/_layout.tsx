@@ -12,6 +12,7 @@ export default function RootLayout() {
   const serverUrl = useConnectionStore((s) => s.serverUrl);
   const isConnected = useConnectionStore((s) => s.isConnected);
 
+  // 이전 세션이 있고 연결이 끊어졌을 때 자동 재접속
   useEffect(() => {
     if (!gameId || !serverUrl || isConnected) return;
     connect(serverUrl).catch(() => {

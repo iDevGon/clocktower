@@ -19,6 +19,11 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 2,
   },
+  deadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   dead: {
     color: '#b85c5c',
     fontSize: 10,
@@ -43,20 +48,10 @@ export const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: '700',
   },
-  voteBadge: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 4,
-    minWidth: 20,
-    alignItems: 'center',
-  },
   voteBadgeText: {
-    color: '#ffffff',
-    fontSize: 8,
-    fontWeight: '800',
+    position: 'absolute',
+    top: -8,
+    right: -8,
   },
   tooltipOverlay: {
     flex: 1,

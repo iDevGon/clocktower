@@ -158,6 +158,14 @@ export function useSocketConnection() {
             store.setLastExecutedPlayerId(data.nomineeId);
           }
         });
+        newSocket.on('sweetheart:died', (data) => {
+          useGameStore.getState().setSweetheartDied(data.sweetheartName);
+        });
+        newSocket.on('mayor:nightDeath', (data) => {
+          useGameStore
+            .getState()
+            .setMayorNightDeath(data.mayorId, data.mayorName);
+        });
         newSocket.on('chat:receiveFromPlayer', (message) => {
           const store = useGameStore.getState();
           store.addChatMessage(message);

@@ -6,7 +6,6 @@ import {
   type PlayerStatus,
 } from '@clocktower/shared';
 import { DictionaryModal } from '@clocktower/ui';
-import { IS_DEV } from '../../src/constants';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
@@ -33,10 +32,12 @@ import {
 } from '../../src/components/NightActionLog';
 import { NightOrderPanel } from '../../src/components/NightOrderPanel';
 import { PhaseBar } from '../../src/components/PhaseBar';
+import { PlayerPickerModal } from '../../src/components/PlayerPickerModal';
 import { StorytellerChatModal } from '../../src/components/StorytellerChatModal';
 import { VoteClockFace } from '../../src/components/VoteClockFace';
 import { VoteClockHand } from '../../src/components/VoteClockHand';
 import { VotePanel } from '../../src/components/VotePanel';
+import { IS_DEV } from '../../src/constants';
 import { useGameActions } from '../../src/hooks/useGameActions';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import { useConnectionStore } from '../../src/stores/connectionStore';
@@ -123,6 +124,7 @@ const ALL_STATUSES: PlayerStatus[] = [
   'drunk',
   'protected',
   'cursed',
+  'master',
 ];
 
 const PHASE_LABELS: Record<string, string> = {
@@ -164,7 +166,95 @@ export default function GrimoireScreen() {
     setGameSettings,
     setPlayerOrder: syncPlayerOrder,
     sendChatToPlayer,
+    sweetheartDrunk,
+    mayorRedirect,
+    assignRedHerring,
   } = useGameActions();
+
+  const sweetheartDiedPending = useGameStore((s) => s.sweetheartDiedPending);
+  const sweetheartDiedName = useGameStore((s) => s.sweetheartDiedName);
+  const clearSweetheartDied = useGameStore((s) => s.clearSweetheartDied);
+  const mayorNightDeathPending = useGameStore((s) => s.mayorNightDeathPending);
+  const mayorNightDeathId = useGameStore((s) => s.mayorNightDeathId);
+  const mayorNightDeathName = useGameStore((s) => s.mayorNightDeathName);
+  const clearMayorNightDeath = useGameStore((s) => s.clearMayorNightDeath);
+
+  // 사랑꾼 사망 시 취하게 할 대상 후보: 살아있는 플레이어 (사랑꾼 본인 제외)
+  const sweetheartDrunkCandidates = useMemo(() => {
+    if (!gameState) return [];
+    return gameState.players.filter(
+      (p) => p.isAlive && p.role?.id !== 'sweetheart',
+    );
+  }, [gameState]);
+
+  const handleSweetheartDrunkSelect = useCallback(
+    (playerId: string) => {
+      sweetheartDrunk(playerId);
+      clearSweetheartDied();
+    },
+    [sweetheartDrunk, clearSweetheartDied],
+  );
+
+  // 시장 밤 사망 시 대신 죽일 후보: 살아있는 플레이어 (시장 본인 제외)
+  const mayorRedirectCandidates = useMemo(() => {
+    if (!gameState || !mayorNightDeathId) return [];
+    return gameState.players.filter(
+      (p) => p.isAlive && p.id !== mayorNightDeathId,
+    );
+  }, [gameState, mayorNightDeathId]);
+
+  const handleMayorRedirectSelect = useCallback(
+    (playerId: string) => {
+      if (mayorNightDeathId) {
+        mayorRedirect(mayorNightDeathId, playerId);
+      }
+      clearMayorNightDeath();
+    },
+    [mayorNightDeathId, mayorRedirect, clearMayorNightDeath],
+  );
+
+  // Red Herring 선택 모달 상태 (게임 시작 시 점쟁이가 있으면 표시)
+  const hasFortuneTeller = useMemo(
+    () => gameState?.players.some((p) => p.role?.id === 'fortune_teller'),
+    [gameState],
+  );
+  const [showRedHerringModal, setShowRedHerringModal] = useState(false);
+  const redHerringShownRef = useRef(false);
+
+  useEffect(() => {
+    if (hasFortuneTeller && !redHerringShownRef.current) {
+      redHerringShownRef.current = true;
+      setShowRedHerringModal(true);
+    }
+  }, [hasFortuneTeller]);
+
+  const redHerringCandidates = useMemo(() => {
+    if (!gameState) return [];
+    return gameState.players.filter(
+      (p) =>
+        p.role?.id !== 'fortune_teller' &&
+        (p.role?.team === 'townsfolk' || p.role?.team === 'outsider'),
+    );
+  }, [gameState]);
+
+  const currentRedHerringId = useMemo(() => {
+    if (!gameState) return null;
+    return (
+      gameState.players.find((p) => p.statuses?.includes('cursed'))?.id ?? null
+    );
+  }, [gameState]);
+
+  const handleRedHerringConfirmAuto = useCallback(() => {
+    setShowRedHerringModal(false);
+  }, []);
+
+  const handleRedHerringSelectManual = useCallback(
+    (playerId: string) => {
+      assignRedHerring(playerId);
+      setShowRedHerringModal(false);
+    },
+    [assignRedHerring],
+  );
 
   const playerOrder = useGameStore((s) => s.playerOrder);
   const swapPlayerOrder = useGameStore((s) => s.swapPlayerOrder);
@@ -725,18 +815,6 @@ export default function GrimoireScreen() {
     return { chefEvilPairIds: pairIds, chefEvilPairCount: count };
   }, [gameState?.phase, gameState?.players, activeNightRoleId, playerOrder]);
 
-  const butlerMasterNames = useMemo(() => {
-    if (!gameState?.butlerMasters) return {};
-    const names: Record<string, string> = {};
-    for (const [butlerId, masterId] of Object.entries(
-      gameState.butlerMasters,
-    )) {
-      const master = gameState.players.find((p) => p.id === masterId);
-      if (master) names[butlerId] = master.name;
-    }
-    return names;
-  }, [gameState?.butlerMasters, gameState?.players]);
-
   const currentNomination = gameState?.nominations?.length
     ? gameState.nominations[gameState.nominations.length - 1]
     : null;
@@ -750,11 +828,7 @@ export default function GrimoireScreen() {
     if (!hasActiveVote || !currentNomination) return {};
     const indicators: Record<
       string,
-      | 'guilty'
-      | 'innocent'
-      | 'preselected_guilty'
-      | 'preselected_innocent'
-      | 'nominee'
+      'guilty' | 'preselected_guilty' | 'nominee'
     > = {};
     const votes = currentNomination.votes;
 
@@ -762,14 +836,12 @@ export default function GrimoireScreen() {
 
     for (const p of gameState?.players ?? []) {
       if (p.id === currentNomination.nomineeId) continue;
-      if (votes[p.id] !== undefined) {
-        indicators[p.id] = votes[p.id] ? 'guilty' : 'innocent';
-      } else if (voteConfirmed[p.id] !== undefined) {
-        indicators[p.id] = voteConfirmed[p.id] ? 'guilty' : 'innocent';
-      } else if (votePreselections[p.id] != null) {
-        indicators[p.id] = votePreselections[p.id]
-          ? 'preselected_guilty'
-          : 'preselected_innocent';
+      if (votes[p.id]) {
+        indicators[p.id] = 'guilty';
+      } else if (voteConfirmed[p.id]) {
+        indicators[p.id] = 'guilty';
+      } else if (votePreselections[p.id]) {
+        indicators[p.id] = 'preselected_guilty';
       }
     }
     return indicators;
@@ -889,7 +961,6 @@ export default function GrimoireScreen() {
                   empathNeighborIds.has(player.id) ||
                   chefEvilPairIds.has(player.id)
                 }
-                butlerMasterName={butlerMasterNames[player.id]}
                 voteIndicator={voteIndicators[player.id]}
                 isExecutionCandidate={
                   executionCandidateData?.playerId === player.id
@@ -1389,6 +1460,45 @@ export default function GrimoireScreen() {
         visible={dictionaryVisible}
         onClose={() => setDictionaryVisible(false)}
         groupRolesByTeam={false}
+      />
+
+      {/* 사랑꾼 사망 → 취하게 할 대상 선택 모달 */}
+      <PlayerPickerModal
+        visible={sweetheartDiedPending}
+        title="사랑꾼 사망"
+        description={`${sweetheartDiedName ?? '사랑꾼'}이(가) 사망했습니다. 취하게 할 플레이어를 선택하세요.`}
+        themeColor="#e67e22"
+        candidates={sweetheartDrunkCandidates}
+        onSelectPlayer={handleSweetheartDrunkSelect}
+        onClose={clearSweetheartDied}
+        scale={scale}
+      />
+
+      {/* 시장 밤 사망 → 대신 사망할 대상 선택 모달 */}
+      <PlayerPickerModal
+        visible={mayorNightDeathPending}
+        title="시장 밤 사망"
+        description={`${mayorNightDeathName ?? '시장'}이(가) 밤에 사망했습니다. 대신 사망할 플레이어를 선택하거나 닫기를 눌러 시장을 사망시키세요.`}
+        themeColor="#c4a050"
+        candidates={mayorRedirectCandidates}
+        onSelectPlayer={handleMayorRedirectSelect}
+        onClose={clearMayorNightDeath}
+        scale={scale}
+      />
+
+      {/* 점쟁이 저주 대상 (Red Herring) 선택 모달 */}
+      <PlayerPickerModal
+        visible={showRedHerringModal}
+        title="점쟁이 저주 대상 (Red Herring)"
+        description="점쟁이에게 악마로 감지될 선한 플레이어를 선택하세요"
+        themeColor="#9b59b6"
+        candidates={redHerringCandidates}
+        currentSelectedId={currentRedHerringId}
+        autoLabel="자동 (랜덤)"
+        onConfirmAuto={handleRedHerringConfirmAuto}
+        onSelectPlayer={handleRedHerringSelectManual}
+        onClose={handleRedHerringConfirmAuto}
+        scale={scale}
       />
     </SafeAreaView>
   );

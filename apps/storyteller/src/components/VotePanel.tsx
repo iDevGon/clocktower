@@ -66,10 +66,8 @@ export function VotePanel({
 
   const isCountingDown = voteCountdown !== null && countdownRemaining > 0;
 
-  const voteCount =
-    Object.values(nomination.votes).length + Object.keys(voteConfirmed).length;
   const guiltyCount =
-    Object.values(nomination.votes).filter(Boolean).length +
+    Object.keys(nomination.votes).length +
     Object.values(voteConfirmed).filter(Boolean).length;
 
   const nominatorName =
@@ -105,14 +103,11 @@ export function VotePanel({
       ) : isCountingDown ? (
         <View style={styles.countdownRow}>
           <Text style={styles.countdownText}>
-            잠시 후 투표가 시작됩니다... {countdownRemaining}초
+            잠시 후 투표가 시작됩니다… {countdownRemaining}초
           </Text>
         </View>
       ) : (
-        <Text style={styles.votePanelCount}>
-          투표: {voteCount}명 (찬성 {guiltyCount} / 반대{' '}
-          {voteCount - guiltyCount})
-        </Text>
+        <Text style={styles.votePanelCount}>찬성 {guiltyCount}표</Text>
       )}
       {voteClock && remainingSec != null && (
         <View style={styles.timerRow}>
@@ -146,49 +141,28 @@ export function VotePanel({
                   {player.name}
                 </Text>
                 {hasVoted ? (
-                  <Text
-                    style={[
-                      styles.votedBadge,
-                      vote ? styles.votedGuilty : styles.votedInnocent,
-                    ]}
-                  >
-                    {vote ? '찬성' : '반대'}
+                  <Text style={[styles.votedBadge, styles.votedGuilty]}>
+                    ✋🏻
                   </Text>
                 ) : hasConfirmed ? (
-                  <Text
-                    style={[
-                      styles.votedBadge,
-                      confirmed ? styles.votedGuilty : styles.votedInnocent,
-                    ]}
-                  >
-                    {confirmed ? '찬성' : '반대'}
-                  </Text>
-                ) : preselection != null ? (
-                  <Text
-                    style={[
-                      styles.votedBadge,
-                      preselection
-                        ? styles.preselectedGuilty
-                        : styles.preselectedInnocent,
-                    ]}
-                  >
-                    {preselection ? '찬성?' : '반대?'}
+                  confirmed ? (
+                    <Text style={[styles.votedBadge, styles.votedGuilty]}>
+                      ✋🏻
+                    </Text>
+                  ) : (
+                    <Text style={styles.votedBadge}>-</Text>
+                  )
+                ) : preselection === true ? (
+                  <Text style={[styles.votedBadge, styles.preselectedGuilty]}>
+                    ✋🏻?
                   </Text>
                 ) : IS_DEV ? (
-                  <View style={styles.voteButtons}>
-                    <Pressable
-                      onPress={() => onCastVote(player.id, true)}
-                      style={styles.guiltyButton}
-                    >
-                      <Text style={styles.guiltyText}>찬</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => onCastVote(player.id, false)}
-                      style={styles.innocentButton}
-                    >
-                      <Text style={styles.innocentText}>반</Text>
-                    </Pressable>
-                  </View>
+                  <Pressable
+                    onPress={() => onCastVote(player.id, true)}
+                    style={styles.guiltyButton}
+                  >
+                    <Text style={styles.guiltyText}>✋🏻</Text>
+                  </Pressable>
                 ) : (
                   <Text style={styles.votedBadge}>-</Text>
                 )}
@@ -211,8 +185,7 @@ export function VotePanel({
             {voteResult.nomineeName} - {voteResult.guilty ? '유죄' : '무죄'}
           </Text>
           <Text style={styles.resultCount}>
-            찬성 {Object.values(voteResult.votes).filter(Boolean).length}표 /
-            반대 {Object.values(voteResult.votes).filter((v) => !v).length}표
+            찬성 {Object.keys(voteResult.votes).length}표
           </Text>
           <Text style={styles.resultThreshold}>
             *찬성표가{' '}

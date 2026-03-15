@@ -47,14 +47,19 @@ export function useGameActions() {
       editionId?: string;
       additionalRoleIds?: string[];
     }) =>
-      new Promise<void>((resolve, reject) => {
+      new Promise<{ redHerringPlayerId?: string }>((resolve, reject) => {
         const s = getSocket();
         if (!s) return reject(new Error('Not connected'));
         s.emit(
           'game:distributeRoles',
           options ?? {},
-          (res: { success: boolean; error?: string }) => {
-            if (res.success) resolve();
+          (res: {
+            success: boolean;
+            error?: string;
+            redHerringPlayerId?: string;
+          }) => {
+            if (res.success)
+              resolve({ redHerringPlayerId: res.redHerringPlayerId });
             else reject(new Error(res.error ?? '직업 배분 실패'));
           },
         );
@@ -160,6 +165,22 @@ export function useGameActions() {
     [socket],
   );
 
+  const assignRedHerring = useCallback(
+    (playerId: string) => socket?.emit('game:assignRedHerring', playerId),
+    [socket],
+  );
+
+  const sweetheartDrunk = useCallback(
+    (playerId: string) => socket?.emit('game:sweetheartDrunk', playerId),
+    [socket],
+  );
+
+  const mayorRedirect = useCallback(
+    (mayorId: string, redirectTargetId: string) =>
+      socket?.emit('game:mayorRedirect', { mayorId, redirectTargetId }),
+    [socket],
+  );
+
   const sendChatToPlayer = useCallback(
     (playerId: string, message: string) =>
       socket?.emit('chat:sendToPlayer', { playerId, message }),
@@ -188,6 +209,9 @@ export function useGameActions() {
     setPlayerStatuses,
     setGameSettings,
     setPlayerOrder,
+    assignRedHerring,
+    sweetheartDrunk,
+    mayorRedirect,
     sendChatToPlayer,
   };
 }
