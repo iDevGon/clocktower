@@ -13,10 +13,12 @@ apps/server/src/whisper.ts          # WhisperTracker 클래스 (밀담 추적)
 apps/server/src/handlers/player.ts  # 플레이어 소켓 이벤트 핸들러
 apps/server/src/handlers/storyteller.ts # 이야기꾼 소켓 이벤트 핸들러
 apps/server/src/pushNotifications.ts # Expo 푸시 알림 관리
+apps/server/src/__tests__/          # 서버 단위 테스트 (game, whisper, pushNotifications)
 apps/player/app/                    # 플레이어 Expo Router 페이지
 apps/player/src/stores/             # Zustand 스토어 (player, connection, whisper, chat)
-apps/player/src/hooks/              # 소켓 연결, 이벤트 리스너, 게임 액션 훅
+apps/player/src/hooks/              # 소켓 연결, 이벤트 리스너, 게임 액션 훅 (useVoteProgress, useWhisperExpired 포함)
 apps/player/src/hooks/socketListeners/ # 도메인별 소켓 리스너 (game, role, night, vote, social)
+apps/player/src/styles/             # 페이지별 스타일 (game, index)
 apps/player/src/components/         # UI 컴포넌트
 apps/player/src/components/phases/  # 페이즈별 컴포넌트 (Setup, Night, Whisper, Discussion, Nomination, Ended)
 apps/player/src/notifications.ts    # 푸시 알림 등록 및 진동 알림
@@ -28,7 +30,8 @@ apps/storyteller/app/game/nominate.tsx # 지명/투표 관리
 apps/storyteller/app/game/log.tsx   # 게임 로그 뷰
 apps/storyteller/app/game/whispers.tsx # 밀담 현황 뷰
 apps/storyteller/src/stores/        # Zustand 스토어 (game, connection, log) - AsyncStorage 영속
-apps/storyteller/src/hooks/         # 소켓 훅 + useResponsive (반응형 레이아웃)
+apps/storyteller/src/hooks/         # 소켓 훅 (useSocket, useSocketConnection, useGameActions) + useResponsive (반응형 레이아웃)
+apps/storyteller/src/styles/        # 페이지별 스타일 (index, lobby, assign-role, grimoire, nominate)
 apps/storyteller/src/components/    # UI 컴포넌트
 apps/storyteller/src/components/feedback/ # 피드백 타입별 컴포넌트 (Number, PlayersAndRole, Role, YesNo)
 apps/storyteller/src/constants.ts   # IS_DEV 상수 (개발 모드 판별)
@@ -54,6 +57,7 @@ packages/ui/src/utils/chosung.ts    # 초성 검색 유틸
 - **UI 패키지**: 앱 간 공유 컴포넌트는 `packages/ui`에서 관리 (AbilityText, DictionaryModal 등)
 - **빌드 오케스트레이션**: Turborepo 사용. `^build` 의존으로 shared/ui 패키지가 앱보다 먼저 자동 빌드됨
 - **코드 포맷팅**: Biome 사용 (2-space indent, single quotes, always semicolons)
+- **테스팅**: Vitest 사용 (전 패키지 통일). `pnpm test`로 Turborepo 병렬 실행
 
 ## 이벤트 흐름
 

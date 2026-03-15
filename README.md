@@ -12,6 +12,7 @@ Blood on the Clocktower (Trouble Brewing 에디션) 디지털 구현체. 이야�
 - **Build**: Turborepo (의존 패키지 자동 빌드, 캐싱)
 - **Animation**: react-native-reanimated, react-native-gesture-handler
 - **Push Notifications**: Expo Push API
+- **Testing**: Vitest
 - **Linter/Formatter**: Biome
 
 ## 프로젝트 구조
@@ -85,7 +86,7 @@ clocktower/
 
 - `types.ts`: Phase, DaySubPhase, Team, Role, Player, GameState, NightAction, NightFeedback, WhisperMessage, PlayerStatus, GameResult, GameSettings, StorytellerMessage, DeathReason, ExecutionAnnouncement, Edition 등
 - `events.ts`: Socket.io 이벤트 타입 (ServerToClient, ServerToStoryteller, ClientToServer, StorytellerToServer)
-- `roles.ts`: Trouble Brewing 역할 22종 + Sects & Violets 25종(아기만 활성화, 나머지 disabled) 정의, 역할 배분 알고리즘, 밤 행동 순서
+- `roles.ts`: Trouble Brewing 역할 22종 + Sects & Violets 25종(사랑꾼만 활성화, 나머지 disabled) 정의, 역할 배분 알고리즘, 밤 행동 순서
 - `dictionary.ts`: 팀 라벨/색상, 상태/페이즈/서브페이즈 사전, 게임 규칙, 게임 흐름
 - `logic.ts`: 서버용 non-RN re-export
 
@@ -158,6 +159,9 @@ pnpm dev:player
 
 # 이야기꾼 앱 실행 (포트 8082)
 pnpm dev:storyteller
+
+# 전체 테스트 실행 (Turborepo 병렬)
+pnpm test
 ```
 
 > **`pnpm dev` vs `pnpm start`**: `dev`는 `EXPO_PUBLIC_DEV_MODE=true`를 설정하여 더미 플레이어 추가 등 개발 전용 기능이 활성화됩니다. `start`는 개발 기능 없이 실행됩니다.
@@ -180,3 +184,4 @@ pnpm dev:storyteller
 - **한국어 UI**: 전체 인터페이스 한국어 지원
 - **Turborepo 빌드**: `^build` 의존으로 shared/ui → apps 순서 자동 빌드 및 캐싱
 - **Biome**: 코드 포맷팅 및 린팅 (워크스페이스별 규칙 오버라이드)
+- **Vitest**: 전 패키지 통일 테스트 프레임워크 (Turborepo 병렬 실행)
