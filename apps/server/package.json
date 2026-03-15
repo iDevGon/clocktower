@@ -7,7 +7,8 @@
     "dev": "tsx watch src/index.ts",
     "dev:app": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "tsc && node dist/index.js"
+    "start": "tsc && node dist/index.js",
+    "test": "vitest run"
   },
   "dependencies": {
     "@clocktower/shared": "workspace:*",
@@ -20,6 +21,7 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "^2.1.9"
   }
 }

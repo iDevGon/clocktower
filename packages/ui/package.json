@@ -10,23 +10,25 @@
   },
   "scripts": {
     "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@clocktower/shared": "workspace:*"
   },
   "peerDependencies": {
+    "expo-linear-gradient": "*",
     "react": "*",
     "react-native": "*",
-    "react-native-reanimated": "*",
-    "expo-linear-gradient": "*"
+    "react-native-reanimated": "*"
   },
   "devDependencies": {
     "@types/react": "*",
+    "expo-linear-gradient": "*",
     "react": "*",
     "react-native": "*",
     "react-native-reanimated": "*",
-    "expo-linear-gradient": "*",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "^2.1.9"
   }
 }

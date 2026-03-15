@@ -7,7 +7,8 @@
     "dev": "EXPO_PUBLIC_DEV_MODE=true expo start --port 8081",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "test": "vitest run"
   },
   "dependencies": {
     "@clocktower/shared": "workspace:*",
@@ -35,7 +36,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "vitest": "^2.1.9"
   },
   "private": true
 }
