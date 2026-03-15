@@ -62,6 +62,13 @@ export const STATUS_ENTRIES: StatusEntry[] = [
     description:
       '점쟁이의 Red Herring(미끼)으로 지정된 상태입니다. 이 플레이어는 점쟁이에게 악마로 감지됩니다. 실제로는 선한 플레이어이지만, 점쟁이의 능력 결과를 왜곡합니다.',
   },
+  {
+    id: 'master',
+    label: '주인',
+    color: '#3a7ca5',
+    description:
+      '집사가 선택한 주인입니다. 집사는 이 플레이어가 투표할 때만 함께 투표할 수 있습니다. 주인은 매 밤 집사가 새로 선택하며, 집사가 중독되거나 취한 상태이면 이 제약이 무효화됩니다.',
+  },
 ];
 
 export const PHASE_ENTRIES: PhaseEntry[] = [

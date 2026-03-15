@@ -21,6 +21,7 @@ export interface Player {
   hasBeenNominatedToday: boolean;
   deadVoteUsed: boolean;
   statuses: PlayerStatus[];
+  isDummy?: boolean;
 }
 
 export interface GameState {
@@ -63,6 +64,7 @@ export interface PlayerInfo {
   id: string;
   name: string;
   isAlive: boolean;
+  deadVoteUsed?: boolean;
 }
 
 export type FeedbackType =
@@ -96,13 +98,19 @@ export type NightFeedbackPayload =
       }[];
     };
 
-export type PlayerStatus = 'poisoned' | 'drunk' | 'protected' | 'cursed';
+export type PlayerStatus =
+  | 'poisoned'
+  | 'drunk'
+  | 'protected'
+  | 'cursed'
+  | 'master';
 
 export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
   poisoned: '중독',
   drunk: '취함',
   protected: '보호',
   cursed: '저주',
+  master: '주인',
 };
 
 export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
@@ -110,6 +118,7 @@ export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
   drunk: '#e67e22',
   protected: '#2ecc71',
   cursed: '#8e44ad',
+  master: '#3a7ca5',
 };
 
 export const PLAYER_STATUS_DESCRIPTIONS: Record<PlayerStatus, string> = {
@@ -119,6 +128,7 @@ export const PLAYER_STATUS_DESCRIPTIONS: Record<PlayerStatus, string> = {
   protected:
     '수도사에 의해 보호됨. 이 플레이어는 오늘 밤 악마에게 죽지 않습니다.',
   cursed: '점쟁이의 저주. 점쟁이에게 악마로 감지됩니다.',
+  master: '집사의 주인. 이 주인이 투표해야만 집사도 투표할 수 있습니다.',
 };
 
 export type WinningTeam = 'good' | 'evil';

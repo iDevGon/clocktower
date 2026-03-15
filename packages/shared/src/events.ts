@@ -119,6 +119,8 @@ export interface ServerToStorytellerEvents {
   'chat:receiveFromPlayer': ServerToClientEvents['chat:receiveFromPlayer'];
   'virgin:triggered': ServerToClientEvents['virgin:triggered'];
   'execution:announced': ServerToClientEvents['execution:announced'];
+  'sweetheart:died': (data: { sweetheartName: string }) => void;
+  'mayor:nightDeath': (data: { mayorId: string; mayorName: string }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -148,9 +150,12 @@ export interface ClientToServerEvents {
         players: PlayerInfo[];
       };
       gamePlayers?: PlayerInfo[];
+      butlerMasterName?: string;
     }) => void,
   ) => void;
-  'vote:cast': (data: { guilty: boolean }) => void;
+  'vote:cast': (
+    callback?: (result: { success: boolean; error?: string }) => void,
+  ) => void;
   'vote:preselect': (data: { guilty: boolean | null }) => void;
   'night:action': (data: { targets: string[] }) => void;
   'slayer:use': (
@@ -204,8 +209,18 @@ export interface StorytellerToServerEvents {
       editionId?: string;
       additionalRoleIds?: string[];
     },
-    callback: (res: { success: boolean; error?: string }) => void,
+    callback: (res: {
+      success: boolean;
+      error?: string;
+      redHerringPlayerId?: string;
+    }) => void,
   ) => void;
+  'game:assignRedHerring': (playerId: string) => void;
+  'game:sweetheartDrunk': (playerId: string) => void;
+  'game:mayorRedirect': (data: {
+    mayorId: string;
+    redirectTargetId: string;
+  }) => void;
   'game:addDummyPlayers': (count: number) => void;
   'game:removeDummyPlayers': () => void;
   'player:setStatuses': (data: {

@@ -1,4 +1,9 @@
-import type { Edition, NightActionDef, NightFeedbackDef, Role } from './types.js';
+import type {
+  Edition,
+  NightActionDef,
+  NightFeedbackDef,
+  Role,
+} from './types.js';
 
 // 밤 행동이 있는 전체 역할 (순서대로)
 export const ALL_NIGHT_ROLES: string[] = [
@@ -469,7 +474,6 @@ export const FIRST_NIGHT_ORDER: string[] = [
 export const OTHER_NIGHT_ORDER: string[] = [
   'poisoner',
   'monk',
-  'scarlet_woman',
   'imp',
   'ravenkeeper',
   'undertaker',
@@ -611,11 +615,12 @@ export function distributeRoles(
     const unselectedTownsfolk = townsfolk.filter(
       (t) => !selectedTownsfolk.some((st) => st.id === t.id),
     );
-    if (unselectedTownsfolk.length > 0) {
+    // 미배정 마을주민이 없으면 전체 마을주민에서 선택 (중복 허용)
+    const candidates =
+      unselectedTownsfolk.length > 0 ? unselectedTownsfolk : townsfolk;
+    if (candidates.length > 0) {
       drunkFakeRoleId =
-        unselectedTownsfolk[
-          Math.floor(Math.random() * unselectedTownsfolk.length)
-        ].id;
+        candidates[Math.floor(Math.random() * candidates.length)].id;
     }
   }
 
@@ -703,11 +708,6 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
   spy: {
     type: 'passive',
     instruction: '진행자가 마법서 정보를 알려줍니다',
-    excludeSelf: false,
-  },
-  scarlet_woman: {
-    type: 'passive',
-    instruction: '대기 중...',
     excludeSelf: false,
   },
 };
