@@ -2,8 +2,10 @@
 
 // Chat styles
 export { createChatStyles } from './chatStyles';
-// Components
 export { AbilityText } from './components/AbilityText';
+export type { BaseToastProps } from './components/BaseToast';
+// Components
+export { BaseToast } from './components/BaseToast';
 export { DictionaryModal } from './components/DictionaryModal';
 export { FullScreenVignette } from './components/FullScreenVignette';
 export { HighlightedMessage } from './components/HighlightedMessage';
