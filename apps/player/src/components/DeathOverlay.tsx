@@ -1,5 +1,10 @@
-import { DEATH_REASON_LABELS, type DeathReason } from '@clocktower/shared';
-import { useEffect } from 'react';
+import {
+  DEATH_REASON_LABELS,
+  type DeathReason,
+  getRandomTipText,
+} from '@clocktower/shared';
+import { GameTip } from '@clocktower/ui';
+import { useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -138,6 +143,8 @@ function DeathEffects() {
 }
 
 export function DeathOverlay({ onDismiss, reason }: DeathOverlayProps) {
+  const tip = useMemo(() => getRandomTipText('death'), []);
+
   useEffect(() => {
     Vibration.vibrate([0, 300, 150, 500]);
   }, []);
@@ -189,6 +196,8 @@ export function DeathOverlay({ onDismiss, reason }: DeathOverlayProps) {
         >
           신중하게 사용하세요
         </Animated.Text>
+
+        <GameTip tip={tip} color="#5a2020" delay={2200} />
       </View>
     </BaseOverlay>
   );

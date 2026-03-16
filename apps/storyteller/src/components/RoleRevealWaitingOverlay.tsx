@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { getRandomTipText } from '@clocktower/shared';
+import { GameTip } from '@clocktower/ui';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -70,6 +72,7 @@ export function RoleRevealWaitingOverlay({
   playerCount,
   onDismiss,
 }: RoleRevealWaitingOverlayProps) {
+  const tip = useMemo(() => getRandomTipText('storyteller'), []);
   const fadeOut = useSharedValue(1);
 
   useEffect(() => {
@@ -154,8 +157,10 @@ export function RoleRevealWaitingOverlay({
             <CountdownRing durationMs={AUTO_DISMISS_MS} />
           </Animated.View>
 
+          <GameTip tip={tip} color="#5a6898" delay={1400} />
+
           <Animated.Text
-            entering={FadeIn.delay(1400).duration(600)}
+            entering={FadeIn.delay(1800).duration(600)}
             style={s.hint}
           >
             터치하여 건너뛰기

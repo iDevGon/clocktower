@@ -1,6 +1,9 @@
-import type { ExecutionAnnouncement } from '@clocktower/shared';
-import { FullScreenVignette } from '@clocktower/ui';
-import { useEffect } from 'react';
+import {
+  type ExecutionAnnouncement,
+  getRandomTipText,
+} from '@clocktower/shared';
+import { FullScreenVignette, GameTip } from '@clocktower/ui';
+import { useEffect, useMemo } from 'react';
 import { Dimensions, StyleSheet, Text, Vibration, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -187,6 +190,8 @@ export function ExecutionOverlay({
   announcement,
   onDismiss,
 }: ExecutionOverlayProps) {
+  const tip = useMemo(() => getRandomTipText('vote'), []);
+
   useEffect(() => {
     Vibration.vibrate([0, 150, 100, 250]);
   }, []);
@@ -238,6 +243,8 @@ export function ExecutionOverlay({
         >
           {'\uCC98\uD615\uB418\uC5C8\uC2B5\uB2C8\uB2E4'}
         </Animated.Text>
+
+        <GameTip tip={tip} color="#5a3015" delay={1600} />
 
         <Animated.Text
           entering={FadeIn.delay(2000).duration(500)}

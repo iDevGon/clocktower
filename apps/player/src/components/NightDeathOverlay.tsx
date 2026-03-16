@@ -1,5 +1,6 @@
-import { FullScreenVignette } from '@clocktower/ui';
-import { useEffect } from 'react';
+import { getRandomTipText } from '@clocktower/shared';
+import { FullScreenVignette, GameTip } from '@clocktower/ui';
+import { useEffect, useMemo } from 'react';
 import { StyleSheet, Text, Vibration, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -151,6 +152,8 @@ export function NightDeathOverlay({
   deaths,
   onDismiss,
 }: NightDeathOverlayProps) {
+  const tip = useMemo(() => getRandomTipText('day'), []);
+
   useEffect(() => {
     Vibration.vibrate([0, 200, 100, 300]);
   }, []);
@@ -206,6 +209,8 @@ export function NightDeathOverlay({
         )}
 
         <DividerLine />
+
+        <GameTip tip={tip} color="#5a6a90" delay={dismissDelayMs - 200} />
 
         <Animated.Text
           entering={FadeIn.delay(dismissDelayMs).duration(500)}

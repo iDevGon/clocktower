@@ -1,7 +1,7 @@
-import type { Role, Team } from '@clocktower/shared';
-import { AbilityText } from '@clocktower/ui';
+import { getRandomTipText, type Role, type Team } from '@clocktower/shared';
+import { AbilityText, GameTip } from '@clocktower/ui';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -262,6 +262,7 @@ export function RolePromotionReveal({
 }: RolePromotionRevealProps) {
   const team = TEAM_ACCENT[role.team];
   const minionAccent = TEAM_ACCENT.minion;
+  const tip = useMemo(() => getRandomTipText('general'), []);
   const fadeOut = useSharedValue(1);
   const dismissed = useSharedValue(false);
 
@@ -369,6 +370,8 @@ export function RolePromotionReveal({
           />
 
           <PromotionCard role={role} />
+
+          <GameTip tip={tip} color="#804a4a" delay={COLOR_SHIFT_DELAY + 600} />
 
           <Animated.Text
             entering={FadeIn.delay(

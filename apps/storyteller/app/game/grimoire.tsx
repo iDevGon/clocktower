@@ -1,9 +1,11 @@
 import {
   type GameSettings,
+  getRandomTipText,
   getRoleById,
   NIGHT_FEEDBACK,
   PLAYER_STATUS_LABELS,
   type PlayerStatus,
+  type TipCategory,
 } from '@clocktower/shared';
 import { DictionaryModal } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
@@ -32,6 +34,7 @@ import {
 } from '../../src/components/NightActionLog';
 import { NightOrderPanel } from '../../src/components/NightOrderPanel';
 import { PhaseBar } from '../../src/components/PhaseBar';
+import { PhaseTipToast } from '../../src/components/PhaseTipToast';
 import { PlayerPickerModal } from '../../src/components/PlayerPickerModal';
 import { RoleRevealWaitingOverlay } from '../../src/components/RoleRevealWaitingOverlay';
 import { StorytellerChatModal } from '../../src/components/StorytellerChatModal';
@@ -232,6 +235,12 @@ export default function GrimoireScreen() {
   }, [hasFortuneTeller]);
 
   // 게임 시작 시 직업 공개 대기 오버레이 (이미 표시한 적 있으면 다시 표시하지 않음)
+  // 페이즈 전환 팁 토스트
+  const [phaseTip, setPhaseTip] = useState<{
+    phase: Parameters<typeof getRandomTipText>[0];
+    tip: string;
+  } | null>(null);
+
   const [showRoleRevealWaiting, setShowRoleRevealWaiting] = useState(() => {
     if (roleRevealShown) return false;
     const shouldShow = !!(gameState?.phase === 'night' && gameState?.day === 1);
@@ -384,6 +393,22 @@ export default function GrimoireScreen() {
       phase,
       `${PHASE_LABELS[phase] ?? phase} 페이즈로 전환`,
     );
+
+    // 페이즈 전환 팁 표시
+    const tipCategory: TipCategory =
+      phase === 'vote'
+        ? 'vote'
+        : phase === 'day'
+          ? 'day'
+          : phase === 'night'
+            ? 'night'
+            : 'storyteller';
+    if (phase !== 'ended') {
+      setPhaseTip({
+        phase: tipCategory,
+        tip: getRandomTipText(['storyteller', tipCategory]),
+      });
+    }
   };
 
   const handleStatusMenu = (playerId: string, playerName: string) => {
@@ -1462,6 +1487,12 @@ export default function GrimoireScreen() {
         }}
       />
       <EventToast />
+      <PhaseTipToast
+        visible={!!phaseTip}
+        phase={gameState?.phase ?? 'night'}
+        tip={phaseTip?.tip ?? ''}
+        onDismiss={() => setPhaseTip(null)}
+      />
 
       <ActionModal
         visible={modal.visible}

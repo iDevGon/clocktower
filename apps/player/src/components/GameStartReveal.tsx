@@ -1,5 +1,5 @@
-import type { Role, Team } from '@clocktower/shared';
-import { AbilityText } from '@clocktower/ui';
+import { getRandomTipText, type Role, type Team } from '@clocktower/shared';
+import { AbilityText, GameTip } from '@clocktower/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo } from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -531,6 +531,7 @@ export function GameStartReveal({
   onDismiss,
 }: GameStartRevealProps) {
   const team = TEAM_ACCENT[role.team];
+  const tip = useMemo(() => getRandomTipText('firstNight'), []);
   const fadeOut = useSharedValue(1);
   const dismissed = useSharedValue(false);
 
@@ -631,6 +632,8 @@ export function GameStartReveal({
           <RevealCard role={role} evilInfo={evilInfo} />
 
           {/* Night transition text (after flip settles) */}
+          <GameTip tip={tip} color="#5a6898" delay={3600} />
+
           <Animated.Text
             entering={FadeIn.delay(3800).duration(1000)}
             style={s.nightText}

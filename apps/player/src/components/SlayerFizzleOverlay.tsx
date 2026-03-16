@@ -1,5 +1,6 @@
-import { FullScreenVignette } from '@clocktower/ui';
-import { useEffect, useState } from 'react';
+import { getRandomTipText } from '@clocktower/shared';
+import { FullScreenVignette, GameTip } from '@clocktower/ui';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Dimensions,
   Pressable,
@@ -232,6 +233,7 @@ export function SlayerFizzleOverlay({
   isVotePhase,
   onDismiss,
 }: SlayerFizzleOverlayProps) {
+  const tip = useMemo(() => getRandomTipText('general'), []);
   const [acked, setAcked] = useState(false);
 
   useEffect(() => {
@@ -298,6 +300,8 @@ export function SlayerFizzleOverlay({
             {'처단자가 아님 · 대상이 악마가 아님 · 능력 무효'}
           </Text>
         </Animated.View>
+
+        <GameTip tip={tip} color="#3e4e5e" delay={2000} />
 
         <Animated.View entering={FadeIn.delay(2200).duration(500)}>
           <Pressable

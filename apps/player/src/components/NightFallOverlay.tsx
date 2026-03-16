@@ -1,5 +1,6 @@
-import { FullScreenVignette } from '@clocktower/ui';
-import { useEffect } from 'react';
+import { getRandomTipText } from '@clocktower/shared';
+import { FullScreenVignette, GameTip } from '@clocktower/ui';
+import { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -141,6 +142,8 @@ interface NightFallOverlayProps {
 }
 
 export function NightFallOverlay({ onDismiss }: NightFallOverlayProps) {
+  const tip = useMemo(() => getRandomTipText('night'), []);
+
   return (
     <BaseOverlay
       backgroundColor="#04040e"
@@ -169,6 +172,8 @@ export function NightFallOverlay({ onDismiss }: NightFallOverlayProps) {
         >
           모두 눈을 감으세요
         </Animated.Text>
+
+        <GameTip tip={tip} color="#5a6a90" delay={1200} />
       </View>
     </BaseOverlay>
   );
