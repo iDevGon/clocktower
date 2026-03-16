@@ -156,6 +156,7 @@ export function NightDeathOverlay({
   }, []);
 
   const noDeaths = deaths.length === 0;
+  const autoDismissMs = noDeaths ? 4000 : 3000 + deaths.length * 800;
 
   return (
     <BaseOverlay
@@ -163,6 +164,8 @@ export function NightDeathOverlay({
       zIndex={88}
       effectsLayer={<NightDeathEffects />}
       onDismiss={onDismiss}
+      autoDismissMs={autoDismissMs}
+      fadeOutDurationMs={800}
     >
       <View style={s.content}>
         <MoonIcon />
