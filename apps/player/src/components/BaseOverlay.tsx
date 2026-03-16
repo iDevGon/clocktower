@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -39,6 +39,8 @@ interface BaseOverlayProps {
   scrollable?: boolean;
   /** 콘텐츠 정렬 (기본: 'center') */
   contentAlign?: 'center' | 'flex-start' | 'flex-end';
+  /** 탭 닫기 활성화까지의 지연 시간 (ms). dismissOnBackdropPress와 함께 사용 */
+  dismissDelayMs?: number;
 }
 
 export function BaseOverlay({
@@ -52,8 +54,20 @@ export function BaseOverlay({
   fadeOutDurationMs = 800,
   scrollable = false,
   contentAlign = 'center',
+  dismissDelayMs,
 }: BaseOverlayProps) {
   const fadeOut = useSharedValue(1);
+  const [dismissReady, setDismissReady] = useState(
+    dismissDelayMs == null || dismissDelayMs <= 0,
+  );
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    if (dismissDelayMs != null && dismissDelayMs > 0) {
+      timerRef.current = setTimeout(() => setDismissReady(true), dismissDelayMs);
+      return () => clearTimeout(timerRef.current);
+    }
+  }, [dismissDelayMs]);
 
   useEffect(() => {
     if (autoDismissMs != null && onDismiss) {
@@ -77,8 +91,13 @@ export function BaseOverlay({
     opacity: fadeOut.value,
   }));
 
+  const handleBackdropPress = () => {
+    if (dismissReady && onDismiss) onDismiss();
+  };
   const Wrapper = dismissOnBackdropPress ? Pressable : View;
-  const wrapperProps = dismissOnBackdropPress ? { onPress: onDismiss } : {};
+  const wrapperProps = dismissOnBackdropPress
+    ? { onPress: handleBackdropPress }
+    : {};
 
   const contentNode = scrollable ? (
     <Animated.ScrollView

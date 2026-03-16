@@ -3,7 +3,6 @@ import { FullScreenVignette } from '@clocktower/ui';
 import { useEffect } from 'react';
 import {
   Dimensions,
-  Pressable,
   StyleSheet,
   Text,
   Vibration,
@@ -207,6 +206,10 @@ export function ExecutionOverlay({
       zIndex={95}
       effectsLayer={<ExecutionEffects />}
       onDismiss={onDismiss}
+      dismissOnBackdropPress
+      dismissDelayMs={2000}
+      autoDismissMs={5000}
+      fadeOutDurationMs={800}
     >
       <View style={s.content}>
         <AxeIcon />
@@ -242,11 +245,12 @@ export function ExecutionOverlay({
           {'\uCC98\uD615\uB418\uC5C8\uC2B5\uB2C8\uB2E4'}
         </Animated.Text>
 
-        <Animated.View entering={FadeIn.delay(1800).duration(500)}>
-          <Pressable style={s.confirmButton} onPress={onDismiss}>
-            <Text style={s.confirmText}>확인</Text>
-          </Pressable>
-        </Animated.View>
+        <Animated.Text
+          entering={FadeIn.delay(2000).duration(500)}
+          style={s.dismissHint}
+        >
+          터치하여 닫기
+        </Animated.Text>
       </View>
     </BaseOverlay>
   );
@@ -308,19 +312,10 @@ const s = StyleSheet.create({
     letterSpacing: 4,
     textTransform: 'uppercase',
   },
-  confirmButton: {
+  dismissHint: {
     marginTop: 28,
-    backgroundColor: 'rgba(139, 58, 0, 0.25)',
-    borderWidth: 1,
-    borderColor: 'rgba(139, 58, 0, 0.5)',
-    borderRadius: 8,
-    paddingHorizontal: 40,
-    paddingVertical: 12,
-  },
-  confirmText: {
-    fontSize: 15,
-    color: '#c07840',
-    fontWeight: '600',
-    textAlign: 'center',
+    fontSize: 12,
+    color: '#5a3015',
+    letterSpacing: 1,
   },
 });

@@ -171,17 +171,11 @@ export const styles = StyleSheet.create({
     marginTop: 2,
     textTransform: 'uppercase',
   },
-  confirmButton: {
+  dismissHint: {
     marginTop: 28,
-    paddingVertical: 14,
-    paddingHorizontal: 48,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  confirmButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 2,
+    fontSize: 12,
+    letterSpacing: 1,
+    opacity: 0.6,
   },
   bottomSpacer: {
     height: 60,
