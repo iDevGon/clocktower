@@ -121,6 +121,7 @@ export interface ServerToStorytellerEvents {
   'execution:announced': ServerToClientEvents['execution:announced'];
   'sweetheart:died': (data: { sweetheartName: string }) => void;
   'mayor:nightDeath': (data: { mayorId: string; mayorName: string }) => void;
+  'game:reset': () => void;
 }
 
 export interface ClientToServerEvents {

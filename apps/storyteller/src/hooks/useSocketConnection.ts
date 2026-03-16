@@ -42,6 +42,9 @@ export function useSocketConnection() {
 
         newSocket.on('disconnect', () => setConnected(false));
         newSocket.on('game:state', setGameState);
+        newSocket.on('game:reset', () => {
+          useGameStore.getState().reset();
+        });
         newSocket.on('game:end', (result) => {
           useGameStore.getState().setGameResult(result);
         });

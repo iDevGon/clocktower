@@ -215,10 +215,12 @@ export function registerStorytellerHandlers(
   storytellerIo.on('connection', (socket) => {
     console.log('Storyteller connected');
 
-    // Send current game state on reconnect
+    // Send current game state on reconnect (or notify no active game)
     const currentState = game.getState();
     if (currentState.id) {
       socket.emit('game:state', currentState);
+    } else {
+      socket.emit('game:reset');
     }
 
     socket.on('game:reset', () => {
