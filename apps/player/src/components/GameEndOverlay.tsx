@@ -1,6 +1,6 @@
 import type { GameResult, Team } from '@clocktower/shared';
 import { useEffect, useMemo } from 'react';
-import { Pressable, Text, Vibration, View } from 'react-native';
+import { Text, Vibration, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { BaseOverlay } from './BaseOverlay';
 import { DefeatEffects, SlayerEffects, VictoryEffects } from './GameEndEffects';
@@ -142,20 +142,6 @@ export function GameEndOverlay({
         ? '#5090c0'
         : '#8b3030';
 
-  const buttonBorder =
-    theme === 'slayer'
-      ? 'rgba(255,215,0,0.3)'
-      : theme === 'victory'
-        ? 'rgba(77,166,255,0.3)'
-        : 'rgba(139,0,0,0.4)';
-
-  const buttonBg =
-    theme === 'slayer'
-      ? 'rgba(255,215,0,0.1)'
-      : theme === 'victory'
-        ? 'rgba(77,166,255,0.1)'
-        : 'rgba(139,0,0,0.1)';
-
   const buttonTextColor =
     theme === 'slayer'
       ? '#e0c870'
@@ -170,6 +156,9 @@ export function GameEndOverlay({
       effectsLayer={effectsLayer}
       scrollable
       contentAlign="flex-start"
+      onDismiss={onDismiss}
+      dismissOnBackdropPress
+      dismissDelayMs={2500}
     >
       <View style={s.content}>
         {/* ── Slayer Easter Egg heading ── */}
@@ -296,24 +285,12 @@ export function GameEndOverlay({
           <PlayerRow key={p.id} player={p} index={i} theme={theme} />
         ))}
 
-        {/* Confirm button */}
-        <Animated.View entering={FadeIn.delay(2000).duration(600)}>
-          <Pressable
-            onPress={onDismiss}
-            style={({ pressed }) => [
-              s.confirmButton,
-              {
-                borderColor: buttonBorder,
-                backgroundColor: buttonBg,
-              },
-              pressed && { opacity: 0.7 },
-            ]}
-          >
-            <Text style={[s.confirmButtonText, { color: buttonTextColor }]}>
-              확인
-            </Text>
-          </Pressable>
-        </Animated.View>
+        <Animated.Text
+          entering={FadeIn.delay(2500).duration(600)}
+          style={[s.dismissHint, { color: buttonTextColor }]}
+        >
+          터치하여 닫기
+        </Animated.Text>
 
         <View style={s.bottomSpacer} />
       </View>

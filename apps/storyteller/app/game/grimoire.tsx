@@ -33,6 +33,7 @@ import {
 import { NightOrderPanel } from '../../src/components/NightOrderPanel';
 import { PhaseBar } from '../../src/components/PhaseBar';
 import { PlayerPickerModal } from '../../src/components/PlayerPickerModal';
+import { RoleRevealWaitingOverlay } from '../../src/components/RoleRevealWaitingOverlay';
 import { StorytellerChatModal } from '../../src/components/StorytellerChatModal';
 import { VoteClockFace } from '../../src/components/VoteClockFace';
 import { VoteClockHand } from '../../src/components/VoteClockHand';
@@ -227,6 +228,12 @@ export default function GrimoireScreen() {
       setShowRedHerringModal(true);
     }
   }, [hasFortuneTeller]);
+
+  // 게임 시작 시 직업 공개 대기 오버레이
+  const [showRoleRevealWaiting, setShowRoleRevealWaiting] = useState(() => {
+    // 그리모어 마운트 시 첫 번째 밤(day === 1)이면 즉시 표시
+    return gameState?.phase === 'night' && gameState?.day === 1 ? true : false;
+  });
 
   const redHerringCandidates = useMemo(() => {
     if (!gameState) return [];
@@ -1500,6 +1507,14 @@ export default function GrimoireScreen() {
         onClose={handleRedHerringConfirmAuto}
         scale={scale}
       />
+
+      {/* 게임 시작 시 플레이어 직업 공개 대기 오버레이 */}
+      {showRoleRevealWaiting && (
+        <RoleRevealWaitingOverlay
+          playerCount={gameState.players.length}
+          onDismiss={() => setShowRoleRevealWaiting(false)}
+        />
+      )}
     </SafeAreaView>
   );
 }

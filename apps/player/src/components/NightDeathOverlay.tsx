@@ -1,6 +1,6 @@
 import { FullScreenVignette } from '@clocktower/ui';
 import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
+import { StyleSheet, Text, Vibration, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -156,6 +156,8 @@ export function NightDeathOverlay({
   }, []);
 
   const noDeaths = deaths.length === 0;
+  const autoDismissMs = noDeaths ? 4000 : 3000 + deaths.length * 800;
+  const dismissDelayMs = noDeaths ? 1200 : 700 + deaths.length * 300 + 400;
 
   return (
     <BaseOverlay
@@ -163,6 +165,10 @@ export function NightDeathOverlay({
       zIndex={88}
       effectsLayer={<NightDeathEffects />}
       onDismiss={onDismiss}
+      dismissOnBackdropPress
+      dismissDelayMs={dismissDelayMs}
+      autoDismissMs={autoDismissMs}
+      fadeOutDurationMs={800}
     >
       <View style={s.content}>
         <MoonIcon />
@@ -201,15 +207,12 @@ export function NightDeathOverlay({
 
         <DividerLine />
 
-        <Animated.View
-          entering={FadeIn.delay(
-            noDeaths ? 1000 : 700 + deaths.length * 300 + 200,
-          ).duration(500)}
+        <Animated.Text
+          entering={FadeIn.delay(dismissDelayMs).duration(500)}
+          style={s.dismissHint}
         >
-          <Pressable style={s.confirmButton} onPress={onDismiss}>
-            <Text style={s.confirmText}>확인</Text>
-          </Pressable>
-        </Animated.View>
+          터치하여 닫기
+        </Animated.Text>
       </View>
     </BaseOverlay>
   );
@@ -271,19 +274,10 @@ const s = StyleSheet.create({
     color: '#8a4040',
     fontWeight: '400',
   },
-  confirmButton: {
-    marginTop: 12,
-    backgroundColor: 'rgba(70, 90, 140, 0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(100, 120, 180, 0.4)',
-    borderRadius: 8,
-    paddingHorizontal: 48,
-    paddingVertical: 14,
-  },
-  confirmText: {
-    fontSize: 16,
-    color: '#8a9ac0',
-    fontWeight: '600',
-    textAlign: 'center',
+  dismissHint: {
+    marginTop: 16,
+    fontSize: 12,
+    color: '#3a4a6a',
+    letterSpacing: 1,
   },
 });
