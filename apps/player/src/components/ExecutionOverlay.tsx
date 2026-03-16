@@ -1,13 +1,7 @@
 import type { ExecutionAnnouncement } from '@clocktower/shared';
 import { FullScreenVignette } from '@clocktower/ui';
 import { useEffect } from 'react';
-import {
-  Dimensions,
-  StyleSheet,
-  Text,
-  Vibration,
-  View,
-} from 'react-native';
+import { Dimensions, StyleSheet, Text, Vibration, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,

@@ -64,7 +64,10 @@ export function BaseOverlay({
 
   useEffect(() => {
     if (dismissDelayMs != null && dismissDelayMs > 0) {
-      timerRef.current = setTimeout(() => setDismissReady(true), dismissDelayMs);
+      timerRef.current = setTimeout(
+        () => setDismissReady(true),
+        dismissDelayMs,
+      );
       return () => clearTimeout(timerRef.current);
     }
   }, [dismissDelayMs]);

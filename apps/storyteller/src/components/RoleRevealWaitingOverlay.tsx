@@ -4,7 +4,6 @@ import Animated, {
   cancelAnimation,
   Easing,
   FadeIn,
-  interpolate,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -106,8 +105,14 @@ export function RoleRevealWaitingOverlay({
     <Animated.View
       style={[StyleSheet.absoluteFill, { zIndex: 95 }, containerStyle]}
     >
-      <Pressable style={[StyleSheet.absoluteFill, s.overlay]} onPress={handleDismiss}>
-        <View style={[StyleSheet.absoluteFill, s.background]} pointerEvents="none" />
+      <Pressable
+        style={[StyleSheet.absoluteFill, s.overlay]}
+        onPress={handleDismiss}
+      >
+        <View
+          style={[StyleSheet.absoluteFill, s.background]}
+          pointerEvents="none"
+        />
 
         <View style={s.content}>
           <Animated.Text

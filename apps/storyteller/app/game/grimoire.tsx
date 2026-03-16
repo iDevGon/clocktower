@@ -234,7 +234,6 @@ export default function GrimoireScreen() {
     // 그리모어 마운트 시 첫 번째 밤(day === 1)이면 즉시 표시
     return gameState?.phase === 'night' && gameState?.day === 1 ? true : false;
   });
-  const roleRevealShownRef = useRef(showRoleRevealWaiting);
 
   const redHerringCandidates = useMemo(() => {
     if (!gameState) return [];
