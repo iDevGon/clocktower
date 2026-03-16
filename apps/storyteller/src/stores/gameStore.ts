@@ -52,6 +52,8 @@ interface GameStore {
   chatMessages: Record<string, StorytellerMessage[]>;
   chatUnreadCounts: Record<string, number>;
   activeChatPlayerId: string | null;
+  roleRevealShown: boolean;
+  setRoleRevealShown: (shown: boolean) => void;
   slayerWaitingAck: boolean;
   setSlayerWaitingAck: (waiting: boolean) => void;
   sweetheartDiedPending: boolean;
@@ -132,6 +134,8 @@ export const useGameStore = create<GameStore>()(
       chatMessages: {},
       chatUnreadCounts: {},
       activeChatPlayerId: null,
+      roleRevealShown: false,
+      setRoleRevealShown: (shown) => set({ roleRevealShown: shown }),
       slayerWaitingAck: false,
       setSlayerWaitingAck: (waiting) => set({ slayerWaitingAck: waiting }),
       sweetheartDiedPending: false,
@@ -182,6 +186,7 @@ export const useGameStore = create<GameStore>()(
                 chatUnreadCounts: {},
                 activeChatPlayerId: null,
                 chatToast: null,
+                roleRevealShown: false,
               }
             : {}),
           ...(phaseChangedToVote
@@ -324,6 +329,7 @@ export const useGameStore = create<GameStore>()(
           activeChatPlayerId: null,
           chatToast: null,
           eventToast: null,
+          roleRevealShown: false,
           slayerWaitingAck: false,
         }),
     }),
@@ -338,6 +344,7 @@ export const useGameStore = create<GameStore>()(
         activeNightRoleId: state.activeNightRoleId,
         nightActions: state.nightActions,
         playerOrder: state.playerOrder,
+        roleRevealShown: state.roleRevealShown,
       }),
     },
   ),

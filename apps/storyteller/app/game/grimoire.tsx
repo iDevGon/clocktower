@@ -148,6 +148,8 @@ export default function GrimoireScreen() {
   const playerStatuses = useGameStore((s) => s.playerStatuses);
   const whisperClock = useGameStore((s) => s.whisperClock);
   const slayerWaitingAck = useGameStore((s) => s.slayerWaitingAck);
+  const roleRevealShown = useGameStore((s) => s.roleRevealShown);
+  const setRoleRevealShown = useGameStore((s) => s.setRoleRevealShown);
   const socket = useConnectionStore((s) => s.socket);
   const addLog = useLogStore((s) => s.addLog);
   const {
@@ -229,10 +231,15 @@ export default function GrimoireScreen() {
     }
   }, [hasFortuneTeller]);
 
-  // 게임 시작 시 직업 공개 대기 오버레이
+  // 게임 시작 시 직업 공개 대기 오버레이 (이미 표시한 적 있으면 다시 표시하지 않음)
   const [showRoleRevealWaiting, setShowRoleRevealWaiting] = useState(() => {
-    // 그리모어 마운트 시 첫 번째 밤(day === 1)이면 즉시 표시
-    return gameState?.phase === 'night' && gameState?.day === 1 ? true : false;
+    if (roleRevealShown) return false;
+    const shouldShow = !!(gameState?.phase === 'night' && gameState?.day === 1);
+    if (shouldShow) {
+      // 마운트 후 스토어에 표시 완료 플래그 기록
+      setTimeout(() => setRoleRevealShown(true), 0);
+    }
+    return shouldShow;
   });
 
   const redHerringCandidates = useMemo(() => {
