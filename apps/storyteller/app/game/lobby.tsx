@@ -8,7 +8,7 @@ import {
 } from '@clocktower/shared';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Alert, FlatList, Platform, Pressable, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { ClockSpeedSetting } from '../../src/components/ClockSpeedSetting';
 import { CollapsibleSection } from '../../src/components/CollapsibleSection';
@@ -401,14 +401,7 @@ export default function LobbyScreen() {
           data={gameState?.players ?? []}
           keyExtractor={(p) => p.id}
           contentContainerStyle={{ paddingHorizontal: s(16) }}
-          style={
-            Platform.OS === 'web'
-              ? ({
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: '#2a2a34 transparent',
-                } as Record<string, string>)
-              : undefined
-          }
+          style={undefined}
           renderItem={({ item }) => (
             <Pressable
               onPress={() =>

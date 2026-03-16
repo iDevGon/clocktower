@@ -6,11 +6,6 @@ export const panelStyles = StyleSheet.create({
   },
 });
 
-export const webScrollbarStyle = {
-  scrollbarWidth: 'thin',
-  scrollbarColor: '#2a2a34 transparent',
-} as Record<string, string>;
-
 export const getContentPadding = (scale: number) => ({
   padding: scale * 12,
 });

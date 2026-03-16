@@ -6,7 +6,7 @@ import type {
 import { getRoleById, NIGHT_FEEDBACK } from '@clocktower/shared';
 import { AbilityText } from '@clocktower/ui';
 import { useMemo, useState } from 'react';
-import { Platform, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
 import { AnimatedBorderCard } from './AnimatedBorderCard';
 import { FeedbackComposer } from './FeedbackComposer';
@@ -15,7 +15,6 @@ import {
   getAbilityTextStyle,
   getContentPadding,
   panelStyles,
-  webScrollbarStyle,
 } from './NightFeedbackPanel.styles';
 import { TEAM_COLORS } from './NightOrderPanel.styles';
 
@@ -137,12 +136,7 @@ export function NightFeedbackPanel({
   };
 
   return (
-    <ScrollView
-      style={[
-        panelStyles.scrollViewFlex,
-        Platform.OS === 'web' && webScrollbarStyle,
-      ]}
-    >
+    <ScrollView style={panelStyles.scrollViewFlex}>
       <AnimatedBorderCard
         color={cardColors.color}
         bgStart={cardColors.bgStart}

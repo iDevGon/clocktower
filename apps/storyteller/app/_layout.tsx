@@ -6,11 +6,39 @@ import { useSocketConnection } from '../src/hooks/useSocketConnection';
 import { useConnectionStore } from '../src/stores/connectionStore';
 import { useGameStore } from '../src/stores/gameStore';
 
+const SCROLLBAR_CSS = `
+  *::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+  *::-webkit-scrollbar-track {
+    background: #1a1a22;
+    border-radius: 4px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #5a5a68;
+    border-radius: 4px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: #7a7a8a;
+  }
+`;
+
 export default function RootLayout() {
   const { connect } = useSocketConnection();
   const gameId = useGameStore((s) => s.gameState?.id);
   const serverUrl = useConnectionStore((s) => s.serverUrl);
   const isConnected = useConnectionStore((s) => s.isConnected);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const style = document.createElement('style');
+    style.textContent = SCROLLBAR_CSS;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   // 이전 세션이 있고 연결이 끊어졌을 때 자동 재접속
   useEffect(() => {
