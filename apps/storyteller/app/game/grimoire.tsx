@@ -131,6 +131,7 @@ export default function GrimoireScreen() {
 
   const router = useRouter();
   const gameState = useGameStore((s) => s.gameState);
+  const players = gameState?.players;
   const nightActions = useGameStore((s) => s.nightActions);
   const activeWhispers = useGameStore((s) => s.activeWhispers);
   const activeNightRoleId = useGameStore((s) => s.activeNightRoleId);
@@ -173,11 +174,9 @@ export default function GrimoireScreen() {
 
   // 사랑꾼 사망 시 취하게 할 대상 후보: 살아있는 플레이어 (사랑꾼 본인 제외)
   const sweetheartDrunkCandidates = useMemo(() => {
-    if (!gameState) return [];
-    return gameState.players.filter(
-      (p) => p.isAlive && p.role?.id !== 'sweetheart',
-    );
-  }, [gameState?.players]);
+    if (!players) return [];
+    return players.filter((p) => p.isAlive && p.role?.id !== 'sweetheart');
+  }, [players]);
 
   const handleSweetheartDrunkSelect = useCallback(
     (playerId: string) => {
@@ -189,11 +188,9 @@ export default function GrimoireScreen() {
 
   // 시장 밤 사망 시 대신 죽일 후보: 살아있는 플레이어 (시장 본인 제외)
   const mayorRedirectCandidates = useMemo(() => {
-    if (!gameState || !mayorNightDeathId) return [];
-    return gameState.players.filter(
-      (p) => p.isAlive && p.id !== mayorNightDeathId,
-    );
-  }, [gameState?.players, mayorNightDeathId]);
+    if (!players || !mayorNightDeathId) return [];
+    return players.filter((p) => p.isAlive && p.id !== mayorNightDeathId);
+  }, [players, mayorNightDeathId]);
 
   const handleMayorRedirectSelect = useCallback(
     (playerId: string) => {
@@ -207,8 +204,8 @@ export default function GrimoireScreen() {
 
   // Red Herring 선택 모달 상태 (게임 시작 시 점쟁이가 있으면 표시)
   const hasFortuneTeller = useMemo(
-    () => gameState?.players.some((p) => p.role?.id === 'fortune_teller'),
-    [gameState?.players],
+    () => players?.some((p) => p.role?.id === 'fortune_teller') ?? false,
+    [players],
   );
   const [showRedHerringModal, setShowRedHerringModal] = useState(false);
   const redHerringShownRef = useRef(false);
@@ -238,20 +235,18 @@ export default function GrimoireScreen() {
   });
 
   const redHerringCandidates = useMemo(() => {
-    if (!gameState) return [];
-    return gameState.players.filter(
+    if (!players) return [];
+    return players.filter(
       (p) =>
         p.role?.id !== 'fortune_teller' &&
         (p.role?.team === 'townsfolk' || p.role?.team === 'outsider'),
     );
-  }, [gameState?.players]);
+  }, [players]);
 
   const currentRedHerringId = useMemo(() => {
-    if (!gameState) return null;
-    return (
-      gameState.players.find((p) => p.statuses?.includes('cursed'))?.id ?? null
-    );
-  }, [gameState?.players]);
+    if (!players) return null;
+    return players.find((p) => p.statuses?.includes('cursed'))?.id ?? null;
+  }, [players]);
 
   const handleRedHerringConfirmAuto = useCallback(() => {
     setShowRedHerringModal(false);
@@ -296,9 +291,9 @@ export default function GrimoireScreen() {
   const getPhase = () => useGameStore.getState().gameState?.phase ?? 'setup';
   const playerNameMap = useMemo(() => {
     const map = new Map<string, string>();
-    for (const p of gameState?.players ?? []) map.set(p.id, p.name);
+    for (const p of players ?? []) map.set(p.id, p.name);
     return map;
-  }, [gameState?.players]);
+  }, [players]);
   const getPlayerName = (id: string) => playerNameMap.get(id) ?? id;
 
   const kill = (playerId: string) => {
@@ -765,9 +760,9 @@ export default function GrimoireScreen() {
   // Build a player lookup map for O(1) access in neighbor/pair calculations
   const playerById = useMemo(() => {
     const map = new Map<string, Player>();
-    for (const p of gameState?.players ?? []) map.set(p.id, p);
+    for (const p of players ?? []) map.set(p.id, p);
     return map;
-  }, [gameState?.players]);
+  }, [players]);
 
   const empathNeighborIds = useMemo(() => {
     if (gameState?.phase !== 'night' || activeNightRoleId !== 'empath')
@@ -919,18 +914,18 @@ export default function GrimoireScreen() {
 
   // Memoize activeRoleIds and dormantRoleIds for NightOrderPanel
   const activeRoleIds = useMemo(() => {
-    if (!gameState) return [];
-    return gameState.players
+    if (!players) return [];
+    return players
       .filter((p) => p.isAlive)
       .flatMap((p) => {
         if (p.role?.id === 'drunk' && p.drunkAs) return [p.drunkAs];
         return p.role?.id ? [p.role.id] : [];
       });
-  }, [gameState?.players]);
+  }, [players]);
 
   const dormantRoleIds = useMemo(() => {
-    if (!gameState) return [];
-    return gameState.players
+    if (!players) return [];
+    return players
       .filter((p) => p.isAlive)
       .flatMap((p) => {
         const ids: string[] = [];
@@ -944,7 +939,7 @@ export default function GrimoireScreen() {
           ids.push(p.drunkAs);
         return ids;
       });
-  }, [gameState?.players]);
+  }, [players]);
 
   if (!gameState) return null;
 

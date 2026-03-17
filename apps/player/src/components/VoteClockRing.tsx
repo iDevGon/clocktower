@@ -306,6 +306,13 @@ export function VoteClockRing() {
     transform: [{ rotate: `${handAngleSV.value}deg` }],
   }));
 
+  // Vote order set (participants) — must be before early return
+  const voteOrderIds = useMemo(() => {
+    const ids = new Set(voteOrder?.order.map((p) => p.id) ?? []);
+    if (nomineeId) ids.add(nomineeId);
+    return ids;
+  }, [voteOrder?.order, nomineeId]);
+
   if (!hasVoteOrder) return null;
 
   // Compute remaining time
@@ -348,13 +355,6 @@ export function VoteClockRing() {
     }
   }
   const myTurnDisplay = formatTimer(myTurnRemainingMs);
-
-  // Vote order set (participants)
-  const voteOrderIds = useMemo(() => {
-    const ids = new Set(voteOrder?.order.map((p) => p.id) ?? []);
-    if (nomineeId) ids.add(nomineeId);
-    return ids;
-  }, [voteOrder?.order, nomineeId]);
 
   // handProgress is updated via 500ms interval in the effect above
 
