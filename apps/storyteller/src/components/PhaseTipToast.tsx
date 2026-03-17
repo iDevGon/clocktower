@@ -4,39 +4,42 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 const TOAST_DURATION = 5000;
 
+const TIP_BLUE = '#5a9ecf';
+const TIP_GLOW = '#3a7abf';
+
 const PHASE_TIP_COLORS: Record<
   Phase,
   { bg: string; border: string; badge: string; badgeText: string }
 > = {
   setup: {
-    bg: '#2a2a2e',
-    border: '#4a4a4e',
-    badge: '#5a5a5e',
-    badgeText: '#c0c0c0',
+    bg: '#1a2230',
+    border: '#2a3a5a',
+    badge: '#1e2e4a',
+    badgeText: TIP_BLUE,
   },
   night: {
     bg: '#1a1a2e',
-    border: '#3a4a6a',
-    badge: '#2a3a6a',
-    badgeText: '#8090c0',
+    border: '#2a3a6a',
+    badge: '#1e2848',
+    badgeText: '#7090d0',
   },
   day: {
-    bg: '#2a2418',
-    border: '#5a4a2a',
-    badge: '#4a3a1a',
-    badgeText: '#c4a050',
+    bg: '#1e2430',
+    border: '#3a4a6a',
+    badge: '#1e2e4a',
+    badgeText: TIP_BLUE,
   },
   vote: {
-    bg: '#2a1a1a',
-    border: '#5a3030',
-    badge: '#4a2020',
-    badgeText: '#c47070',
+    bg: '#1e2030',
+    border: '#3a3a5a',
+    badge: '#1e2848',
+    badgeText: TIP_BLUE,
   },
   ended: {
-    bg: '#2a1a1a',
-    border: '#5a3030',
-    badge: '#4a2020',
-    badgeText: '#b85c5c',
+    bg: '#1a2230',
+    border: '#2a3a5a',
+    badge: '#1e2e4a',
+    badgeText: TIP_BLUE,
   },
 };
 
@@ -141,10 +144,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowColor: TIP_GLOW,
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
-    shadowRadius: 8,
+    shadowRadius: 12,
     elevation: 6,
   },
   badge: {
@@ -157,14 +160,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1,
+    textShadowColor: TIP_GLOW,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 6,
   },
   textWrap: {
     flex: 1,
   },
   message: {
-    color: '#d0d0d0',
+    color: TIP_BLUE,
     fontSize: 13,
     lineHeight: 19,
     fontStyle: 'italic',
+    textShadowColor: TIP_GLOW,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 6,
   },
 });

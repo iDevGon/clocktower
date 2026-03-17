@@ -1,11 +1,11 @@
 import {
   ALL_ROLES,
-  CHARACTER_TIPS,
   DAY_SUB_PHASE_ENTRIES,
   EDITION_COLORS,
   EDITION_LABELS,
   GAME_FLOW,
   GAME_RULES,
+  getCharacterTips,
   PHASE_ENTRIES,
   STATUS_ENTRIES,
   TEAM_COLORS,
@@ -23,7 +23,7 @@ import {
 import { AbilityText } from './AbilityText';
 
 function RoleTips({ roleId }: { roleId: string }) {
-  const tips = CHARACTER_TIPS[roleId];
+  const tips = getCharacterTips(roleId);
   const [expanded, setExpanded] = useState(false);
   const toggle = useCallback(() => setExpanded((v) => !v), []);
 
@@ -38,8 +38,8 @@ function RoleTips({ roleId }: { roleId: string }) {
       {expanded && (
         <View style={tipStyles.content}>
           <Text style={tipStyles.sectionLabel}>이 역할로 플레이할 때</Text>
-          {tips.playTips.map((tip, i) => (
-            <View key={`p-${i}`} style={tipStyles.tipRow}>
+          {tips.playTips.map((tip) => (
+            <View key={tip} style={tipStyles.tipRow}>
               <Text style={tipStyles.bullet}>•</Text>
               <Text style={tipStyles.tipText}>{tip}</Text>
             </View>
@@ -47,8 +47,8 @@ function RoleTips({ roleId }: { roleId: string }) {
           <Text style={[tipStyles.sectionLabel, { marginTop: 10 }]}>
             이 역할을 상대할 때
           </Text>
-          {tips.counterTips.map((tip, i) => (
-            <View key={`c-${i}`} style={tipStyles.tipRow}>
+          {tips.counterTips.map((tip) => (
+            <View key={tip} style={tipStyles.tipRow}>
               <Text style={tipStyles.bullet}>•</Text>
               <Text style={tipStyles.tipText}>{tip}</Text>
             </View>

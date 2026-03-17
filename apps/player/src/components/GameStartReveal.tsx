@@ -537,7 +537,7 @@ export function GameStartReveal({
 }: GameStartRevealProps) {
   const team = TEAM_ACCENT[role.team];
   const tip = useMemo(
-    () => getRandomPlayTip(role.id) ?? getRandomTipText('firstNight'),
+    () => getRandomPlayTip(role.id) ?? getRandomTipText('firstNight', role.id),
     [role.id],
   );
   const fadeOut = useSharedValue(1);

@@ -14,6 +14,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { usePlayerStore } from '../stores/playerStore';
 import { BaseOverlay } from './BaseOverlay';
 
 // ── Moon icon ──
@@ -142,7 +143,11 @@ interface NightFallOverlayProps {
 }
 
 export function NightFallOverlay({ onDismiss }: NightFallOverlayProps) {
-  const tip = useMemo(() => getRandomTipText('night'), []);
+  const roleId = usePlayerStore((s) => s.role?.id);
+  const tip = useMemo(
+    () => getRandomTipText('night', roleId ?? undefined),
+    [roleId],
+  );
 
   return (
     <BaseOverlay

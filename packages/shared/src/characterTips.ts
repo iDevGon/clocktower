@@ -5,11 +5,36 @@ export interface CharacterTip {
   counterTips: string[];
 }
 
+/** Trouble Brewing 에디션의 역할 ID */
+type TroubleBrewingRoleId =
+  | 'washerwoman'
+  | 'librarian'
+  | 'investigator'
+  | 'chef'
+  | 'empath'
+  | 'fortune_teller'
+  | 'undertaker'
+  | 'monk'
+  | 'ravenkeeper'
+  | 'virgin'
+  | 'slayer'
+  | 'soldier'
+  | 'mayor'
+  | 'butler'
+  | 'drunk'
+  | 'recluse'
+  | 'saint'
+  | 'poisoner'
+  | 'spy'
+  | 'scarlet_woman'
+  | 'baron'
+  | 'imp';
+
 /**
  * 캐릭터별 플레이 팁과 상대 팁.
  * key = role id (packages/shared/src/roles.ts의 Role.id)
  */
-export const CHARACTER_TIPS: Record<string, CharacterTip> = {
+export const CHARACTER_TIPS: Record<TroubleBrewingRoleId, CharacterTip> = {
   // ═══════════════════════════════════════
   // 마을주민 (Townsfolk)
   // ═══════════════════════════════════════
@@ -337,19 +362,13 @@ export const CHARACTER_TIPS: Record<string, CharacterTip> = {
 
 /** 특정 역할의 플레이 팁 중 랜덤 1개 반환 */
 export function getRandomPlayTip(roleId: string): string | null {
-  const tips = CHARACTER_TIPS[roleId]?.playTips;
-  if (!tips || tips.length === 0) return null;
-  return tips[Math.floor(Math.random() * tips.length)];
-}
-
-/** 특정 역할의 상대 팁 중 랜덤 1개 반환 */
-export function getRandomCounterTip(roleId: string): string | null {
-  const tips = CHARACTER_TIPS[roleId]?.counterTips;
+  const tips = (CHARACTER_TIPS as Record<string, CharacterTip>)[roleId]
+    ?.playTips;
   if (!tips || tips.length === 0) return null;
   return tips[Math.floor(Math.random() * tips.length)];
 }
 
 /** 특정 역할의 전체 팁 반환 */
 export function getCharacterTips(roleId: string): CharacterTip | null {
-  return CHARACTER_TIPS[roleId] ?? null;
+  return (CHARACTER_TIPS as Record<string, CharacterTip>)[roleId] ?? null;
 }

@@ -17,6 +17,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { usePlayerStore } from '../stores/playerStore';
 import { BaseOverlay } from './BaseOverlay';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -190,7 +191,11 @@ export function ExecutionOverlay({
   announcement,
   onDismiss,
 }: ExecutionOverlayProps) {
-  const tip = useMemo(() => getRandomTipText('vote'), []);
+  const roleId = usePlayerStore((s) => s.role?.id);
+  const tip = useMemo(
+    () => getRandomTipText('vote', roleId ?? undefined),
+    [roleId],
+  );
 
   useEffect(() => {
     Vibration.vibrate([0, 150, 100, 250]);

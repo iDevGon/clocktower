@@ -23,6 +23,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { usePlayerStore } from '../stores/playerStore';
 import { BaseOverlay } from './BaseOverlay';
 
 // ── Skull icon (text-based) ──
@@ -143,7 +144,11 @@ function DeathEffects() {
 }
 
 export function DeathOverlay({ onDismiss, reason }: DeathOverlayProps) {
-  const tip = useMemo(() => getRandomTipText('death'), []);
+  const roleId = usePlayerStore((s) => s.role?.id);
+  const tip = useMemo(
+    () => getRandomTipText('death', roleId ?? undefined),
+    [roleId],
+  );
 
   useEffect(() => {
     Vibration.vibrate([0, 300, 150, 500]);
