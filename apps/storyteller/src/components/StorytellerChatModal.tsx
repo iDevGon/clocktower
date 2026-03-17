@@ -1,10 +1,11 @@
+import type { StorytellerMessage } from '@clocktower/shared';
 import {
-  ALL_ROLES,
-  PLAYER_STATUS_LABELS,
-  type StorytellerMessage,
-} from '@clocktower/shared';
-import type { TaggedCandidate } from '@clocktower/ui';
-import { HighlightedMessage, QuickSuggestions } from '@clocktower/ui';
+  HighlightedMessage,
+  QuickSuggestions,
+  applySuggestion,
+  buildChatCandidates,
+  formatChatTime,
+} from '@clocktower/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -186,45 +187,13 @@ function ChatView({
   };
 
   const allPlayers = useGameStore((s) => s.gameState?.players) ?? [];
-  const candidates = useMemo(() => {
-    const items: TaggedCandidate[] = [];
-    const seen = new Set<string>();
-    for (const p of allPlayers) {
-      if (!seen.has(p.name)) {
-        seen.add(p.name);
-        items.push({ word: p.name, category: 'player' });
-      }
-    }
-    for (const r of ALL_ROLES) {
-      if (!seen.has(r.name)) {
-        seen.add(r.name);
-        items.push({ word: r.name, category: 'role' });
-      }
-    }
-    for (const label of Object.values(PLAYER_STATUS_LABELS)) {
-      if (!seen.has(label)) {
-        seen.add(label);
-        items.push({ word: label, category: 'status' });
-      }
-    }
-    for (const extra of ['사망', '생존', '죽음', '이야기꾼']) {
-      if (!seen.has(extra)) {
-        seen.add(extra);
-        items.push({ word: extra, category: 'status' });
-      }
-    }
-    return items;
-  }, [allPlayers]);
+  const candidates = useMemo(
+    () => buildChatCandidates(allPlayers.map((p) => p.name)),
+    [allPlayers],
+  );
 
   const handleSuggestionSelect = (word: string) => {
-    const parts = text.split(/(\s+)/);
-    parts[parts.length - 1] = word;
-    setText(parts.join(''));
-  };
-
-  const formatTime = (timestamp: number) => {
-    const d = new Date(timestamp);
-    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+    setText(applySuggestion(text, word));
   };
 
   return (
@@ -281,7 +250,7 @@ function ChatView({
                   ]}
                 />
                 <Text style={styles.messageTime}>
-                  {formatTime(msg.timestamp)}
+                  {formatChatTime(msg.timestamp)}
                 </Text>
               </View>
             </View>
