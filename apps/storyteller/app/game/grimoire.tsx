@@ -49,7 +49,10 @@ import { useResponsive } from '../../src/hooks/useResponsive';
 import { useConnectionStore } from '../../src/stores/connectionStore';
 import { useGameStore } from '../../src/stores/gameStore';
 import { useLogStore } from '../../src/stores/logStore';
-import { createGrimoireStyles } from '../../src/styles/grimoire.styles';
+import {
+  createGrimoireStyles,
+  grimoireDynamic,
+} from '../../src/styles/grimoire.styles';
 
 function VoteCountdownOverlay({
   countdown,
@@ -93,31 +96,11 @@ function VoteCountdownOverlay({
     <View
       style={[
         StyleSheet.absoluteFill,
-        {
-          alignItems: 'center',
-          justifyContent: 'center',
-          pointerEvents: 'none',
-          zIndex: 100,
-        },
+        createGrimoireStyles(1).voteCountdownContainer,
       ]}
     >
       <Animated.Text
-        style={[
-          {
-            position: 'absolute',
-            left: centerX - 40,
-            top: centerY - 40,
-            width: 80,
-            textAlign: 'center',
-            fontSize: 56,
-            fontWeight: '900',
-            color: '#c47070',
-            textShadowColor: '#c4707060',
-            textShadowOffset: { width: 0, height: 0 },
-            textShadowRadius: 16,
-          },
-          animStyle,
-        ]}
+        style={[grimoireDynamic.voteCountdownText(centerX, centerY), animStyle]}
       >
         {remaining}
       </Animated.Text>
@@ -1271,23 +1254,18 @@ export default function GrimoireScreen() {
           }
         >
           <Text
-            style={{
-              color: gameResult.winningTeam === 'good' ? '#5dade2' : '#e74c3c',
-              fontSize: fontSize.lg,
-              fontWeight: '700',
-            }}
+            style={[
+              grimoireDynamic.gameEndWinnerText(
+                gameResult.winningTeam === 'good',
+              ),
+              { fontSize: fontSize.lg },
+            ]}
           >
             {gameResult.winningTeam === 'good'
               ? '선한 팀 승리!'
               : '악한 팀 승리!'}
           </Text>
-          <Text
-            style={{
-              color: '#aaa',
-              fontSize: fontSize.sm,
-              marginTop: 4,
-            }}
-          >
+          <Text style={[styles.gameEndReason, { fontSize: fontSize.sm }]}>
             {gameResult.reason}
           </Text>
         </View>
@@ -1340,28 +1318,16 @@ export default function GrimoireScreen() {
       {/* 초공감자 이웃 정보 힌트 */}
       {empathNeighborIds.size > 0 && (
         <View style={styles.empathHintBar}>
-          <Text
-            style={{
-              color: '#2ecc71',
-              fontSize: fontSize.sm,
-              fontWeight: '600',
-            }}
-          >
+          <Text style={[styles.empathHintLabel, { fontSize: fontSize.sm }]}>
             초공감자 이웃:
           </Text>
-          <Text style={{ color: '#e0ddd8', fontSize: fontSize.sm }}>
+          <Text style={[styles.empathHintNames, { fontSize: fontSize.sm }]}>
             {gameState.players
               .filter((p) => empathNeighborIds.has(p.id))
               .map((p) => p.name)
               .join(', ')}
           </Text>
-          <Text
-            style={{
-              color: '#f5c542',
-              fontSize: fontSize.md,
-              fontWeight: '700',
-            }}
-          >
+          <Text style={[styles.empathHintCount, { fontSize: fontSize.md }]}>
             악한 {empathEvilCount}명
           </Text>
         </View>
@@ -1370,16 +1336,10 @@ export default function GrimoireScreen() {
       {/* 요리사 인접 악한 쌍 힌트 */}
       {chefEvilPairIds.size > 0 && (
         <View style={styles.chefHintBar}>
-          <Text
-            style={{
-              color: '#e67e22',
-              fontSize: fontSize.sm,
-              fontWeight: '600',
-            }}
-          >
+          <Text style={[styles.chefHintLabel, { fontSize: fontSize.sm }]}>
             인접 악한 쌍:
           </Text>
-          <Text style={{ color: '#e0ddd8', fontSize: fontSize.sm }}>
+          <Text style={[styles.chefHintNames, { fontSize: fontSize.sm }]}>
             {(() => {
               const order = playerOrder;
               const pairs: string[] = [];
@@ -1397,13 +1357,7 @@ export default function GrimoireScreen() {
               return pairs.join(', ') || '없음';
             })()}
           </Text>
-          <Text
-            style={{
-              color: '#f5c542',
-              fontSize: fontSize.md,
-              fontWeight: '700',
-            }}
-          >
+          <Text style={[styles.chefHintCount, { fontSize: fontSize.md }]}>
             {chefEvilPairCount}쌍
           </Text>
         </View>
@@ -1413,30 +1367,16 @@ export default function GrimoireScreen() {
       {settingsVisible && (
         <View style={styles.settingsOverlay}>
           <View style={styles.settingsPanel}>
-            <Text
-              style={{
-                color: '#e0ddd8',
-                fontSize: fontSize.lg,
-                fontWeight: '700',
-                marginBottom: 20,
-                textAlign: 'center',
-              }}
-            >
+            <Text style={[styles.settingsTitle, { fontSize: fontSize.lg }]}>
               게임 설정
             </Text>
 
             <View style={styles.settingsRow}>
               <View>
-                <Text
-                  style={{
-                    color: '#e0ddd8',
-                    fontSize: fontSize.md,
-                    fontWeight: '600',
-                  }}
-                >
+                <Text style={[styles.settingsLabel, { fontSize: fontSize.md }]}>
                   채팅 밀담
                 </Text>
-                <Text style={{ color: '#908e8a', fontSize: fontSize.sm }}>
+                <Text style={[styles.settingsDesc, { fontSize: fontSize.sm }]}>
                   {gameState.settings.whisperMode === 'chat'
                     ? 'ON — 앱 내 채팅'
                     : 'OFF — 직접 대면만'}
@@ -1461,16 +1401,10 @@ export default function GrimoireScreen() {
 
             <View style={styles.settingsRow}>
               <View>
-                <Text
-                  style={{
-                    color: '#e0ddd8',
-                    fontSize: fontSize.md,
-                    fontWeight: '600',
-                  }}
-                >
+                <Text style={[styles.settingsLabel, { fontSize: fontSize.md }]}>
                   온라인 투표
                 </Text>
-                <Text style={{ color: '#908e8a', fontSize: fontSize.sm }}>
+                <Text style={[styles.settingsDesc, { fontSize: fontSize.sm }]}>
                   {gameState.settings.votingMode === 'online'
                     ? 'ON — 앱 내 투표'
                     : 'OFF — 직접 투표'}
@@ -1494,7 +1428,7 @@ export default function GrimoireScreen() {
             </View>
 
             {gameState.settings.whisperMode === 'chat' && (
-              <View style={{ marginBottom: 16 }}>
+              <View style={styles.settingsClockMargin}>
                 <ClockSpeedSetting
                   value={gameState.settings.whisperClockSeconds}
                   onChange={(val) =>
@@ -1509,7 +1443,7 @@ export default function GrimoireScreen() {
             )}
 
             {gameState.settings.votingMode === 'online' && (
-              <View style={{ marginBottom: 24 }}>
+              <View style={styles.settingsClockMarginLast}>
                 <ClockSpeedSetting
                   value={gameState.settings.voteClockSeconds}
                   onChange={(val) =>
@@ -1527,11 +1461,7 @@ export default function GrimoireScreen() {
               style={styles.settingsCloseButton}
             >
               <Text
-                style={{
-                  color: '#e0ddd8',
-                  fontSize: fontSize.md,
-                  fontWeight: '600',
-                }}
+                style={[styles.settingsCloseText, { fontSize: fontSize.md }]}
               >
                 닫기
               </Text>
