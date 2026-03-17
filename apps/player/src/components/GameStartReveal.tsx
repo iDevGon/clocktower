@@ -1,4 +1,9 @@
-import { getRandomTipText, type Role, type Team } from '@clocktower/shared';
+import {
+  getRandomPlayTip,
+  getRandomTipText,
+  type Role,
+  type Team,
+} from '@clocktower/shared';
 import { AbilityText, GameTip } from '@clocktower/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo } from 'react';
@@ -531,7 +536,10 @@ export function GameStartReveal({
   onDismiss,
 }: GameStartRevealProps) {
   const team = TEAM_ACCENT[role.team];
-  const tip = useMemo(() => getRandomTipText('firstNight', role.id), [role.id]);
+  const tip = useMemo(
+    () => getRandomPlayTip(role.id) ?? getRandomTipText('firstNight', role.id),
+    [role.id],
+  );
   const fadeOut = useSharedValue(1);
   const dismissed = useSharedValue(false);
 
