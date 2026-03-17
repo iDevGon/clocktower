@@ -1,6 +1,5 @@
-import { getRandomGameTip } from '@clocktower/shared';
-import { FullScreenVignette, GameTip } from '@clocktower/ui';
-import { useEffect, useMemo } from 'react';
+import { FullScreenVignette } from '@clocktower/ui';
+import { useEffect } from 'react';
 import { StyleSheet, Text, Vibration, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -14,12 +13,11 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { usePlayerStore } from '../stores/playerStore';
 import { BaseOverlay } from './BaseOverlay';
 
-// ── Moon icon animation ──
+// ── Raven icon animation ──
 
-function MoonIcon() {
+function RavenIcon() {
   const scale = useSharedValue(0);
 
   useEffect(() => {
@@ -38,19 +36,19 @@ function MoonIcon() {
     opacity: interpolate(scale.value, [0, 0.3, 1], [0, 0.6, 1]),
   }));
 
-  return <Animated.Text style={[s.moonText, style]}>🌙</Animated.Text>;
+  return <Animated.Text style={[s.iconText, style]}>🐦‍⬛</Animated.Text>;
 }
 
-// ── Fog particle ──
+// ── Feather particles ──
 
-function FogParticle({ index }: { index: number }) {
+function FeatherParticle({ index }: { index: number }) {
   const progress = useSharedValue(0);
-  const startX = ((index * 53 + 17) % 100) / 100;
-  const startY = 0.3 + (index % 7) * 0.08;
-  const drift = (index % 2 === 0 ? 1 : -1) * (10 + (index % 4) * 8);
-  const size = 40 + (index % 5) * 20;
-  const delay = (index * 300) % 3000;
-  const duration = 3000 + (index % 3) * 1000;
+  const startX = ((index * 47 + 23) % 100) / 100;
+  const startY = 0.2 + (index % 6) * 0.1;
+  const drift = (index % 2 === 0 ? 1 : -1) * (15 + (index % 4) * 10);
+  const size = 30 + (index % 4) * 15;
+  const delay = (index * 350) % 3000;
+  const duration = 3500 + (index % 3) * 800;
 
   useEffect(() => {
     progress.value = withDelay(
@@ -67,9 +65,10 @@ function FogParticle({ index }: { index: number }) {
   }, [progress, delay, duration]);
 
   const style = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 0.5, 1], [0, 0.06, 0]),
+    opacity: interpolate(progress.value, [0, 0.5, 1], [0, 0.08, 0]),
     transform: [
       { translateX: interpolate(progress.value, [0, 1], [0, drift]) },
+      { translateY: interpolate(progress.value, [0, 0.5, 1], [0, 20, 0]) },
       { scale: interpolate(progress.value, [0, 0.5, 1], [0.8, 1.2, 0.8]) },
     ],
   }));
@@ -84,7 +83,7 @@ function FogParticle({ index }: { index: number }) {
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: '#4a5a8a',
+          backgroundColor: '#40a0a0',
         },
         style,
       ]}
@@ -92,18 +91,18 @@ function FogParticle({ index }: { index: number }) {
   );
 }
 
-const FOG_COUNT = 8;
+const FEATHER_COUNT = 8;
 
-function NightDeathEffects() {
+function RavenkeeperEffects() {
   return (
     <>
       <FullScreenVignette
-        color="#080818"
+        color="#041515"
         opacityRange={[0.6, 0.8]}
         duration={3000}
       />
-      {Array.from({ length: FOG_COUNT }).map((_, i) => (
-        <FogParticle key={`f-${i}`} index={i} />
+      {Array.from({ length: FEATHER_COUNT }).map((_, i) => (
+        <FeatherParticle key={`f-${i}`} index={i} />
       ))}
     </>
   );
@@ -132,7 +131,7 @@ function DividerLine() {
       style={[
         {
           height: 1,
-          backgroundColor: '#4a5a8a',
+          backgroundColor: '#40a0a0',
           alignSelf: 'center',
           marginVertical: 16,
         },
@@ -144,84 +143,68 @@ function DividerLine() {
 
 // ── Main Overlay ──
 
-interface NightDeathOverlayProps {
-  deaths: Array<{ id: string; name: string }>;
+interface RavenkeeperOverlayProps {
   onDismiss: () => void;
 }
 
-export function NightDeathOverlay({
-  deaths,
-  onDismiss,
-}: NightDeathOverlayProps) {
-  const role = usePlayerStore((s) => s.role);
-  const tip = useMemo(
-    () => getRandomGameTip('day', role?.id, role?.team),
-    [role?.id, role?.team],
-  );
+const AUTO_DISMISS_MS = 4500;
 
+export function RavenkeeperOverlay({ onDismiss }: RavenkeeperOverlayProps) {
   useEffect(() => {
-    Vibration.vibrate([0, 200, 100, 300]);
+    Vibration.vibrate([0, 200, 100, 400, 150, 300]);
   }, []);
-
-  const noDeaths = deaths.length === 0;
-  const autoDismissMs = noDeaths ? 4000 : 3000 + deaths.length * 800;
-  const dismissDelayMs = noDeaths ? 1200 : 700 + deaths.length * 300 + 400;
 
   return (
     <BaseOverlay
-      backgroundColor="#06060e"
-      zIndex={88}
-      effectsLayer={<NightDeathEffects />}
+      backgroundColor="#040e10"
+      zIndex={89}
+      effectsLayer={<RavenkeeperEffects />}
       onDismiss={onDismiss}
       dismissOnBackdropPress
-      dismissDelayMs={dismissDelayMs}
-      autoDismissMs={autoDismissMs}
+      dismissDelayMs={2500}
+      autoDismissMs={AUTO_DISMISS_MS}
       fadeOutDurationMs={800}
     >
       <View style={s.content}>
-        <MoonIcon />
+        <RavenIcon />
 
         <Animated.Text
           entering={FadeIn.delay(400).duration(500)}
           style={s.label}
         >
-          간밤의 소식
+          까마귀지기
         </Animated.Text>
 
         <DividerLine />
 
-        {noDeaths ? (
-          <Animated.Text
-            entering={FadeIn.delay(700).duration(600)}
-            style={s.noDeathText}
-          >
-            아무도 사망하지 않았습니다
-          </Animated.Text>
-        ) : (
-          deaths.map((death, i) => (
-            <Animated.View
-              key={death.id}
-              entering={FadeIn.delay(700 + i * 300).duration(600)}
-              style={s.deathRow}
-            >
-              <Text style={s.skullSmall}>💀</Text>
-              <View style={s.deathInfo}>
-                <Text style={s.deathName}>{death.name}</Text>
-                <Text style={s.deathSuffix}>사망</Text>
-              </View>
-            </Animated.View>
-          ))
-        )}
+        <Animated.Text
+          entering={FadeIn.delay(800).duration(600)}
+          style={s.title}
+        >
+          어둠 속에서 눈을 뜹니다
+        </Animated.Text>
+
+        <Animated.Text
+          entering={FadeIn.delay(1200).duration(600)}
+          style={s.subtitle}
+        >
+          죽음이 찾아왔으나,{'\n'}까마귀의 눈은 아직 감기지 않았습니다
+        </Animated.Text>
+
+        <Animated.View
+          entering={FadeIn.delay(1600).duration(500)}
+          style={s.abilityBadge}
+        >
+          <Text style={s.abilityText}>마지막 숨결로 진실을 꿰뚫으세요</Text>
+        </Animated.View>
 
         <DividerLine />
 
-        <GameTip tip={tip} color="#5a6a90" delay={dismissDelayMs - 200} />
-
         <Animated.Text
-          entering={FadeIn.delay(dismissDelayMs).duration(500)}
+          entering={FadeIn.delay(2500).duration(500)}
           style={s.dismissHint}
         >
-          터치하여 닫기
+          터치하여 계속
         </Animated.Text>
       </View>
     </BaseOverlay>
@@ -233,61 +216,53 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 32,
   },
-  moonText: {
+  iconText: {
     fontSize: 56,
     marginBottom: 12,
   },
   label: {
     fontSize: 13,
     letterSpacing: 8,
-    color: '#6a7aaa',
+    color: '#50b0b0',
     fontWeight: '300',
     textTransform: 'uppercase',
   },
-  noDeathText: {
-    fontSize: 18,
-    color: '#8a9ac0',
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#60c8c8',
+    textAlign: 'center',
+    marginBottom: 8,
+    textShadowColor: 'rgba(80, 180, 180, 0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 12,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#50a8a8',
     fontWeight: '500',
     textAlign: 'center',
+    marginBottom: 12,
   },
-  deathRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginVertical: 8,
-    backgroundColor: 'rgba(80,30,30,0.15)',
+  abilityBadge: {
+    backgroundColor: 'rgba(64, 160, 160, 0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(140,50,50,0.25)',
+    borderColor: 'rgba(64, 160, 160, 0.3)',
     borderRadius: 10,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    minWidth: 200,
   },
-  skullSmall: {
-    fontSize: 24,
-  },
-  deathInfo: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-  },
-  deathName: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#cc4040',
-    textShadowColor: 'rgba(200, 50, 50, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
-  },
-  deathSuffix: {
+  abilityText: {
     fontSize: 14,
-    color: '#8a4040',
+    color: '#70c0c0',
     fontWeight: '400',
+    textAlign: 'center',
+    lineHeight: 22,
   },
   dismissHint: {
-    marginTop: 16,
+    marginTop: 8,
     fontSize: 12,
-    color: '#3a4a6a',
+    color: '#2a5a5a',
     letterSpacing: 1,
   },
 });

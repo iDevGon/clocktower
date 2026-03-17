@@ -1,6 +1,6 @@
 import {
   type ExecutionAnnouncement,
-  getRandomTipText,
+  getRandomGameTip,
 } from '@clocktower/shared';
 import { FullScreenVignette, GameTip } from '@clocktower/ui';
 import { useEffect, useMemo } from 'react';
@@ -191,10 +191,10 @@ export function ExecutionOverlay({
   announcement,
   onDismiss,
 }: ExecutionOverlayProps) {
-  const roleId = usePlayerStore((s) => s.role?.id);
+  const role = usePlayerStore((s) => s.role);
   const tip = useMemo(
-    () => getRandomTipText('vote', roleId ?? undefined),
-    [roleId],
+    () => getRandomGameTip('vote', role?.id, role?.team),
+    [role?.id, role?.team],
   );
 
   useEffect(() => {
@@ -249,7 +249,7 @@ export function ExecutionOverlay({
           {'\uCC98\uD615\uB418\uC5C8\uC2B5\uB2C8\uB2E4'}
         </Animated.Text>
 
-        <GameTip tip={tip} color="#5a3015" delay={1600} />
+        <GameTip tip={tip} color="#c07840" glowColor="#8b3a00" delay={1600} />
 
         <Animated.Text
           entering={FadeIn.delay(2000).duration(500)}

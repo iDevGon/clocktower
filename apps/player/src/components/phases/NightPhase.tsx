@@ -30,6 +30,7 @@ export function NightPhase({
   onSubmitNightAction,
 }: NightPhaseProps) {
   const isDead = !usePlayerStore((s) => s.isAlive);
+  const nightWakeUp = usePlayerStore((s) => s.nightWakeUp);
   if (!visible) return null;
   return (
     <View style={styles.phaseContent}>
@@ -46,6 +47,7 @@ export function NightPhase({
           myRole={role}
           drunkAs={drunkAs}
           isAlive={!isDead}
+          nightWakeUp={nightWakeUp != null}
         />
       )}
       {isMyTurn && role && nightProgress && (

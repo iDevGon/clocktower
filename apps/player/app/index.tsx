@@ -1,13 +1,15 @@
+import { getAllTipTexts } from '@clocktower/shared';
 import {
   FullScreenVignette,
   PLAYER_SMOKE_PARTICLES,
+  RotatingGameTip,
   SmokeParticles,
 } from '@clocktower/ui';
 import { useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -32,6 +34,7 @@ import { usePlayerStore } from '../src/stores/playerStore';
 import { styles } from '../src/styles/index.styles';
 
 export default function JoinScreen() {
+  const tips = useMemo(() => getAllTipTexts('player'), []);
   const savedServerUrl = useConnectionStore((s) => s.serverUrl);
   const [serverIp, setServerIp] = useState(savedServerUrl ?? '');
   const savedPlayerName = usePlayerStore((s) => s.playerName);
@@ -287,6 +290,10 @@ export default function JoinScreen() {
         <Text style={styles.footerText}>
           진행자 화면의 QR을 스캔하면 자동으로 입력됩니다
         </Text>
+
+        <View style={{ alignItems: 'center', marginTop: 24 }}>
+          <RotatingGameTip tips={tips} color="#8b5050" glowColor="#6b3030" />
+        </View>
       </View>
 
       <Text style={styles.copyright}>

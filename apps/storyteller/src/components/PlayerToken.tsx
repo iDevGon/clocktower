@@ -46,6 +46,7 @@ interface PlayerTokenProps {
   highlighted?: boolean;
   empathNeighbor?: boolean;
   voteIndicator?: VoteIndicator;
+  isPreselected?: boolean;
   isExecutionCandidate?: boolean;
   onPress?: () => void;
 }
@@ -57,6 +58,7 @@ export function PlayerToken({
   highlighted,
   empathNeighbor,
   voteIndicator,
+  isPreselected,
   isExecutionCandidate,
   onPress,
 }: PlayerTokenProps) {
@@ -184,6 +186,16 @@ export function PlayerToken({
         {voteIndicator === 'guilty' && (
           <Text style={[styles.voteBadgeText, { fontSize: scaledFont.lg }]}>
             ✋🏻
+          </Text>
+        )}
+        {(voteIndicator === 'preselected_guilty' || isPreselected) && (
+          <Text
+            style={[
+              styles.voteBadgeText,
+              { fontSize: scaledFont.md, opacity: 0.5 },
+            ]}
+          >
+            ✋🏻?
           </Text>
         )}
         {isExecutionCandidate && (

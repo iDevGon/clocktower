@@ -22,6 +22,7 @@ interface DraggablePlayerTokenProps {
   highlighted?: boolean;
   empathNeighbor?: boolean;
   voteIndicator?: VoteIndicator;
+  isPreselected?: boolean;
   isExecutionCandidate?: boolean;
   tokenSize?: number;
   initialX: number;
@@ -41,6 +42,7 @@ export function DraggablePlayerToken({
   highlighted,
   empathNeighbor,
   voteIndicator,
+  isPreselected,
   isExecutionCandidate,
   tokenSize: tokenSizeProp,
   initialX,
@@ -137,6 +139,7 @@ export function DraggablePlayerToken({
           highlighted={highlighted}
           empathNeighbor={empathNeighbor}
           voteIndicator={voteIndicator}
+          isPreselected={isPreselected}
           isExecutionCandidate={isExecutionCandidate}
           size={tokenSize}
         />

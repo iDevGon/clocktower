@@ -1,3 +1,7 @@
+import { CHARACTER_TIPS } from './characterTips.js';
+import { getRoleById } from './roles.js';
+import type { Team } from './types.js';
+
 export type TipCategory =
   | 'general'
   | 'night'
@@ -75,19 +79,19 @@ export const GAMEPLAY_TIPS: GameTip[] = [
   },
   {
     category: 'general',
-    text: '블러프 역할을 활용해 마을 주민인 척 위장하세요.',
+    text: '임프는 블러프 역할을 활용해 마을 주민인 척 위장할 수 있습니다.',
     frequency: 0.9,
     roleId: 'imp',
   },
   {
     category: 'general',
-    text: '악마를 보호하되, 너무 눈에 띄지 않게 행동하세요.',
+    text: '독살범은 악마를 보호하되, 너무 눈에 띄지 않게 행동해야 합니다.',
     frequency: 0.8,
     roleId: 'poisoner',
   },
   {
     category: 'general',
-    text: '정보를 교묘하게 섞어 마을을 혼란에 빠뜨리세요.',
+    text: '첩자는 정보를 교묘하게 섞어 마을을 혼란에 빠뜨릴 수 있습니다.',
     frequency: 0.8,
     roleId: 'spy',
   },
@@ -99,13 +103,13 @@ export const GAMEPLAY_TIPS: GameTip[] = [
   },
   {
     category: 'general',
-    text: '처형당하면 마을이 지므로, 의심받지 않도록 조심하세요.',
+    text: '성자가 처형당하면 마을이 지므로, 의심받지 않도록 조심하세요.',
     frequency: 1.0,
     roleId: 'saint',
   },
   {
     category: 'general',
-    text: '능력이 없지만, 은둔자로서 혼란을 만들 수 있습니다.',
+    text: '은둔자는 특별한 능력이 없지만, 혼란을 만들 수 있습니다.',
     frequency: 0.7,
     roleId: 'recluse',
   },
@@ -125,49 +129,49 @@ export const GAMEPLAY_TIPS: GameTip[] = [
   // Night role-specific
   {
     category: 'night',
-    text: '매 밤 다른 플레이어를 보호하여 핵심 인물을 지키세요.',
+    text: '수도사는 매 밤 다른 플레이어를 보호하여 핵심 인물을 지킬 수 있습니다.',
     frequency: 0.9,
     roleId: 'monk',
   },
   {
     category: 'night',
-    text: '자기 자신을 죽여 하수인에게 악마를 승계할 수 있습니다.',
+    text: '임프는 자기 자신을 죽여 하수인에게 악마를 승계할 수 있습니다.',
     frequency: 1.0,
     roleId: 'imp',
   },
   {
     category: 'night',
-    text: 'Red Herring에 주의하세요. 결과가 항상 정확하진 않습니다.',
+    text: '점쟁이는 저주 대상에 주의하세요. 결과가 항상 정확하진 않습니다.',
     frequency: 1.0,
     roleId: 'fortune_teller',
   },
   {
     category: 'night',
-    text: '주인이 투표하지 않으면 당신도 투표할 수 없습니다.',
+    text: '집사는 주인이 투표하지 않으면 투표할 수 없습니다.',
     frequency: 1.0,
     roleId: 'butler',
   },
   {
     category: 'night',
-    text: '중독시킨 플레이어에게 잘못된 정보가 전달됩니다.',
+    text: '독살범이 중독시킨 플레이어에게는 잘못된 정보가 전달됩니다.',
     frequency: 0.9,
     roleId: 'poisoner',
   },
   {
     category: 'night',
-    text: '양옆 이웃 중 악 진영의 수를 확인하세요.',
+    text: '초공감자는 양옆 이웃 중 악 진영의 수를 확인할 수 있습니다.',
     frequency: 0.9,
     roleId: 'empath',
   },
   {
     category: 'night',
-    text: '죽는 밤, 한 명을 선택해 역할을 확인할 수 있습니다.',
+    text: '까마귀지기는 죽는 밤에 한 명을 선택해 역할을 확인할 수 있습니다.',
     frequency: 0.9,
     roleId: 'ravenkeeper',
   },
   {
     category: 'night',
-    text: '어젯밤 처형된 플레이어의 역할을 확인할 수 있습니다.',
+    text: '장의사는 어젯밤 처형된 플레이어의 역할을 확인할 수 있습니다.',
     frequency: 0.9,
     roleId: 'undertaker',
   },
@@ -197,19 +201,19 @@ export const GAMEPLAY_TIPS: GameTip[] = [
   // Day role-specific
   {
     category: 'day',
-    text: '낮에 공개 선언으로 악마를 지목하여 제거할 수 있습니다.',
+    text: '처단자는 낮에 공개 선언으로 악마를 지목하여 제거할 수 있습니다.',
     frequency: 1.0,
     roleId: 'slayer',
   },
   {
     category: 'day',
-    text: '마을주민이 당신을 지명하면 지명자가 처형됩니다.',
+    text: '마을주민이 성결자를 지명하면 지명자가 처형됩니다.',
     frequency: 1.0,
     roleId: 'virgin',
   },
   {
     category: 'day',
-    text: '최종 3인 + 처형 미발생 시 선 진영이 승리합니다.',
+    text: '시장이 살아있을 때, 최종 3인에서 처형이 없으면 선 진영이 승리합니다.',
     frequency: 0.9,
     roleId: 'mayor',
   },
@@ -273,31 +277,31 @@ export const GAMEPLAY_TIPS: GameTip[] = [
   // First night role-specific
   {
     category: 'firstNight',
-    text: '하수인과 블러프 역할 3개를 확인해 전략을 세우세요.',
+    text: '임프는 첫째 밤에 하수인과 블러프 역할 3개를 확인하여 전략을 세울 수 있습니다.',
     frequency: 1.0,
     roleId: 'imp',
   },
   {
     category: 'firstNight',
-    text: '악마가 누구인지 확인하고, 보호하는 방향으로 움직이세요.',
+    text: '하수인은 첫째 밤에 악마가 누구인지 확인하고, 보호하는 방향으로 움직이세요.',
     frequency: 1.0,
     roleId: 'poisoner',
   },
   {
     category: 'firstNight',
-    text: '악마가 누구인지 확인하고, 보호하는 방향으로 움직이세요.',
+    text: '하수인은 첫째 밤에 악마가 누구인지 확인하고, 보호하는 방향으로 움직이세요.',
     frequency: 1.0,
     roleId: 'scarlet_woman',
   },
   {
     category: 'firstNight',
-    text: '악마가 누구인지 확인하고, 보호하는 방향으로 움직이세요.',
+    text: '하수인은 첫째 밤에 악마가 누구인지 확인하고, 보호하는 방향으로 움직이세요.',
     frequency: 1.0,
     roleId: 'spy',
   },
   {
     category: 'firstNight',
-    text: '악마가 누구인지 확인하고, 보호하는 방향으로 움직이세요.',
+    text: '하수인은 첫째 밤에 악마가 누구인지 확인하고, 보호하는 방향으로 움직이세요.',
     frequency: 1.0,
     roleId: 'baron',
   },
@@ -350,10 +354,50 @@ export const GAMEPLAY_TIPS: GameTip[] = [
   },
   {
     category: 'storyteller',
-    text: '규칙 안에서 최고의 드라마를 만드는 것이 ST의 역할입니다.',
+    text: '규칙 안에서 최고의 드라마를 만드는 것이 이야기꾼의 역할입니다.',
     frequency: 0.8,
   },
 ];
+
+/**
+ * 로고 화면용: 조건 없이 모든 팁 텍스트를 반환 (중복 제거, 셔플)
+ * CHARACTER_TIPS에는 자동으로 "X를 플레이할 때," / "X를 상대할 때," 맥락을 추가.
+ * - mode 'player': storyteller 카테고리 제외, 전체 포함
+ * - mode 'storyteller': storyteller 카테고리만
+ */
+export function getAllTipTexts(mode: 'player' | 'storyteller'): string[] {
+  const texts = new Set<string>();
+
+  if (mode === 'storyteller') {
+    for (const t of GAMEPLAY_TIPS) {
+      if (t.category === 'storyteller' && t.text) texts.add(t.text);
+    }
+  } else {
+    // 플레이어: storyteller 제외 모든 GAMEPLAY_TIPS
+    for (const t of GAMEPLAY_TIPS) {
+      if (t.category !== 'storyteller' && t.text) texts.add(t.text);
+    }
+    // CHARACTER_TIPS: 역할 맥락 자동 추가
+    for (const [roleId, charTip] of Object.entries(CHARACTER_TIPS)) {
+      const role = getRoleById(roleId);
+      const roleName = role?.name ?? roleId;
+      for (const tip of charTip.playTips) {
+        if (tip) texts.add(`[${roleName} 플레이할 때] ${tip}`);
+      }
+      for (const tip of charTip.counterTips) {
+        if (tip) texts.add(`[${roleName} 상대할 때] ${tip}`);
+      }
+    }
+  }
+
+  // Fisher-Yates 셔플
+  const arr = Array.from(texts);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
 /** Pick a random tip from matching categories using weighted frequency */
 export function getRandomTip(
@@ -407,4 +451,87 @@ export function getRandomTipText(
   playerRoleId?: string,
 ): string {
   return getRandomTip(categories, playerRoleId).text;
+}
+
+function isGoodTeam(team: Team): boolean {
+  return team === 'townsfolk' || team === 'outsider';
+}
+
+/**
+ * 통합 팁 함수: GAMEPLAY_TIPS + CHARACTER_TIPS(playTips/counterTips)를 합산하여 가중치 기반으로 랜덤 선택.
+ *
+ * - 일반 팁 (roleId 없음): 모든 유저에게 노출
+ * - roleId 팁 (GAMEPLAY_TIPS): 해당 역할 플레이어에게만 노출 (= playTip)
+ * - playTips (CHARACTER_TIPS): 해당 역할 플레이어에게만 노출
+ * - counterTips (CHARACTER_TIPS): 반대 진영에게만 노출 (게임 참가 여부 무관)
+ * - storyteller 카테고리: 제외 (이야기꾼 앱에서만 기존 getRandomTipText 사용)
+ */
+export function getRandomGameTip(
+  categories: TipCategory | TipCategory[],
+  playerRoleId?: string,
+  playerTeam?: Team,
+): string {
+  const cats = Array.isArray(categories) ? categories : [categories];
+  const candidates: { text: string; weight: number }[] = [];
+
+  // 1. GAMEPLAY_TIPS (storyteller 카테고리 제외)
+  for (const t of GAMEPLAY_TIPS) {
+    if (!cats.includes(t.category)) continue;
+    if (t.category === 'storyteller') continue;
+
+    if (t.roleId) {
+      // roleId 팁: 해당 역할 플레이어에게만 노출
+      if (!playerRoleId || t.roleId !== playerRoleId) continue;
+      candidates.push({
+        text: t.text,
+        weight: t.frequency * (t.roleWeight ?? 3),
+      });
+    } else {
+      candidates.push({ text: t.text, weight: t.frequency });
+    }
+  }
+
+  // 2. CHARACTER_TIPS - playTips (자기 역할만)
+  if (playerRoleId) {
+    const charTips = (
+      CHARACTER_TIPS as Record<
+        string,
+        { playTips: string[]; counterTips: string[] }
+      >
+    )[playerRoleId];
+    if (charTips) {
+      for (const tip of charTips.playTips) {
+        candidates.push({ text: tip, weight: 2 });
+      }
+    }
+  }
+
+  // 3. CHARACTER_TIPS - counterTips (반대 진영만, 게임 참가 여부 무관)
+  if (playerTeam) {
+    const playerIsGood = isGoodTeam(playerTeam);
+    for (const [roleId, charTip] of Object.entries(CHARACTER_TIPS)) {
+      // 자기 역할의 상대법은 제외
+      if (roleId === playerRoleId) continue;
+      const role = getRoleById(roleId);
+      if (!role) continue;
+      const roleIsGood = isGoodTeam(role.team);
+      // 선 진영 플레이어 → 악 진영 역할의 counterTips만
+      // 악 진영 플레이어 → 선 진영 역할의 counterTips만
+      if (playerIsGood === roleIsGood) continue;
+      for (const tip of charTip.counterTips) {
+        candidates.push({ text: tip, weight: 1.5 });
+      }
+    }
+  }
+
+  if (candidates.length === 0) return '';
+
+  // 가중치 기반 랜덤 선택
+  const totalWeight = candidates.reduce((sum, c) => sum + c.weight, 0);
+  let rand = Math.random() * totalWeight;
+  for (const c of candidates) {
+    rand -= c.weight;
+    if (rand <= 0) return c.text;
+  }
+  return candidates[candidates.length - 1].text;
 }

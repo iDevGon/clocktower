@@ -67,6 +67,8 @@ interface NightFeedbackPanelProps {
   nightActions?: NightAction[];
   empathHint?: EmpathHint;
   chefHint?: ChefHint;
+  executedRoleName?: string;
+  executedPlayerName?: string;
   onSendFeedback: (playerId: string, feedback: NightFeedbackPayload) => void;
 }
 
@@ -76,6 +78,8 @@ export function NightFeedbackPanel({
   nightActions,
   empathHint,
   chefHint,
+  executedRoleName,
+  executedPlayerName,
   onSendFeedback,
 }: NightFeedbackPanelProps) {
   const { fontSize } = useResponsive();
@@ -100,6 +104,9 @@ export function NightFeedbackPanel({
       (p.role?.id === 'drunk' && p.drunkAs === activeRoleId),
   );
   if (!targetPlayer) return null;
+
+  // 까마귀지기는 밤에 죽을 때만 능력 발동
+  if (activeRoleId === 'ravenkeeper' && targetPlayer.isAlive) return null;
 
   const isDrunk = targetPlayer.role?.id === 'drunk';
   const isPoisoned = targetPlayer.statuses.includes('poisoned');
@@ -246,6 +253,54 @@ export function NightFeedbackPanel({
               </View>
             )}
 
+          {activeRoleId === 'ravenkeeper' &&
+            (() => {
+              const rkAction = nightActions?.find(
+                (a) => a.roleId === 'ravenkeeper',
+              );
+              if (!rkAction || rkAction.targets.length === 0) return null;
+              const chosen = players.find((p) => p.id === rkAction.targets[0]);
+              if (!chosen) return null;
+              const chosenRole = chosen.role
+                ? getRoleById(chosen.role.id)
+                : null;
+              return (
+                <View
+                  style={[
+                    styles.drunkBanner,
+                    {
+                      backgroundColor: 'rgba(64,160,160,0.15)',
+                      borderColor: '#40a0a0',
+                    },
+                  ]}
+                >
+                  <Text style={[styles.drunkBannerText, { color: '#40a0a0' }]}>
+                    선택한 대상: {chosen.name} → {chosenRole?.name ?? '???'}
+                    {isMalfunctioning ? ' (가짜 정보 제공 필요)' : ''}
+                  </Text>
+                </View>
+              );
+            })()}
+
+          {activeRoleId === 'undertaker' && executedRoleName && (
+            <View
+              style={[
+                styles.drunkBanner,
+                {
+                  backgroundColor: 'rgba(90,140,200,0.15)',
+                  borderColor: '#5a8ec8',
+                },
+              ]}
+            >
+              <Text style={[styles.drunkBannerText, { color: '#5a8ec8' }]}>
+                어젯밤 처형:{' '}
+                {executedPlayerName ? `${executedPlayerName} → ` : ''}
+                {executedRoleName}
+                {isMalfunctioning ? ' (가짜 정보 제공 필요)' : ''}
+              </Text>
+            </View>
+          )}
+
           {activeRoleId === 'chef' && chefHint && (
             <View
               style={[
@@ -278,6 +333,25 @@ export function NightFeedbackPanel({
                   : activeRoleId === 'chef' && chefHint
                     ? chefHint.evilPairCount
                     : undefined
+            }
+            highlightedRoleName={
+              activeRoleId === 'undertaker' && !isMalfunctioning
+                ? executedRoleName
+                : activeRoleId === 'ravenkeeper' && !isMalfunctioning
+                  ? (() => {
+                      const rkAction = nightActions?.find(
+                        (a) => a.roleId === 'ravenkeeper',
+                      );
+                      if (!rkAction || rkAction.targets.length === 0)
+                        return undefined;
+                      const chosen = players.find(
+                        (p) => p.id === rkAction.targets[0],
+                      );
+                      return chosen?.role
+                        ? getRoleById(chosen.role.id)?.name
+                        : undefined;
+                    })()
+                  : undefined
             }
             onSend={handleSend}
           />

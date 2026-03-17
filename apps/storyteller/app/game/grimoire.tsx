@@ -2,6 +2,7 @@ import {
   type GameSettings,
   getRandomTipText,
   getRoleById,
+  NIGHT_ACTIONS,
   NIGHT_FEEDBACK,
   PLAYER_STATUS_LABELS,
   type PlayerStatus,
@@ -22,6 +23,7 @@ import {
   type ActionModalOption,
 } from '../../src/components/ActionModal';
 import { ChatToast } from '../../src/components/ChatToast';
+import { ClockSpeedSetting } from '../../src/components/ClockSpeedSetting';
 import { DaySubPhaseBar } from '../../src/components/DaySubPhaseBar';
 import {
   type CircularPosition,
@@ -379,9 +381,13 @@ export default function GrimoireScreen() {
   const handleSetPhase = (phase: Parameters<typeof setPhase>[0]) => {
     if (phase === 'night') {
       useGameStore.getState().clearNightActions();
+      useGameStore.getState().setActiveNightRoleId(null);
+      rawSetActiveNightRole(null);
+      setNightOrderComplete(false);
     }
     if (phase === 'day') {
       setExecutedPlayerId(null);
+      setExecutionBannerDismissed(false);
     }
     // 종료 상태에서 다른 페이즈로 전환 시 결과 초기화
     if (gameState?.phase === 'ended' && phase !== 'ended') {
@@ -406,7 +412,7 @@ export default function GrimoireScreen() {
     if (phase !== 'ended') {
       setPhaseTip({
         phase: tipCategory,
-        tip: getRandomTipText(['storyteller', tipCategory]),
+        tip: getRandomTipText('storyteller'),
       });
     }
   };
@@ -604,6 +610,9 @@ export default function GrimoireScreen() {
   const [feedbackSentForRole, setFeedbackSentForRole] = useState<string | null>(
     null,
   );
+  const [nightOrderComplete, setNightOrderComplete] = useState(false);
+  const [executionBannerDismissed, setExecutionBannerDismissed] =
+    useState(false);
   const [nightElapsed, setNightElapsed] = useState(0);
   const nightTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -642,7 +651,11 @@ export default function GrimoireScreen() {
         p.role?.id === activeNightRoleId ||
         (p.role?.id === 'drunk' && p.drunkAs === activeNightRoleId),
     );
-    return !!target;
+    if (!target) return false;
+    // onlyWhenDead 역할(까마귀지기 등)이 살아있으면 피드백 불필요
+    if (NIGHT_ACTIONS[activeNightRoleId]?.onlyWhenDead && target.isAlive)
+      return false;
+    return true;
   }, [activeNightRoleId, gameState?.players]);
 
   const [areaSize, setAreaSize] = useState({ width: 0, height: 0 });
@@ -1001,6 +1014,7 @@ export default function GrimoireScreen() {
                   chefEvilPairIds.has(player.id)
                 }
                 voteIndicator={voteIndicators[player.id]}
+                isPreselected={votePreselections[player.id] === true}
                 isExecutionCandidate={
                   executionCandidateData?.playerId === player.id
                 }
@@ -1058,6 +1072,12 @@ export default function GrimoireScreen() {
             centerY={areaSize.height / 2}
           />
         )}
+        <PhaseTipToast
+          visible={!!phaseTip}
+          phase={gameState?.phase ?? 'night'}
+          tip={phaseTip?.tip ?? ''}
+          onDismiss={() => setPhaseTip(null)}
+        />
       </View>
 
       {gameState.phase === 'night' && nightActions.length > 0 && (
@@ -1111,21 +1131,31 @@ export default function GrimoireScreen() {
           <View style={styles.nightOrderRelative}>
             <NightOrderPanel
               day={gameState.day}
-              activeRoleIds={gameState.players.flatMap((p) => {
-                if (p.role?.id === 'drunk' && p.drunkAs) return [p.drunkAs];
-                return p.role?.id ? [p.role.id] : [];
-              })}
+              activeRoleIds={gameState.players
+                .filter((p) => p.isAlive)
+                .flatMap((p) => {
+                  if (p.role?.id === 'drunk' && p.drunkAs) return [p.drunkAs];
+                  return p.role?.id ? [p.role.id] : [];
+                })}
               skippedRoleIds={skippedNightRoles}
+              dormantRoleIds={gameState.players
+                .filter((p) => p.isAlive)
+                .flatMap((p) => {
+                  const ids: string[] = [];
+                  if (p.role?.id && NIGHT_ACTIONS[p.role.id]?.onlyWhenDead)
+                    ids.push(p.role.id);
+                  if (
+                    p.role?.id === 'drunk' &&
+                    p.drunkAs &&
+                    NIGHT_ACTIONS[p.drunkAs]?.onlyWhenDead
+                  )
+                    ids.push(p.drunkAs);
+                  return ids;
+                })}
               activeNightRoleId={activeNightRoleId}
               onActivateRole={setActiveNightRole}
               onNightComplete={() => {
-                showModal('밤이 끝났습니다', [
-                  {
-                    text: '낮으로 전환',
-                    onPress: () => handleSetPhase('day'),
-                  },
-                  { text: '계속 진행', style: 'cancel' },
-                ]);
+                setNightOrderComplete(true);
               }}
             />
 
@@ -1136,6 +1166,8 @@ export default function GrimoireScreen() {
                   activeRoleId={activeNightRoleId}
                   players={gameState.players}
                   nightActions={nightActions}
+                  executedRoleName={executedPlayer?.role?.name}
+                  executedPlayerName={executedPlayer?.name}
                   empathHint={
                     activeNightRoleId === 'empath' && empathNeighborIds.size > 0
                       ? {
@@ -1211,7 +1243,7 @@ export default function GrimoireScreen() {
           onDismissResult={() => setVoteResult(null)}
         />
       )}
-      {executedPlayer && (
+      {executedPlayer && !executionBannerDismissed && (
         <View style={styles.executionBanner}>
           <View style={styles.executionBannerContent}>
             <Text style={styles.executionBannerLabel}>오늘 처형</Text>
@@ -1223,7 +1255,7 @@ export default function GrimoireScreen() {
             </Text>
           </View>
           <Pressable
-            onPress={() => setExecutedPlayerId(null)}
+            onPress={() => setExecutionBannerDismissed(true)}
             style={styles.executionBannerDismiss}
           >
             <Text style={styles.executionBannerDismissText}>닫기</Text>
@@ -1263,8 +1295,17 @@ export default function GrimoireScreen() {
       <PhaseBar
         currentPhase={gameState.phase}
         onSetPhase={handleSetPhase}
+        disableNext={gameState.phase === 'night' && !nightOrderComplete}
         onConfirmNext={() => {
-          if (gameState.phase === 'day') {
+          if (gameState.phase === 'night') {
+            showModal('밤이 끝났습니다', [
+              {
+                text: '낮으로 전환',
+                onPress: () => handleSetPhase('day'),
+              },
+              { text: '계속 진행', style: 'cancel' },
+            ]);
+          } else if (gameState.phase === 'day') {
             showModal('다음 날 밤으로 진행', [
               {
                 text: '밤으로 전환',
@@ -1418,7 +1459,7 @@ export default function GrimoireScreen() {
               />
             </View>
 
-            <View style={styles.settingsRowLast}>
+            <View style={styles.settingsRow}>
               <View>
                 <Text
                   style={{
@@ -1451,6 +1492,35 @@ export default function GrimoireScreen() {
                 accessibilityLabel="온라인 투표"
               />
             </View>
+
+            {gameState.settings.whisperMode === 'chat' && (
+              <View style={{ marginBottom: 16 }}>
+                <ClockSpeedSetting
+                  value={gameState.settings.whisperClockSeconds}
+                  onChange={(val) =>
+                    handleSettingsChange({ whisperClockSeconds: val })
+                  }
+                  scale={scale}
+                  label="밀담 시간"
+                  showOff
+                  options={[30, 45, 60, 90, 120]}
+                />
+              </View>
+            )}
+
+            {gameState.settings.votingMode === 'online' && (
+              <View style={{ marginBottom: 24 }}>
+                <ClockSpeedSetting
+                  value={gameState.settings.voteClockSeconds}
+                  onChange={(val) =>
+                    handleSettingsChange({ voteClockSeconds: val })
+                  }
+                  scale={scale}
+                  label="투표 시간 (1인당)"
+                  options={[2, 3, 5, 7, 10]}
+                />
+              </View>
+            )}
 
             <Pressable
               onPress={() => setSettingsVisible(false)}
@@ -1487,12 +1557,6 @@ export default function GrimoireScreen() {
         }}
       />
       <EventToast />
-      <PhaseTipToast
-        visible={!!phaseTip}
-        phase={gameState?.phase ?? 'night'}
-        tip={phaseTip?.tip ?? ''}
-        onDismiss={() => setPhaseTip(null)}
-      />
 
       <ActionModal
         visible={modal.visible}

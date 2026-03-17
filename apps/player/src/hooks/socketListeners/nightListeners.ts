@@ -1,3 +1,4 @@
+import { NIGHT_ACTIONS } from '@clocktower/shared';
 import { vibrateAlert } from '../../notifications';
 import { usePlayerStore } from '../../stores/playerStore';
 import type { AppSocket } from './types';
@@ -12,7 +13,14 @@ export function attachNightListeners(socket: AppSocket) {
     });
 
     const { role: myRole, drunkAs, isAlive } = usePlayerStore.getState();
+    const effectiveRoleId = drunkAs ?? myRole?.id;
+    const isOnlyWhenDead =
+      effectiveRoleId != null &&
+      NIGHT_ACTIONS[effectiveRoleId]?.onlyWhenDead === true;
+
+    // onlyWhenDead 역할은 night:wakeUp 이벤트로 별도 처리
     if (
+      !isOnlyWhenDead &&
       isAlive &&
       roleId &&
       myRole &&
@@ -20,6 +28,12 @@ export function attachNightListeners(socket: AppSocket) {
     ) {
       vibrateAlert();
     }
+  });
+
+  // onlyWhenDead 역할(까마귀지기 등)이 밤에 죽었을 때 서버에서 전송
+  socket.on('night:wakeUp', ({ roleId }) => {
+    usePlayerStore.getState().set({ nightWakeUp: roleId });
+    vibrateAlert();
   });
 
   socket.on('night:feedback', ({ feedback }) => {

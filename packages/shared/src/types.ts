@@ -49,6 +49,8 @@ export interface NightActionDef {
   type: NightActionType;
   instruction: string;
   excludeSelf: boolean;
+  /** 사망 시에만 능력이 발동하는 역할 (예: 까마귀지기) */
+  onlyWhenDead?: boolean;
 }
 
 export interface NightAction {

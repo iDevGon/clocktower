@@ -95,6 +95,8 @@ export interface ServerToClientEvents {
   'night:deaths': (data: {
     deaths: Array<{ id: string; name: string }>;
   }) => void;
+  /** onlyWhenDead 역할(까마귀지기 등)이 밤에 죽었을 때 해당 플레이어에게만 전송 */
+  'night:wakeUp': (data: { roleId: string }) => void;
 }
 
 /**

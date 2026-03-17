@@ -1,7 +1,7 @@
 import {
   DEATH_REASON_LABELS,
   type DeathReason,
-  getRandomTipText,
+  getRandomGameTip,
 } from '@clocktower/shared';
 import { GameTip } from '@clocktower/ui';
 import { useEffect, useMemo } from 'react';
@@ -144,10 +144,10 @@ function DeathEffects() {
 }
 
 export function DeathOverlay({ onDismiss, reason }: DeathOverlayProps) {
-  const roleId = usePlayerStore((s) => s.role?.id);
+  const role = usePlayerStore((s) => s.role);
   const tip = useMemo(
-    () => getRandomTipText('death', roleId ?? undefined),
-    [roleId],
+    () => getRandomGameTip('death', role?.id, role?.team),
+    [role?.id, role?.team],
   );
 
   useEffect(() => {

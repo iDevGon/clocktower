@@ -172,7 +172,7 @@ const PlayerNode = React.memo(function PlayerNode({
 
   const showVoted = preselection === true && hasPassed;
   const showPreselectedVote =
-    !hasPassed && preselection === true && isVoter && !isNominee;
+    !hasPassed && preselection === true && (isVoter || isNominee);
 
   return (
     <View

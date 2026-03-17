@@ -669,6 +669,7 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     type: 'select_one',
     instruction: '캐릭터를 확인할 플레이어를 선택하세요',
     excludeSelf: true,
+    onlyWhenDead: true,
   },
   fortune_teller: {
     type: 'select_two',

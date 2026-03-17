@@ -1,5 +1,7 @@
+import { getAllTipTexts } from '@clocktower/shared';
 import {
   FullScreenVignette,
+  RotatingGameTip,
   SmokeParticles,
   STORYTELLER_SMOKE_PARTICLES,
 } from '@clocktower/ui';
@@ -33,6 +35,7 @@ import { useGameStore } from '../src/stores/gameStore';
 import { createIndexStyles } from '../src/styles/index.styles';
 
 export default function HomeScreen() {
+  const tips = useMemo(() => getAllTipTexts('storyteller'), []);
   const { fontSize } = useResponsive();
   const scale = fontSize.md / 12;
   const styles = useMemo(() => createIndexStyles(scale), [scale]);
@@ -251,6 +254,10 @@ export default function HomeScreen() {
               <Text style={styles.buttonText}>게임 생성</Text>
             )}
           </Pressable>
+        </View>
+
+        <View style={{ alignItems: 'center', marginTop: 24 }}>
+          <RotatingGameTip tips={tips} color="#8b7530" glowColor="#6b5520" />
         </View>
       </View>
 

@@ -29,6 +29,8 @@ interface NightOrderPanelProps {
   day: number;
   activeRoleIds: string[];
   skippedRoleIds?: string[];
+  /** 게임에 존재하지만 현재 능력을 사용할 수 없는 역할 (예: 살아있는 까마귀지기) */
+  dormantRoleIds?: string[];
   activeNightRoleId?: string | null;
   onActivateRole: (roleId: string | null) => void;
   onNightComplete?: () => void;
@@ -38,6 +40,7 @@ export function NightOrderPanel({
   day,
   activeRoleIds,
   skippedRoleIds = [],
+  dormantRoleIds = [],
   activeNightRoleId,
   onActivateRole,
   onNightComplete,
@@ -58,6 +61,16 @@ export function NightOrderPanel({
     }
     return null;
   });
+  // Sync activeIndex when external activeNightRoleId changes
+  useEffect(() => {
+    if (activeNightRoleId) {
+      const idx = order.indexOf(activeNightRoleId);
+      setActiveIndex(idx >= 0 ? idx : null);
+    } else {
+      setActiveIndex(null);
+    }
+  }, [activeNightRoleId, order]);
+
   const [elapsed, setElapsed] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollRef = useRef<ScrollView>(null);
@@ -114,15 +127,16 @@ export function NightOrderPanel({
     onActivateRole(order[prevIndex]);
   };
 
+  const isLastRole = activeIndex !== null && activeIndex >= order.length - 1;
+
   const handleNext = () => {
     const nextIndex = activeIndex === null ? 0 : activeIndex + 1;
     if (nextIndex < order.length) {
       setActiveIndex(nextIndex);
       onActivateRole(order[nextIndex]);
-    } else {
-      setActiveIndex(null);
-      onActivateRole(null);
-      onNightComplete?.();
+      if (nextIndex >= order.length - 1) {
+        onNightComplete?.();
+      }
     }
   };
 
@@ -136,6 +150,8 @@ export function NightOrderPanel({
     activeIndex !== null ? activeRoleIds.includes(order[activeIndex]) : false;
   const isSkipped =
     activeIndex !== null ? skippedRoleIds.includes(order[activeIndex]) : false;
+  const isDormant =
+    activeIndex !== null ? dormantRoleIds.includes(order[activeIndex]) : false;
   const isActiveAbsent = !isInGame || isSkipped;
 
   return (
@@ -239,6 +255,16 @@ export function NightOrderPanel({
                     존재하는 것처럼 시간을 두고 진행하세요.
                   </Text>
                 </View>
+              ) : isDormant ? (
+                <View
+                  style={[styles.inGameBadge, { backgroundColor: '#ffffff08' }]}
+                >
+                  <Text style={[styles.inGameBadgeText, { color: '#c0a060' }]}>
+                    현재 사용할 능력이 없지만, 플레이어들은 알 수 없습니다.
+                    {'\n'}
+                    존재하는 것처럼 시간을 두고 진행하세요.
+                  </Text>
+                </View>
               ) : (
                 <View
                   style={[
@@ -259,15 +285,13 @@ export function NightOrderPanel({
           )}
         </View>
 
-        <Pressable onPress={handleNext} style={styles.navButton}>
-          <Text style={styles.navButtonText}>
-            {activeIndex === null
-              ? '▶'
-              : activeIndex >= order.length - 1
-                ? '✓'
-                : '›'}
-          </Text>
-        </Pressable>
+        {!isLastRole ? (
+          <Pressable onPress={handleNext} style={styles.navButton}>
+            <Text style={styles.navButtonText}>
+              {activeIndex === null ? '▶' : '›'}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
 
       {/* Step counter */}

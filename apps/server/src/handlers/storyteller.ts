@@ -9,6 +9,7 @@ import {
   distributeRoles,
   FIRST_NIGHT_ORDER,
   getRoleById,
+  NIGHT_ACTIONS,
   OTHER_NIGHT_ORDER,
 } from '@clocktower/shared/logic';
 import type { Namespace } from 'socket.io';
@@ -383,8 +384,13 @@ export function registerStorytellerHandlers(
 
       // Push notification to the active role's player
       if (roleId) {
+        const actionDef = NIGHT_ACTIONS[roleId];
+        const isOnlyWhenDead = actionDef?.onlyWhenDead === true;
+
+        // onlyWhenDead 역할: 죽은 플레이어에게만 알림 / 일반 역할: 살아있는 플레이어에게만 알림
         const activePlayer = state.players.find(
-          (p) => p.isAlive && p.role?.id === roleId,
+          (p) =>
+            p.role?.id === roleId && (isOnlyWhenDead ? !p.isAlive : p.isAlive),
         );
         if (activePlayer) {
           const role = getRoleById(roleId);
@@ -394,10 +400,17 @@ export function registerStorytellerHandlers(
             '🌙 당신의 차례입니다',
             `${roleName}, 행동을 수행하세요`,
           );
+          // onlyWhenDead 역할이 죽었을 때: 해당 플레이어에게 wakeUp 이벤트 전송
+          if (isOnlyWhenDead) {
+            playerIo.to(activePlayer.id).emit('night:wakeUp', { roleId });
+          }
         }
         // 주정뱅이: 가짜 역할의 차례에 알림 전송
         const drunkPlayer = state.players.find(
-          (p) => p.role?.id === 'drunk' && p.drunkAs === roleId,
+          (p) =>
+            p.role?.id === 'drunk' &&
+            p.drunkAs === roleId &&
+            (isOnlyWhenDead ? !p.isAlive : p.isAlive),
         );
         if (drunkPlayer) {
           const role = getRoleById(roleId);
@@ -407,6 +420,10 @@ export function registerStorytellerHandlers(
             '🌙 당신의 차례입니다',
             `${roleName}, 행동을 수행하세요`,
           );
+          // 주정뱅이도 onlyWhenDead 역할로 죽었을 때 wakeUp
+          if (isOnlyWhenDead) {
+            playerIo.to(drunkPlayer.id).emit('night:wakeUp', { roleId });
+          }
         }
       }
 

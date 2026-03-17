@@ -5,6 +5,15 @@ export function createClockSpeedSettingStyles(s: (v: number) => number) {
     container: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: s(6),
+    },
+    options: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      justifyContent: 'flex-start',
       gap: s(6),
     },
     label: {

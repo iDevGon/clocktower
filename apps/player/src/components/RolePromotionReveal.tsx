@@ -1,4 +1,4 @@
-import { getRandomTipText, type Role, type Team } from '@clocktower/shared';
+import { getRandomGameTip, type Role, type Team } from '@clocktower/shared';
 import { AbilityText, GameTip } from '@clocktower/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo } from 'react';
@@ -263,10 +263,10 @@ export function RolePromotionReveal({
 }: RolePromotionRevealProps) {
   const team = TEAM_ACCENT[role.team];
   const minionAccent = TEAM_ACCENT.minion;
-  const playerRoleId = usePlayerStore((s) => s.role?.id);
+  const playerRole = usePlayerStore((s) => s.role);
   const tip = useMemo(
-    () => getRandomTipText('general', playerRoleId ?? undefined),
-    [playerRoleId],
+    () => getRandomGameTip('general', playerRole?.id, playerRole?.team),
+    [playerRole?.id, playerRole?.team],
   );
   const fadeOut = useSharedValue(1);
   const dismissed = useSharedValue(false);

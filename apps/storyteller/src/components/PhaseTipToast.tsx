@@ -59,6 +59,8 @@ export function PhaseTipToast({
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-20)).current;
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
 
   useEffect(() => {
     if (visible) {
@@ -83,14 +85,14 @@ export function PhaseTipToast({
           toValue: 0,
           duration: 400,
           useNativeDriver: true,
-        }).start(() => onDismiss());
+        }).start(() => onDismissRef.current());
       }, TOAST_DURATION);
     }
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [visible, opacity, translateY, onDismiss]);
+  }, [visible, opacity, translateY]);
 
   if (!visible) return null;
 
@@ -132,7 +134,7 @@ export function PhaseTipToast({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 16,
     left: 16,
     right: 16,
     zIndex: 600,

@@ -27,12 +27,14 @@ interface PhaseBarProps {
   currentPhase: Phase;
   onSetPhase: (phase: Phase) => void;
   onConfirmNext?: () => void;
+  disableNext?: boolean;
 }
 
 export function PhaseBar({
   currentPhase,
   onSetPhase,
   onConfirmNext,
+  disableNext = false,
 }: PhaseBarProps) {
   const { fontSize, device } = useResponsive();
   const scale = fontSize.md / 12;
@@ -73,7 +75,8 @@ export function PhaseBar({
 
   const canPrev = isInStepper && stepperIndex > 0;
   const canNext =
-    isInStepper || currentPhase === 'vote' || currentPhase === 'ended';
+    !disableNext &&
+    (isInStepper || currentPhase === 'vote' || currentPhase === 'ended');
 
   return (
     <View style={styles.container}>
