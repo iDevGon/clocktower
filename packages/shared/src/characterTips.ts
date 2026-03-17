@@ -30,11 +30,17 @@ type TroubleBrewingRoleId =
   | 'baron'
   | 'imp';
 
+/** Sects & Violets 에디션의 구현된 역할 ID */
+type ImplementedSVRoleId = 'sweetheart';
+
+/** 팁이 존재하는 역할 ID */
+type TippedRoleId = TroubleBrewingRoleId | ImplementedSVRoleId;
+
 /**
  * 캐릭터별 플레이 팁과 상대 팁.
  * key = role id (packages/shared/src/roles.ts의 Role.id)
  */
-export const CHARACTER_TIPS: Record<TroubleBrewingRoleId, CharacterTip> = {
+export const CHARACTER_TIPS: Record<TippedRoleId, CharacterTip> = {
   // ═══════════════════════════════════════
   // 마을주민 (Townsfolk)
   // ═══════════════════════════════════════
@@ -356,6 +362,25 @@ export const CHARACTER_TIPS: Record<TroubleBrewingRoleId, CharacterTip> = {
       '임프가 자살하면 하수인이 새 악마가 됩니다. 갑자기 밤 사망이 없으면 자살 승계를 의심하세요.',
       '아무도 주장하지 않는 역할이 있다면 그것이 임프의 블러프일 수 있습니다.',
       '최종 3인에서 임프를 처형하면 선 진영이 승리합니다. 정보를 종합하여 정확히 찾으세요.',
+    ],
+  },
+
+  // ═══════════════════════════════════════
+  // Sects & Violets — 외지인 (Outsider)
+  // ═══════════════════════════════════════
+
+  sweetheart: {
+    playTips: [
+      '사망하면 이야기꾼이 선택한 플레이어 1명이 취하게 됩니다. 최대한 오래 생존하는 것이 목표입니다.',
+      '사랑꾼임을 바로 밝히지 마세요. 다른 마을주민 역할(예: 예술가)을 사칭하여 악마의 공격 대상에서 벗어나세요.',
+      '사망했다면 즉시 사랑꾼임을 공개하세요. 마을이 "누가 취했는지"를 파악해야 잘못된 정보를 걸러낼 수 있습니다.',
+      '외지인으로서 능력 활용 부담이 적으니, 마을 정보를 정리하고 토론을 이끄는 역할에 집중하세요.',
+    ],
+    counterTips: [
+      '사랑꾼을 빨리 죽이면 이야기꾼이 선한 플레이어를 취하게 만들어 정보가 교란됩니다. 우선 제거 대상입니다.',
+      '사랑꾼을 사칭하면 좋은 백업 블러프가 됩니다. 다른 블러프가 실패했을 때 "사실은 사랑꾼이었다"고 전환하세요.',
+      '사랑꾼 사망 후 "누가 취했는지" 찾는 캠페인을 주도하면, 마을이 악마 추적 대신 존재하지 않는 취함을 추적하게 됩니다.',
+      '팡구(Fang Gu)가 있다면 사랑꾼을 공격해 악마를 승계시킬 수 있습니다. 외지인 공격의 전략적 가치를 고려하세요.',
     ],
   },
 };
