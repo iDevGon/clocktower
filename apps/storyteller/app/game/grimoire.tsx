@@ -5,6 +5,7 @@ import {
   NIGHT_ACTIONS,
   NIGHT_FEEDBACK,
   PLAYER_STATUS_LABELS,
+  type Player,
   type PlayerStatus,
   type TipCategory,
 } from '@clocktower/shared';
@@ -176,7 +177,7 @@ export default function GrimoireScreen() {
     return gameState.players.filter(
       (p) => p.isAlive && p.role?.id !== 'sweetheart',
     );
-  }, [gameState]);
+  }, [gameState?.players]);
 
   const handleSweetheartDrunkSelect = useCallback(
     (playerId: string) => {
@@ -192,7 +193,7 @@ export default function GrimoireScreen() {
     return gameState.players.filter(
       (p) => p.isAlive && p.id !== mayorNightDeathId,
     );
-  }, [gameState, mayorNightDeathId]);
+  }, [gameState?.players, mayorNightDeathId]);
 
   const handleMayorRedirectSelect = useCallback(
     (playerId: string) => {
@@ -207,7 +208,7 @@ export default function GrimoireScreen() {
   // Red Herring 선택 모달 상태 (게임 시작 시 점쟁이가 있으면 표시)
   const hasFortuneTeller = useMemo(
     () => gameState?.players.some((p) => p.role?.id === 'fortune_teller'),
-    [gameState],
+    [gameState?.players],
   );
   const [showRedHerringModal, setShowRedHerringModal] = useState(false);
   const redHerringShownRef = useRef(false);
@@ -243,14 +244,14 @@ export default function GrimoireScreen() {
         p.role?.id !== 'fortune_teller' &&
         (p.role?.team === 'townsfolk' || p.role?.team === 'outsider'),
     );
-  }, [gameState]);
+  }, [gameState?.players]);
 
   const currentRedHerringId = useMemo(() => {
     if (!gameState) return null;
     return (
       gameState.players.find((p) => p.statuses?.includes('cursed'))?.id ?? null
     );
-  }, [gameState]);
+  }, [gameState?.players]);
 
   const handleRedHerringConfirmAuto = useCallback(() => {
     setShowRedHerringModal(false);
@@ -583,9 +584,9 @@ export default function GrimoireScreen() {
     null,
   );
   const chatUnreadCounts = useGameStore((s) => s.chatUnreadCounts);
-  const totalChatUnread = Object.values(chatUnreadCounts).reduce<number>(
-    (a, b) => a + b,
-    0,
+  const totalChatUnread = useMemo(
+    () => Object.values(chatUnreadCounts).reduce<number>((a, b) => a + b, 0),
+    [chatUnreadCounts],
   );
 
   // Night feedback overlay state
@@ -761,6 +762,13 @@ export default function GrimoireScreen() {
   );
 
   // 초공감자(Empath) 이웃 하이라이트
+  // Build a player lookup map for O(1) access in neighbor/pair calculations
+  const playerById = useMemo(() => {
+    const map = new Map<string, Player>();
+    for (const p of gameState?.players ?? []) map.set(p.id, p);
+    return map;
+  }, [gameState?.players]);
+
   const empathNeighborIds = useMemo(() => {
     if (gameState?.phase !== 'night' || activeNightRoleId !== 'empath')
       return new Set<string>();
@@ -782,7 +790,7 @@ export default function GrimoireScreen() {
     // 시계방향 탐색
     for (let i = 1; i < order.length; i++) {
       const idx = (empathIndex + i) % order.length;
-      const p = gameState.players.find((pl) => pl.id === order[idx]);
+      const p = playerById.get(order[idx]);
       if (p?.isAlive) {
         neighbors.add(p.id);
         break;
@@ -792,7 +800,7 @@ export default function GrimoireScreen() {
     // 반시계방향 탐색
     for (let i = 1; i < order.length; i++) {
       const idx = (empathIndex - i + order.length) % order.length;
-      const p = gameState.players.find((pl) => pl.id === order[idx]);
+      const p = playerById.get(order[idx]);
       if (p?.isAlive) {
         if (neighbors.has(p.id)) break; // 같은 플레이어 (2명만 생존)
         neighbors.add(p.id);
@@ -801,7 +809,13 @@ export default function GrimoireScreen() {
     }
 
     return neighbors;
-  }, [gameState?.phase, gameState?.players, activeNightRoleId, playerOrder]);
+  }, [
+    gameState?.phase,
+    gameState?.players,
+    activeNightRoleId,
+    playerOrder,
+    playerById,
+  ]);
 
   // 초공감자 악한 이웃 수 계산
   const empathEvilCount = useMemo(() => {
@@ -832,7 +846,7 @@ export default function GrimoireScreen() {
       return { chefEvilPairIds: new Set<string>(), chefEvilPairCount: 0 };
 
     const isEvil = (id: string) => {
-      const p = gameState.players.find((pl) => pl.id === id);
+      const p = playerById.get(id);
       return p?.role?.team === 'minion' || p?.role?.team === 'demon';
     };
 
@@ -848,7 +862,13 @@ export default function GrimoireScreen() {
       }
     }
     return { chefEvilPairIds: pairIds, chefEvilPairCount: count };
-  }, [gameState?.phase, gameState?.players, activeNightRoleId, playerOrder]);
+  }, [
+    gameState?.phase,
+    gameState?.players,
+    activeNightRoleId,
+    playerOrder,
+    playerById,
+  ]);
 
   const currentNomination = gameState?.nominations?.length
     ? gameState.nominations[gameState.nominations.length - 1]
@@ -896,6 +916,35 @@ export default function GrimoireScreen() {
     if (!executedPlayerId) return ['undertaker'];
     return [];
   }, [executedPlayerId]);
+
+  // Memoize activeRoleIds and dormantRoleIds for NightOrderPanel
+  const activeRoleIds = useMemo(() => {
+    if (!gameState) return [];
+    return gameState.players
+      .filter((p) => p.isAlive)
+      .flatMap((p) => {
+        if (p.role?.id === 'drunk' && p.drunkAs) return [p.drunkAs];
+        return p.role?.id ? [p.role.id] : [];
+      });
+  }, [gameState?.players]);
+
+  const dormantRoleIds = useMemo(() => {
+    if (!gameState) return [];
+    return gameState.players
+      .filter((p) => p.isAlive)
+      .flatMap((p) => {
+        const ids: string[] = [];
+        if (p.role?.id && NIGHT_ACTIONS[p.role.id]?.onlyWhenDead)
+          ids.push(p.role.id);
+        if (
+          p.role?.id === 'drunk' &&
+          p.drunkAs &&
+          NIGHT_ACTIONS[p.drunkAs]?.onlyWhenDead
+        )
+          ids.push(p.drunkAs);
+        return ids;
+      });
+  }, [gameState?.players]);
 
   if (!gameState) return null;
 
@@ -1114,27 +1163,9 @@ export default function GrimoireScreen() {
           <View style={styles.nightOrderRelative}>
             <NightOrderPanel
               day={gameState.day}
-              activeRoleIds={gameState.players
-                .filter((p) => p.isAlive)
-                .flatMap((p) => {
-                  if (p.role?.id === 'drunk' && p.drunkAs) return [p.drunkAs];
-                  return p.role?.id ? [p.role.id] : [];
-                })}
+              activeRoleIds={activeRoleIds}
               skippedRoleIds={skippedNightRoles}
-              dormantRoleIds={gameState.players
-                .filter((p) => p.isAlive)
-                .flatMap((p) => {
-                  const ids: string[] = [];
-                  if (p.role?.id && NIGHT_ACTIONS[p.role.id]?.onlyWhenDead)
-                    ids.push(p.role.id);
-                  if (
-                    p.role?.id === 'drunk' &&
-                    p.drunkAs &&
-                    NIGHT_ACTIONS[p.drunkAs]?.onlyWhenDead
-                  )
-                    ids.push(p.drunkAs);
-                  return ids;
-                })}
+              dormantRoleIds={dormantRoleIds}
               activeNightRoleId={activeNightRoleId}
               onActivateRole={setActiveNightRole}
               onNightComplete={() => {

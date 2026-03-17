@@ -62,9 +62,9 @@ export function createPhaseBarStyles(
       gap: s(isDesktop ? 16 : isTablet ? 14 : 10),
     },
     navButton: {
-      width: s(isDesktop ? 44 : isTablet ? 40 : 36),
-      height: s(isDesktop ? 44 : isTablet ? 40 : 36),
-      borderRadius: s(isDesktop ? 22 : isTablet ? 20 : 18),
+      width: s(isDesktop ? 44 : isTablet ? 44 : 44),
+      height: s(isDesktop ? 44 : isTablet ? 44 : 44),
+      borderRadius: s(22),
       backgroundColor: '#1a1a22',
       borderWidth: 1,
       borderColor: '#2a2a34',
@@ -117,6 +117,8 @@ export function createPhaseBarStyles(
       borderWidth: 1,
       borderColor: '#2a2a34',
       backgroundColor: '#14141a',
+      minHeight: 44,
+      justifyContent: 'center' as const,
     },
     chipActive: {
       borderWidth: 1.5,

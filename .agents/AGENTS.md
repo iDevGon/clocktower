@@ -11,7 +11,8 @@ apps/server/src/index.ts            # 서버 엔트리포인트 (Express + Socke
 apps/server/src/game.ts             # GameManager 클래스 (게임 상태 관리)
 apps/server/src/whisper.ts          # WhisperTracker 클래스 (밀담 추적)
 apps/server/src/handlers/player.ts  # 플레이어 소켓 이벤트 핸들러
-apps/server/src/handlers/storyteller.ts # 이야기꾼 소켓 이벤트 핸들러
+apps/server/src/handlers/storyteller.ts # 이야기꾼 소켓 이벤트 핸들러 (게임/밤/역할/설정)
+apps/server/src/handlers/storytellerVote.ts # 투표 관련 핸들러 (지명, 투표, 시계방향 투표)
 apps/server/src/createApp.ts        # 서버 팩토리 함수 (테스트용 프로그래밍 방식 시작/중지)
 apps/server/src/pushNotifications.ts # Expo 푸시 알림 관리
 apps/server/src/__tests__/          # 서버 단위 테스트 (game, whisper, pushNotifications)
@@ -40,13 +41,16 @@ apps/storyteller/src/constants.ts   # IS_DEV 상수 (개발 모드 판별)
 packages/shared/src/types.ts        # 핵심 타입 정의
 packages/shared/src/events.ts       # Socket.io 이벤트 타입
 packages/shared/src/roles.ts        # 역할 정의, 배분 알고리즘, 밤 행동 순서
+packages/shared/src/tips.ts          # 게임 플레이 팁 시스템 (getRandomGameTip, getRandomTipText 등)
+packages/shared/src/characterTips.ts # 역할별 플레이 팁 및 상대 팁 (CHARACTER_TIPS)
 packages/shared/src/dictionary.ts   # 상태/페이즈 사전, 팀 라벨/색상, 게임 규칙
 packages/shared/src/logic.ts        # 서버용 non-RN re-export
 packages/ui/src/                    # 공유 UI 컴포넌트 (AbilityText, DictionaryModal 등)
 packages/ui/src/tokens.ts           # 디자인 토큰 (colors)
 packages/ui/src/chatStyles.ts       # 채팅 스타일 팩토리
-packages/ui/src/components/         # 공유 컴포넌트 (AbilityText, HighlightedMessage 등)
+packages/ui/src/components/         # 공유 컴포넌트 (AbilityText, GameTip, RotatingGameTip 등)
 packages/ui/src/utils/chosung.ts    # 초성 검색 유틸
+packages/ui/src/utils/chat.ts       # 채팅 공통 유틸 (buildChatCandidates, formatChatTime, applySuggestion)
 ```
 
 ## 핵심 규칙
@@ -78,7 +82,7 @@ Player App       ──(ClientToServerEvents)────────>  Server
 ### 주요 이벤트
 
 **Client → Server**: `game:join`, `game:rejoin`, `slayer:use`, `slayer:ack`, `whisper:send`, `nominate:request`, `vote:cast`, `vote:preselect`, `night:action`, `chat:sendToStoryteller`, `push:register`
-**Server → Client**: `game:state`, `game:phase`, `game:playerUpdate`, `role:assign`, `evil:info`, `night:activeRole`, `night:actionReceived`, `night:feedback`, `night:deaths`, `vote:start`, `vote:result`, `vote:order`, `vote:clockStart`, `vote:clockPause`, `vote:confirmed`, `vote:preselected`, `vote:proceedToVote`, `execution:announced`, `slayer:declared`, `slayer:noEffect`, `slayer:allAcked`, `virgin:triggered`, `whisper:receive`, `whisper:activeChats`, `whisper:clockStart`, `day:subPhase`, `game:settings`, `game:end`, `chat:receiveFromStoryteller`, `chat:receiveFromPlayer`
+**Server → Client**: `game:state`, `game:phase`, `game:playerUpdate`, `role:assign`, `evil:info`, `night:activeRole`, `night:actionReceived`, `night:feedback`, `night:deaths`, `night:wakeUp`, `vote:start`, `vote:result`, `vote:order`, `vote:clockStart`, `vote:clockPause`, `vote:confirmed`, `vote:preselected`, `vote:proceedToVote`, `execution:announced`, `slayer:declared`, `slayer:noEffect`, `slayer:allAcked`, `virgin:triggered`, `whisper:receive`, `whisper:activeChats`, `whisper:clockStart`, `day:subPhase`, `game:settings`, `game:end`, `chat:receiveFromStoryteller`, `chat:receiveFromPlayer`
 **Server → Storyteller**: `ServerToStorytellerEvents` (ServerToClientEvents 서브셋 + `sweetheart:died`, `mayor:nightDeath`, `chat:receiveFromPlayer`)
 **Storyteller → Server**: `game:create`, `game:start`, `game:setPhase`, `day:setSubPhase`, `game:assignRole` (drunkAs 지원), `game:distributeRoles`, `game:kill`, `game:revive`, `game:reset`, `game:restart`, `vote:nominate`, `vote:proceedToVote`, `vote:close`, `vote:castForPlayer`, `night:setActiveRole`, `night:sendFeedback`, `player:setStatuses`, `game:setSettings`, `game:setPlayerOrder`, `chat:sendToPlayer`, `game:addDummyPlayers`, `game:removeDummyPlayers`, `slayer:forceAck`, `game:assignRedHerring`, `game:mayorRedirect`, `game:sweetheartDrunk`
 
@@ -86,7 +90,7 @@ Player App       ──(ClientToServerEvents)────────>  Server
 
 - 역할 정의: `packages/shared/src/roles.ts`
 - Trouble Brewing 에디션 완전 구현 (22역할), Sects & Violets 부분 구현
-- `NIGHT_ACTIONS`: 역할별 밤 행동 타입 (select_one, select_two, passive)
+- `NIGHT_ACTIONS`: 역할별 밤 행동 타입 (select_one, select_two, passive). `onlyWhenDead` 플래그로 사망 시에만 발동하는 역할 지원 (까마귀지기)
 - `NIGHT_FEEDBACK`: 역할별 피드백 타입 (number, yes_no, players_and_role, role, grimoire, no_match)
 - `FIRST_NIGHT_ORDER` / `OTHER_NIGHT_ORDER`: 밤 행동 순서
 - `distributeRoles()`: 플레이어 수에 따른 자동 역할 배분 (주정뱅이 drunkAs 자동 배정, 남작 시 외지인+2 포함)
@@ -104,6 +108,7 @@ Player App       ──(ClientToServerEvents)────────>  Server
 - **초공감자(Empath)**: playerOrder 기반 양옆 이웃의 악 진영 수 계산
 - **성자(Saint)**: 처형 시 (중독/취함 아닌 경우) 악 진영 승리
 - **시장(Mayor)**: 밤 사망 시 다른 플레이어로 리디렉트 가능, 최종 3인 + 처형 미발생 시 선 진영 승리
+- **까마귀지기(Ravenkeeper)**: 밤에 사망 시 능력 발동 (`onlyWhenDead`), 서버에서 `night:wakeUp` 이벤트 전송, 전용 오버레이 표시
 - **사랑꾼(Sweetheart)**: 사망 시 이야기꾼이 지정한 플레이어에게 취함 상태 부여 (S&V 에디션)
 
 ## 플레이어 상태 시스템
@@ -143,6 +148,7 @@ Player App       ──(ClientToServerEvents)────────>  Server
 - `StorytellerChatModal` / `StorytellerChatToast`: 이야기꾼 채팅
 - `NightFallOverlay`: 밤 전환 오버레이
 - `DeathOverlay` / `NightDeathOverlay` / `ExecutionOverlay` / `SlayerFizzleOverlay`: 사망 연출
+- `RavenkeeperOverlay`: 까마귀지기 밤 사망 시 전용 오버레이
 - `DeadVignette` / `EdgeVignette` / `BaseOverlay`: 비네트 및 오버레이
 - `GameStartReveal`: 게임 시작 역할 공개 애니메이션
 - `RolePromotionReveal`: 역할 승계 공개 (예: 탕녀 → 임프)
@@ -165,6 +171,8 @@ Player App       ──(ClientToServerEvents)────────>  Server
 - `WhisperStatusPanel`: 밀담 현황 패널
 - `ActionModal`: 범용 확인/취소 모달
 - `AnimatedBorderCard`: 애니메이션 테두리 카드 (활성 상태 강조)
+- `PhaseTipToast`: 페이즈 전환 시 이야기꾼 팁 토스트
+- `RoleRevealWaitingOverlay`: 역할 공개 대기 오버레이
 - `CollapsibleSection` / `EditionBadge` / `SettingToggle` / `EventToast`: 유틸리티 UI
 - `QRScannerModal`: QR 스캔으로 서버 접속
 
@@ -175,10 +183,13 @@ Player App       ──(ClientToServerEvents)────────>  Server
 - `QuickSuggestions`: 자동완성 제안
 - `SmokeParticles`: 연기 파티클 효과
 - `FullScreenVignette`: 전체화면 비네트 오버레이
+- `GameTip`: 게임 팁 표시 컴포넌트 (글로우 효과)
+- `RotatingGameTip`: 자동 회전 게임 팁 컴포넌트
 - `BaseToast`: 공통 토스트 알림 컴포넌트 (auto-dismiss, fade 애니메이션)
 - `colors`: 디자인 토큰 (surface, border, text, phase, status, badge, chat)
 - `createChatStyles`: 채팅 스타일 팩토리
 - `chosung` utils: 초성 검색
+- `chat` utils: 채팅 공통 유틸 (buildChatCandidates, formatChatTime, applySuggestion)
 
 ## 푸시 알림
 

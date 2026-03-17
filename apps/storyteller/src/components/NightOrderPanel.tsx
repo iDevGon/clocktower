@@ -19,6 +19,8 @@ const TEAM_LABELS: Record<string, string> = {
   demon: '악마',
 };
 
+const EMPTY_STRING_ARRAY: string[] = [];
+
 function formatTimer(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
@@ -39,8 +41,8 @@ interface NightOrderPanelProps {
 export function NightOrderPanel({
   day,
   activeRoleIds,
-  skippedRoleIds = [],
-  dormantRoleIds = [],
+  skippedRoleIds = EMPTY_STRING_ARRAY,
+  dormantRoleIds = EMPTY_STRING_ARRAY,
   activeNightRoleId,
   onActivateRole,
   onNightComplete,
@@ -195,6 +197,8 @@ export function NightOrderPanel({
               styles.navButtonDisabled,
           ]}
           disabled={activeIndex === null || activeIndex <= 0}
+          accessibilityLabel="이전 역할"
+          accessibilityRole="button"
         >
           <Text style={styles.navButtonText}>{'‹'}</Text>
         </Pressable>
@@ -286,7 +290,12 @@ export function NightOrderPanel({
         </View>
 
         {!isLastRole ? (
-          <Pressable onPress={handleNext} style={styles.navButton}>
+          <Pressable
+            onPress={handleNext}
+            style={styles.navButton}
+            accessibilityLabel="다음 역할"
+            accessibilityRole="button"
+          >
             <Text style={styles.navButtonText}>
               {activeIndex === null ? '▶' : '›'}
             </Text>
@@ -327,6 +336,8 @@ export function NightOrderPanel({
               onLayout={(e) => {
                 chipWidths.current[index] = e.nativeEvent.layout.width;
               }}
+              accessibilityLabel={`${role?.name ?? roleId} 역할 선택`}
+              accessibilityRole="button"
               style={[
                 styles.roleChip,
                 isActive && [

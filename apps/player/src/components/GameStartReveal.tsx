@@ -583,7 +583,12 @@ export function GameStartReveal({
     <Animated.View
       style={[StyleSheet.absoluteFill, { zIndex: 95 }, containerStyle]}
     >
-      <Pressable style={StyleSheet.absoluteFill} onPress={handleDismiss}>
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={handleDismiss}
+        accessibilityLabel="역할 공개 닫기"
+        accessibilityRole="button"
+      >
         {/* Background */}
         <View
           style={[StyleSheet.absoluteFill, { backgroundColor: '#06080e' }]}

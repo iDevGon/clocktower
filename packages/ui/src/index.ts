@@ -24,5 +24,9 @@ export {
 } from './components/SmokeParticles';
 export { colors } from './tokens';
 // Utils
-export { applySuggestion, buildChatCandidates, formatChatTime } from './utils/chat';
+export {
+  applySuggestion,
+  buildChatCandidates,
+  formatChatTime,
+} from './utils/chat';
 export { getChosung, isChosungOnly, matchQuery } from './utils/chosung';

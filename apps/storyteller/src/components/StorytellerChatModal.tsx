@@ -1,10 +1,10 @@
 import type { StorytellerMessage } from '@clocktower/shared';
 import {
-  HighlightedMessage,
-  QuickSuggestions,
   applySuggestion,
   buildChatCandidates,
   formatChatTime,
+  HighlightedMessage,
+  QuickSuggestions,
 } from '@clocktower/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {

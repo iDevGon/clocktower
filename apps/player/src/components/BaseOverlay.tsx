@@ -99,7 +99,11 @@ export function BaseOverlay({
   };
   const Wrapper = dismissOnBackdropPress ? Pressable : View;
   const wrapperProps = dismissOnBackdropPress
-    ? { onPress: handleBackdropPress }
+    ? {
+        onPress: handleBackdropPress,
+        accessibilityLabel: '오버레이 닫기',
+        accessibilityRole: 'button' as const,
+      }
     : {};
 
   const contentNode = scrollable ? (

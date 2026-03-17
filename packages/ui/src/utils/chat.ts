@@ -5,9 +5,7 @@ import type { TaggedCandidate } from '../components/QuickSuggestions';
  * 채팅 자동완성 후보 목록을 생성한다.
  * 플레이어 이름, 역할 이름, 상태 라벨 순서로 중복 없이 추가한다.
  */
-export function buildChatCandidates(
-  playerNames: string[],
-): TaggedCandidate[] {
+export function buildChatCandidates(playerNames: string[]): TaggedCandidate[] {
   const items: TaggedCandidate[] = [];
   const seen = new Set<string>();
 

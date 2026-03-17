@@ -2,7 +2,7 @@ import { NIGHT_ACTIONS } from '@clocktower/shared';
 import { DictionaryModal } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DeadVignette } from '../src/components/DeadVignette';
@@ -209,8 +209,9 @@ export default function GameScreen() {
     !slayerUsed &&
     (currentPhase === 'day' || currentPhase === 'vote');
 
-  const nominatablePlayers = gamePlayers.filter(
-    (p) => p.isAlive && p.id !== playerId,
+  const nominatablePlayers = useMemo(
+    () => gamePlayers.filter((p) => p.isAlive && p.id !== playerId),
+    [gamePlayers, playerId],
   );
 
   return (

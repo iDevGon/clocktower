@@ -106,6 +106,8 @@ export function PhaseBar({
           onPress={handlePrev}
           style={[styles.navButton, !canPrev && styles.navButtonDisabled]}
           disabled={!canPrev}
+          accessibilityLabel="이전 페이즈"
+          accessibilityRole="button"
         >
           <Text style={[styles.navButtonText, { color: colors.text }]}>
             {'‹'}
@@ -128,6 +130,8 @@ export function PhaseBar({
           onPress={handleNext}
           style={[styles.navButton, !canNext && styles.navButtonDisabled]}
           disabled={!canNext}
+          accessibilityLabel="다음 페이즈"
+          accessibilityRole="button"
         >
           <Text style={[styles.navButtonText, { color: colors.text }]}>
             {'›'}
@@ -147,6 +151,8 @@ export function PhaseBar({
             <Pressable
               key={phase.value}
               onPress={() => onSetPhase(phase.value)}
+              accessibilityLabel={`${phase.label} 페이즈로 전환`}
+              accessibilityRole="button"
               style={[
                 styles.chip,
                 isActive && [
