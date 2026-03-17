@@ -1,5 +1,6 @@
 import {
   ALL_ROLES,
+  CHARACTER_TIPS,
   DAY_SUB_PHASE_ENTRIES,
   EDITION_COLORS,
   EDITION_LABELS,
@@ -10,7 +11,7 @@ import {
   TEAM_COLORS,
   type Team,
 } from '@clocktower/shared';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -20,6 +21,43 @@ import {
   View,
 } from 'react-native';
 import { AbilityText } from './AbilityText';
+
+function RoleTips({ roleId }: { roleId: string }) {
+  const tips = CHARACTER_TIPS[roleId];
+  const [expanded, setExpanded] = useState(false);
+  const toggle = useCallback(() => setExpanded((v) => !v), []);
+
+  if (!tips) return null;
+
+  return (
+    <View style={tipStyles.container}>
+      <Pressable onPress={toggle} style={tipStyles.toggleRow}>
+        <Text style={tipStyles.toggleIcon}>{expanded ? '▾' : '▸'}</Text>
+        <Text style={tipStyles.toggleText}>플레이 팁</Text>
+      </Pressable>
+      {expanded && (
+        <View style={tipStyles.content}>
+          <Text style={tipStyles.sectionLabel}>이 역할로 플레이할 때</Text>
+          {tips.playTips.map((tip, i) => (
+            <View key={`p-${i}`} style={tipStyles.tipRow}>
+              <Text style={tipStyles.bullet}>•</Text>
+              <Text style={tipStyles.tipText}>{tip}</Text>
+            </View>
+          ))}
+          <Text style={[tipStyles.sectionLabel, { marginTop: 10 }]}>
+            이 역할을 상대할 때
+          </Text>
+          {tips.counterTips.map((tip, i) => (
+            <View key={`c-${i}`} style={tipStyles.tipRow}>
+              <Text style={tipStyles.bullet}>•</Text>
+              <Text style={tipStyles.tipText}>{tip}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
 
 type TabId = 'roles' | 'statuses' | 'rules' | 'flow';
 
@@ -106,6 +144,7 @@ function GroupedRolesTab() {
                     text={role.ability}
                     style={tabStyles.abilityText}
                   />
+                  <RoleTips roleId={role.id} />
                 </View>
               );
             })}
@@ -170,6 +209,7 @@ function FlatRolesTab() {
                     text={role.ability}
                     style={tabStyles.abilityText}
                   />
+                  <RoleTips roleId={role.id} />
                 </View>
               );
             })}
@@ -498,5 +538,58 @@ const tabStyles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     marginBottom: 6,
+  },
+});
+
+const tipStyles = StyleSheet.create({
+  container: {
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#2e2e34',
+    paddingTop: 8,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 2,
+  },
+  toggleIcon: {
+    color: '#5dade2',
+    fontSize: 12,
+    width: 14,
+  },
+  toggleText: {
+    color: '#5dade2',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  content: {
+    marginTop: 8,
+  },
+  sectionLabel: {
+    color: '#7a7870',
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  tipRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 4,
+    paddingLeft: 4,
+  },
+  bullet: {
+    color: '#5c5a58',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  tipText: {
+    color: '#908e8a',
+    fontSize: 12,
+    lineHeight: 18,
+    flex: 1,
   },
 });
