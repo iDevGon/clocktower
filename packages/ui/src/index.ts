@@ -7,8 +7,8 @@ export type { BaseToastProps } from './components/BaseToast';
 // Components
 export { BaseToast } from './components/BaseToast';
 export { DictionaryModal } from './components/DictionaryModal';
-export { GameTip } from './components/GameTip';
 export { FullScreenVignette } from './components/FullScreenVignette';
+export { GameTip } from './components/GameTip';
 export { HighlightedMessage } from './components/HighlightedMessage';
 export type {
   CandidateCategory,

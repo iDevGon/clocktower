@@ -22,6 +22,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useConnectionStore } from '../stores/connectionStore';
+import { usePlayerStore } from '../stores/playerStore';
 import { BaseOverlay } from './BaseOverlay';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -233,7 +234,11 @@ export function SlayerFizzleOverlay({
   isVotePhase,
   onDismiss,
 }: SlayerFizzleOverlayProps) {
-  const tip = useMemo(() => getRandomTipText('general'), []);
+  const roleId = usePlayerStore((s) => s.role?.id);
+  const tip = useMemo(
+    () => getRandomTipText('general', roleId ?? undefined),
+    [roleId],
+  );
   const [acked, setAcked] = useState(false);
 
   useEffect(() => {

@@ -18,6 +18,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { usePlayerStore } from '../stores/playerStore';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -262,7 +263,11 @@ export function RolePromotionReveal({
 }: RolePromotionRevealProps) {
   const team = TEAM_ACCENT[role.team];
   const minionAccent = TEAM_ACCENT.minion;
-  const tip = useMemo(() => getRandomTipText('general'), []);
+  const playerRoleId = usePlayerStore((s) => s.role?.id);
+  const tip = useMemo(
+    () => getRandomTipText('general', playerRoleId ?? undefined),
+    [playerRoleId],
+  );
   const fadeOut = useSharedValue(1);
   const dismissed = useSharedValue(false);
 
