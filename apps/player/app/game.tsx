@@ -460,7 +460,9 @@ export default function GameScreen() {
         showRavenkeeper={ravenkeeperOverlay}
         onDismissRavenkeeper={() => setRavenkeeperOverlay(false)}
         nightDeathAnnouncement={nightDeathAnnouncement}
-        onDismissNightDeath={() => dismissDeath({ nightDeathAnnouncement: null })}
+        onDismissNightDeath={() =>
+          dismissDeath({ nightDeathAnnouncement: null })
+        }
         slayerFizzle={slayerFizzle}
         onDismissSlayerFizzle={() => dismissDeath({ slayerFizzle: null })}
         gameEndDismissed={gameEndDismissed}

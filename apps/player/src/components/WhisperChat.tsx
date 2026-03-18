@@ -64,14 +64,18 @@ export function WhisperChat({
       items.push({ word, category });
     };
 
-    gamePlayers.forEach((p) => addUnique(p.name, 'player'));
-    ALL_ROLES.forEach((r) => addUnique(r.name, 'role'));
-    Object.values(PLAYER_STATUS_LABELS).forEach((label) =>
-      addUnique(label, 'status'),
-    );
-    ['사망', '생존', '죽음', '이야기꾼'].forEach((extra) =>
-      addUnique(extra, 'status'),
-    );
+    gamePlayers.forEach((p) => {
+      addUnique(p.name, 'player');
+    });
+    ALL_ROLES.forEach((r) => {
+      addUnique(r.name, 'role');
+    });
+    Object.values(PLAYER_STATUS_LABELS).forEach((label) => {
+      addUnique(label, 'status');
+    });
+    ['사망', '생존', '죽음', '이야기꾼'].forEach((extra) => {
+      addUnique(extra, 'status');
+    });
     return items;
   }, [gamePlayers]);
 

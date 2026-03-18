@@ -369,24 +369,32 @@ export function getAllTipTexts(mode: 'player' | 'storyteller'): string[] {
   const texts = new Set<string>();
 
   if (mode === 'storyteller') {
-    GAMEPLAY_TIPS
-      .filter((t) => t.category === 'storyteller' && t.text)
-      .forEach((t) => texts.add(t.text));
+    GAMEPLAY_TIPS.filter((t) => t.category === 'storyteller' && t.text).forEach(
+      (t) => {
+        texts.add(t.text);
+      },
+    );
   } else {
     // 플레이어: storyteller 제외 모든 GAMEPLAY_TIPS
-    GAMEPLAY_TIPS
-      .filter((t) => t.category !== 'storyteller' && t.text)
-      .forEach((t) => texts.add(t.text));
+    GAMEPLAY_TIPS.filter((t) => t.category !== 'storyteller' && t.text).forEach(
+      (t) => {
+        texts.add(t.text);
+      },
+    );
     // CHARACTER_TIPS: 역할 맥락 자동 추가
     Object.entries(CHARACTER_TIPS).forEach(([roleId, charTip]) => {
       const role = getRoleById(roleId);
       const roleName = role?.name ?? roleId;
       charTip.playTips
         .filter((tip) => tip)
-        .forEach((tip) => texts.add(`[${roleName} 플레이할 때] ${tip}`));
+        .forEach((tip) => {
+          texts.add(`[${roleName} 플레이할 때] ${tip}`);
+        });
       charTip.counterTips
         .filter((tip) => tip)
-        .forEach((tip) => texts.add(`[${roleName} 상대할 때] ${tip}`));
+        .forEach((tip) => {
+          texts.add(`[${roleName} 상대할 때] ${tip}`);
+        });
     });
   }
 
@@ -475,20 +483,20 @@ export function getRandomGameTip(
   const candidates: { text: string; weight: number }[] = [];
 
   // 1. GAMEPLAY_TIPS (storyteller 카테고리 제외)
-  GAMEPLAY_TIPS
-    .filter((t) => cats.includes(t.category) && t.category !== 'storyteller')
-    .forEach((t) => {
-      if (t.roleId) {
-        // roleId 팁: 해당 역할 플레이어에게만 노출
-        if (!playerRoleId || t.roleId !== playerRoleId) return;
-        candidates.push({
-          text: t.text,
-          weight: t.frequency * (t.roleWeight ?? 3),
-        });
-        return;
-      }
-      candidates.push({ text: t.text, weight: t.frequency });
-    });
+  GAMEPLAY_TIPS.filter(
+    (t) => cats.includes(t.category) && t.category !== 'storyteller',
+  ).forEach((t) => {
+    if (t.roleId) {
+      // roleId 팁: 해당 역할 플레이어에게만 노출
+      if (!playerRoleId || t.roleId !== playerRoleId) return;
+      candidates.push({
+        text: t.text,
+        weight: t.frequency * (t.roleWeight ?? 3),
+      });
+      return;
+    }
+    candidates.push({ text: t.text, weight: t.frequency });
+  });
 
   // 2. CHARACTER_TIPS - playTips (자기 역할만)
   if (playerRoleId) {

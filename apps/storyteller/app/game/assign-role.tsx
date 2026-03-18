@@ -72,7 +72,7 @@ export default function AssignRoleScreen() {
     return new Map(
       gameState.players
         .filter((p) => p.id !== playerId && p.role?.id)
-        .map((p) => [p.role!.id, p.name]),
+        .map((p) => [p.role?.id, p.name]),
     );
   }, [gameState, playerId]);
 
@@ -85,7 +85,7 @@ export default function AssignRoleScreen() {
     return new Set(
       gameState.players
         .filter((p) => p.role?.id && !editionRoleIds.has(p.role.id))
-        .map((p) => p.role!.id),
+        .map((p) => p.role?.id),
     );
   }, [gameState, selectedEditionId]);
 
@@ -184,8 +184,7 @@ export default function AssignRoleScreen() {
     // 주정뱅이가 랜덤 선택된 경우 가짜 역할도 랜덤 배정
     const townsfolk = unassignedRoles.filter((r) => r.team === 'townsfolk');
     if (townsfolk.length > 0) {
-      const fakeRole =
-        townsfolk[Math.floor(Math.random() * townsfolk.length)];
+      const fakeRole = townsfolk[Math.floor(Math.random() * townsfolk.length)];
       assignRole(playerId, 'drunk', fakeRole.id);
     } else {
       assignRole(playerId, 'drunk');

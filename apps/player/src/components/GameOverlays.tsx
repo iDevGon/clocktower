@@ -1,4 +1,5 @@
 import type { GameResult, Role } from '@clocktower/shared';
+import type { EvilInfo } from '../stores/playerStore';
 import { DeathOverlay } from './DeathOverlay';
 import { ExecutionOverlay } from './ExecutionOverlay';
 import { GameEndOverlay } from './GameEndOverlay';
@@ -8,7 +9,6 @@ import { NightFallOverlay } from './NightFallOverlay';
 import { RavenkeeperOverlay } from './RavenkeeperOverlay';
 import { RolePromotionReveal } from './RolePromotionReveal';
 import { SlayerFizzleOverlay } from './SlayerFizzleOverlay';
-import type { EvilInfo } from '../stores/playerStore';
 
 interface GameOverlaysProps {
   // Game start reveal
@@ -45,7 +45,10 @@ interface GameOverlaysProps {
   onDismissRavenkeeper: () => void;
 
   // Night death announcement
-  nightDeathAnnouncement: Array<{ playerName: string; roleName?: string }> | null;
+  nightDeathAnnouncement: Array<{
+    playerName: string;
+    roleName?: string;
+  }> | null;
   onDismissNightDeath: () => void;
 
   // Slayer fizzle
@@ -102,10 +105,7 @@ export function GameOverlays({
       )}
 
       {justDied && (
-        <DeathOverlay
-          onDismiss={onDismissDeath}
-          reason={deathReason}
-        />
+        <DeathOverlay onDismiss={onDismissDeath} reason={deathReason} />
       )}
 
       {executionAnnouncement &&
@@ -117,9 +117,7 @@ export function GameOverlays({
           />
         )}
 
-      {showNightFall && (
-        <NightFallOverlay onDismiss={onDismissNightFall} />
-      )}
+      {showNightFall && <NightFallOverlay onDismiss={onDismissNightFall} />}
 
       {showRavenkeeper && (
         <RavenkeeperOverlay onDismiss={onDismissRavenkeeper} />

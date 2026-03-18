@@ -452,9 +452,11 @@ export function registerPlayerHandlers(
       }
 
       // Validate all participants exist
-      const resolvedPlayers = resolvedIds.map((pid) => game.getPlayer(pid));
-      if (resolvedPlayers.some((p) => !p)) return;
-      const resolvedNames = resolvedPlayers.map((p) => p!.name);
+      const resolvedPlayers = resolvedIds
+        .map((pid) => game.getPlayer(pid))
+        .filter((p): p is NonNullable<typeof p> => p != null);
+      if (resolvedPlayers.length !== resolvedIds.length) return;
+      const resolvedNames = resolvedPlayers.map((p) => p.name);
 
       const resolvedConversationId =
         conversationId || WhisperTracker.makeConversationId(...resolvedIds);

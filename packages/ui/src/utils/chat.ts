@@ -15,14 +15,18 @@ export function buildChatCandidates(playerNames: string[]): TaggedCandidate[] {
     items.push({ word, category });
   };
 
-  playerNames.forEach((name) => addUnique(name, 'player'));
-  ALL_ROLES.forEach((r) => addUnique(r.name, 'role'));
-  Object.values(PLAYER_STATUS_LABELS).forEach((label) =>
-    addUnique(label, 'status'),
-  );
-  ['사망', '생존', '죽음', '이야기꾼'].forEach((extra) =>
-    addUnique(extra, 'status'),
-  );
+  playerNames.forEach((name) => {
+    addUnique(name, 'player');
+  });
+  ALL_ROLES.forEach((r) => {
+    addUnique(r.name, 'role');
+  });
+  Object.values(PLAYER_STATUS_LABELS).forEach((label) => {
+    addUnique(label, 'status');
+  });
+  ['사망', '생존', '죽음', '이야기꾼'].forEach((extra) => {
+    addUnique(extra, 'status');
+  });
   return items;
 }
 

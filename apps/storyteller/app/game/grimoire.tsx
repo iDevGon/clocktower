@@ -4,7 +4,6 @@ import {
   getRoleById,
   NIGHT_ACTIONS,
   PLAYER_STATUS_LABELS,
-  type Player,
   type PlayerStatus,
   type TipCategory,
 } from '@clocktower/shared';

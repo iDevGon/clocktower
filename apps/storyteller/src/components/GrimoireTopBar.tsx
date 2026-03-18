@@ -40,26 +40,17 @@ export function GrimoireTopBar({
       <Text style={styles.dayText}>{day}일차</Text>
       <View style={styles.topBarRight}>
         {phase === 'day' && daySubPhase === 'whisper' && (
-          <Pressable
-            onPress={onWhispersPress}
-            style={styles.whisperButton}
-          >
+          <Pressable onPress={onWhispersPress} style={styles.whisperButton}>
             <Text style={styles.whisperButtonText}>
-              밀담{' '}
-              {activeWhispersCount > 0 ? `(${activeWhispersCount})` : ''}
+              밀담 {activeWhispersCount > 0 ? `(${activeWhispersCount})` : ''}
             </Text>
           </Pressable>
         )}
-        {IS_DEV &&
-          phase === 'day' &&
-          daySubPhase === 'nomination' && (
-            <Pressable
-              onPress={onNominatePress}
-              style={styles.nominateButton}
-            >
-              <Text style={styles.nominateText}>지목 (수동)</Text>
-            </Pressable>
-          )}
+        {IS_DEV && phase === 'day' && daySubPhase === 'nomination' && (
+          <Pressable onPress={onNominatePress} style={styles.nominateButton}>
+            <Text style={styles.nominateText}>지목 (수동)</Text>
+          </Pressable>
+        )}
         {IS_DEV && slayerWaitingAck && (
           <Pressable
             onPress={onSlayerForceAck}
@@ -68,24 +59,15 @@ export function GrimoireTopBar({
             <Text style={styles.nominateText}>처단자 강제확인</Text>
           </Pressable>
         )}
-        <Pressable
-          onPress={onDictionaryPress}
-          style={styles.logButton}
-        >
+        <Pressable onPress={onDictionaryPress} style={styles.logButton}>
           <Text style={styles.logText}>사전</Text>
         </Pressable>
-        <Pressable
-          onPress={onChatPress}
-          style={styles.logButton}
-        >
+        <Pressable onPress={onChatPress} style={styles.logButton}>
           <Text style={styles.logText}>
             채팅{totalChatUnread > 0 ? ` (${totalChatUnread})` : ''}
           </Text>
         </Pressable>
-        <Pressable
-          onPress={onLogPress}
-          style={styles.logButton}
-        >
+        <Pressable onPress={onLogPress} style={styles.logButton}>
           <Text style={styles.logText}>로그</Text>
         </Pressable>
         <Pressable onPress={onMenuPress} style={styles.menuButton}>

@@ -8,7 +8,9 @@ interface SettingsPanelProps {
   onClose: () => void;
   scale: number;
   fontSize: { sm: number; md: number; lg: number };
-  styles: ReturnType<typeof import('../styles/grimoire.styles').createGrimoireStyles>;
+  styles: ReturnType<
+    typeof import('../styles/grimoire.styles').createGrimoireStyles
+  >;
 }
 
 export function SettingsPanel({
@@ -45,9 +47,7 @@ export function SettingsPanel({
               })
             }
             trackColor={{ false: '#3a3a42', true: '#2a4a2a' }}
-            thumbColor={
-              settings.whisperMode === 'chat' ? '#2ecc71' : '#908e8a'
-            }
+            thumbColor={settings.whisperMode === 'chat' ? '#2ecc71' : '#908e8a'}
             accessibilityLabel="채팅 밀담 모드"
           />
         </View>
@@ -82,9 +82,7 @@ export function SettingsPanel({
           <View style={styles.settingsClockMargin}>
             <ClockSpeedSetting
               value={settings.whisperClockSeconds}
-              onChange={(val) =>
-                onSettingsChange({ whisperClockSeconds: val })
-              }
+              onChange={(val) => onSettingsChange({ whisperClockSeconds: val })}
               scale={scale}
               label="밀담 시간"
               showOff
@@ -97,9 +95,7 @@ export function SettingsPanel({
           <View style={styles.settingsClockMarginLast}>
             <ClockSpeedSetting
               value={settings.voteClockSeconds}
-              onChange={(val) =>
-                onSettingsChange({ voteClockSeconds: val })
-              }
+              onChange={(val) => onSettingsChange({ voteClockSeconds: val })}
               scale={scale}
               label="투표 시간 (1인당)"
               options={[2, 3, 5, 7, 10]}
@@ -107,13 +103,8 @@ export function SettingsPanel({
           </View>
         )}
 
-        <Pressable
-          onPress={onClose}
-          style={styles.settingsCloseButton}
-        >
-          <Text
-            style={[styles.settingsCloseText, { fontSize: fontSize.md }]}
-          >
+        <Pressable onPress={onClose} style={styles.settingsCloseButton}>
+          <Text style={[styles.settingsCloseText, { fontSize: fontSize.md }]}>
             닫기
           </Text>
         </Pressable>

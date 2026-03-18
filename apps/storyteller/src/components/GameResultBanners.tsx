@@ -21,14 +21,9 @@ export function ExecutionBanner({
         <Text style={styles.executionBannerRole}>
           {executedPlayer.role?.name ?? '역할 미배정'}
         </Text>
-        <Text style={styles.executionBannerName}>
-          {executedPlayer.name}
-        </Text>
+        <Text style={styles.executionBannerName}>{executedPlayer.name}</Text>
       </View>
-      <Pressable
-        onPress={onDismiss}
-        style={styles.executionBannerDismiss}
-      >
+      <Pressable onPress={onDismiss} style={styles.executionBannerDismiss}>
         <Text style={styles.executionBannerDismissText}>닫기</Text>
       </Pressable>
     </View>
@@ -56,15 +51,11 @@ export function GameEndBanner({
     >
       <Text
         style={[
-          grimoireDynamic.gameEndWinnerText(
-            gameResult.winningTeam === 'good',
-          ),
+          grimoireDynamic.gameEndWinnerText(gameResult.winningTeam === 'good'),
           { fontSize: fontSize.lg },
         ]}
       >
-        {gameResult.winningTeam === 'good'
-          ? '선한 팀 승리!'
-          : '악한 팀 승리!'}
+        {gameResult.winningTeam === 'good' ? '선한 팀 승리!' : '악한 팀 승리!'}
       </Text>
       <Text style={[styles.gameEndReason, { fontSize: fontSize.sm }]}>
         {gameResult.reason}
