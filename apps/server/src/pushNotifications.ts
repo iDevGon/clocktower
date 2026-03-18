@@ -55,7 +55,7 @@ export async function sendPushToAll(
   title: string,
   body: string,
 ): Promise<void> {
-  const messages: ExpoPushMessage[] = playerIds
+  const messages = playerIds
     .map((id) => {
       const token = pushTokens.get(id);
       if (!token) return null;
@@ -67,7 +67,7 @@ export async function sendPushToAll(
         priority: 'high' as const,
       };
     })
-    .filter((msg): msg is ExpoPushMessage => msg !== null);
+    .filter((msg): msg is NonNullable<typeof msg> => msg !== null);
   if (messages.length === 0) return;
 
   try {

@@ -30,13 +30,13 @@ export function HighlightedMessage({
       let earliestIdx = remaining.length;
       let earliestMatch: TaggedCandidate | null = null;
 
-      sorted.forEach((kw) => {
+      for (const kw of sorted) {
         const idx = remaining.indexOf(kw.word);
         if (idx !== -1 && idx < earliestIdx) {
           earliestIdx = idx;
           earliestMatch = kw;
         }
-      });
+      }
 
       if (!earliestMatch) {
         result.push({ text: remaining, match: null });
