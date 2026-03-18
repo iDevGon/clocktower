@@ -1,4 +1,4 @@
-import { getRandomTipText } from '@clocktower/shared';
+import { getRandomGameTip } from '@clocktower/shared';
 import { FullScreenVignette, GameTip } from '@clocktower/ui';
 import { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -143,10 +143,10 @@ interface NightFallOverlayProps {
 }
 
 export function NightFallOverlay({ onDismiss }: NightFallOverlayProps) {
-  const roleId = usePlayerStore((s) => s.role?.id);
+  const role = usePlayerStore((s) => s.role);
   const tip = useMemo(
-    () => getRandomTipText('night', roleId ?? undefined),
-    [roleId],
+    () => getRandomGameTip('night', role?.id, role?.team),
+    [role?.id, role?.team],
   );
 
   return (

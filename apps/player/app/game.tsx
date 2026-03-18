@@ -1,7 +1,8 @@
+import { NIGHT_ACTIONS } from '@clocktower/shared';
 import { DictionaryModal } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DeadVignette } from '../src/components/DeadVignette';
@@ -22,6 +23,7 @@ import {
   WhisperPhase,
 } from '../src/components/PhaseContent';
 import { PhaseIndicator } from '../src/components/PhaseIndicator';
+import { RavenkeeperOverlay } from '../src/components/RavenkeeperOverlay';
 import { FlippableRoleCard } from '../src/components/RoleCard';
 import { RolePromotionReveal } from '../src/components/RolePromotionReveal';
 import { SeatingChart } from '../src/components/SeatingChart';
@@ -152,6 +154,7 @@ export default function GameScreen() {
   const [dictionaryVisible, setDictionaryVisible] = useState(false);
   const [chatModalVisible, setChatModalVisible] = useState(false);
   const [seatingChartVisible, setSeatingChartVisible] = useState(false);
+  const [ravenkeeperOverlay, setRavenkeeperOverlay] = useState(false);
   const feedbackHistory = usePlayerStore((s) => s.feedbackHistory);
   const chatUnreadCount = useChatStore((s) => s.unreadCount);
   const totalUnread = useWhisperStore((s) =>
@@ -165,11 +168,25 @@ export default function GameScreen() {
   );
 
   const drunkAs = usePlayerStore((s) => s.drunkAs);
-  const isMyTurn =
-    isAlive &&
+  const nightWakeUp = usePlayerStore((s) => s.nightWakeUp);
+  const activeRoleId = nightProgress?.activeRoleId;
+  const effectiveRoleId = drunkAs ?? role?.id;
+  const isOnlyWhenDead =
+    effectiveRoleId != null &&
+    NIGHT_ACTIONS[effectiveRoleId]?.onlyWhenDead === true;
+  const isRoleActive =
     role != null &&
-    (nightProgress?.activeRoleId === role.id ||
-      (drunkAs != null && nightProgress?.activeRoleId === drunkAs));
+    (activeRoleId === role.id || (drunkAs != null && activeRoleId === drunkAs));
+  // onlyWhenDead 역할: 서버에서 night:wakeUp을 받았을 때만 차례로 인정
+  const isMyTurn =
+    isRoleActive && (isOnlyWhenDead ? nightWakeUp != null : isAlive);
+
+  // night:wakeUp 수신 시 전용 오버레이 표시
+  useEffect(() => {
+    if (nightWakeUp && isRoleActive) {
+      setRavenkeeperOverlay(true);
+    }
+  }, [nightWakeUp, isRoleActive]);
 
   const handleNominate = async (nomineeId: string) => {
     setNominateModalVisible(false);
@@ -192,8 +209,9 @@ export default function GameScreen() {
     !slayerUsed &&
     (currentPhase === 'day' || currentPhase === 'vote');
 
-  const nominatablePlayers = gamePlayers.filter(
-    (p) => p.isAlive && p.id !== playerId,
+  const nominatablePlayers = useMemo(
+    () => gamePlayers.filter((p) => p.isAlive && p.id !== playerId),
+    [gamePlayers, playerId],
   );
 
   return (
@@ -464,6 +482,10 @@ export default function GameScreen() {
 
       {showNightFall && (
         <NightFallOverlay onDismiss={() => setShowNightFall(false)} />
+      )}
+
+      {ravenkeeperOverlay && (
+        <RavenkeeperOverlay onDismiss={() => setRavenkeeperOverlay(false)} />
       )}
 
       {nightDeathAnnouncement && !justDied && !executionAnnouncement && (

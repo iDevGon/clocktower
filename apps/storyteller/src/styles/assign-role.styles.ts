@@ -180,6 +180,32 @@ export function createAssignRoleStyles(scale: number) {
       fontWeight: '600',
       textAlign: 'center',
     },
+
+    /* ---- Role header name row ---- */
+    roleHeaderNameRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+
+    /* ---- List empty text ---- */
+    listEmptyText: {
+      color: '#908e8a',
+      fontSize: 14,
+      textAlign: 'center',
+      paddingVertical: 20,
+    },
+
+    /* ---- Edition badge ---- */
+    editionBadge: {
+      fontSize: 9,
+      fontWeight: '700',
+      borderWidth: 1,
+      borderRadius: 3,
+      paddingHorizontal: 4,
+      paddingVertical: 1,
+      overflow: 'hidden',
+    },
   });
 }
 

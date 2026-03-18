@@ -1,4 +1,4 @@
-import { getRandomTipText } from '@clocktower/shared';
+import { getRandomGameTip } from '@clocktower/shared';
 import { FullScreenVignette, GameTip } from '@clocktower/ui';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -234,10 +234,10 @@ export function SlayerFizzleOverlay({
   isVotePhase,
   onDismiss,
 }: SlayerFizzleOverlayProps) {
-  const roleId = usePlayerStore((s) => s.role?.id);
+  const role = usePlayerStore((s) => s.role);
   const tip = useMemo(
-    () => getRandomTipText('general', roleId ?? undefined),
-    [roleId],
+    () => getRandomGameTip('general', role?.id, role?.team),
+    [role?.id, role?.team],
   );
   const [acked, setAcked] = useState(false);
 

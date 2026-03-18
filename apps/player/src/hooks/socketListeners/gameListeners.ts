@@ -1,4 +1,4 @@
-import { getRoleById } from '@clocktower/shared';
+import { getRoleById, NIGHT_ACTIONS } from '@clocktower/shared';
 import { useChatStore } from '../../stores/chatStore';
 import { usePlayerStore } from '../../stores/playerStore';
 import { useWhisperStore } from '../../stores/whisperStore';
@@ -51,6 +51,7 @@ export function attachGameListeners(socket: AppSocket) {
       ...(phase !== 'vote' ? { nomination: null } : {}),
       nightProgress: null,
       nightFeedback: null,
+      nightWakeUp: null,
       ...(phase === 'night'
         ? {
             hasNominatedToday: false,
@@ -113,9 +114,18 @@ export function attachGameListeners(socket: AppSocket) {
     const state = usePlayerStore.getState();
     if (player.id === state.playerId) {
       const wasDeath = state.isAlive && !player.isAlive;
+      // onlyWhenDead 역할(까마귀지기 등)의 밤 사망은 전용 오버레이로 이미 알렸으므로
+      // DeathOverlay 스킵 (낮 처형 등 다른 사유로 죽으면 정상 표시)
+      const effectiveRoleId = state.drunkAs ?? state.role?.id;
+      const isOnlyWhenDead =
+        effectiveRoleId != null &&
+        NIGHT_ACTIONS[effectiveRoleId]?.onlyWhenDead === true;
+      const isNightKill =
+        !state.deathReason || state.deathReason === 'night_kill';
+      const showDeathOverlay = wasDeath && !(isOnlyWhenDead && isNightKill);
       usePlayerStore.getState().set({
         isAlive: player.isAlive,
-        ...(wasDeath
+        ...(showDeathOverlay
           ? {
               justDied: true,
               // execution:announced가 먼저 왔으면 그 이유 유지, 아니면 night_kill

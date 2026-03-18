@@ -55,9 +55,9 @@ export function createNightOrderPanelStyles(
       gap: s(isDesktop ? 16 : isTablet ? 14 : 10),
     },
     navButton: {
-      width: s(isDesktop ? 48 : isTablet ? 44 : 40),
-      height: s(isDesktop ? 48 : isTablet ? 44 : 40),
-      borderRadius: s(isDesktop ? 24 : isTablet ? 22 : 20),
+      width: s(isDesktop ? 48 : isTablet ? 44 : 44),
+      height: s(isDesktop ? 48 : isTablet ? 44 : 44),
+      borderRadius: s(isDesktop ? 24 : 22),
       backgroundColor: '#1a1a22',
       borderWidth: 1,
       borderColor: '#2a2a34',

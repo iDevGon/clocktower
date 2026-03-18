@@ -474,3 +474,105 @@ describe('E2E: 시장 특수 승리', () => {
     expect(endResult.winningTeam).toBe('good');
   }, 15000);
 });
+
+describe('E2E: 까마귀지기 (onlyWhenDead)', () => {
+  let ctx: TestContext;
+
+  beforeEach(async () => {
+    ctx = await setupTestServer();
+  }, 10000);
+
+  afterEach(async () => {
+    await ctx.cleanup();
+  });
+
+  it('까마귀지기가 밤에 사망하면 night:wakeUp 이벤트를 수신한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'ravenkeeper' }, // p0: 까마귀지기
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+
+    // 까마귀지기 사살 (밤에 죽음)
+    ctx.storyteller.emit('game:kill', playerIds[0]);
+    await waitForEvent(ctx.storyteller as Socket, 'game:state');
+
+    // 까마귀지기에게 wakeUp 리스너 등록
+    const wakeUpPromise = waitForEvent<{ roleId: string }>(
+      ctx.players[0] as Socket,
+      'night:wakeUp',
+    );
+
+    // 살아있는 플레이어에게는 wakeUp이 오지 않아야 함
+    let aliveReceivedWakeUp = false;
+    ctx.players[1].on('night:wakeUp', () => {
+      aliveReceivedWakeUp = true;
+    });
+
+    // 이야기꾼이 까마귀지기 차례 활성화
+    ctx.storyteller.emit('night:setActiveRole', 'ravenkeeper');
+
+    // 죽은 까마귀지기가 wakeUp 수신
+    const wakeUpData = await wakeUpPromise;
+    expect(wakeUpData.roleId).toBe('ravenkeeper');
+
+    // 약간 대기하여 다른 플레이어에게 이벤트가 가지 않았는지 확인
+    await new Promise((r) => setTimeout(r, 200));
+    expect(aliveReceivedWakeUp).toBe(false);
+  }, 15000);
+
+  it('까마귀지기가 생존 시 night:wakeUp 이벤트를 수신하지 않는다', async () => {
+    await setupGameWithRoles(ctx, [
+      { roleId: 'ravenkeeper' }, // p0: 까마귀지기 (생존)
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+
+    // wakeUp 수신 여부 추적
+    let receivedWakeUp = false;
+    ctx.players[0].on('night:wakeUp', () => {
+      receivedWakeUp = true;
+    });
+
+    // 이야기꾼이 까마귀지기 차례 활성화 (생존 상태)
+    ctx.storyteller.emit('night:setActiveRole', 'ravenkeeper');
+
+    // night:activeRole은 모든 플레이어에게 전송됨 — 이를 동기화 기준으로 사용
+    await waitForEvent(ctx.players[0] as Socket, 'night:activeRole');
+
+    // 약간 대기하여 wakeUp이 오지 않았는지 확인
+    await new Promise((r) => setTimeout(r, 200));
+    expect(receivedWakeUp).toBe(false);
+  }, 15000);
+
+  it('주정뱅이(까마귀지기)가 밤에 사망하면 night:wakeUp 이벤트를 수신한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'drunk', drunkAs: 'ravenkeeper' }, // p0: 주정뱅이 (까마귀지기로 착각)
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+
+    // 주정뱅이 사살
+    ctx.storyteller.emit('game:kill', playerIds[0]);
+    await waitForEvent(ctx.storyteller as Socket, 'game:state');
+
+    // wakeUp 리스너 등록
+    const wakeUpPromise = waitForEvent<{ roleId: string }>(
+      ctx.players[0] as Socket,
+      'night:wakeUp',
+    );
+
+    // 이야기꾼이 까마귀지기 차례 활성화
+    ctx.storyteller.emit('night:setActiveRole', 'ravenkeeper');
+
+    // 죽은 주정뱅이가 wakeUp 수신
+    const wakeUpData = await wakeUpPromise;
+    expect(wakeUpData.roleId).toBe('ravenkeeper');
+  }, 15000);
+});

@@ -50,6 +50,8 @@ interface NightProgressProps {
   myRole: Role | null;
   drunkAs?: string | null;
   isAlive?: boolean;
+  /** 서버에서 night:wakeUp을 받았는지 여부 (onlyWhenDead 역할용) */
+  nightWakeUp?: boolean;
 }
 
 export function NightProgress({
@@ -58,12 +60,13 @@ export function NightProgress({
   myRole,
   drunkAs,
   isAlive = true,
+  nightWakeUp = false,
 }: NightProgressProps) {
-  const isMyTurn =
-    isAlive &&
+  const isRoleActive =
     myRole != null &&
     (activeRoleId === myRole.id ||
       (drunkAs != null && activeRoleId === drunkAs));
+  const isMyTurn = isRoleActive && (nightWakeUp || isAlive);
   const pulseAnim = useSharedValue(1);
 
   useEffect(() => {

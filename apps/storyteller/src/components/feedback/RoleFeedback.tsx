@@ -13,23 +13,37 @@ function useNightActionLogStyles() {
 
 interface RoleFeedbackProps {
   onSend: (fb: NightFeedbackPayload) => void;
+  highlightedRoleName?: string;
 }
 
-export function RoleFeedback({ onSend }: RoleFeedbackProps) {
+export function RoleFeedback({
+  onSend,
+  highlightedRoleName,
+}: RoleFeedbackProps) {
   const styles = useNightActionLogStyles();
   return (
     <View style={styles.composerVertical}>
       <Text style={styles.composerLabel}>캐릭터 선택</Text>
       <View style={styles.composerChips}>
-        {ALL_ROLES.map((r) => (
-          <Pressable
-            key={r.id}
-            onPress={() => onSend({ type: 'role', roleName: r.name })}
-            style={styles.chip}
-          >
-            <Text style={styles.chipText}>{r.name}</Text>
-          </Pressable>
-        ))}
+        {ALL_ROLES.map((r) => {
+          const isHighlighted = r.name === highlightedRoleName;
+          return (
+            <Pressable
+              key={r.id}
+              onPress={() => onSend({ type: 'role', roleName: r.name })}
+              style={[styles.chip, isHighlighted && styles.chipHinted]}
+            >
+              <Text
+                style={[
+                  styles.chipText,
+                  isHighlighted && styles.chipTextHinted,
+                ]}
+              >
+                {r.name}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );

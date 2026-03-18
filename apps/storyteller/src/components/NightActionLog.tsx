@@ -25,8 +25,11 @@ const ROLE_TARGET_ACTIONS: Record<string, TargetActionConfig> = {
   imp: { label: '사망 처리', doneLabel: '사망', isKill: true },
   poisoner: { label: '중독 처리', doneLabel: '중독됨', status: 'poisoned' },
   monk: { label: '보호 처리', doneLabel: '보호됨', status: 'protected' },
-  // butler, ravenkeeper, fortune_teller 등은 타겟 액션 버튼 불필요
+  // butler, fortune_teller 등은 타겟 액션 버튼 불필요
 };
+
+/** 행동 로그에서 제외할 역할 (피드백 패널에서 별도 처리) */
+const HIDDEN_ACTION_ROLES = new Set(['ravenkeeper']);
 
 interface NightActionLogProps {
   actions: NightAction[];
@@ -86,140 +89,144 @@ export function NightActionLog({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.list}
       >
-        {actions.map((action, i) => {
-          const role = getRoleById(action.roleId);
-          const targetNames = action.targets.map(getPlayerName).join(', ');
-          const isExpanded = expandedIndex === i;
-          const isSent = sentIndices.has(i);
-          const feedbackDef = NIGHT_FEEDBACK[action.roleId];
-          const hasTargets = action.targets.length > 0;
-          const actionConfig = ROLE_TARGET_ACTIONS[action.roleId];
+        {actions
+          .filter((a) => !HIDDEN_ACTION_ROLES.has(a.roleId))
+          .map((action, i) => {
+            const role = getRoleById(action.roleId);
+            const targetNames = action.targets.map(getPlayerName).join(', ');
+            const isExpanded = expandedIndex === i;
+            const isSent = sentIndices.has(i);
+            const feedbackDef = NIGHT_FEEDBACK[action.roleId];
+            const hasTargets = action.targets.length > 0;
+            const actionConfig = ROLE_TARGET_ACTIONS[action.roleId];
 
-          return (
-            <Pressable
-              key={`${action.playerId}-${action.roleId}`}
-              onPress={() => {
-                if (
-                  feedbackDef &&
-                  feedbackDef.type !== 'none' &&
-                  feedbackDef.type !== 'grimoire'
-                ) {
-                  setExpandedIndex(isExpanded ? null : i);
-                }
-              }}
-              style={[styles.item, isSent && styles.itemSent]}
-            >
-              <View style={styles.itemHeader}>
-                <Text style={styles.actionRole}>
-                  {role?.name ?? action.roleId}
-                </Text>
-                <Text style={styles.actionPlayer}>{action.playerName}</Text>
-                <Text style={styles.actionArrow}>→</Text>
-                <Text style={styles.actionTarget}>{targetNames}</Text>
-                {action.fortuneTellerResult !== undefined && (
-                  <Text
-                    style={[
-                      styles.sentBadge,
-                      {
-                        backgroundColor: action.fortuneTellerResult
-                          ? 'rgba(106,176,76,0.2)'
-                          : 'rgba(184,92,92,0.2)',
-                        color: action.fortuneTellerResult
-                          ? '#6ab04c'
-                          : '#b85c5c',
-                      },
-                    ]}
-                  >
-                    {action.fortuneTellerResult ? '예' : '아니오'}
+            return (
+              <Pressable
+                key={`${action.playerId}-${action.roleId}`}
+                onPress={() => {
+                  if (
+                    feedbackDef &&
+                    feedbackDef.type !== 'none' &&
+                    feedbackDef.type !== 'grimoire'
+                  ) {
+                    setExpandedIndex(isExpanded ? null : i);
+                  }
+                }}
+                style={[styles.item, isSent && styles.itemSent]}
+              >
+                <View style={styles.itemHeader}>
+                  <Text style={styles.actionRole}>
+                    {role?.name ?? action.roleId}
                   </Text>
-                )}
-                {isSent && <Text style={styles.sentBadge}>전송됨</Text>}
-              </View>
-              {hasTargets && actionConfig && (
-                <View style={styles.killRow}>
-                  {action.targets.map((targetId) => {
-                    const targetStatuses = playerStatuses?.[targetId] ?? [];
-                    const targetPlayer = players.find((p) => p.id === targetId);
-                    const isSoldier =
-                      actionConfig.isKill &&
-                      targetPlayer?.role?.id === 'soldier';
-                    const isProtected =
-                      actionConfig.isKill &&
-                      targetStatuses.includes('protected');
-
-                    if (isSoldier) {
-                      return (
-                        <View key={targetId} style={styles.protectedBadge}>
-                          <Text style={styles.protectedText}>
-                            {getPlayerName(targetId)} 군인 — 악마에 면역!
-                          </Text>
-                        </View>
-                      );
-                    }
-
-                    if (isProtected) {
-                      return (
-                        <View key={targetId} style={styles.protectedBadge}>
-                          <Text style={styles.protectedText}>
-                            {getPlayerName(targetId)} 보호됨!
-                          </Text>
-                        </View>
-                      );
-                    }
-
-                    const alreadyDone = actionConfig.isKill
-                      ? processedTargets.has(targetId) ||
-                        !isPlayerAlive(targetId)
-                      : processedTargets.has(targetId);
-                    return (
-                      <Pressable
-                        key={targetId}
-                        onPress={() =>
-                          !alreadyDone &&
-                          handleTargetAction(targetId, actionConfig)
-                        }
-                        style={[
-                          styles.killButton,
-                          alreadyDone && styles.killButtonDone,
-                        ]}
-                        disabled={alreadyDone}
-                      >
-                        <Text
-                          style={[
-                            styles.killText,
-                            alreadyDone && styles.killTextDone,
-                          ]}
-                        >
-                          {alreadyDone
-                            ? `${getPlayerName(targetId)} ${actionConfig.doneLabel}`
-                            : `${getPlayerName(targetId)} ${actionConfig.label}`}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
+                  <Text style={styles.actionPlayer}>{action.playerName}</Text>
+                  <Text style={styles.actionArrow}>→</Text>
+                  <Text style={styles.actionTarget}>{targetNames}</Text>
+                  {action.fortuneTellerResult !== undefined && (
+                    <Text
+                      style={[
+                        styles.sentBadge,
+                        {
+                          backgroundColor: action.fortuneTellerResult
+                            ? 'rgba(106,176,76,0.2)'
+                            : 'rgba(184,92,92,0.2)',
+                          color: action.fortuneTellerResult
+                            ? '#6ab04c'
+                            : '#b85c5c',
+                        },
+                      ]}
+                    >
+                      {action.fortuneTellerResult ? '예' : '아니오'}
+                    </Text>
+                  )}
+                  {isSent && <Text style={styles.sentBadge}>전송됨</Text>}
                 </View>
-              )}
-              {isExpanded &&
-                feedbackDef &&
-                (() => {
-                  const actionPlayer = players.find(
-                    (p) => p.id === action.playerId,
-                  );
-                  const isActionPlayerMalfunctioning =
-                    actionPlayer?.role?.id === 'drunk' ||
-                    actionPlayer?.statuses.includes('poisoned');
-                  return (
-                    <FeedbackComposer
-                      feedbackDef={feedbackDef}
-                      players={players}
-                      isDrunkUser={isActionPlayerMalfunctioning}
-                      onSend={(fb) => handleSend(action, i, fb)}
-                    />
-                  );
-                })()}
-            </Pressable>
-          );
-        })}
+                {hasTargets && actionConfig && (
+                  <View style={styles.killRow}>
+                    {action.targets.map((targetId) => {
+                      const targetStatuses = playerStatuses?.[targetId] ?? [];
+                      const targetPlayer = players.find(
+                        (p) => p.id === targetId,
+                      );
+                      const isSoldier =
+                        actionConfig.isKill &&
+                        targetPlayer?.role?.id === 'soldier';
+                      const isProtected =
+                        actionConfig.isKill &&
+                        targetStatuses.includes('protected');
+
+                      if (isSoldier) {
+                        return (
+                          <View key={targetId} style={styles.protectedBadge}>
+                            <Text style={styles.protectedText}>
+                              {getPlayerName(targetId)} 군인 — 악마에 면역!
+                            </Text>
+                          </View>
+                        );
+                      }
+
+                      if (isProtected) {
+                        return (
+                          <View key={targetId} style={styles.protectedBadge}>
+                            <Text style={styles.protectedText}>
+                              {getPlayerName(targetId)} 보호됨!
+                            </Text>
+                          </View>
+                        );
+                      }
+
+                      const alreadyDone = actionConfig.isKill
+                        ? processedTargets.has(targetId) ||
+                          !isPlayerAlive(targetId)
+                        : processedTargets.has(targetId);
+                      return (
+                        <Pressable
+                          key={targetId}
+                          onPress={() =>
+                            !alreadyDone &&
+                            handleTargetAction(targetId, actionConfig)
+                          }
+                          style={[
+                            styles.killButton,
+                            alreadyDone && styles.killButtonDone,
+                          ]}
+                          disabled={alreadyDone}
+                        >
+                          <Text
+                            style={[
+                              styles.killText,
+                              alreadyDone && styles.killTextDone,
+                            ]}
+                          >
+                            {alreadyDone
+                              ? `${getPlayerName(targetId)} ${actionConfig.doneLabel}`
+                              : `${getPlayerName(targetId)} ${actionConfig.label}`}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                )}
+                {isExpanded &&
+                  feedbackDef &&
+                  (() => {
+                    const actionPlayer = players.find(
+                      (p) => p.id === action.playerId,
+                    );
+                    const isActionPlayerMalfunctioning =
+                      actionPlayer?.role?.id === 'drunk' ||
+                      actionPlayer?.statuses.includes('poisoned');
+                    return (
+                      <FeedbackComposer
+                        feedbackDef={feedbackDef}
+                        players={players}
+                        isDrunkUser={isActionPlayerMalfunctioning}
+                        onSend={(fb) => handleSend(action, i, fb)}
+                      />
+                    );
+                  })()}
+              </Pressable>
+            );
+          })}
       </ScrollView>
     </View>
   );

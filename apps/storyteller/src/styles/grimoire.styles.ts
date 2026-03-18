@@ -261,8 +261,92 @@ export function createGrimoireStyles(scale: number) {
       paddingHorizontal: 16,
       alignItems: 'center',
     },
+
+    /* ---- Vote countdown overlay ---- */
+    voteCountdownContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      pointerEvents: 'none' as const,
+      zIndex: 100,
+    },
+
+    /* ---- Game end result text ---- */
+    gameEndReason: {
+      color: '#aaa',
+      marginTop: 4,
+    },
+
+    /* ---- Empath / Chef hint bar text ---- */
+    empathHintLabel: {
+      color: '#2ecc71',
+      fontWeight: '600',
+    },
+    empathHintNames: {
+      color: '#e0ddd8',
+    },
+    empathHintCount: {
+      color: '#f5c542',
+      fontWeight: '700',
+    },
+    chefHintLabel: {
+      color: '#e67e22',
+      fontWeight: '600',
+    },
+    chefHintNames: {
+      color: '#e0ddd8',
+    },
+    chefHintCount: {
+      color: '#f5c542',
+      fontWeight: '700',
+    },
+
+    /* ---- Settings panel ---- */
+    settingsTitle: {
+      color: '#e0ddd8',
+      fontWeight: '700',
+      marginBottom: 20,
+      textAlign: 'center',
+    },
+    settingsLabel: {
+      color: '#e0ddd8',
+      fontWeight: '600',
+    },
+    settingsDesc: {
+      color: '#908e8a',
+    },
+    settingsClockMargin: {
+      marginBottom: 16,
+    },
+    settingsClockMarginLast: {
+      marginBottom: 24,
+    },
+    settingsCloseText: {
+      color: '#e0ddd8',
+      fontWeight: '600',
+    },
   });
 }
+
+/* ---- Dynamic style helpers ---- */
+export const grimoireDynamic = {
+  voteCountdownText: (centerX: number, centerY: number) => ({
+    position: 'absolute' as const,
+    left: centerX - 40,
+    top: centerY - 40,
+    width: 80,
+    textAlign: 'center' as const,
+    fontSize: 56,
+    fontWeight: '900' as const,
+    color: '#c47070',
+    textShadowColor: '#c4707060',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 16,
+  }),
+  gameEndWinnerText: (isGood: boolean) => ({
+    color: isGood ? '#5dade2' : '#e74c3c',
+    fontWeight: '700' as const,
+  }),
+};
 
 // Default for static imports
 export const styles = createGrimoireStyles(1);

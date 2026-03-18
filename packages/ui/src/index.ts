@@ -15,6 +15,7 @@ export type {
   TaggedCandidate,
 } from './components/QuickSuggestions';
 export { QuickSuggestions } from './components/QuickSuggestions';
+export { RotatingGameTip } from './components/RotatingGameTip';
 export type { ParticleConfig } from './components/SmokeParticles';
 export {
   PLAYER_SMOKE_PARTICLES,
@@ -23,4 +24,9 @@ export {
 } from './components/SmokeParticles';
 export { colors } from './tokens';
 // Utils
+export {
+  applySuggestion,
+  buildChatCandidates,
+  formatChatTime,
+} from './utils/chat';
 export { getChosung, isChosungOnly, matchQuery } from './utils/chosung';

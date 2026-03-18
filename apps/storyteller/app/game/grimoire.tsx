@@ -2,8 +2,10 @@ import {
   type GameSettings,
   getRandomTipText,
   getRoleById,
+  NIGHT_ACTIONS,
   NIGHT_FEEDBACK,
   PLAYER_STATUS_LABELS,
+  type Player,
   type PlayerStatus,
   type TipCategory,
 } from '@clocktower/shared';
@@ -22,6 +24,7 @@ import {
   type ActionModalOption,
 } from '../../src/components/ActionModal';
 import { ChatToast } from '../../src/components/ChatToast';
+import { ClockSpeedSetting } from '../../src/components/ClockSpeedSetting';
 import { DaySubPhaseBar } from '../../src/components/DaySubPhaseBar';
 import {
   type CircularPosition,
@@ -47,7 +50,10 @@ import { useResponsive } from '../../src/hooks/useResponsive';
 import { useConnectionStore } from '../../src/stores/connectionStore';
 import { useGameStore } from '../../src/stores/gameStore';
 import { useLogStore } from '../../src/stores/logStore';
-import { createGrimoireStyles } from '../../src/styles/grimoire.styles';
+import {
+  createGrimoireStyles,
+  grimoireDynamic,
+} from '../../src/styles/grimoire.styles';
 
 function VoteCountdownOverlay({
   countdown,
@@ -91,31 +97,11 @@ function VoteCountdownOverlay({
     <View
       style={[
         StyleSheet.absoluteFill,
-        {
-          alignItems: 'center',
-          justifyContent: 'center',
-          pointerEvents: 'none',
-          zIndex: 100,
-        },
+        createGrimoireStyles(1).voteCountdownContainer,
       ]}
     >
       <Animated.Text
-        style={[
-          {
-            position: 'absolute',
-            left: centerX - 40,
-            top: centerY - 40,
-            width: 80,
-            textAlign: 'center',
-            fontSize: 56,
-            fontWeight: '900',
-            color: '#c47070',
-            textShadowColor: '#c4707060',
-            textShadowOffset: { width: 0, height: 0 },
-            textShadowRadius: 16,
-          },
-          animStyle,
-        ]}
+        style={[grimoireDynamic.voteCountdownText(centerX, centerY), animStyle]}
       >
         {remaining}
       </Animated.Text>
@@ -145,6 +131,7 @@ export default function GrimoireScreen() {
 
   const router = useRouter();
   const gameState = useGameStore((s) => s.gameState);
+  const players = gameState?.players;
   const nightActions = useGameStore((s) => s.nightActions);
   const activeWhispers = useGameStore((s) => s.activeWhispers);
   const activeNightRoleId = useGameStore((s) => s.activeNightRoleId);
@@ -187,11 +174,9 @@ export default function GrimoireScreen() {
 
   // 사랑꾼 사망 시 취하게 할 대상 후보: 살아있는 플레이어 (사랑꾼 본인 제외)
   const sweetheartDrunkCandidates = useMemo(() => {
-    if (!gameState) return [];
-    return gameState.players.filter(
-      (p) => p.isAlive && p.role?.id !== 'sweetheart',
-    );
-  }, [gameState]);
+    if (!players) return [];
+    return players.filter((p) => p.isAlive && p.role?.id !== 'sweetheart');
+  }, [players]);
 
   const handleSweetheartDrunkSelect = useCallback(
     (playerId: string) => {
@@ -203,11 +188,9 @@ export default function GrimoireScreen() {
 
   // 시장 밤 사망 시 대신 죽일 후보: 살아있는 플레이어 (시장 본인 제외)
   const mayorRedirectCandidates = useMemo(() => {
-    if (!gameState || !mayorNightDeathId) return [];
-    return gameState.players.filter(
-      (p) => p.isAlive && p.id !== mayorNightDeathId,
-    );
-  }, [gameState, mayorNightDeathId]);
+    if (!players || !mayorNightDeathId) return [];
+    return players.filter((p) => p.isAlive && p.id !== mayorNightDeathId);
+  }, [players, mayorNightDeathId]);
 
   const handleMayorRedirectSelect = useCallback(
     (playerId: string) => {
@@ -221,8 +204,8 @@ export default function GrimoireScreen() {
 
   // Red Herring 선택 모달 상태 (게임 시작 시 점쟁이가 있으면 표시)
   const hasFortuneTeller = useMemo(
-    () => gameState?.players.some((p) => p.role?.id === 'fortune_teller'),
-    [gameState],
+    () => players?.some((p) => p.role?.id === 'fortune_teller') ?? false,
+    [players],
   );
   const [showRedHerringModal, setShowRedHerringModal] = useState(false);
   const redHerringShownRef = useRef(false);
@@ -252,20 +235,18 @@ export default function GrimoireScreen() {
   });
 
   const redHerringCandidates = useMemo(() => {
-    if (!gameState) return [];
-    return gameState.players.filter(
+    if (!players) return [];
+    return players.filter(
       (p) =>
         p.role?.id !== 'fortune_teller' &&
         (p.role?.team === 'townsfolk' || p.role?.team === 'outsider'),
     );
-  }, [gameState]);
+  }, [players]);
 
   const currentRedHerringId = useMemo(() => {
-    if (!gameState) return null;
-    return (
-      gameState.players.find((p) => p.statuses?.includes('cursed'))?.id ?? null
-    );
-  }, [gameState]);
+    if (!players) return null;
+    return players.find((p) => p.statuses?.includes('cursed'))?.id ?? null;
+  }, [players]);
 
   const handleRedHerringConfirmAuto = useCallback(() => {
     setShowRedHerringModal(false);
@@ -310,9 +291,9 @@ export default function GrimoireScreen() {
   const getPhase = () => useGameStore.getState().gameState?.phase ?? 'setup';
   const playerNameMap = useMemo(() => {
     const map = new Map<string, string>();
-    for (const p of gameState?.players ?? []) map.set(p.id, p.name);
+    for (const p of players ?? []) map.set(p.id, p.name);
     return map;
-  }, [gameState?.players]);
+  }, [players]);
   const getPlayerName = (id: string) => playerNameMap.get(id) ?? id;
 
   const kill = (playerId: string) => {
@@ -379,9 +360,13 @@ export default function GrimoireScreen() {
   const handleSetPhase = (phase: Parameters<typeof setPhase>[0]) => {
     if (phase === 'night') {
       useGameStore.getState().clearNightActions();
+      useGameStore.getState().setActiveNightRoleId(null);
+      rawSetActiveNightRole(null);
+      setNightOrderComplete(false);
     }
     if (phase === 'day') {
       setExecutedPlayerId(null);
+      setExecutionBannerDismissed(false);
     }
     // 종료 상태에서 다른 페이즈로 전환 시 결과 초기화
     if (gameState?.phase === 'ended' && phase !== 'ended') {
@@ -406,7 +391,7 @@ export default function GrimoireScreen() {
     if (phase !== 'ended') {
       setPhaseTip({
         phase: tipCategory,
-        tip: getRandomTipText(['storyteller', tipCategory]),
+        tip: getRandomTipText('storyteller'),
       });
     }
   };
@@ -594,9 +579,9 @@ export default function GrimoireScreen() {
     null,
   );
   const chatUnreadCounts = useGameStore((s) => s.chatUnreadCounts);
-  const totalChatUnread = Object.values(chatUnreadCounts).reduce<number>(
-    (a, b) => a + b,
-    0,
+  const totalChatUnread = useMemo(
+    () => Object.values(chatUnreadCounts).reduce<number>((a, b) => a + b, 0),
+    [chatUnreadCounts],
   );
 
   // Night feedback overlay state
@@ -604,6 +589,9 @@ export default function GrimoireScreen() {
   const [feedbackSentForRole, setFeedbackSentForRole] = useState<string | null>(
     null,
   );
+  const [nightOrderComplete, setNightOrderComplete] = useState(false);
+  const [executionBannerDismissed, setExecutionBannerDismissed] =
+    useState(false);
   const [nightElapsed, setNightElapsed] = useState(0);
   const nightTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -642,7 +630,11 @@ export default function GrimoireScreen() {
         p.role?.id === activeNightRoleId ||
         (p.role?.id === 'drunk' && p.drunkAs === activeNightRoleId),
     );
-    return !!target;
+    if (!target) return false;
+    // onlyWhenDead 역할(까마귀지기 등)이 살아있으면 피드백 불필요
+    if (NIGHT_ACTIONS[activeNightRoleId]?.onlyWhenDead && target.isAlive)
+      return false;
+    return true;
   }, [activeNightRoleId, gameState?.players]);
 
   const [areaSize, setAreaSize] = useState({ width: 0, height: 0 });
@@ -765,6 +757,13 @@ export default function GrimoireScreen() {
   );
 
   // 초공감자(Empath) 이웃 하이라이트
+  // Build a player lookup map for O(1) access in neighbor/pair calculations
+  const playerById = useMemo(() => {
+    const map = new Map<string, Player>();
+    for (const p of players ?? []) map.set(p.id, p);
+    return map;
+  }, [players]);
+
   const empathNeighborIds = useMemo(() => {
     if (gameState?.phase !== 'night' || activeNightRoleId !== 'empath')
       return new Set<string>();
@@ -786,7 +785,7 @@ export default function GrimoireScreen() {
     // 시계방향 탐색
     for (let i = 1; i < order.length; i++) {
       const idx = (empathIndex + i) % order.length;
-      const p = gameState.players.find((pl) => pl.id === order[idx]);
+      const p = playerById.get(order[idx]);
       if (p?.isAlive) {
         neighbors.add(p.id);
         break;
@@ -796,7 +795,7 @@ export default function GrimoireScreen() {
     // 반시계방향 탐색
     for (let i = 1; i < order.length; i++) {
       const idx = (empathIndex - i + order.length) % order.length;
-      const p = gameState.players.find((pl) => pl.id === order[idx]);
+      const p = playerById.get(order[idx]);
       if (p?.isAlive) {
         if (neighbors.has(p.id)) break; // 같은 플레이어 (2명만 생존)
         neighbors.add(p.id);
@@ -805,7 +804,13 @@ export default function GrimoireScreen() {
     }
 
     return neighbors;
-  }, [gameState?.phase, gameState?.players, activeNightRoleId, playerOrder]);
+  }, [
+    gameState?.phase,
+    gameState?.players,
+    activeNightRoleId,
+    playerOrder,
+    playerById,
+  ]);
 
   // 초공감자 악한 이웃 수 계산
   const empathEvilCount = useMemo(() => {
@@ -836,7 +841,7 @@ export default function GrimoireScreen() {
       return { chefEvilPairIds: new Set<string>(), chefEvilPairCount: 0 };
 
     const isEvil = (id: string) => {
-      const p = gameState.players.find((pl) => pl.id === id);
+      const p = playerById.get(id);
       return p?.role?.team === 'minion' || p?.role?.team === 'demon';
     };
 
@@ -852,7 +857,13 @@ export default function GrimoireScreen() {
       }
     }
     return { chefEvilPairIds: pairIds, chefEvilPairCount: count };
-  }, [gameState?.phase, gameState?.players, activeNightRoleId, playerOrder]);
+  }, [
+    gameState?.phase,
+    gameState?.players,
+    activeNightRoleId,
+    playerOrder,
+    playerById,
+  ]);
 
   const currentNomination = gameState?.nominations?.length
     ? gameState.nominations[gameState.nominations.length - 1]
@@ -900,6 +911,35 @@ export default function GrimoireScreen() {
     if (!executedPlayerId) return ['undertaker'];
     return [];
   }, [executedPlayerId]);
+
+  // Memoize activeRoleIds and dormantRoleIds for NightOrderPanel
+  const activeRoleIds = useMemo(() => {
+    if (!players) return [];
+    return players
+      .filter((p) => p.isAlive)
+      .flatMap((p) => {
+        if (p.role?.id === 'drunk' && p.drunkAs) return [p.drunkAs];
+        return p.role?.id ? [p.role.id] : [];
+      });
+  }, [players]);
+
+  const dormantRoleIds = useMemo(() => {
+    if (!players) return [];
+    return players
+      .filter((p) => p.isAlive)
+      .flatMap((p) => {
+        const ids: string[] = [];
+        if (p.role?.id && NIGHT_ACTIONS[p.role.id]?.onlyWhenDead)
+          ids.push(p.role.id);
+        if (
+          p.role?.id === 'drunk' &&
+          p.drunkAs &&
+          NIGHT_ACTIONS[p.drunkAs]?.onlyWhenDead
+        )
+          ids.push(p.drunkAs);
+        return ids;
+      });
+  }, [players]);
 
   if (!gameState) return null;
 
@@ -1001,6 +1041,7 @@ export default function GrimoireScreen() {
                   chefEvilPairIds.has(player.id)
                 }
                 voteIndicator={voteIndicators[player.id]}
+                isPreselected={votePreselections[player.id] === true}
                 isExecutionCandidate={
                   executionCandidateData?.playerId === player.id
                 }
@@ -1058,6 +1099,12 @@ export default function GrimoireScreen() {
             centerY={areaSize.height / 2}
           />
         )}
+        <PhaseTipToast
+          visible={!!phaseTip}
+          phase={gameState?.phase ?? 'night'}
+          tip={phaseTip?.tip ?? ''}
+          onDismiss={() => setPhaseTip(null)}
+        />
       </View>
 
       {gameState.phase === 'night' && nightActions.length > 0 && (
@@ -1111,21 +1158,13 @@ export default function GrimoireScreen() {
           <View style={styles.nightOrderRelative}>
             <NightOrderPanel
               day={gameState.day}
-              activeRoleIds={gameState.players.flatMap((p) => {
-                if (p.role?.id === 'drunk' && p.drunkAs) return [p.drunkAs];
-                return p.role?.id ? [p.role.id] : [];
-              })}
+              activeRoleIds={activeRoleIds}
               skippedRoleIds={skippedNightRoles}
+              dormantRoleIds={dormantRoleIds}
               activeNightRoleId={activeNightRoleId}
               onActivateRole={setActiveNightRole}
               onNightComplete={() => {
-                showModal('밤이 끝났습니다', [
-                  {
-                    text: '낮으로 전환',
-                    onPress: () => handleSetPhase('day'),
-                  },
-                  { text: '계속 진행', style: 'cancel' },
-                ]);
+                setNightOrderComplete(true);
               }}
             />
 
@@ -1136,6 +1175,8 @@ export default function GrimoireScreen() {
                   activeRoleId={activeNightRoleId}
                   players={gameState.players}
                   nightActions={nightActions}
+                  executedRoleName={executedPlayer?.role?.name}
+                  executedPlayerName={executedPlayer?.name}
                   empathHint={
                     activeNightRoleId === 'empath' && empathNeighborIds.size > 0
                       ? {
@@ -1211,7 +1252,7 @@ export default function GrimoireScreen() {
           onDismissResult={() => setVoteResult(null)}
         />
       )}
-      {executedPlayer && (
+      {executedPlayer && !executionBannerDismissed && (
         <View style={styles.executionBanner}>
           <View style={styles.executionBannerContent}>
             <Text style={styles.executionBannerLabel}>오늘 처형</Text>
@@ -1223,7 +1264,7 @@ export default function GrimoireScreen() {
             </Text>
           </View>
           <Pressable
-            onPress={() => setExecutedPlayerId(null)}
+            onPress={() => setExecutionBannerDismissed(true)}
             style={styles.executionBannerDismiss}
           >
             <Text style={styles.executionBannerDismissText}>닫기</Text>
@@ -1239,23 +1280,18 @@ export default function GrimoireScreen() {
           }
         >
           <Text
-            style={{
-              color: gameResult.winningTeam === 'good' ? '#5dade2' : '#e74c3c',
-              fontSize: fontSize.lg,
-              fontWeight: '700',
-            }}
+            style={[
+              grimoireDynamic.gameEndWinnerText(
+                gameResult.winningTeam === 'good',
+              ),
+              { fontSize: fontSize.lg },
+            ]}
           >
             {gameResult.winningTeam === 'good'
               ? '선한 팀 승리!'
               : '악한 팀 승리!'}
           </Text>
-          <Text
-            style={{
-              color: '#aaa',
-              fontSize: fontSize.sm,
-              marginTop: 4,
-            }}
-          >
+          <Text style={[styles.gameEndReason, { fontSize: fontSize.sm }]}>
             {gameResult.reason}
           </Text>
         </View>
@@ -1263,8 +1299,17 @@ export default function GrimoireScreen() {
       <PhaseBar
         currentPhase={gameState.phase}
         onSetPhase={handleSetPhase}
+        disableNext={gameState.phase === 'night' && !nightOrderComplete}
         onConfirmNext={() => {
-          if (gameState.phase === 'day') {
+          if (gameState.phase === 'night') {
+            showModal('밤이 끝났습니다', [
+              {
+                text: '낮으로 전환',
+                onPress: () => handleSetPhase('day'),
+              },
+              { text: '계속 진행', style: 'cancel' },
+            ]);
+          } else if (gameState.phase === 'day') {
             showModal('다음 날 밤으로 진행', [
               {
                 text: '밤으로 전환',
@@ -1299,28 +1344,16 @@ export default function GrimoireScreen() {
       {/* 초공감자 이웃 정보 힌트 */}
       {empathNeighborIds.size > 0 && (
         <View style={styles.empathHintBar}>
-          <Text
-            style={{
-              color: '#2ecc71',
-              fontSize: fontSize.sm,
-              fontWeight: '600',
-            }}
-          >
+          <Text style={[styles.empathHintLabel, { fontSize: fontSize.sm }]}>
             초공감자 이웃:
           </Text>
-          <Text style={{ color: '#e0ddd8', fontSize: fontSize.sm }}>
+          <Text style={[styles.empathHintNames, { fontSize: fontSize.sm }]}>
             {gameState.players
               .filter((p) => empathNeighborIds.has(p.id))
               .map((p) => p.name)
               .join(', ')}
           </Text>
-          <Text
-            style={{
-              color: '#f5c542',
-              fontSize: fontSize.md,
-              fontWeight: '700',
-            }}
-          >
+          <Text style={[styles.empathHintCount, { fontSize: fontSize.md }]}>
             악한 {empathEvilCount}명
           </Text>
         </View>
@@ -1329,16 +1362,10 @@ export default function GrimoireScreen() {
       {/* 요리사 인접 악한 쌍 힌트 */}
       {chefEvilPairIds.size > 0 && (
         <View style={styles.chefHintBar}>
-          <Text
-            style={{
-              color: '#e67e22',
-              fontSize: fontSize.sm,
-              fontWeight: '600',
-            }}
-          >
+          <Text style={[styles.chefHintLabel, { fontSize: fontSize.sm }]}>
             인접 악한 쌍:
           </Text>
-          <Text style={{ color: '#e0ddd8', fontSize: fontSize.sm }}>
+          <Text style={[styles.chefHintNames, { fontSize: fontSize.sm }]}>
             {(() => {
               const order = playerOrder;
               const pairs: string[] = [];
@@ -1356,13 +1383,7 @@ export default function GrimoireScreen() {
               return pairs.join(', ') || '없음';
             })()}
           </Text>
-          <Text
-            style={{
-              color: '#f5c542',
-              fontSize: fontSize.md,
-              fontWeight: '700',
-            }}
-          >
+          <Text style={[styles.chefHintCount, { fontSize: fontSize.md }]}>
             {chefEvilPairCount}쌍
           </Text>
         </View>
@@ -1372,30 +1393,16 @@ export default function GrimoireScreen() {
       {settingsVisible && (
         <View style={styles.settingsOverlay}>
           <View style={styles.settingsPanel}>
-            <Text
-              style={{
-                color: '#e0ddd8',
-                fontSize: fontSize.lg,
-                fontWeight: '700',
-                marginBottom: 20,
-                textAlign: 'center',
-              }}
-            >
+            <Text style={[styles.settingsTitle, { fontSize: fontSize.lg }]}>
               게임 설정
             </Text>
 
             <View style={styles.settingsRow}>
               <View>
-                <Text
-                  style={{
-                    color: '#e0ddd8',
-                    fontSize: fontSize.md,
-                    fontWeight: '600',
-                  }}
-                >
+                <Text style={[styles.settingsLabel, { fontSize: fontSize.md }]}>
                   채팅 밀담
                 </Text>
-                <Text style={{ color: '#908e8a', fontSize: fontSize.sm }}>
+                <Text style={[styles.settingsDesc, { fontSize: fontSize.sm }]}>
                   {gameState.settings.whisperMode === 'chat'
                     ? 'ON — 앱 내 채팅'
                     : 'OFF — 직접 대면만'}
@@ -1418,18 +1425,12 @@ export default function GrimoireScreen() {
               />
             </View>
 
-            <View style={styles.settingsRowLast}>
+            <View style={styles.settingsRow}>
               <View>
-                <Text
-                  style={{
-                    color: '#e0ddd8',
-                    fontSize: fontSize.md,
-                    fontWeight: '600',
-                  }}
-                >
+                <Text style={[styles.settingsLabel, { fontSize: fontSize.md }]}>
                   온라인 투표
                 </Text>
-                <Text style={{ color: '#908e8a', fontSize: fontSize.sm }}>
+                <Text style={[styles.settingsDesc, { fontSize: fontSize.sm }]}>
                   {gameState.settings.votingMode === 'online'
                     ? 'ON — 앱 내 투표'
                     : 'OFF — 직접 투표'}
@@ -1452,16 +1453,41 @@ export default function GrimoireScreen() {
               />
             </View>
 
+            {gameState.settings.whisperMode === 'chat' && (
+              <View style={styles.settingsClockMargin}>
+                <ClockSpeedSetting
+                  value={gameState.settings.whisperClockSeconds}
+                  onChange={(val) =>
+                    handleSettingsChange({ whisperClockSeconds: val })
+                  }
+                  scale={scale}
+                  label="밀담 시간"
+                  showOff
+                  options={[30, 45, 60, 90, 120]}
+                />
+              </View>
+            )}
+
+            {gameState.settings.votingMode === 'online' && (
+              <View style={styles.settingsClockMarginLast}>
+                <ClockSpeedSetting
+                  value={gameState.settings.voteClockSeconds}
+                  onChange={(val) =>
+                    handleSettingsChange({ voteClockSeconds: val })
+                  }
+                  scale={scale}
+                  label="투표 시간 (1인당)"
+                  options={[2, 3, 5, 7, 10]}
+                />
+              </View>
+            )}
+
             <Pressable
               onPress={() => setSettingsVisible(false)}
               style={styles.settingsCloseButton}
             >
               <Text
-                style={{
-                  color: '#e0ddd8',
-                  fontSize: fontSize.md,
-                  fontWeight: '600',
-                }}
+                style={[styles.settingsCloseText, { fontSize: fontSize.md }]}
               >
                 닫기
               </Text>
@@ -1487,12 +1513,6 @@ export default function GrimoireScreen() {
         }}
       />
       <EventToast />
-      <PhaseTipToast
-        visible={!!phaseTip}
-        phase={gameState?.phase ?? 'night'}
-        tip={phaseTip?.tip ?? ''}
-        onDismiss={() => setPhaseTip(null)}
-      />
 
       <ActionModal
         visible={modal.visible}

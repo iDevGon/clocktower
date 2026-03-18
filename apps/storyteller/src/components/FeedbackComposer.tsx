@@ -9,6 +9,7 @@ interface FeedbackComposerProps {
   players: Player[];
   isDrunkUser?: boolean;
   suggestedNumber?: number;
+  highlightedRoleName?: string;
   onSend: (feedback: NightFeedbackPayload) => void;
 }
 
@@ -17,6 +18,7 @@ export function FeedbackComposer({
   players,
   isDrunkUser,
   suggestedNumber,
+  highlightedRoleName,
   onSend,
 }: FeedbackComposerProps) {
   switch (feedbackDef.type) {
@@ -37,7 +39,12 @@ export function FeedbackComposer({
         />
       );
     case 'role':
-      return <RoleFeedback onSend={onSend} />;
+      return (
+        <RoleFeedback
+          onSend={onSend}
+          highlightedRoleName={highlightedRoleName}
+        />
+      );
     default:
       return null;
   }

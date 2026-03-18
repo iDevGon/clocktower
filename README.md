@@ -38,7 +38,7 @@ clocktower/
 - Socket.io 네임스페이스: `/player`, `/storyteller`
 - `GameManager` 클래스로 게임 상태 캡슐화
 - `WhisperTracker` 클래스로 밀담 대화 추적 (60초 타임아웃)
-- 핸들러 분리: `handlers/player.ts`, `handlers/storyteller.ts`
+- 핸들러 분리: `handlers/player.ts`, `handlers/storyteller.ts`, `handlers/storytellerVote.ts` (투표 관련)
 - QR 코드 생성으로 플레이어 접속 편의 제공
 - Expo Push API를 통한 푸시 알림 전송
 - `createApp()` 팩토리 함수로 서버 인스턴스 생성 (E2E 테스트용 프로그래밍 방식 시작/중지)
@@ -87,7 +87,9 @@ clocktower/
 
 - `types.ts`: Phase, DaySubPhase, Team, Role, Player, GameState, NightAction, NightFeedback, WhisperMessage, PlayerStatus, GameResult, GameSettings, StorytellerMessage, DeathReason, ExecutionAnnouncement, Edition 등
 - `events.ts`: Socket.io 이벤트 타입 (ServerToClient, ServerToStoryteller, ClientToServer, StorytellerToServer)
-- `roles.ts`: Trouble Brewing 역할 22종 + Sects & Violets 25종(사랑꾼만 활성화, 나머지 disabled) 정의, 역할 배분 알고리즘, 밤 행동 순서
+- `roles.ts`: Trouble Brewing 역할 22종 + Sects & Violets 25종(사랑꾼만 활성화, 나머지 disabled) 정의, 역할 배분 알고리즘, 밤 행동 순서, `onlyWhenDead` 지원
+- `tips.ts`: 게임 플레이 팁 시스템 (페이즈별/역할별/진영별 팁 제공)
+- `characterTips.ts`: Trouble Brewing 역할별 플레이 팁 및 상대 팁
 - `dictionary.ts`: 팀 라벨/색상, 상태/페이즈/서브페이즈 사전, 게임 규칙, 게임 흐름
 - `logic.ts`: 서버용 non-RN re-export
 
@@ -100,10 +102,13 @@ clocktower/
 - `HighlightedMessage`: 메시지 키워드 하이라이트 (플레이어/역할/상태 배지)
 - `QuickSuggestions`: 자동완성 제안
 - `SmokeParticles`: 연기 파티클 효과
+- `GameTip` / `RotatingGameTip`: 게임 팁 표시 (글로우 효과, 자동 회전)
 - `FullScreenVignette`: 전체화면 비네트 오버레이
+- `BaseToast`: 공통 토스트 알림 (auto-dismiss, fade)
 - `colors`: 디자인 토큰 (surface, border, text, phase, status, badge, chat)
 - `createChatStyles`: 채팅 스타일 팩토리
 - `chosung` utils: 초성 검색 유틸
+- `chat` utils: 채팅 공통 유틸 (자동완성 후보 생성, 시간 포맷, 제안 적용)
 
 ## 게임 흐름
 
@@ -131,7 +136,8 @@ clocktower/
 | 초공감자 | 양옆 이웃의 악 진영 수 계산 (playerOrder 기반) |
 | 성자 | 처형 시 (중독/취함 아닌 경우) 악 진영 승리 |
 | 시장 | 밤 사망 시 다른 플레이어로 리디렉트, 최종 3인 + 처형 미발생 시 선 진영 승리 |
-| 아기 | 사망 시 지정 플레이어에게 취함 상태 부여 (Sects & Violets) |
+| 까마귀지기 | 밤에 사망 시 능력 발동 (onlyWhenDead), 플레이어 1명의 역할 확인 |
+| 사랑꾼 | 사망 시 지정 플레이어에게 취함 상태 부여 (Sects & Violets) |
 | 악 진영 | 악마↔하수인 서로 인지, 악마에게 블러프 역할 3개 제공 |
 
 ## 역할 (Trouble Brewing)

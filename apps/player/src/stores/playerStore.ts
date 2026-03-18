@@ -113,6 +113,8 @@ interface PlayerState {
   pendingRolePromotion: Role | null;
   /** 집사가 선택한 주인 이름 */
   butlerMasterName: string | null;
+  /** onlyWhenDead 역할이 밤에 죽어서 깨어남 (서버에서 night:wakeUp 수신) */
+  nightWakeUp: string | null;
   set: (partial: Partial<PlayerState>) => void;
   addFeedback: (day: number, feedback: NightFeedbackPayload) => void;
   reset: () => void;
@@ -166,6 +168,7 @@ const initialState = {
   rolePromotion: null as Role | null,
   pendingRolePromotion: null as Role | null,
   butlerMasterName: null as string | null,
+  nightWakeUp: null as string | null,
 };
 
 export const usePlayerStore = create<PlayerState>()(

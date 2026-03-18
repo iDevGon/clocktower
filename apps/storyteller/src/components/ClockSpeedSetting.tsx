@@ -30,27 +30,29 @@ export function ClockSpeedSetting({
   return (
     <View style={st.container}>
       <Text style={st.label}>{label}</Text>
-      {showOff && (
-        <Pressable
-          onPress={() => onChange(0)}
-          style={optionButtonStyle(s, value === 0, true)}
-          accessibilityLabel={`${label} 없음`}
-          accessibilityRole="button"
-        >
-          <Text style={optionTextStyle(s, value === 0, true)}>없음</Text>
-        </Pressable>
-      )}
-      {options.map((sec) => (
-        <Pressable
-          key={sec}
-          onPress={() => onChange(sec)}
-          style={optionButtonStyle(s, value === sec)}
-          accessibilityLabel={`${label} ${fmt(sec)}`}
-          accessibilityRole="button"
-        >
-          <Text style={optionTextStyle(s, value === sec)}>{fmt(sec)}</Text>
-        </Pressable>
-      ))}
+      <View style={st.options}>
+        {showOff && (
+          <Pressable
+            onPress={() => onChange(0)}
+            style={optionButtonStyle(s, value === 0, true)}
+            accessibilityLabel={`${label} 없음`}
+            accessibilityRole="button"
+          >
+            <Text style={optionTextStyle(s, value === 0, true)}>없음</Text>
+          </Pressable>
+        )}
+        {options.map((sec) => (
+          <Pressable
+            key={sec}
+            onPress={() => onChange(sec)}
+            style={optionButtonStyle(s, value === sec)}
+            accessibilityLabel={`${label} ${fmt(sec)}`}
+            accessibilityRole="button"
+          >
+            <Text style={optionTextStyle(s, value === sec)}>{fmt(sec)}</Text>
+          </Pressable>
+        ))}
+      </View>
     </View>
   );
 }

@@ -299,13 +299,7 @@ export default function AssignRoleScreen() {
               ]}
             >
               <View style={styles.roleHeader}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 6,
-                  }}
-                >
+                <View style={styles.roleHeaderNameRow}>
                   <Text
                     style={[
                       styles.roleName,
@@ -326,16 +320,7 @@ export default function AssignRoleScreen() {
         }}
         ListEmptyComponent={
           searchQuery !== '' ? (
-            <Text
-              style={{
-                color: '#908e8a',
-                fontSize: 14,
-                textAlign: 'center',
-                paddingVertical: 20,
-              }}
-            >
-              검색 결과가 없습니다
-            </Text>
+            <Text style={styles.listEmptyText}>검색 결과가 없습니다</Text>
           ) : null
         }
       />
@@ -417,21 +402,10 @@ export default function AssignRoleScreen() {
 function EditionBadge({ editionId }: { editionId: string }) {
   const label = EDITION_LABELS[editionId] ?? editionId;
   const color = EDITION_COLORS[editionId] ?? '#908e8a';
+  const badgeStyles = createAssignRoleStyles(1);
 
   return (
-    <Text
-      style={{
-        fontSize: 9,
-        fontWeight: '700',
-        color,
-        borderWidth: 1,
-        borderColor: color,
-        borderRadius: 3,
-        paddingHorizontal: 4,
-        paddingVertical: 1,
-        overflow: 'hidden',
-      }}
-    >
+    <Text style={[badgeStyles.editionBadge, { color, borderColor: color }]}>
       {label}
     </Text>
   );

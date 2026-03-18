@@ -15,7 +15,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-const AUTO_DISMISS_MS = 8000;
+const AUTO_DISMISS_MS = 10000;
 const FADE_OUT_MS = 600;
 
 function PulsingDot({ index }: { index: number }) {

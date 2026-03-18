@@ -27,12 +27,14 @@ interface PhaseBarProps {
   currentPhase: Phase;
   onSetPhase: (phase: Phase) => void;
   onConfirmNext?: () => void;
+  disableNext?: boolean;
 }
 
 export function PhaseBar({
   currentPhase,
   onSetPhase,
   onConfirmNext,
+  disableNext = false,
 }: PhaseBarProps) {
   const { fontSize, device } = useResponsive();
   const scale = fontSize.md / 12;
@@ -73,7 +75,8 @@ export function PhaseBar({
 
   const canPrev = isInStepper && stepperIndex > 0;
   const canNext =
-    isInStepper || currentPhase === 'vote' || currentPhase === 'ended';
+    !disableNext &&
+    (isInStepper || currentPhase === 'vote' || currentPhase === 'ended');
 
   return (
     <View style={styles.container}>
@@ -103,6 +106,8 @@ export function PhaseBar({
           onPress={handlePrev}
           style={[styles.navButton, !canPrev && styles.navButtonDisabled]}
           disabled={!canPrev}
+          accessibilityLabel="이전 페이즈"
+          accessibilityRole="button"
         >
           <Text style={[styles.navButtonText, { color: colors.text }]}>
             {'‹'}
@@ -125,6 +130,8 @@ export function PhaseBar({
           onPress={handleNext}
           style={[styles.navButton, !canNext && styles.navButtonDisabled]}
           disabled={!canNext}
+          accessibilityLabel="다음 페이즈"
+          accessibilityRole="button"
         >
           <Text style={[styles.navButtonText, { color: colors.text }]}>
             {'›'}
@@ -144,6 +151,8 @@ export function PhaseBar({
             <Pressable
               key={phase.value}
               onPress={() => onSetPhase(phase.value)}
+              accessibilityLabel={`${phase.label} 페이즈로 전환`}
+              accessibilityRole="button"
               style={[
                 styles.chip,
                 isActive && [

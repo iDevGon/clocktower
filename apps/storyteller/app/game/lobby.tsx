@@ -21,7 +21,7 @@ import { useGameActions } from '../../src/hooks/useGameActions';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import { useConnectionStore } from '../../src/stores/connectionStore';
 import { useGameStore } from '../../src/stores/gameStore';
-import { createLobbyStyles } from '../../src/styles/lobby.styles';
+import { createLobbyStyles, lobbyDynamic } from '../../src/styles/lobby.styles';
 
 export default function LobbyScreen() {
   const router = useRouter();
@@ -219,15 +219,8 @@ export default function LobbyScreen() {
       </View>
       <View style={styles.distributeContainer}>
         {/* 에디션 선택 */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            marginBottom: s(8),
-            gap: s(8),
-          }}
-        >
-          <Text style={{ color: '#908e8a', fontSize: s(13) }}>에디션:</Text>
+        <View style={styles.editionRow}>
+          <Text style={styles.editionLabel}>에디션:</Text>
           {EDITIONS.map((edition) => (
             <Pressable
               key={edition.id}
@@ -238,34 +231,19 @@ export default function LobbyScreen() {
                 setAdditionalRoleIds(new Set());
               }}
               disabled={edition.disabled}
-              style={{
-                paddingVertical: s(6),
-                paddingHorizontal: s(12),
-                borderRadius: 6,
-                backgroundColor: edition.disabled
-                  ? '#1a1a1e'
-                  : selectedEditionId === edition.id
-                    ? '#2a3a5c'
-                    : '#242428',
-                borderWidth: 1,
-                borderColor: edition.disabled
-                  ? '#2a2a2e'
-                  : selectedEditionId === edition.id
-                    ? '#4a6a9c'
-                    : '#3a3a3e',
-                opacity: edition.disabled ? 0.5 : 1,
-              }}
+              style={lobbyDynamic.editionButton(
+                selectedEditionId === edition.id,
+                !!edition.disabled,
+                false,
+                s,
+              )}
             >
               <Text
-                style={{
-                  color: edition.disabled
-                    ? '#4a4a4e'
-                    : selectedEditionId === edition.id
-                      ? '#8ab4f8'
-                      : '#706e6a',
-                  fontSize: s(13),
-                  fontWeight: '600',
-                }}
+                style={lobbyDynamic.editionButtonText(
+                  selectedEditionId === edition.id,
+                  !!edition.disabled,
+                  s,
+                )}
               >
                 {edition.name}
                 {edition.disabled ? ' (준비중)' : ''}
@@ -300,11 +278,13 @@ export default function LobbyScreen() {
             })}
           >
             <Text
-              style={{
-                color: excludedRoleIds.size > 0 ? '#c47070' : '#908e8a',
-                fontSize: s(13),
-                fontWeight: '600',
-              }}
+              style={[
+                styles.roleSettingButtonText,
+                lobbyDynamic.roleSettingButtonTextColor(
+                  excludedRoleIds.size > 0,
+                  '#c47070',
+                ),
+              ]}
             >
               직업 제외 설정
               {excludedRoleIds.size > 0 ? ` (${excludedRoleIds.size}개)` : ''}
@@ -331,11 +311,13 @@ export default function LobbyScreen() {
               })}
             >
               <Text
-                style={{
-                  color: additionalRoleIds.size > 0 ? '#a569bd' : '#908e8a',
-                  fontSize: s(13),
-                  fontWeight: '600',
-                }}
+                style={[
+                  styles.roleSettingButtonText,
+                  lobbyDynamic.roleSettingButtonTextColor(
+                    additionalRoleIds.size > 0,
+                    '#a569bd',
+                  ),
+                ]}
               >
                 다른 에디션 역할 추가
                 {additionalRoleIds.size > 0
@@ -346,9 +328,7 @@ export default function LobbyScreen() {
           )}
         </CollapsibleSection>
 
-        <View
-          style={{ flexDirection: 'row', alignItems: 'center', gap: s(10) }}
-        >
+        <View style={styles.distributeRow}>
           <Pressable
             onPress={handleDistributeRoles}
             disabled={distributing}
@@ -363,33 +343,12 @@ export default function LobbyScreen() {
           </Pressable>
           <Pressable
             onPress={() => setRolesVeiled((v) => !v)}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: s(6),
-              paddingVertical: s(12),
-              paddingHorizontal: s(10),
-              backgroundColor: rolesVeiled ? '#3a2a5c' : '#1e1e22',
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: rolesVeiled ? '#7c6caa' : '#3a3a3e',
-            }}
+            style={lobbyDynamic.veilToggleButton(rolesVeiled, s)}
           >
-            <Text
-              style={{
-                color: rolesVeiled ? '#c4b0ee' : '#706e6a',
-                fontSize: s(13),
-              }}
-            >
+            <Text style={lobbyDynamic.veilToggleEmoji(rolesVeiled, s)}>
               {rolesVeiled ? '🙈' : '👁'}
             </Text>
-            <Text
-              style={{
-                color: rolesVeiled ? '#c4b0ee' : '#706e6a',
-                fontSize: s(12),
-                fontWeight: '600',
-              }}
-            >
+            <Text style={lobbyDynamic.veilToggleLabel(rolesVeiled, s)}>
               가리기
             </Text>
           </Pressable>
@@ -400,7 +359,7 @@ export default function LobbyScreen() {
         <FlatList
           data={gameState?.players ?? []}
           keyExtractor={(p) => p.id}
-          contentContainerStyle={{ paddingHorizontal: s(16) }}
+          contentContainerStyle={styles.playerListContent}
           style={undefined}
           renderItem={({ item }) => (
             <Pressable
@@ -417,38 +376,15 @@ export default function LobbyScreen() {
                   },
                 })
               }
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingVertical: s(12),
-                paddingHorizontal: s(12),
-                borderBottomWidth: 1,
-                borderBottomColor: '#2a2a2e',
-              }}
+              style={styles.playerRow}
             >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <View
-                  style={{
-                    width: s(8),
-                    height: s(8),
-                    borderRadius: s(4),
-                    backgroundColor: item.isAlive ? '#5a8068' : '#943c3c',
-                    marginRight: s(10),
-                  }}
-                />
-                <Text style={{ color: '#e0ddd8', fontSize: s(15) }}>
-                  {item.name}
-                </Text>
+              <View style={styles.playerNameRow}>
+                <View style={lobbyDynamic.aliveDot(item.isAlive, s)} />
+                <Text style={styles.playerName}>{item.name}</Text>
               </View>
-              <View style={{ alignItems: 'flex-end' }}>
+              <View style={styles.playerRoleContainer}>
                 {item.role && (
-                  <Text
-                    style={{
-                      color: rolesVeiled ? '#4a4a4e' : '#908e8a',
-                      fontSize: s(14),
-                    }}
-                  >
+                  <Text style={lobbyDynamic.playerRoleText(rolesVeiled, s)}>
                     {rolesVeiled ? '???' : item.role.name}
                     {!rolesVeiled && item.role.id === 'drunk' && item.drunkAs
                       ? ` (${getRoleById(item.drunkAs)?.name ?? '?'})`
@@ -462,25 +398,9 @@ export default function LobbyScreen() {
                       setDrunkModalPlayer(item);
                     }}
                     hitSlop={8}
-                    style={{
-                      marginTop: s(4),
-                      paddingVertical: s(3),
-                      paddingHorizontal: s(8),
-                      backgroundColor: '#3a2a18',
-                      borderRadius: 4,
-                      borderWidth: 1,
-                      borderColor: '#b87838',
-                    }}
+                    style={styles.drunkChangeButton}
                   >
-                    <Text
-                      style={{
-                        color: '#e67e22',
-                        fontSize: s(11),
-                        fontWeight: '600',
-                      }}
-                    >
-                      가짜역할 변경
-                    </Text>
+                    <Text style={styles.drunkChangeText}>가짜역할 변경</Text>
                   </Pressable>
                 )}
               </View>
@@ -491,31 +411,15 @@ export default function LobbyScreen() {
 
       <View style={styles.footer}>
         {gameState && (
-          <View
-            style={{
-              marginBottom: s(12),
-              paddingHorizontal: s(12),
-            }}
-          >
+          <View style={styles.footerSettingsContainer}>
             <CollapsibleSection
               label="상세 설정"
               isOpen={advancedSettingsOpen}
               onToggle={() => setAdvancedSettingsOpen((v) => !v)}
               scale={scale}
             >
-              <View style={{ gap: s(10) }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-around',
-                    backgroundColor: '#1a1a1e',
-                    borderRadius: 8,
-                    paddingVertical: s(10),
-                    paddingHorizontal: s(12),
-                    borderWidth: 1,
-                    borderColor: '#2a2a2e',
-                  }}
-                >
+              <View style={styles.settingsGap}>
+                <View style={styles.settingsToggleRow}>
                   <SettingToggle
                     label="채팅 밀담"
                     value={gameState.settings.whisperMode === 'chat'}
@@ -526,7 +430,7 @@ export default function LobbyScreen() {
                     }
                     scale={scale}
                   />
-                  <View style={{ width: 1, backgroundColor: '#2e2e34' }} />
+                  <View style={styles.settingsDivider} />
                   <SettingToggle
                     label="온라인 투표"
                     value={gameState.settings.votingMode === 'online'}
@@ -539,16 +443,7 @@ export default function LobbyScreen() {
                   />
                 </View>
                 {gameState.settings.whisperMode === 'chat' && (
-                  <View
-                    style={{
-                      backgroundColor: '#1a1a1e',
-                      borderRadius: 8,
-                      paddingVertical: s(10),
-                      paddingHorizontal: s(12),
-                      borderWidth: 1,
-                      borderColor: '#2a2a2e',
-                    }}
-                  >
+                  <View style={styles.clockSettingContainer}>
                     <ClockSpeedSetting
                       label="밀담 시간"
                       value={gameState.settings.whisperClockSeconds}
@@ -565,16 +460,7 @@ export default function LobbyScreen() {
                   </View>
                 )}
                 {gameState.settings.votingMode === 'online' && (
-                  <View
-                    style={{
-                      backgroundColor: '#1a1a1e',
-                      borderRadius: 8,
-                      paddingVertical: s(10),
-                      paddingHorizontal: s(12),
-                      borderWidth: 1,
-                      borderColor: '#2a2a2e',
-                    }}
-                  >
+                  <View style={styles.clockSettingContainer}>
                     <ClockSpeedSetting
                       label="1인당 투표 시간"
                       value={gameState.settings.voteClockSeconds}

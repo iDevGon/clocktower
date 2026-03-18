@@ -1,9 +1,4 @@
-import {
-  getRandomPlayTip,
-  getRandomTipText,
-  type Role,
-  type Team,
-} from '@clocktower/shared';
+import { getRandomGameTip, type Role, type Team } from '@clocktower/shared';
 import { AbilityText, GameTip } from '@clocktower/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo } from 'react';
@@ -284,7 +279,7 @@ const VEIL_PHRASES = [
 const CARD_APPEAR_DELAY = 1400;
 const CARD_FLIP_DELAY = 2600;
 const CARD_FLIP_DURATION = 1500;
-const AUTO_DISMISS_DELAY = 7000;
+const AUTO_DISMISS_DELAY = 10000;
 
 function RevealCard({
   role,
@@ -537,8 +532,8 @@ export function GameStartReveal({
 }: GameStartRevealProps) {
   const team = TEAM_ACCENT[role.team];
   const tip = useMemo(
-    () => getRandomPlayTip(role.id) ?? getRandomTipText('firstNight', role.id),
-    [role.id],
+    () => getRandomGameTip('firstNight', role.id, role.team),
+    [role.id, role.team],
   );
   const fadeOut = useSharedValue(1);
   const dismissed = useSharedValue(false);
@@ -588,7 +583,12 @@ export function GameStartReveal({
     <Animated.View
       style={[StyleSheet.absoluteFill, { zIndex: 95 }, containerStyle]}
     >
-      <Pressable style={StyleSheet.absoluteFill} onPress={handleDismiss}>
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={handleDismiss}
+        accessibilityLabel="역할 공개 닫기"
+        accessibilityRole="button"
+      >
         {/* Background */}
         <View
           style={[StyleSheet.absoluteFill, { backgroundColor: '#06080e' }]}
