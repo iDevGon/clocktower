@@ -1,6 +1,14 @@
 import type { Player } from '@clocktower/shared';
 import { AbilityText } from '@clocktower/ui';
-import { FlatList, Modal, Pressable, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import {
+  FlatList,
+  Modal,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import {
   createDrunkFakeRoleModalStyles,
   randomButtonStyle,
@@ -24,14 +32,25 @@ export function DrunkFakeRoleModal({
   onRandomFakeRole,
   scale,
 }: DrunkFakeRoleModalProps) {
+  const [searchText, setSearchText] = useState('');
   const s = (v: number) => Math.round(v * scale);
   const st = createDrunkFakeRoleModalStyles(s);
+
+  const filteredTownsfolk = useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+    if (!query) return availableTownsfolk;
+    return availableTownsfolk.filter((r) =>
+      r.name.toLowerCase().includes(query),
+    );
+  }, [availableTownsfolk, searchText]);
+
   return (
     <Modal
       visible={!!drunkModalPlayer}
       transparent
       animationType="fade"
       onRequestClose={onClose}
+      onShow={() => setSearchText('')}
     >
       <Pressable style={st.overlay} onPress={onClose}>
         <Pressable style={st.modal} onPress={(e) => e.stopPropagation()}>
@@ -41,8 +60,15 @@ export function DrunkFakeRoleModal({
               {drunkModalPlayer?.name}이(가) 자신이라고 믿을 마을주민 역할
             </Text>
           </View>
+          <TextInput
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder="역할 검색…"
+            placeholderTextColor="#5a5a5e"
+            style={st.searchInput}
+          />
           <FlatList
-            data={availableTownsfolk}
+            data={filteredTownsfolk}
             keyExtractor={(r) => r.id}
             contentContainerStyle={st.listContent}
             ListHeaderComponent={

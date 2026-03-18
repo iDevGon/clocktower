@@ -57,6 +57,7 @@ export default function AssignRoleScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   // 주정뱅이 가짜 역할 선택 모달 상태
   const [drunkModalVisible, setDrunkModalVisible] = useState(false);
+  const [drunkSearchQuery, setDrunkSearchQuery] = useState('');
 
   const selectedEditionId = editionId ?? 'trouble_brewing';
   const additionalIds = useMemo(() => {
@@ -129,6 +130,14 @@ export default function AssignRoleScreen() {
     () => availableRoles.filter((r) => r.team === 'townsfolk'),
     [availableRoles],
   );
+
+  const filteredDrunkTownsfolk = useMemo(() => {
+    const query = drunkSearchQuery.trim().toLowerCase();
+    if (!query) return availableTownsfolk;
+    return availableTownsfolk.filter((r) =>
+      r.name.toLowerCase().includes(query),
+    );
+  }, [availableTownsfolk, drunkSearchQuery]);
 
   // 인원수별 팀 구성 제약에 따라 아직 슬롯이 남은 팀 계산
   const allowedTeams = useMemo(() => {
@@ -326,6 +335,7 @@ export default function AssignRoleScreen() {
         transparent
         animationType="fade"
         onRequestClose={() => setDrunkModalVisible(false)}
+        onShow={() => setDrunkSearchQuery('')}
       >
         <Pressable
           style={styles.drunkOverlay}
@@ -343,8 +353,15 @@ export default function AssignRoleScreen() {
                 주정뱅이가 자신이라고 믿을 마을주민 역할을 선택하세요
               </Text>
             </View>
+            <TextInput
+              value={drunkSearchQuery}
+              onChangeText={setDrunkSearchQuery}
+              placeholder="역할 검색…"
+              placeholderTextColor="#5a5a5e"
+              style={styles.drunkSearchInput}
+            />
             <FlatList
-              data={availableTownsfolk}
+              data={filteredDrunkTownsfolk}
               keyExtractor={(r) => r.id}
               contentContainerStyle={styles.drunkListContent}
               ListHeaderComponent={
