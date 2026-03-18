@@ -3,9 +3,9 @@ import type {
   NightFeedbackPayload,
   Player,
 } from '@clocktower/shared';
-import { getRoleById, NIGHT_FEEDBACK } from '@clocktower/shared';
+import { getRoleById, NIGHT_ACTIONS, NIGHT_FEEDBACK } from '@clocktower/shared';
 import { AbilityText } from '@clocktower/ui';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
 import { AnimatedBorderCard } from './AnimatedBorderCard';
@@ -70,6 +70,17 @@ interface NightFeedbackPanelProps {
   executedRoleName?: string;
   executedPlayerName?: string;
   onSendFeedback: (playerId: string, feedback: NightFeedbackPayload) => void;
+  onAllFeedbackSent?: () => void;
+}
+
+/** Fisher-Yates shuffle (creates a new array) */
+function shuffle<T>(arr: T[]): T[] {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 }
 
 export function NightFeedbackPanel({
@@ -81,12 +92,44 @@ export function NightFeedbackPanel({
   executedRoleName,
   executedPlayerName,
   onSendFeedback,
+  onAllFeedbackSent,
 }: NightFeedbackPanelProps) {
   const { fontSize } = useResponsive();
   const scale = fontSize.md / 12;
   const styles = useMemo(() => createNightActionLogStyles(scale), [scale]);
 
-  const [sent, setSent] = useState<string | null>(null);
+  const [sentIds, setSentIds] = useState<Set<string>>(new Set());
+  const prevRoleIdRef = useRef(activeRoleId);
+
+  // 대상 플레이어 목록 (Drunk + 실제 역할 모두 포함, 랜덤 순서)
+  const targetPlayers = useMemo(() => {
+    if (!activeRoleId) return [];
+    const isOnlyWhenDead = NIGHT_ACTIONS[activeRoleId]?.onlyWhenDead === true;
+    const matched = players.filter(
+      (p) =>
+        (p.role?.id === activeRoleId ||
+          (p.role?.id === 'drunk' && p.drunkAs === activeRoleId)) &&
+        (isOnlyWhenDead ? !p.isAlive : p.isAlive),
+    );
+    return shuffle(matched);
+  }, [activeRoleId, players]);
+
+  // activeRoleId 변경 시 sent 상태 초기화
+  if (prevRoleIdRef.current !== activeRoleId) {
+    prevRoleIdRef.current = activeRoleId;
+    setSentIds(new Set());
+  }
+
+  // 모든 피드백 전송 완료 시 부모에게 알림
+  useEffect(() => {
+    if (
+      targetPlayers.length > 0 &&
+      sentIds.size >= targetPlayers.length &&
+      onAllFeedbackSent
+    ) {
+      onAllFeedbackSent();
+    }
+  }, [sentIds, targetPlayers, onAllFeedbackSent]);
 
   if (!activeRoleId) return null;
 
@@ -98,16 +141,21 @@ export function NightFeedbackPanel({
   )
     return null;
 
-  const targetPlayer = players.find(
-    (p) =>
-      p.role?.id === activeRoleId ||
-      (p.role?.id === 'drunk' && p.drunkAs === activeRoleId),
-  );
-  if (!targetPlayer) return null;
+  if (targetPlayers.length === 0) return null;
 
-  // 까마귀지기는 밤에 죽을 때만 능력 발동
-  if (activeRoleId === 'ravenkeeper' && targetPlayer.isAlive) return null;
+  // 아직 피드백 미전송인 첫 번째 플레이어를 현재 대상으로 표시
+  const currentTarget = targetPlayers.find((p) => !sentIds.has(p.id));
+  const allSent = !currentTarget;
 
+  if (allSent) {
+    return (
+      <View style={styles.feedbackPanel}>
+        <Text style={styles.feedbackPanelSent}>피드백 전송됨</Text>
+      </View>
+    );
+  }
+
+  const targetPlayer = currentTarget;
   const isDrunk = targetPlayer.role?.id === 'drunk';
   const isPoisoned = targetPlayer.statuses.includes('poisoned');
   const isMalfunctioning = isDrunk || isPoisoned;
@@ -117,18 +165,14 @@ export function NightFeedbackPanel({
   const teamColor =
     TEAM_COLORS[team as keyof typeof TEAM_COLORS] ?? TEAM_COLORS.townsfolk;
 
-  if (sent === activeRoleId) {
-    return (
-      <View style={styles.feedbackPanel}>
-        <Text style={styles.feedbackPanelSent}>피드백 전송됨</Text>
-      </View>
-    );
-  }
-
   const handleSend = (fb: NightFeedbackPayload) => {
     // 점쟁이 yes_no 피드백에 지목 대상 이름 포함
     if (activeRoleId === 'fortune_teller' && fb.type === 'yes_no') {
-      const ftAction = nightActions?.find((a) => a.roleId === 'fortune_teller');
+      const ftAction =
+        nightActions?.find(
+          (a) =>
+            a.roleId === 'fortune_teller' && a.playerId === targetPlayer.id,
+        ) ?? nightActions?.find((a) => a.roleId === 'fortune_teller');
       if (ftAction) {
         const targetNames = ftAction.targets
           .map((id) => players.find((p) => p.id === id)?.name ?? id)
@@ -139,8 +183,13 @@ export function NightFeedbackPanel({
       }
     }
     onSendFeedback(targetPlayer.id, fb);
-    setSent(activeRoleId);
+    setSentIds((prev) => new Set(prev).add(targetPlayer.id));
   };
+
+  const progressLabel =
+    targetPlayers.length > 1
+      ? `(${sentIds.size + 1}/${targetPlayers.length})`
+      : '';
 
   return (
     <ScrollView style={panelStyles.scrollViewFlex}>
@@ -154,7 +203,7 @@ export function NightFeedbackPanel({
       >
         <View style={getContentPadding(scale)}>
           <Text style={[styles.feedbackPanelTitle, { color: teamColor.text }]}>
-            {role?.name ?? activeRoleId} → {targetPlayer.name}
+            {role?.name ?? activeRoleId} → {targetPlayer.name} {progressLabel}
           </Text>
 
           {role?.ability && (
@@ -190,9 +239,12 @@ export function NightFeedbackPanel({
 
           {activeRoleId === 'fortune_teller' &&
             (() => {
-              const ftAction = nightActions?.find(
-                (a) => a.roleId === 'fortune_teller',
-              );
+              const ftAction =
+                nightActions?.find(
+                  (a) =>
+                    a.roleId === 'fortune_teller' &&
+                    a.playerId === targetPlayer.id,
+                ) ?? nightActions?.find((a) => a.roleId === 'fortune_teller');
               if (!ftAction || ftAction.fortuneTellerResult === undefined)
                 return null;
               const targetNames = ftAction.targets
@@ -255,9 +307,12 @@ export function NightFeedbackPanel({
 
           {activeRoleId === 'ravenkeeper' &&
             (() => {
-              const rkAction = nightActions?.find(
-                (a) => a.roleId === 'ravenkeeper',
-              );
+              const rkAction =
+                nightActions?.find(
+                  (a) =>
+                    a.roleId === 'ravenkeeper' &&
+                    a.playerId === targetPlayer.id,
+                ) ?? nightActions?.find((a) => a.roleId === 'ravenkeeper');
               if (!rkAction || rkAction.targets.length === 0) return null;
               const chosen = players.find((p) => p.id === rkAction.targets[0]);
               if (!chosen) return null;
@@ -339,9 +394,13 @@ export function NightFeedbackPanel({
                 ? executedRoleName
                 : activeRoleId === 'ravenkeeper' && !isMalfunctioning
                   ? (() => {
-                      const rkAction = nightActions?.find(
-                        (a) => a.roleId === 'ravenkeeper',
-                      );
+                      const rkAction =
+                        nightActions?.find(
+                          (a) =>
+                            a.roleId === 'ravenkeeper' &&
+                            a.playerId === targetPlayer.id,
+                        ) ??
+                        nightActions?.find((a) => a.roleId === 'ravenkeeper');
                       if (!rkAction || rkAction.targets.length === 0)
                         return undefined;
                       const chosen = players.find(

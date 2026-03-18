@@ -1,5 +1,5 @@
 import type { Role } from '@clocktower/shared';
-import { getRoleById } from '@clocktower/shared';
+import { getRoleById, NIGHT_ACTIONS } from '@clocktower/shared';
 import { useEffect } from 'react';
 import { Text, Vibration, View } from 'react-native';
 import Animated, {
@@ -66,7 +66,11 @@ export function NightProgress({
     myRole != null &&
     (activeRoleId === myRole.id ||
       (drunkAs != null && activeRoleId === drunkAs));
-  const isMyTurn = isRoleActive && (nightWakeUp || isAlive);
+  const effectiveRoleId = drunkAs ?? myRole?.id;
+  const isOnlyWhenDead =
+    effectiveRoleId != null &&
+    NIGHT_ACTIONS[effectiveRoleId]?.onlyWhenDead === true;
+  const isMyTurn = isRoleActive && (isOnlyWhenDead ? nightWakeUp : isAlive);
   const pulseAnim = useSharedValue(1);
 
   useEffect(() => {

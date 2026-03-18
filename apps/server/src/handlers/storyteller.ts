@@ -285,10 +285,13 @@ export function registerStorytellerHandlers(
         const actionDef = NIGHT_ACTIONS[roleId];
         const isOnlyWhenDead = actionDef?.onlyWhenDead === true;
 
-        // onlyWhenDead 역할: 죽은 플레이어에게만 알림 / 일반 역할: 살아있는 플레이어에게만 알림
+        // onlyWhenDead 역할: 이번 밤에 죽은 플레이어에게만 알림 / 일반 역할: 살아있는 플레이어에게만 알림
         const activePlayer = state.players.find(
           (p) =>
-            p.role?.id === roleId && (isOnlyWhenDead ? !p.isAlive : p.isAlive),
+            p.role?.id === roleId &&
+            (isOnlyWhenDead
+              ? !p.isAlive && game.hasPendingNightKill(p.id)
+              : p.isAlive),
         );
         if (activePlayer) {
           const role = getRoleById(roleId);
@@ -298,7 +301,7 @@ export function registerStorytellerHandlers(
             '🌙 당신의 차례입니다',
             `${roleName}, 행동을 수행하세요`,
           );
-          // onlyWhenDead 역할이 죽었을 때: 해당 플레이어에게 wakeUp 이벤트 전송
+          // onlyWhenDead 역할이 이번 밤에 죽었을 때: 해당 플레이어에게 wakeUp 이벤트 전송
           if (isOnlyWhenDead) {
             playerIo.to(activePlayer.id).emit('night:wakeUp', { roleId });
           }
@@ -308,7 +311,9 @@ export function registerStorytellerHandlers(
           (p) =>
             p.role?.id === 'drunk' &&
             p.drunkAs === roleId &&
-            (isOnlyWhenDead ? !p.isAlive : p.isAlive),
+            (isOnlyWhenDead
+              ? !p.isAlive && game.hasPendingNightKill(p.id)
+              : p.isAlive),
         );
         if (drunkPlayer) {
           const role = getRoleById(roleId);
@@ -318,7 +323,7 @@ export function registerStorytellerHandlers(
             '🌙 당신의 차례입니다',
             `${roleName}, 행동을 수행하세요`,
           );
-          // 주정뱅이도 onlyWhenDead 역할로 죽었을 때 wakeUp
+          // 주정뱅이도 onlyWhenDead 역할로 이번 밤에 죽었을 때 wakeUp
           if (isOnlyWhenDead) {
             playerIo.to(drunkPlayer.id).emit('night:wakeUp', { roleId });
           }
