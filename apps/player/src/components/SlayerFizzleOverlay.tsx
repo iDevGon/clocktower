@@ -241,14 +241,14 @@ export function SlayerFizzleOverlay({
   }, []);
 
   const handleConfirm = () => {
-    if (isVotePhase) {
-      if (acked) return;
-      setAcked(true);
-      const socket = useConnectionStore.getState().socket;
-      socket?.emit('slayer:ack');
-    } else {
+    if (!isVotePhase) {
       onDismiss();
+      return;
     }
+    if (acked) return;
+    setAcked(true);
+    const socket = useConnectionStore.getState().socket;
+    socket?.emit('slayer:ack');
   };
 
   return (

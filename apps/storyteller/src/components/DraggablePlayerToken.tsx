@@ -90,17 +90,16 @@ export function DraggablePlayerToken({
         // 가장 가까운 원형 위치를 찾아 스냅
         const curX = translateX.value;
         const curY = translateY.value;
-        let closestIdx = positionIndex;
-        let closestDist = Number.MAX_SAFE_INTEGER;
-        for (const pos of circularPositions) {
-          const dx = curX - pos.x;
-          const dy = curY - pos.y;
-          const dist = dx * dx + dy * dy;
-          if (dist < closestDist) {
-            closestDist = dist;
-            closestIdx = pos.index;
-          }
-        }
+        const closest = circularPositions.reduce(
+          (best, pos) => {
+            const dx = curX - pos.x;
+            const dy = curY - pos.y;
+            const dist = dx * dx + dy * dy;
+            return dist < best.dist ? { dist, index: pos.index } : best;
+          },
+          { dist: Number.MAX_SAFE_INTEGER, index: positionIndex },
+        );
+        const closestIdx = closest.index;
         if (closestIdx !== positionIndex) {
           runOnJS(onSwap)(positionIndex, closestIdx);
         } else {

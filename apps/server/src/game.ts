@@ -232,14 +232,14 @@ export class GameManager {
       this.executionToday = false;
       this.executionCandidate = null;
       this.pendingNightKills = [];
-      for (const p of this.state.players) {
+      this.state.players.forEach((p) => {
         p.hasNominatedToday = false;
         p.hasBeenNominatedToday = false;
         // 밤 시작 시 중독/보호 상태 자동 제거
         p.statuses = p.statuses.filter(
           (s) => s !== 'poisoned' && s !== 'protected',
         );
-      }
+      });
     }
     if (phase === 'day') {
       this.state.day++;
@@ -275,11 +275,13 @@ export class GameManager {
     player.drunkAs = drunkAs;
 
     // 주정뱅이는 처음부터 '취함' 상태 자동 부여
-    if (roleId === 'drunk' && !player.statuses.includes('drunk')) {
-      player.statuses.push('drunk');
-    } else if (roleId !== 'drunk') {
-      player.statuses = player.statuses.filter((s) => s !== 'drunk');
+    if (roleId === 'drunk') {
+      if (!player.statuses.includes('drunk')) {
+        player.statuses.push('drunk');
+      }
+      return;
     }
+    player.statuses = player.statuses.filter((s) => s !== 'drunk');
   }
 
   kill(playerId: string): void {
@@ -857,9 +859,9 @@ export class GameManager {
   preselectVote(playerId: string, guilty: boolean | null): void {
     if (guilty === null) {
       this.votePreselections.delete(playerId);
-    } else {
-      this.votePreselections.set(playerId, guilty);
+      return;
     }
+    this.votePreselections.set(playerId, guilty);
   }
 
   getPreselectedVote(playerId: string): boolean {

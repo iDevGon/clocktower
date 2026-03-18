@@ -290,9 +290,7 @@ export default function GrimoireScreen() {
   const getDay = () => useGameStore.getState().gameState?.day ?? 0;
   const getPhase = () => useGameStore.getState().gameState?.phase ?? 'setup';
   const playerNameMap = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const p of players ?? []) map.set(p.id, p.name);
-    return map;
+    return new Map((players ?? []).map((p) => [p.id, p.name]));
   }, [players]);
   const getPlayerName = (id: string) => playerNameMap.get(id) ?? id;
 
@@ -710,9 +708,7 @@ export default function GrimoireScreen() {
   // 초공감자(Empath) 이웃 하이라이트
   // Build a player lookup map for O(1) access in neighbor/pair calculations
   const playerById = useMemo(() => {
-    const map = new Map<string, Player>();
-    for (const p of players ?? []) map.set(p.id, p);
-    return map;
+    return new Map((players ?? []).map((p) => [p.id, p]));
   }, [players]);
 
   const empathNeighborIds = useMemo(() => {
@@ -835,16 +831,17 @@ export default function GrimoireScreen() {
 
     indicators[currentNomination.nomineeId] = 'nominee';
 
-    for (const p of gameState?.players ?? []) {
-      if (p.id === currentNomination.nomineeId) continue;
-      if (votes[p.id]) {
-        indicators[p.id] = 'guilty';
-      } else if (voteConfirmed[p.id]) {
-        indicators[p.id] = 'guilty';
-      } else if (votePreselections[p.id]) {
-        indicators[p.id] = 'preselected_guilty';
-      }
-    }
+    (gameState?.players ?? [])
+      .filter((p) => p.id !== currentNomination.nomineeId)
+      .forEach((p) => {
+        if (votes[p.id]) {
+          indicators[p.id] = 'guilty';
+        } else if (voteConfirmed[p.id]) {
+          indicators[p.id] = 'guilty';
+        } else if (votePreselections[p.id]) {
+          indicators[p.id] = 'preselected_guilty';
+        }
+      });
     return indicators;
   }, [
     hasActiveVote,

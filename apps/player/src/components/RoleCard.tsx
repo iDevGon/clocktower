@@ -101,7 +101,10 @@ export function RoleCard({
   useEffect(() => {
     if (mode === 'veiled') {
       flip.value = 1;
-    } else if (mode === 'revealed') {
+      prevModeRef.current = mode;
+      return;
+    }
+    if (mode === 'revealed') {
       if (prevModeRef.current === 'veiled') {
         // dramatic reveal from veiled state
         flip.value = withSpring(0, {
@@ -115,13 +118,14 @@ export function RoleCard({
           easing: REasing.inOut(REasing.cubic),
         });
       }
-    } else {
-      // hidden
-      flip.value = withTiming(1, {
-        duration: 800,
-        easing: REasing.inOut(REasing.cubic),
-      });
+      prevModeRef.current = mode;
+      return;
     }
+    // hidden
+    flip.value = withTiming(1, {
+      duration: 800,
+      easing: REasing.inOut(REasing.cubic),
+    });
     prevModeRef.current = mode;
   }, [mode, flip]);
 

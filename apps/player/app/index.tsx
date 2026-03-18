@@ -118,12 +118,12 @@ export default function JoinScreen() {
     try {
       await connect();
       const result = await joinGame(trimmedName);
-      if (result.success) {
-        usePlayerStore.getState().set({ playerName: trimmedName });
-        router.replace('/game');
-      } else {
+      if (!result.success) {
         setError(result.error ?? '게임에 참가할 수 없습니다.');
+        return;
       }
+      usePlayerStore.getState().set({ playerName: trimmedName });
+      router.replace('/game');
     } catch (err) {
       setError(
         err instanceof Error ? err.message : '서버에 연결할 수 없습니다.',

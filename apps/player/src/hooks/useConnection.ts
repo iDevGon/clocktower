@@ -62,18 +62,18 @@ export function useConnection() {
 
         socket.emit('game:join', { playerName }, (res) => {
           clearTimeout(timeout);
-          if (res.success && res.playerId) {
-            usePlayerStore.getState().set({ playerId: res.playerId });
-            resolve({ success: true });
-            // Fire and forget
-            registerForPushNotifications().then((token) => {
-              if (token && socket.connected) {
-                socket.emit('push:register', { token });
-              }
-            });
-          } else {
+          if (!res.success || !res.playerId) {
             resolve({ success: false, error: res.error });
+            return;
           }
+          usePlayerStore.getState().set({ playerId: res.playerId });
+          resolve({ success: true });
+          // Fire and forget
+          registerForPushNotifications().then((token) => {
+            if (token && socket.connected) {
+              socket.emit('push:register', { token });
+            }
+          });
         });
       });
     },
@@ -92,31 +92,31 @@ export function useConnection() {
 
       socket.emit('game:rejoin', { playerId }, (res) => {
         clearTimeout(timeout);
-        if (res.success && res.playerName) {
-          usePlayerStore.getState().set({
-            playerId,
-            playerName: res.playerName,
-            role: res.roleId ? (getRoleById(res.roleId) ?? null) : null,
-            drunkAs: res.drunkAs ?? null,
-            currentPhase: res.phase ?? 'setup',
-            isAlive: res.isAlive ?? true,
-            daySubPhase: res.daySubPhase ?? null,
-            hasNominatedToday: res.hasNominatedToday ?? false,
-            deadVoteUsed: res.deadVoteUsed ?? false,
-            nightProgress: res.nightProgress ?? null,
-            gamePlayers: res.gamePlayers ?? [],
-            butlerMasterName: res.butlerMasterName ?? null,
-          });
-          resolve(true);
-          // Fire and forget
-          registerForPushNotifications().then((token) => {
-            if (token && socket.connected) {
-              socket.emit('push:register', { token });
-            }
-          });
-        } else {
+        if (!res.success || !res.playerName) {
           resolve(false);
+          return;
         }
+        usePlayerStore.getState().set({
+          playerId,
+          playerName: res.playerName,
+          role: res.roleId ? (getRoleById(res.roleId) ?? null) : null,
+          drunkAs: res.drunkAs ?? null,
+          currentPhase: res.phase ?? 'setup',
+          isAlive: res.isAlive ?? true,
+          daySubPhase: res.daySubPhase ?? null,
+          hasNominatedToday: res.hasNominatedToday ?? false,
+          deadVoteUsed: res.deadVoteUsed ?? false,
+          nightProgress: res.nightProgress ?? null,
+          gamePlayers: res.gamePlayers ?? [],
+          butlerMasterName: res.butlerMasterName ?? null,
+        });
+        resolve(true);
+        // Fire and forget
+        registerForPushNotifications().then((token) => {
+          if (token && socket.connected) {
+            socket.emit('push:register', { token });
+          }
+        });
       });
     });
   }, []);
