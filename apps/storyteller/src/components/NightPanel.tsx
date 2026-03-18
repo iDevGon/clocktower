@@ -91,15 +91,14 @@ export function NightPanel({
     const fbDef = NIGHT_FEEDBACK[activeNightRoleId];
     if (!fbDef || fbDef.type === 'none' || fbDef.type === 'grimoire')
       return false;
-    const target = players.find(
+    const isOnlyWhenDead =
+      NIGHT_ACTIONS[activeNightRoleId]?.onlyWhenDead === true;
+    return players.some(
       (p) =>
-        p.role?.id === activeNightRoleId ||
-        (p.role?.id === 'drunk' && p.drunkAs === activeNightRoleId),
+        (p.role?.id === activeNightRoleId ||
+          (p.role?.id === 'drunk' && p.drunkAs === activeNightRoleId)) &&
+        (isOnlyWhenDead ? !p.isAlive : p.isAlive),
     );
-    if (!target) return false;
-    if (NIGHT_ACTIONS[activeNightRoleId]?.onlyWhenDead && target.isAlive)
-      return false;
-    return true;
   }, [activeNightRoleId, players]);
 
   // Expose nightOrderComplete to parent
@@ -225,6 +224,8 @@ export function NightPanel({
                 }
                 onSendFeedback={(playerId, fb) => {
                   onSendFeedback(playerId, fb);
+                }}
+                onAllFeedbackSent={() => {
                   setFeedbackSentForRole(activeNightRoleId);
                   setFeedbackCollapsed(true);
                 }}

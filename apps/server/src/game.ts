@@ -289,6 +289,10 @@ export class GameManager {
     if (player) player.isAlive = false;
   }
 
+  hasPendingNightKill(playerId: string): boolean {
+    return this.pendingNightKills.includes(playerId);
+  }
+
   addPendingNightKill(playerId: string): void {
     if (!this.pendingNightKills.includes(playerId)) {
       this.pendingNightKills.push(playerId);
