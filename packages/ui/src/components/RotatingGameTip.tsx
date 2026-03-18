@@ -55,6 +55,7 @@ export function RotatingGameTip({
   }, [opacity, goNext]);
 
   // index 변경 시 fade in + 다음 전환 예약
+  // biome-ignore lint/correctness/useExhaustiveDependencies: index는 팁 변경 시 fade-in 재시작을 위한 의도적 트리거
   useEffect(() => {
     opacity.value = withTiming(1, {
       duration: FADE_DURATION,
@@ -65,7 +66,7 @@ export function RotatingGameTip({
     return () => {
       clearTimeout(timerRef.current);
     };
-  }, [interval, opacity, advance]);
+  }, [index, interval, opacity, advance]);
 
   // 초기 딜레이
   useEffect(() => {
@@ -136,7 +137,8 @@ const s = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     maxWidth: 400,
-    minHeight: 60,
+    height: 110,
+    justifyContent: 'center',
   },
   glowWrap: {
     borderRadius: 8,
@@ -164,7 +166,7 @@ const s = StyleSheet.create({
   tipText: {
     fontSize: 14,
     fontStyle: 'italic',
-    textAlign: 'center',
+    textAlign: 'left',
     lineHeight: 21,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 8,
