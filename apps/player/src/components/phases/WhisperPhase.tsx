@@ -73,7 +73,7 @@ export function WhisperPhase({
         style={[
           styles.dayTitle,
           isDead && styles.dayTitleDead,
-          isExpired && { color: '#555' },
+          isExpired && whisperStyles.expiredTitle,
         ]}
       >
         {isExpired ? '밀담 시간 종료' : '밀담 시간'}

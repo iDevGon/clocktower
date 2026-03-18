@@ -228,6 +228,10 @@ export const styles = StyleSheet.create({
     marginTop: 48,
     letterSpacing: 1,
   },
+  tipContainer: {
+    alignItems: 'center',
+    marginTop: 24,
+  },
   copyright: {
     position: 'absolute',
     bottom: 20,
