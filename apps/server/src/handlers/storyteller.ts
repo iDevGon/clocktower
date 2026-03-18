@@ -77,21 +77,21 @@ function sendEvilInfo(playerIo: PlayerNamespace, game: GameManager): void {
   const minions = state.players.filter((p) => p.role?.team === 'minion');
 
   // 악마에게 전송
-  for (const demon of demons) {
+  demons.forEach((demon) => {
     playerIo.to(demon.id).emit('evil:info', {
       minionNames: minions.map((m) => m.name),
       bluffRoles,
     });
-  }
+  });
 
   // 하수인에게 전송
-  for (const minion of minions) {
+  minions.forEach((minion) => {
     const otherMinions = minions.filter((m) => m.id !== minion.id);
     playerIo.to(minion.id).emit('evil:info', {
       demonName: demons[0]?.name,
       otherMinionNames: otherMinions.map((m) => m.name),
     });
-  }
+  });
 }
 
 function getPlayerInfoList(game: GameManager) {
@@ -227,13 +227,13 @@ export function registerStorytellerHandlers(
         // 밤 중 사망한 플레이어들 알림
         const pendingKills = game.flushPendingNightKills();
         const nightDeaths: Array<{ id: string; name: string }> = [];
-        for (const killId of pendingKills) {
+        pendingKills.forEach((killId) => {
           const killed = game.getPlayer(killId);
           if (killed) {
             playerIo.emit('game:playerUpdate', killed);
             nightDeaths.push({ id: killed.id, name: killed.name });
           }
-        }
+        });
         // 모든 플레이어에게 간밤 사망자 알림 (오버레이 표시용)
         // 사망자가 없어도 전송하여 "아무도 사망하지 않았습니다" 표시
         playerIo.emit('night:deaths', { deaths: nightDeaths });
@@ -413,11 +413,7 @@ export function registerStorytellerHandlers(
         });
         return;
       }
-      for (const {
-        playerId,
-        role,
-        drunkAs: origDrunkAs,
-      } of result.assignments) {
+      result.assignments.forEach(({ playerId, role, drunkAs: origDrunkAs }) => {
         let drunkAs = origDrunkAs;
         // 주정뱅이인데 가짜 역할이 없으면 자동 배정
         if (role.id === 'drunk' && !drunkAs) {
@@ -451,7 +447,7 @@ export function registerStorytellerHandlers(
             roleName: role.name,
           });
         }
-      }
+      });
       sendEvilInfo(playerIo, game);
       // 점쟁이가 배정되면 Red Herring 자동 지정
       const redHerringPlayerId =
@@ -575,19 +571,17 @@ export function registerStorytellerHandlers(
         playerIo.emit('game:phase', 'ended');
         storytellerIo.emit('game:end', winResult);
         storytellerIo.emit('game:state', game.getState());
-      } else {
-        emitPromotionIfAny(game, playerIo, storytellerIo);
-        if (killedPlayer) {
-          if (isNight) {
-            // 밤 중 사망: 낮 전환 시까지 플레이어 알림 보류
-            game.addPendingNightKill(playerId);
-          } else {
-            const updatedPlayer = game.getPlayer(playerId);
-            if (updatedPlayer)
-              playerIo.emit('game:playerUpdate', updatedPlayer);
-          }
-        }
+        return;
       }
+      emitPromotionIfAny(game, playerIo, storytellerIo);
+      if (!killedPlayer) return;
+      if (isNight) {
+        // 밤 중 사망: 낮 전환 시까지 플레이어 알림 보류
+        game.addPendingNightKill(playerId);
+        return;
+      }
+      const updatedPlayer = game.getPlayer(playerId);
+      if (updatedPlayer) playerIo.emit('game:playerUpdate', updatedPlayer);
     });
 
     socket.on('game:revive', (playerId) => {

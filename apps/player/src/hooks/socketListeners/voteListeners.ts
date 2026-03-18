@@ -89,11 +89,11 @@ export function attachVoteListeners(socket: AppSocket) {
       usePlayerStore
         .getState()
         .set({ deathReason: data.reason, executionHappenedToday: true });
-    } else {
-      // 다른 플레이어가 처형된 경우: 처형 알림 오버레이 표시
-      usePlayerStore
-        .getState()
-        .set({ executionAnnouncement: data, executionHappenedToday: true });
+      return;
     }
+    // 다른 플레이어가 처형된 경우: 처형 알림 오버레이 표시
+    usePlayerStore
+      .getState()
+      .set({ executionAnnouncement: data, executionHappenedToday: true });
   });
 }

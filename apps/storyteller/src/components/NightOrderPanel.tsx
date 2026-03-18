@@ -65,12 +65,12 @@ export function NightOrderPanel({
   });
   // Sync activeIndex when external activeNightRoleId changes
   useEffect(() => {
-    if (activeNightRoleId) {
-      const idx = order.indexOf(activeNightRoleId);
-      setActiveIndex(idx >= 0 ? idx : null);
-    } else {
+    if (!activeNightRoleId) {
       setActiveIndex(null);
+      return;
     }
+    const idx = order.indexOf(activeNightRoleId);
+    setActiveIndex(idx >= 0 ? idx : null);
   }, [activeNightRoleId, order]);
 
   const [elapsed, setElapsed] = useState(0);
@@ -116,10 +116,10 @@ export function NightOrderPanel({
     if (activeIndex === index) {
       setActiveIndex(null);
       onActivateRole(null);
-    } else {
-      setActiveIndex(index);
-      onActivateRole(order[index]);
+      return;
     }
+    setActiveIndex(index);
+    onActivateRole(order[index]);
   };
 
   const handlePrev = () => {

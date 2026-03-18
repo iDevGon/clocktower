@@ -118,12 +118,12 @@ export default function JoinScreen() {
     try {
       await connect();
       const result = await joinGame(trimmedName);
-      if (result.success) {
-        usePlayerStore.getState().set({ playerName: trimmedName });
-        router.replace('/game');
-      } else {
+      if (!result.success) {
         setError(result.error ?? '게임에 참가할 수 없습니다.');
+        return;
       }
+      usePlayerStore.getState().set({ playerName: trimmedName });
+      router.replace('/game');
     } catch (err) {
       setError(
         err instanceof Error ? err.message : '서버에 연결할 수 없습니다.',
@@ -291,7 +291,7 @@ export default function JoinScreen() {
           진행자 화면의 QR을 스캔하면 자동으로 입력됩니다
         </Text>
 
-        <View style={{ alignItems: 'center', marginTop: 24 }}>
+        <View style={styles.tipContainer}>
           <RotatingGameTip tips={tips} color="#8b5050" glowColor="#6b3030" />
         </View>
       </View>

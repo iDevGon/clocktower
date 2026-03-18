@@ -70,20 +70,20 @@ export function NightProgress({
   const pulseAnim = useSharedValue(1);
 
   useEffect(() => {
-    if (isMyTurn) {
-      Vibration.vibrate([0, 400, 200, 400, 200, 400]);
-
-      pulseAnim.value = withRepeat(
-        withSequence(
-          withTiming(0.3, { duration: 800, easing: Easing.inOut(Easing.ease) }),
-          withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
-        ),
-        -1,
-      );
-    } else {
+    if (!isMyTurn) {
       cancelAnimation(pulseAnim);
       pulseAnim.value = 1;
+      return;
     }
+    Vibration.vibrate([0, 400, 200, 400, 200, 400]);
+
+    pulseAnim.value = withRepeat(
+      withSequence(
+        withTiming(0.3, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+    );
     return () => cancelAnimation(pulseAnim);
   }, [isMyTurn, pulseAnim]);
 

@@ -9,25 +9,25 @@ export function attachGameListeners(socket: AppSocket) {
     const { playerId } = usePlayerStore.getState();
     if (playerId) {
       socket.emit('game:rejoin', { playerId }, (res) => {
-        if (res.success) {
-          usePlayerStore.getState().set({
-            role: res.roleId ? (getRoleById(res.roleId) ?? null) : null,
-            drunkAs: res.drunkAs ?? null,
-            currentPhase: res.phase ?? 'setup',
-            isAlive: res.isAlive ?? true,
-            daySubPhase: res.daySubPhase ?? null,
-            hasNominatedToday: res.hasNominatedToday ?? false,
-            deadVoteUsed: res.deadVoteUsed ?? false,
-            nightProgress: res.nightProgress ?? null,
-          });
-        } else {
+        if (!res.success) {
           // Game was reset or no longer exists — clear game state but keep connection
           const { playerName } = usePlayerStore.getState();
           usePlayerStore.getState().reset();
           usePlayerStore.getState().set({ playerName });
           useWhisperStore.getState().reset();
           useChatStore.getState().reset();
+          return;
         }
+        usePlayerStore.getState().set({
+          role: res.roleId ? (getRoleById(res.roleId) ?? null) : null,
+          drunkAs: res.drunkAs ?? null,
+          currentPhase: res.phase ?? 'setup',
+          isAlive: res.isAlive ?? true,
+          daySubPhase: res.daySubPhase ?? null,
+          hasNominatedToday: res.hasNominatedToday ?? false,
+          deadVoteUsed: res.deadVoteUsed ?? false,
+          nightProgress: res.nightProgress ?? null,
+        });
       });
     }
   });

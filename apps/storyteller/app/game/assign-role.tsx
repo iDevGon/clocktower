@@ -69,13 +69,11 @@ export default function AssignRoleScreen() {
   // 역할 ID -> 배정된 플레이어 이름 매핑 (현재 플레이어 제외)
   const roleOwnerMap = useMemo(() => {
     if (!gameState) return new Map<string, string>();
-    const map = new Map<string, string>();
-    for (const p of gameState.players) {
-      if (p.id !== playerId && p.role?.id) {
-        map.set(p.role.id, p.name);
-      }
-    }
-    return map;
+    return new Map(
+      gameState.players
+        .filter((p) => p.id !== playerId && p.role?.id)
+        .map((p) => [p.role?.id, p.name]),
+    );
   }, [gameState, playerId]);
 
   // 이미 다른 플레이어에게 배정된 다른 에디션 역할의 ID 수집
@@ -84,13 +82,11 @@ export default function AssignRoleScreen() {
     const editionRoleIds = new Set(
       getRolesForEdition(selectedEditionId).map((r) => r.id),
     );
-    const ids = new Set<string>();
-    for (const p of gameState.players) {
-      if (p.role?.id && !editionRoleIds.has(p.role.id)) {
-        ids.add(p.role.id);
-      }
-    }
-    return ids;
+    return new Set(
+      gameState.players
+        .filter((p) => p.role?.id && !editionRoleIds.has(p.role.id))
+        .map((p) => p.role?.id),
+    );
   }, [gameState, selectedEditionId]);
 
   // 현재 에디션 역할 + 추가된 다른 에디션 역할 + 수동 배정된 다른 에디션 역할
@@ -146,15 +142,14 @@ export default function AssignRoleScreen() {
 
     // 현재 플레이어(배정 대상)를 제외하고 이미 배정된 팀별 인원수
     const assigned = { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
-    let hasBaron = false;
-    for (const p of gameState.players) {
-      if (p.id === playerId) continue;
-      if (p.role?.id === 'baron') hasBaron = true;
+    const otherPlayers = gameState.players.filter((p) => p.id !== playerId);
+    const hasBaron = otherPlayers.some((p) => p.role?.id === 'baron');
+    otherPlayers.forEach((p) => {
       if (p.role?.team) {
         assigned[p.role.team as keyof typeof assigned] =
           (assigned[p.role.team as keyof typeof assigned] ?? 0) + 1;
       }
-    }
+    });
 
     // 남작이 배정되면 외지인 +2, 마을주민 -2
     if (hasBaron) {
@@ -181,18 +176,18 @@ export default function AssignRoleScreen() {
     if (unassignedRoles.length === 0) return;
     const randomRole =
       unassignedRoles[Math.floor(Math.random() * unassignedRoles.length)];
-    if (randomRole.id === 'drunk') {
-      // 주정뱅이가 랜덤 선택된 경우 가짜 역할도 랜덤 배정
-      const townsfolk = unassignedRoles.filter((r) => r.team === 'townsfolk');
-      if (townsfolk.length > 0) {
-        const fakeRole =
-          townsfolk[Math.floor(Math.random() * townsfolk.length)];
-        assignRole(playerId, 'drunk', fakeRole.id);
-      } else {
-        assignRole(playerId, 'drunk');
-      }
-    } else {
+    if (randomRole.id !== 'drunk') {
       assignRole(playerId, randomRole.id);
+      router.back();
+      return;
+    }
+    // 주정뱅이가 랜덤 선택된 경우 가짜 역할도 랜덤 배정
+    const townsfolk = unassignedRoles.filter((r) => r.team === 'townsfolk');
+    if (townsfolk.length > 0) {
+      const fakeRole = townsfolk[Math.floor(Math.random() * townsfolk.length)];
+      assignRole(playerId, 'drunk', fakeRole.id);
+    } else {
+      assignRole(playerId, 'drunk');
     }
     router.back();
   }, [

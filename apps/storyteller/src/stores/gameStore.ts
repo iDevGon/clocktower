@@ -167,10 +167,9 @@ export const useGameStore = create<GameStore>()(
       dismissEventToast: () => set({ eventToast: null }),
       setGameState: (state) => {
         // 서버 상태의 player.statuses를 playerStatuses 스토어에 동기화
-        const synced: Record<string, PlayerStatus[]> = {};
-        for (const player of state.players) {
-          synced[player.id] = player.statuses ?? [];
-        }
+        const synced: Record<string, PlayerStatus[]> = Object.fromEntries(
+          state.players.map((player) => [player.id, player.statuses ?? []]),
+        );
         const prev = useGameStore.getState();
         const isNewGame = prev.gameId !== null && prev.gameId !== state.id;
         const phaseChangedToVote =

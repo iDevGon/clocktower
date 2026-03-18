@@ -32,6 +32,9 @@ export const whisperStyles = StyleSheet.create({
   countdownUrgent: {
     color: '#e05050',
   },
+  expiredTitle: {
+    color: '#555',
+  },
 });
 
 export const endedStyles = StyleSheet.create({

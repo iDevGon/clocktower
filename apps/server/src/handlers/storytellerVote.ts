@@ -77,7 +77,7 @@ export function startClockwiseVote(
   // 각 투표자의 확정 시점 계산 (nominee 기준 상대 각도 → 시간)
   const nomineeFullIdx = fullOrder.indexOf(nomineeId);
   const confirmTimes: Array<{ playerId: string; timeMs: number }> = [];
-  for (const voterId of voteOrder) {
+  voteOrder.forEach((voterId) => {
     const voterFullIdx = fullOrder.indexOf(voterId);
     // nominee 기준 시계방향 상대 위치 (0 ~ N-1)
     const offset =
@@ -86,7 +86,7 @@ export function startClockwiseVote(
     // offset=0인 nominee는 한 바퀴 끝에서 확정
     const fraction = offset === 0 ? 1 : offset / totalPlayers;
     confirmTimes.push({ playerId: voterId, timeMs: fraction * durationMs });
-  }
+  });
   // 확정 시점 순으로 정렬
   confirmTimes.sort((a, b) => a.timeMs - b.timeMs);
 
@@ -194,9 +194,9 @@ export function registerVoteHandlers(
         playerIo.emit('game:phase', 'ended');
         storytellerIo.emit('game:end', winResult);
         storytellerIo.emit('game:state', game.getState());
-      } else {
-        emitPromotionIfAny(game, playerIo, storytellerIo);
+        return;
       }
+      emitPromotionIfAny(game, playerIo, storytellerIo);
       return;
     }
 

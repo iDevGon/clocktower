@@ -1,14 +1,7 @@
 import { getRandomGameTip } from '@clocktower/shared';
 import { FullScreenVignette, GameTip } from '@clocktower/ui';
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Dimensions,
-  Pressable,
-  StyleSheet,
-  Text,
-  Vibration,
-  View,
-} from 'react-native';
+import { Dimensions, Pressable, Text, Vibration, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -24,6 +17,7 @@ import Animated, {
 import { useConnectionStore } from '../stores/connectionStore';
 import { usePlayerStore } from '../stores/playerStore';
 import { BaseOverlay } from './BaseOverlay';
+import { styles } from './SlayerFizzleOverlay.styles';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -247,14 +241,14 @@ export function SlayerFizzleOverlay({
   }, []);
 
   const handleConfirm = () => {
-    if (isVotePhase) {
-      if (acked) return;
-      setAcked(true);
-      const socket = useConnectionStore.getState().socket;
-      socket?.emit('slayer:ack');
-    } else {
+    if (!isVotePhase) {
       onDismiss();
+      return;
     }
+    if (acked) return;
+    setAcked(true);
+    const socket = useConnectionStore.getState().socket;
+    socket?.emit('slayer:ack');
   };
 
   return (
@@ -333,108 +327,3 @@ export function SlayerFizzleOverlay({
     </BaseOverlay>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    alignItems: 'center',
-    paddingHorizontal: 32,
-  },
-  bowContainer: {
-    marginBottom: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bowText: {
-    fontSize: 52,
-  },
-  arrowText: {
-    fontSize: 28,
-    position: 'absolute',
-    right: -8,
-    top: -4,
-  },
-  label: {
-    fontSize: 11,
-    letterSpacing: 12,
-    color: '#4a5a6a',
-    fontWeight: '300',
-    textTransform: 'uppercase',
-    marginTop: 4,
-  },
-  nameText: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#8a9aaa',
-    textAlign: 'center',
-    marginBottom: 12,
-    textShadowColor: 'rgba(100, 140, 180, 0.2)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 10,
-  },
-  targetBadge: {
-    backgroundColor: 'rgba(74, 90, 106, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(74, 90, 106, 0.3)',
-    borderRadius: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    marginBottom: 20,
-  },
-  targetLabel: {
-    fontSize: 14,
-    color: '#6a7a8a',
-    fontWeight: '600',
-  },
-  fizzleText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#5a6878',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 16,
-  },
-  hintBadge: {
-    backgroundColor: 'rgba(60, 70, 85, 0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(60, 70, 85, 0.3)',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  hintText: {
-    fontSize: 11,
-    color: '#3e4e5e',
-    fontWeight: '400',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-  },
-  confirmButton: {
-    marginTop: 28,
-    backgroundColor: 'rgba(74, 90, 106, 0.25)',
-    borderWidth: 1,
-    borderColor: 'rgba(74, 90, 106, 0.5)',
-    borderRadius: 8,
-    paddingHorizontal: 40,
-    paddingVertical: 12,
-  },
-  confirmButtonAcked: {
-    backgroundColor: 'rgba(46, 204, 113, 0.2)',
-    borderColor: 'rgba(46, 204, 113, 0.5)',
-  },
-  confirmText: {
-    fontSize: 15,
-    color: '#8a9aaa',
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  confirmTextAcked: {
-    color: '#2ecc71',
-  },
-  waitingHint: {
-    marginTop: 12,
-    fontSize: 12,
-    color: '#4a5a6a',
-    textAlign: 'center',
-  },
-});

@@ -52,9 +52,9 @@ export function StorytellerChatModal({
     if (visible) {
       useChatStore.getState().setOpen(true);
       useChatStore.getState().clearUnread();
-    } else {
-      useChatStore.getState().setOpen(false);
+      return;
     }
+    useChatStore.getState().setOpen(false);
   }, [visible]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on new messages

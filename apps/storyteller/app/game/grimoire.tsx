@@ -3,16 +3,14 @@ import {
   getRandomTipText,
   getRoleById,
   NIGHT_ACTIONS,
-  NIGHT_FEEDBACK,
   PLAYER_STATUS_LABELS,
-  type Player,
   type PlayerStatus,
   type TipCategory,
 } from '@clocktower/shared';
 import { DictionaryModal } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -24,7 +22,6 @@ import {
   type ActionModalOption,
 } from '../../src/components/ActionModal';
 import { ChatToast } from '../../src/components/ChatToast';
-import { ClockSpeedSetting } from '../../src/components/ClockSpeedSetting';
 import { DaySubPhaseBar } from '../../src/components/DaySubPhaseBar';
 import {
   type CircularPosition,
@@ -32,19 +29,21 @@ import {
 } from '../../src/components/DraggablePlayerToken';
 import { EventToast } from '../../src/components/EventToast';
 import {
-  NightActionLog,
-  NightFeedbackPanel,
-} from '../../src/components/NightActionLog';
-import { NightOrderPanel } from '../../src/components/NightOrderPanel';
+  ExecutionBanner,
+  GameEndBanner,
+} from '../../src/components/GameResultBanners';
+import { GrimoireTopBar } from '../../src/components/GrimoireTopBar';
+import { NightPanel } from '../../src/components/NightPanel';
 import { PhaseBar } from '../../src/components/PhaseBar';
 import { PhaseTipToast } from '../../src/components/PhaseTipToast';
 import { PlayerPickerModal } from '../../src/components/PlayerPickerModal';
+import { ChefHintBar, EmpathHintBar } from '../../src/components/RoleHintBars';
 import { RoleRevealWaitingOverlay } from '../../src/components/RoleRevealWaitingOverlay';
+import { SettingsPanel } from '../../src/components/SettingsPanel';
 import { StorytellerChatModal } from '../../src/components/StorytellerChatModal';
 import { VoteClockFace } from '../../src/components/VoteClockFace';
 import { VoteClockHand } from '../../src/components/VoteClockHand';
 import { VotePanel } from '../../src/components/VotePanel';
-import { IS_DEV } from '../../src/constants';
 import { useGameActions } from '../../src/hooks/useGameActions';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import { useConnectionStore } from '../../src/stores/connectionStore';
@@ -290,9 +289,7 @@ export default function GrimoireScreen() {
   const getDay = () => useGameStore.getState().gameState?.day ?? 0;
   const getPhase = () => useGameStore.getState().gameState?.phase ?? 'setup';
   const playerNameMap = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const p of players ?? []) map.set(p.id, p.name);
-    return map;
+    return new Map((players ?? []).map((p) => [p.id, p.name]));
   }, [players]);
   const getPlayerName = (id: string) => playerNameMap.get(id) ?? id;
 
@@ -584,58 +581,9 @@ export default function GrimoireScreen() {
     [chatUnreadCounts],
   );
 
-  // Night feedback overlay state
-  const [feedbackCollapsed, setFeedbackCollapsed] = useState(false);
-  const [feedbackSentForRole, setFeedbackSentForRole] = useState<string | null>(
-    null,
-  );
   const [nightOrderComplete, setNightOrderComplete] = useState(false);
   const [executionBannerDismissed, setExecutionBannerDismissed] =
     useState(false);
-  const [nightElapsed, setNightElapsed] = useState(0);
-  const nightTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Track elapsed time per active night role
-  useEffect(() => {
-    if (nightTimerRef.current) clearInterval(nightTimerRef.current);
-    setNightElapsed(0);
-    if (activeNightRoleId) {
-      nightTimerRef.current = setInterval(() => {
-        setNightElapsed((prev) => prev + 1);
-      }, 1000);
-    }
-    return () => {
-      if (nightTimerRef.current) clearInterval(nightTimerRef.current);
-    };
-  }, [activeNightRoleId]);
-
-  // Auto-expand feedback and reset sent state when active role changes
-  useEffect(() => {
-    if (activeNightRoleId) {
-      setFeedbackCollapsed(false);
-      setFeedbackSentForRole(null);
-    }
-  }, [activeNightRoleId]);
-
-  const isFeedbackSent = feedbackSentForRole === activeNightRoleId;
-
-  // Check if current role has feedback to show
-  const hasNightFeedback = useMemo(() => {
-    if (!activeNightRoleId) return false;
-    const fbDef = NIGHT_FEEDBACK[activeNightRoleId];
-    if (!fbDef || fbDef.type === 'none' || fbDef.type === 'grimoire')
-      return false;
-    const target = gameState?.players.find(
-      (p) =>
-        p.role?.id === activeNightRoleId ||
-        (p.role?.id === 'drunk' && p.drunkAs === activeNightRoleId),
-    );
-    if (!target) return false;
-    // onlyWhenDead 역할(까마귀지기 등)이 살아있으면 피드백 불필요
-    if (NIGHT_ACTIONS[activeNightRoleId]?.onlyWhenDead && target.isAlive)
-      return false;
-    return true;
-  }, [activeNightRoleId, gameState?.players]);
 
   const [areaSize, setAreaSize] = useState({ width: 0, height: 0 });
 
@@ -759,9 +707,7 @@ export default function GrimoireScreen() {
   // 초공감자(Empath) 이웃 하이라이트
   // Build a player lookup map for O(1) access in neighbor/pair calculations
   const playerById = useMemo(() => {
-    const map = new Map<string, Player>();
-    for (const p of players ?? []) map.set(p.id, p);
-    return map;
+    return new Map((players ?? []).map((p) => [p.id, p]));
   }, [players]);
 
   const empathNeighborIds = useMemo(() => {
@@ -884,16 +830,17 @@ export default function GrimoireScreen() {
 
     indicators[currentNomination.nomineeId] = 'nominee';
 
-    for (const p of gameState?.players ?? []) {
-      if (p.id === currentNomination.nomineeId) continue;
-      if (votes[p.id]) {
-        indicators[p.id] = 'guilty';
-      } else if (voteConfirmed[p.id]) {
-        indicators[p.id] = 'guilty';
-      } else if (votePreselections[p.id]) {
-        indicators[p.id] = 'preselected_guilty';
-      }
-    }
+    (gameState?.players ?? [])
+      .filter((p) => p.id !== currentNomination.nomineeId)
+      .forEach((p) => {
+        if (votes[p.id]) {
+          indicators[p.id] = 'guilty';
+        } else if (voteConfirmed[p.id]) {
+          indicators[p.id] = 'guilty';
+        } else if (votePreselections[p.id]) {
+          indicators[p.id] = 'preselected_guilty';
+        }
+      });
     return indicators;
   }, [
     hasActiveVote,
@@ -945,66 +892,25 @@ export default function GrimoireScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.topBar}>
-        <Text style={styles.dayText}>{gameState.day}일차</Text>
-        <View style={styles.topBarRight}>
-          {gameState.phase === 'day' && gameState.daySubPhase === 'whisper' && (
-            <Pressable
-              onPress={() => router.push('/game/whispers')}
-              style={styles.whisperButton}
-            >
-              <Text style={styles.whisperButtonText}>
-                밀담{' '}
-                {activeWhispers.length > 0 ? `(${activeWhispers.length})` : ''}
-              </Text>
-            </Pressable>
-          )}
-          {IS_DEV &&
-            gameState.phase === 'day' &&
-            gameState.daySubPhase === 'nomination' && (
-              <Pressable
-                onPress={() => router.push('/game/nominate')}
-                style={styles.nominateButton}
-              >
-                <Text style={styles.nominateText}>지목 (수동)</Text>
-              </Pressable>
-            )}
-          {IS_DEV && slayerWaitingAck && (
-            <Pressable
-              onPress={() => socket?.emit('slayer:forceAck')}
-              style={[styles.nominateButton, { backgroundColor: '#7a2a2a' }]}
-            >
-              <Text style={styles.nominateText}>처단자 강제확인</Text>
-            </Pressable>
-          )}
-          <Pressable
-            onPress={() => setDictionaryVisible(true)}
-            style={styles.logButton}
-          >
-            <Text style={styles.logText}>사전</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => {
-              setChatInitialPlayerId(null);
-              setChatModalVisible(true);
-            }}
-            style={styles.logButton}
-          >
-            <Text style={styles.logText}>
-              채팅{totalChatUnread > 0 ? ` (${totalChatUnread})` : ''}
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/game/log')}
-            style={styles.logButton}
-          >
-            <Text style={styles.logText}>로그</Text>
-          </Pressable>
-          <Pressable onPress={handleMenu} style={styles.menuButton}>
-            <Text style={styles.menuText}>메뉴</Text>
-          </Pressable>
-        </View>
-      </View>
+      <GrimoireTopBar
+        day={gameState.day}
+        phase={gameState.phase}
+        daySubPhase={gameState.daySubPhase}
+        activeWhispersCount={activeWhispers.length}
+        slayerWaitingAck={slayerWaitingAck}
+        totalChatUnread={totalChatUnread}
+        onWhispersPress={() => router.push('/game/whispers')}
+        onNominatePress={() => router.push('/game/nominate')}
+        onSlayerForceAck={() => socket?.emit('slayer:forceAck')}
+        onDictionaryPress={() => setDictionaryVisible(true)}
+        onChatPress={() => {
+          setChatInitialPlayerId(null);
+          setChatModalVisible(true);
+        }}
+        onLogPress={() => router.push('/game/log')}
+        onMenuPress={handleMenu}
+        styles={styles}
+      />
 
       {gameState.phase === 'day' && gameState.daySubPhase !== 'defense' && (
         <DaySubPhaseBar
@@ -1107,130 +1013,28 @@ export default function GrimoireScreen() {
         />
       </View>
 
-      {gameState.phase === 'night' && nightActions.length > 0 && (
-        <NightActionLog
-          actions={nightActions}
+      {gameState.phase === 'night' && (
+        <NightPanel
+          day={gameState.day}
           players={gameState.players}
+          nightActions={nightActions}
           playerStatuses={playerStatuses}
+          activeNightRoleId={activeNightRoleId}
+          activeRoleIds={activeRoleIds}
+          dormantRoleIds={dormantRoleIds}
+          skippedNightRoles={skippedNightRoles}
+          executedPlayer={executedPlayer}
+          empathNeighborIds={empathNeighborIds}
+          empathEvilCount={empathEvilCount}
+          chefEvilPairCount={chefEvilPairCount}
+          playerOrder={playerOrder}
+          onActivateRole={setActiveNightRole}
+          onNightComplete={() => setNightOrderComplete(true)}
           onSendFeedback={sendNightFeedback}
           onKill={kill}
           onSetStatus={setPlayerStatus}
+          styles={styles}
         />
-      )}
-      {gameState.phase === 'night' && (
-        <View>
-          {/* Floating timer - always visible above overlay */}
-          {hasNightFeedback &&
-            activeNightRoleId &&
-            (() => {
-              const role = getRoleById(activeNightRoleId);
-              const m = Math.floor(nightElapsed / 60);
-              const sec = nightElapsed % 60;
-              return (
-                <View style={styles.nightFloatingTimer}>
-                  <Text style={styles.nightFloatingTimerRole}>
-                    {role?.name ?? activeNightRoleId}
-                  </Text>
-                  <Text style={styles.nightFloatingTimerTime}>
-                    {m}:{sec.toString().padStart(2, '0')}
-                  </Text>
-                  {isFeedbackSent ? (
-                    <View style={styles.nightFeedbackSentBadge}>
-                      <Text style={styles.nightFeedbackSentText}>
-                        피드백 전송됨
-                      </Text>
-                    </View>
-                  ) : (
-                    <Pressable
-                      onPress={() => setFeedbackCollapsed((prev) => !prev)}
-                      style={styles.nightFeedbackToggle}
-                    >
-                      <Text style={styles.nightFeedbackToggleText}>
-                        {feedbackCollapsed ? '피드백 ▲' : '피드백 ▼'}
-                      </Text>
-                    </Pressable>
-                  )}
-                </View>
-              );
-            })()}
-
-          {/* NightOrderPanel + NightFeedbackPanel overlay container */}
-          <View style={styles.nightOrderRelative}>
-            <NightOrderPanel
-              day={gameState.day}
-              activeRoleIds={activeRoleIds}
-              skippedRoleIds={skippedNightRoles}
-              dormantRoleIds={dormantRoleIds}
-              activeNightRoleId={activeNightRoleId}
-              onActivateRole={setActiveNightRole}
-              onNightComplete={() => {
-                setNightOrderComplete(true);
-              }}
-            />
-
-            {/* Feedback overlay - covers NightOrderPanel */}
-            {hasNightFeedback && !feedbackCollapsed && !isFeedbackSent && (
-              <View style={styles.nightFeedbackOverlay}>
-                <NightFeedbackPanel
-                  activeRoleId={activeNightRoleId}
-                  players={gameState.players}
-                  nightActions={nightActions}
-                  executedRoleName={executedPlayer?.role?.name}
-                  executedPlayerName={executedPlayer?.name}
-                  empathHint={
-                    activeNightRoleId === 'empath' && empathNeighborIds.size > 0
-                      ? {
-                          neighbors: gameState.players
-                            .filter((p) => empathNeighborIds.has(p.id))
-                            .map((p) => ({
-                              id: p.id,
-                              name: p.name,
-                              isEvil:
-                                p.role?.team === 'minion' ||
-                                p.role?.team === 'demon',
-                            })),
-                          evilCount: empathEvilCount,
-                        }
-                      : undefined
-                  }
-                  chefHint={
-                    activeNightRoleId === 'chef'
-                      ? {
-                          evilPairCount: chefEvilPairCount,
-                          evilPairNames: (() => {
-                            const order = playerOrder;
-                            const pairs: string[][] = [];
-                            for (let i = 0; i < order.length; i++) {
-                              const curr = order[i];
-                              const next = order[(i + 1) % order.length];
-                              const cp = gameState.players.find(
-                                (p) => p.id === curr,
-                              );
-                              const np = gameState.players.find(
-                                (p) => p.id === next,
-                              );
-                              const isEvil = (p: typeof cp) =>
-                                p?.role?.team === 'minion' ||
-                                p?.role?.team === 'demon';
-                              if (isEvil(cp) && isEvil(np)) {
-                                pairs.push([cp?.name ?? '', np?.name ?? '']);
-                              }
-                            }
-                            return pairs;
-                          })(),
-                        }
-                      : undefined
-                  }
-                  onSendFeedback={(playerId, fb) => {
-                    sendNightFeedback(playerId, fb);
-                    setFeedbackSentForRole(activeNightRoleId);
-                    setFeedbackCollapsed(true);
-                  }}
-                />
-              </View>
-            )}
-          </View>
-        </View>
       )}
       {hasActiveVote && currentNomination && (
         <VotePanel
@@ -1253,48 +1057,18 @@ export default function GrimoireScreen() {
         />
       )}
       {executedPlayer && !executionBannerDismissed && (
-        <View style={styles.executionBanner}>
-          <View style={styles.executionBannerContent}>
-            <Text style={styles.executionBannerLabel}>오늘 처형</Text>
-            <Text style={styles.executionBannerRole}>
-              {executedPlayer.role?.name ?? '역할 미배정'}
-            </Text>
-            <Text style={styles.executionBannerName}>
-              {executedPlayer.name}
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => setExecutionBannerDismissed(true)}
-            style={styles.executionBannerDismiss}
-          >
-            <Text style={styles.executionBannerDismissText}>닫기</Text>
-          </Pressable>
-        </View>
+        <ExecutionBanner
+          executedPlayer={executedPlayer}
+          onDismiss={() => setExecutionBannerDismissed(true)}
+          styles={styles}
+        />
       )}
       {gameState.phase === 'ended' && gameResult && (
-        <View
-          style={
-            gameResult.winningTeam === 'good'
-              ? styles.gameEndBannerGood
-              : styles.gameEndBannerEvil
-          }
-        >
-          <Text
-            style={[
-              grimoireDynamic.gameEndWinnerText(
-                gameResult.winningTeam === 'good',
-              ),
-              { fontSize: fontSize.lg },
-            ]}
-          >
-            {gameResult.winningTeam === 'good'
-              ? '선한 팀 승리!'
-              : '악한 팀 승리!'}
-          </Text>
-          <Text style={[styles.gameEndReason, { fontSize: fontSize.sm }]}>
-            {gameResult.reason}
-          </Text>
-        </View>
+        <GameEndBanner
+          gameResult={gameResult}
+          fontSize={fontSize}
+          styles={styles}
+        />
       )}
       <PhaseBar
         currentPhase={gameState.phase}
@@ -1342,158 +1116,34 @@ export default function GrimoireScreen() {
       />
 
       {/* 초공감자 이웃 정보 힌트 */}
-      {empathNeighborIds.size > 0 && (
-        <View style={styles.empathHintBar}>
-          <Text style={[styles.empathHintLabel, { fontSize: fontSize.sm }]}>
-            초공감자 이웃:
-          </Text>
-          <Text style={[styles.empathHintNames, { fontSize: fontSize.sm }]}>
-            {gameState.players
-              .filter((p) => empathNeighborIds.has(p.id))
-              .map((p) => p.name)
-              .join(', ')}
-          </Text>
-          <Text style={[styles.empathHintCount, { fontSize: fontSize.md }]}>
-            악한 {empathEvilCount}명
-          </Text>
-        </View>
-      )}
+      <EmpathHintBar
+        players={gameState.players}
+        empathNeighborIds={empathNeighborIds}
+        empathEvilCount={empathEvilCount}
+        fontSize={fontSize}
+        styles={styles}
+      />
 
       {/* 요리사 인접 악한 쌍 힌트 */}
-      {chefEvilPairIds.size > 0 && (
-        <View style={styles.chefHintBar}>
-          <Text style={[styles.chefHintLabel, { fontSize: fontSize.sm }]}>
-            인접 악한 쌍:
-          </Text>
-          <Text style={[styles.chefHintNames, { fontSize: fontSize.sm }]}>
-            {(() => {
-              const order = playerOrder;
-              const pairs: string[] = [];
-              for (let i = 0; i < order.length; i++) {
-                const curr = order[i];
-                const next = order[(i + 1) % order.length];
-                const cp = gameState.players.find((p) => p.id === curr);
-                const np = gameState.players.find((p) => p.id === next);
-                const isEvil = (p: typeof cp) =>
-                  p?.role?.team === 'minion' || p?.role?.team === 'demon';
-                if (isEvil(cp) && isEvil(np)) {
-                  pairs.push(`${cp?.name}-${np?.name}`);
-                }
-              }
-              return pairs.join(', ') || '없음';
-            })()}
-          </Text>
-          <Text style={[styles.chefHintCount, { fontSize: fontSize.md }]}>
-            {chefEvilPairCount}쌍
-          </Text>
-        </View>
-      )}
+      <ChefHintBar
+        players={gameState.players}
+        playerOrder={playerOrder}
+        chefEvilPairIds={chefEvilPairIds}
+        chefEvilPairCount={chefEvilPairCount}
+        fontSize={fontSize}
+        styles={styles}
+      />
 
       {/* 게임 설정 패널 */}
       {settingsVisible && (
-        <View style={styles.settingsOverlay}>
-          <View style={styles.settingsPanel}>
-            <Text style={[styles.settingsTitle, { fontSize: fontSize.lg }]}>
-              게임 설정
-            </Text>
-
-            <View style={styles.settingsRow}>
-              <View>
-                <Text style={[styles.settingsLabel, { fontSize: fontSize.md }]}>
-                  채팅 밀담
-                </Text>
-                <Text style={[styles.settingsDesc, { fontSize: fontSize.sm }]}>
-                  {gameState.settings.whisperMode === 'chat'
-                    ? 'ON — 앱 내 채팅'
-                    : 'OFF — 직접 대면만'}
-                </Text>
-              </View>
-              <Switch
-                value={gameState.settings.whisperMode === 'chat'}
-                onValueChange={(val) =>
-                  handleSettingsChange({
-                    whisperMode: val ? 'chat' : 'offline',
-                  })
-                }
-                trackColor={{ false: '#3a3a42', true: '#2a4a2a' }}
-                thumbColor={
-                  gameState.settings.whisperMode === 'chat'
-                    ? '#2ecc71'
-                    : '#908e8a'
-                }
-                accessibilityLabel="채팅 밀담 모드"
-              />
-            </View>
-
-            <View style={styles.settingsRow}>
-              <View>
-                <Text style={[styles.settingsLabel, { fontSize: fontSize.md }]}>
-                  온라인 투표
-                </Text>
-                <Text style={[styles.settingsDesc, { fontSize: fontSize.sm }]}>
-                  {gameState.settings.votingMode === 'online'
-                    ? 'ON — 앱 내 투표'
-                    : 'OFF — 직접 투표'}
-                </Text>
-              </View>
-              <Switch
-                value={gameState.settings.votingMode === 'online'}
-                onValueChange={(val) =>
-                  handleSettingsChange({
-                    votingMode: val ? 'online' : 'offline',
-                  })
-                }
-                trackColor={{ false: '#3a3a42', true: '#2a4a2a' }}
-                thumbColor={
-                  gameState.settings.votingMode === 'online'
-                    ? '#2ecc71'
-                    : '#908e8a'
-                }
-                accessibilityLabel="온라인 투표"
-              />
-            </View>
-
-            {gameState.settings.whisperMode === 'chat' && (
-              <View style={styles.settingsClockMargin}>
-                <ClockSpeedSetting
-                  value={gameState.settings.whisperClockSeconds}
-                  onChange={(val) =>
-                    handleSettingsChange({ whisperClockSeconds: val })
-                  }
-                  scale={scale}
-                  label="밀담 시간"
-                  showOff
-                  options={[30, 45, 60, 90, 120]}
-                />
-              </View>
-            )}
-
-            {gameState.settings.votingMode === 'online' && (
-              <View style={styles.settingsClockMarginLast}>
-                <ClockSpeedSetting
-                  value={gameState.settings.voteClockSeconds}
-                  onChange={(val) =>
-                    handleSettingsChange({ voteClockSeconds: val })
-                  }
-                  scale={scale}
-                  label="투표 시간 (1인당)"
-                  options={[2, 3, 5, 7, 10]}
-                />
-              </View>
-            )}
-
-            <Pressable
-              onPress={() => setSettingsVisible(false)}
-              style={styles.settingsCloseButton}
-            >
-              <Text
-                style={[styles.settingsCloseText, { fontSize: fontSize.md }]}
-              >
-                닫기
-              </Text>
-            </Pressable>
-          </View>
-        </View>
+        <SettingsPanel
+          settings={gameState.settings}
+          onSettingsChange={handleSettingsChange}
+          onClose={() => setSettingsVisible(false)}
+          scale={scale}
+          fontSize={fontSize}
+          styles={styles}
+        />
       )}
 
       <StorytellerChatModal

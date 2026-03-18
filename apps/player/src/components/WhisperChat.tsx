@@ -57,30 +57,25 @@ export function WhisperChat({
   const candidates = useMemo(() => {
     const items: TaggedCandidate[] = [];
     const seen = new Set<string>();
-    for (const p of gamePlayers) {
-      if (!seen.has(p.name)) {
-        seen.add(p.name);
-        items.push({ word: p.name, category: 'player' });
-      }
-    }
-    for (const r of ALL_ROLES) {
-      if (!seen.has(r.name)) {
-        seen.add(r.name);
-        items.push({ word: r.name, category: 'role' });
-      }
-    }
-    for (const label of Object.values(PLAYER_STATUS_LABELS)) {
-      if (!seen.has(label)) {
-        seen.add(label);
-        items.push({ word: label, category: 'status' });
-      }
-    }
-    for (const extra of ['사망', '생존', '죽음', '이야기꾼']) {
-      if (!seen.has(extra)) {
-        seen.add(extra);
-        items.push({ word: extra, category: 'status' });
-      }
-    }
+
+    const addUnique = (word: string, category: TaggedCandidate['category']) => {
+      if (seen.has(word)) return;
+      seen.add(word);
+      items.push({ word, category });
+    };
+
+    gamePlayers.forEach((p) => {
+      addUnique(p.name, 'player');
+    });
+    ALL_ROLES.forEach((r) => {
+      addUnique(r.name, 'role');
+    });
+    Object.values(PLAYER_STATUS_LABELS).forEach((label) => {
+      addUnique(label, 'status');
+    });
+    ['사망', '생존', '죽음', '이야기꾼'].forEach((extra) => {
+      addUnique(extra, 'status');
+    });
     return items;
   }, [gamePlayers]);
 

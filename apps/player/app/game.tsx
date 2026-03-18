@@ -6,13 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DeadVignette } from '../src/components/DeadVignette';
-import { DeathOverlay } from '../src/components/DeathOverlay';
-import { ExecutionOverlay } from '../src/components/ExecutionOverlay';
 import { FeedbackHistoryModal } from '../src/components/FeedbackHistoryModal';
-import { GameEndOverlay } from '../src/components/GameEndOverlay';
-import { GameStartReveal } from '../src/components/GameStartReveal';
-import { NightDeathOverlay } from '../src/components/NightDeathOverlay';
-import { NightFallOverlay } from '../src/components/NightFallOverlay';
+import { GameOverlays } from '../src/components/GameOverlays';
 import { NominateModal } from '../src/components/NominateModal';
 import {
   DiscussionPhase,
@@ -23,11 +18,8 @@ import {
   WhisperPhase,
 } from '../src/components/PhaseContent';
 import { PhaseIndicator } from '../src/components/PhaseIndicator';
-import { RavenkeeperOverlay } from '../src/components/RavenkeeperOverlay';
 import { FlippableRoleCard } from '../src/components/RoleCard';
-import { RolePromotionReveal } from '../src/components/RolePromotionReveal';
 import { SeatingChart } from '../src/components/SeatingChart';
-import { SlayerFizzleOverlay } from '../src/components/SlayerFizzleOverlay';
 import { StorytellerChatModal } from '../src/components/StorytellerChatModal';
 import { StorytellerChatToast } from '../src/components/StorytellerChatToast';
 import { VotePrompt, VoteVignette } from '../src/components/VotePrompt';
@@ -443,74 +435,40 @@ export default function GameScreen() {
         )}
       </ScrollView>
 
-      {showStartReveal && role && (
-        <GameStartReveal
-          role={role}
-          evilInfo={evilInfo}
-          onDismiss={dismissStartReveal}
-        />
-      )}
-
-      {rolePromotion && !showStartReveal && (
-        <RolePromotionReveal
-          role={rolePromotion}
-          onDismiss={dismissRolePromotion}
-        />
-      )}
-
-      {justDied && (
-        <DeathOverlay
-          onDismiss={() =>
-            dismissDeath({
-              justDied: false,
-              deathReason: null,
-              nightDeathAnnouncement: null,
-            })
-          }
-          reason={deathReason}
-        />
-      )}
-
-      {executionAnnouncement &&
-        !justDied &&
-        !(currentPhase === 'ended' && gameResult) && (
-          <ExecutionOverlay
-            announcement={executionAnnouncement}
-            onDismiss={() => dismissDeath({ executionAnnouncement: null })}
-          />
-        )}
-
-      {showNightFall && (
-        <NightFallOverlay onDismiss={() => setShowNightFall(false)} />
-      )}
-
-      {ravenkeeperOverlay && (
-        <RavenkeeperOverlay onDismiss={() => setRavenkeeperOverlay(false)} />
-      )}
-
-      {nightDeathAnnouncement && !justDied && !executionAnnouncement && (
-        <NightDeathOverlay
-          deaths={nightDeathAnnouncement}
-          onDismiss={() => dismissDeath({ nightDeathAnnouncement: null })}
-        />
-      )}
-
-      {slayerFizzle && !justDied && !executionAnnouncement && (
-        <SlayerFizzleOverlay
-          slayerName={slayerFizzle.slayerName}
-          targetName={slayerFizzle.targetName}
-          isVotePhase={currentPhase === 'vote'}
-          onDismiss={() => dismissDeath({ slayerFizzle: null })}
-        />
-      )}
-
-      {currentPhase === 'ended' && gameResult && role && !gameEndDismissed && (
-        <GameEndOverlay
-          gameResult={gameResult}
-          myTeam={role.team}
-          onDismiss={() => setGameEndDismissed(true)}
-        />
-      )}
+      <GameOverlays
+        showStartReveal={showStartReveal}
+        role={role}
+        evilInfo={evilInfo}
+        onDismissStartReveal={dismissStartReveal}
+        rolePromotion={rolePromotion}
+        onDismissRolePromotion={dismissRolePromotion}
+        justDied={justDied}
+        deathReason={deathReason}
+        onDismissDeath={() =>
+          dismissDeath({
+            justDied: false,
+            deathReason: null,
+            nightDeathAnnouncement: null,
+          })
+        }
+        executionAnnouncement={executionAnnouncement}
+        currentPhase={currentPhase}
+        gameResult={gameResult}
+        onDismissExecution={() => dismissDeath({ executionAnnouncement: null })}
+        showNightFall={showNightFall}
+        onDismissNightFall={() => setShowNightFall(false)}
+        showRavenkeeper={ravenkeeperOverlay}
+        onDismissRavenkeeper={() => setRavenkeeperOverlay(false)}
+        nightDeathAnnouncement={nightDeathAnnouncement}
+        onDismissNightDeath={() =>
+          dismissDeath({ nightDeathAnnouncement: null })
+        }
+        slayerFizzle={slayerFizzle}
+        onDismissSlayerFizzle={() => dismissDeath({ slayerFizzle: null })}
+        gameEndDismissed={gameEndDismissed}
+        myTeam={role?.team}
+        onDismissGameEnd={() => setGameEndDismissed(true)}
+      />
 
       <WhisperToast
         onNavigate={(conversationId) => {

@@ -43,16 +43,16 @@ export function registerPlayerHandlers(
         return;
       }
       const player = game.addPlayer(playerName);
-      if (player) {
-        socket.join(player.id);
-        callback({ success: true, playerId: player.id });
-        // 설정 전송
-        socket.emit('game:settings', game.getSettings());
-        storytellerIo.emit('game:state', game.getState());
-        console.log(`Player joined: ${playerName}`);
-      } else {
+      if (!player) {
         callback({ success: false, error: '참가할 수 없습니다' });
+        return;
       }
+      socket.join(player.id);
+      callback({ success: true, playerId: player.id });
+      // 설정 전송
+      socket.emit('game:settings', game.getSettings());
+      storytellerIo.emit('game:state', game.getState());
+      console.log(`Player joined: ${playerName}`);
     });
 
     socket.on('game:rejoin', ({ playerId }, callback) => {
@@ -349,37 +349,7 @@ export function registerPlayerHandlers(
         !player.statuses.includes('poisoned') &&
         target.role?.team === 'demon';
 
-      if (killCondition) {
-        game.kill(targetId);
-        game.markExecution(); // 처단자 처형은 처형으로 간주 → 더 이상 지목 불가
-        const killedTarget = game.getPlayer(targetId);
-        if (killedTarget) {
-          playerIo.emit('execution:announced', {
-            executedId: targetId,
-            executedName: killedTarget.name,
-            reason: 'slayer',
-            detail: `${player.name}의 처단자 능력으로 ${killedTarget.name}이(가) 사망했습니다`,
-          });
-          storytellerIo.emit('execution:announced', {
-            executedId: targetId,
-            executedName: killedTarget.name,
-            reason: 'slayer',
-            detail: `${player.name}의 처단자 능력으로 ${killedTarget.name}이(가) 사망했습니다`,
-          });
-          playerIo.emit('game:playerUpdate', killedTarget);
-        }
-        storytellerIo.emit('game:state', game.getState());
-
-        const winResult = game.checkWinCondition();
-        if (winResult) {
-          winResult.cause = 'slayer';
-          winResult.reason = `처단자 ${player.name}이(가) 악마를 처치했습니다`;
-          playerIo.emit('game:end', winResult);
-          playerIo.emit('game:phase', 'ended');
-          storytellerIo.emit('game:end', winResult);
-          storytellerIo.emit('game:state', game.getState());
-        }
-      } else {
+      if (!killCondition) {
         // 능력이 효과 없음 (중독/주정뱅이/대상이 악마가 아님)
         playerIo.emit('slayer:noEffect', {
           slayerName: player.name,
@@ -397,6 +367,38 @@ export function registerPlayerHandlers(
           playerIo.emit('vote:clockPause');
           storytellerIo.emit('vote:clockPause');
         }
+        console.log(`Slayer: ${player.name} -> ${target.name}`);
+        return;
+      }
+
+      game.kill(targetId);
+      game.markExecution(); // 처단자 처형은 처형으로 간주 → 더 이상 지목 불가
+      const killedTarget = game.getPlayer(targetId);
+      if (killedTarget) {
+        playerIo.emit('execution:announced', {
+          executedId: targetId,
+          executedName: killedTarget.name,
+          reason: 'slayer',
+          detail: `${player.name}의 처단자 능력으로 ${killedTarget.name}이(가) 사망했습니다`,
+        });
+        storytellerIo.emit('execution:announced', {
+          executedId: targetId,
+          executedName: killedTarget.name,
+          reason: 'slayer',
+          detail: `${player.name}의 처단자 능력으로 ${killedTarget.name}이(가) 사망했습니다`,
+        });
+        playerIo.emit('game:playerUpdate', killedTarget);
+      }
+      storytellerIo.emit('game:state', game.getState());
+
+      const winResult = game.checkWinCondition();
+      if (winResult) {
+        winResult.cause = 'slayer';
+        winResult.reason = `처단자 ${player.name}이(가) 악마를 처치했습니다`;
+        playerIo.emit('game:end', winResult);
+        playerIo.emit('game:phase', 'ended');
+        storytellerIo.emit('game:end', winResult);
+        storytellerIo.emit('game:state', game.getState());
       }
 
       console.log(`Slayer: ${player.name} -> ${target.name}`);
@@ -450,12 +452,11 @@ export function registerPlayerHandlers(
       }
 
       // Validate all participants exist
-      const resolvedNames: string[] = [];
-      for (const pid of resolvedIds) {
-        const p = game.getPlayer(pid);
-        if (!p) return;
-        resolvedNames.push(p.name);
-      }
+      const resolvedPlayers = resolvedIds
+        .map((pid) => game.getPlayer(pid))
+        .filter((p): p is NonNullable<typeof p> => p != null);
+      if (resolvedPlayers.length !== resolvedIds.length) return;
+      const resolvedNames = resolvedPlayers.map((p) => p.name);
 
       const resolvedConversationId =
         conversationId || WhisperTracker.makeConversationId(...resolvedIds);
@@ -472,9 +473,9 @@ export function registerPlayerHandlers(
       };
 
       // Send to all participants
-      for (const pid of resolvedIds) {
+      resolvedIds.forEach((pid) => {
         playerIo.to(pid).emit('whisper:receive', whisperMsg);
-      }
+      });
 
       whisperTracker.update(whisperMsg);
       const otherNames = resolvedNames
@@ -528,10 +529,10 @@ export function registerPlayerHandlers(
         game.removePlayer(playerId);
         storytellerIo.emit('game:state', game.getState());
         console.log(`Player left lobby: ${playerName}`);
-      } else {
-        const player = game.getPlayer(playerId);
-        console.log(`Player disconnected: ${player?.name ?? playerId}`);
+        return;
       }
+      const player = game.getPlayer(playerId);
+      console.log(`Player disconnected: ${player?.name ?? playerId}`);
     });
   });
 }

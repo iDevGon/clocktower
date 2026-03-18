@@ -1,13 +1,7 @@
 import type { Phase, PlayerInfo } from '@clocktower/shared';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import {
-  Dimensions,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Dimensions, Modal, Pressable, Text, View } from 'react-native';
+import { styles as s } from './SeatingChart.styles';
 
 interface SeatingChartProps {
   visible: boolean;
@@ -142,64 +136,3 @@ export function SeatingChart({
     </Modal>
   );
 }
-
-const s = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  container: {
-    alignItems: 'center',
-    gap: 16,
-  },
-  title: {
-    color: '#e0ddd8',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  ring: {
-    position: 'relative',
-  },
-  token: {
-    position: 'absolute',
-    borderRadius: 999,
-    backgroundColor: '#1a1a1e',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  tokenMe: {
-    backgroundColor: '#1e1c14',
-    shadowColor: '#c4a050',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  name: {
-    color: '#b0aea8',
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  nameMe: {
-    color: '#e0ddd8',
-  },
-  deadRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  dead: {
-    color: '#c47070',
-    fontWeight: '700',
-    marginTop: 1,
-  },
-  hint: {
-    color: '#5c5a58',
-    fontSize: 12,
-  },
-});

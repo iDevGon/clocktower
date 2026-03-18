@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { Modal, View } from 'react-native';
 import { useWhisperExpired } from '../hooks/useWhisperExpired';
 import { usePlayerStore } from '../stores/playerStore';
 import { useWhisperStore } from '../stores/whisperStore';
 import { WhisperChat } from './WhisperChat';
+import { styles } from './WhisperModal.styles';
 import { WhisperPlayerList } from './WhisperPlayerList';
 import { WhisperToast } from './WhisperToast';
 
@@ -100,11 +101,3 @@ export function WhisperModal({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#121214',
-    paddingTop: 48,
-  },
-});

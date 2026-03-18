@@ -58,9 +58,9 @@ export default function HomeScreen() {
     if (!state?.id) return;
     if (!state.started) {
       router.replace('/game/lobby');
-    } else {
-      router.replace('/game/grimoire');
+      return;
     }
+    router.replace('/game/grimoire');
   }, [router]);
 
   // _layout.tsx가 재접속을 처리함 → 여기서는 연결 완료 시 네비게이션만

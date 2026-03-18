@@ -16,13 +16,13 @@ export function attachRoleListeners(socket: AppSocket) {
         drunkAs: drunkAs ?? null,
         pendingRolePromotion: role,
       });
-    } else {
-      usePlayerStore.getState().set({
-        role,
-        drunkAs: drunkAs ?? null,
-        rolePromotion: isPromotion ? role : null,
-      });
+      return;
     }
+    usePlayerStore.getState().set({
+      role,
+      drunkAs: drunkAs ?? null,
+      rolePromotion: isPromotion ? role : null,
+    });
   });
 
   socket.on('evil:info', (data) => {

@@ -33,9 +33,9 @@ export function useGameActions() {
           nightActionSubmitted: true,
           butlerMasterName: master?.name ?? null,
         });
-      } else {
-        store.set({ nightActionSubmitted: true });
+        return;
       }
+      store.set({ nightActionSubmitted: true });
     }
   }, []);
 

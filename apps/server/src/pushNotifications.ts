@@ -55,19 +55,19 @@ export async function sendPushToAll(
   title: string,
   body: string,
 ): Promise<void> {
-  const messages: ExpoPushMessage[] = [];
-  for (const id of playerIds) {
-    const token = pushTokens.get(id);
-    if (token) {
-      messages.push({
+  const messages = playerIds
+    .map((id) => {
+      const token = pushTokens.get(id);
+      if (!token) return null;
+      return {
         to: token,
         title,
         body,
-        sound: 'default',
-        priority: 'high',
-      });
-    }
-  }
+        sound: 'default' as const,
+        priority: 'high' as const,
+      };
+    })
+    .filter((msg): msg is NonNullable<typeof msg> => msg !== null);
   if (messages.length === 0) return;
 
   try {

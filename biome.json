@@ -72,9 +72,6 @@
           },
           "style": {
             "noNonNullAssertion": "warn"
-          },
-          "complexity": {
-            "noForEach": "warn"
           }
         }
       }
@@ -95,9 +92,6 @@
           },
           "style": {
             "noNonNullAssertion": "warn"
-          },
-          "complexity": {
-            "noForEach": "warn"
           }
         }
       }
@@ -118,9 +112,6 @@
             "noDefaultExport": "error",
             "useNodejsImportProtocol": "error",
             "noNonNullAssertion": "error"
-          },
-          "complexity": {
-            "noForEach": "error"
           }
         }
       }
@@ -142,9 +133,6 @@
           "style": {
             "noDefaultExport": "error",
             "noNonNullAssertion": "error"
-          },
-          "complexity": {
-            "noForEach": "error"
           }
         }
       }

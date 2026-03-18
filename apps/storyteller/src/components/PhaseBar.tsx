@@ -56,21 +56,17 @@ export function PhaseBar({
   };
 
   const handleNext = () => {
+    if (onConfirmNext) {
+      onConfirmNext();
+      return;
+    }
     if (isInStepper) {
       const nextIndex = (stepperIndex + 1) % STEPPER_ORDER.length;
-      if (onConfirmNext) {
-        onConfirmNext();
-      } else {
-        onSetPhase(STEPPER_ORDER[nextIndex]);
-      }
-    } else {
-      // vote/ended → stepper의 첫 단계(밤)로
-      if (onConfirmNext) {
-        onConfirmNext();
-      } else {
-        onSetPhase(STEPPER_ORDER[0]);
-      }
+      onSetPhase(STEPPER_ORDER[nextIndex]);
+      return;
     }
+    // vote/ended → stepper의 첫 단계(밤)로
+    onSetPhase(STEPPER_ORDER[0]);
   };
 
   const canPrev = isInStepper && stepperIndex > 0;

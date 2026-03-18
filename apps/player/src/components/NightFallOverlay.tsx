@@ -1,7 +1,7 @@
 import { getRandomGameTip } from '@clocktower/shared';
 import { FullScreenVignette, GameTip } from '@clocktower/ui';
 import { useEffect, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -16,6 +16,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { usePlayerStore } from '../stores/playerStore';
 import { BaseOverlay } from './BaseOverlay';
+import { styles as s } from './NightFallOverlay.styles';
 
 // ── Moon icon ──
 
@@ -183,27 +184,3 @@ export function NightFallOverlay({ onDismiss }: NightFallOverlayProps) {
     </BaseOverlay>
   );
 }
-
-const s = StyleSheet.create({
-  content: {
-    alignItems: 'center',
-    paddingHorizontal: 32,
-  },
-  moonText: {
-    fontSize: 56,
-    marginBottom: 12,
-  },
-  label: {
-    fontSize: 13,
-    letterSpacing: 8,
-    color: '#6a7aaa',
-    fontWeight: '300',
-    textTransform: 'uppercase',
-  },
-  message: {
-    fontSize: 20,
-    color: '#8a9ac0',
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-});

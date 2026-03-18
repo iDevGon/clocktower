@@ -53,7 +53,7 @@ export function PlayersAndRoleFeedback({
     const selected = players.filter((p) => selectedPlayers.includes(p.name));
     const real = new Set<string>();
     let teamMatch = false;
-    for (const p of selected) {
+    selected.forEach((p) => {
       if (p.role?.id === 'drunk') {
         // 주정뱅이는 외지인이므로 외지인 필터에 매치
         if (roles.some((r) => r.id === 'drunk')) {
@@ -64,7 +64,7 @@ export function PlayersAndRoleFeedback({
         real.add(p.role.id);
         teamMatch = true;
       }
-    }
+    });
     return { realRoleIds: real, hasTeamMatchPlayer: teamMatch };
   }, [selectedPlayers, players, roles]);
 
