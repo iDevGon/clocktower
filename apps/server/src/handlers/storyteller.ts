@@ -465,11 +465,8 @@ export function registerStorytellerHandlers(
         }
       });
       sendEvilInfo(playerIo, game);
-      // 점쟁이가 배정되면 Red Herring 자동 지정
-      const redHerringPlayerId =
-        game.assignFortuneTellerRedHerring() ?? undefined;
       storytellerIo.emit('game:state', game.getState());
-      callback({ success: true, redHerringPlayerId });
+      callback({ success: true });
     });
 
     socket.on('game:assignRole', ({ playerId, roleId, drunkAs }) => {

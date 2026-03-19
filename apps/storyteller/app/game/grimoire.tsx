@@ -249,8 +249,14 @@ export default function GrimoireScreen() {
   }, [players]);
 
   const handleRedHerringConfirmAuto = useCallback(() => {
+    if (redHerringCandidates.length === 0) return;
+    const random =
+      redHerringCandidates[
+        Math.floor(Math.random() * redHerringCandidates.length)
+      ];
+    assignRedHerring(random.id);
     setShowRedHerringModal(false);
-  }, []);
+  }, [redHerringCandidates, assignRedHerring]);
 
   const handleRedHerringSelectManual = useCallback(
     (playerId: string) => {
@@ -1211,10 +1217,11 @@ export default function GrimoireScreen() {
         themeColor="#9b59b6"
         candidates={redHerringCandidates}
         currentSelectedId={currentRedHerringId}
-        autoLabel="자동 (랜덤)"
+        autoLabel="랜덤 선택"
         onConfirmAuto={handleRedHerringConfirmAuto}
         onSelectPlayer={handleRedHerringSelectManual}
-        onClose={handleRedHerringConfirmAuto}
+        onClose={() => {}}
+        dismissable={false}
         scale={scale}
       />
 

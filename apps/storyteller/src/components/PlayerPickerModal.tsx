@@ -26,6 +26,8 @@ interface PlayerPickerModalProps {
   onClose: () => void;
   /** 역할명 표시 여부 (기본 true) */
   showRole?: boolean;
+  /** 배경 클릭/닫기 버튼으로 모달을 닫을 수 있는지 여부 (기본 true) */
+  dismissable?: boolean;
   scale: number;
 }
 
@@ -41,6 +43,7 @@ export function PlayerPickerModal({
   onSelectPlayer,
   onClose,
   showRole = true,
+  dismissable = true,
   scale,
 }: PlayerPickerModalProps) {
   const s = (v: number) => Math.round(v * scale);
@@ -54,9 +57,9 @@ export function PlayerPickerModal({
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={dismissable ? onClose : undefined}
     >
-      <Pressable style={st.overlay} onPress={onClose}>
+      <Pressable style={st.overlay} onPress={dismissable ? onClose : undefined}>
         <Pressable
           style={[st.modal, { borderColor: themeColor }]}
           onPress={(e) => e.stopPropagation()}
@@ -124,9 +127,11 @@ export function PlayerPickerModal({
             }}
           />
 
-          <Pressable style={st.footer} onPress={onClose}>
-            <Text style={st.footerText}>닫기</Text>
-          </Pressable>
+          {dismissable && (
+            <Pressable style={st.footer} onPress={onClose}>
+              <Text style={st.footerText}>닫기</Text>
+            </Pressable>
+          )}
         </Pressable>
       </Pressable>
     </Modal>
