@@ -188,16 +188,17 @@ export function PlayerToken({
             ✋🏻
           </Text>
         )}
-        {(voteIndicator === 'preselected_guilty' || isPreselected) && (
-          <Text
-            style={[
-              styles.voteBadgeText,
-              { fontSize: scaledFont.md, opacity: 0.5 },
-            ]}
-          >
-            ✋🏻?
-          </Text>
-        )}
+        {voteIndicator !== 'guilty' &&
+          (voteIndicator === 'preselected_guilty' || isPreselected) && (
+            <Text
+              style={[
+                styles.voteBadgeText,
+                { fontSize: scaledFont.md, opacity: 0.5 },
+              ]}
+            >
+              ✋🏻?
+            </Text>
+          )}
         {isExecutionCandidate && (
           <View style={[styles.statusRow, { marginTop: 1 }]}>
             <View style={[styles.statusBadge, { backgroundColor: '#c43c3c' }]}>
