@@ -41,53 +41,54 @@ describe('E2E: 주정뱅이 겹침 — 점쟁이 (select_two)', () => {
     await ctx.cleanup();
   });
 
-  it('주정뱅이(점쟁이) + 진짜 점쟁이: 둘 다 밤 행동을 제출한다', async () => {
+  it('주정뱅이(점쟁이) + 진짜 점쟁이: 순차적으로 밤 행동을 제출한다', async () => {
     const { playerIds } = await setupGameWithRoles(
       ctx,
       makeRoles('fortune_teller'),
     );
 
-    // night:activeRole 리스너 등록
-    const activePromise0 = waitForEvent(
-      ctx.players[0] as Socket,
-      'night:activeRole',
-    );
-    const activePromise1 = waitForEvent(
-      ctx.players[1] as Socket,
-      'night:activeRole',
-    );
+    // 첫 번째 wakeUp 수신 (랜덤 순서)
+    const firstWakeUp = new Promise<number>((resolve) => {
+      ctx.players[0].once('night:wakeUp', () => resolve(0));
+      ctx.players[1].once('night:wakeUp', () => resolve(1));
+    });
 
     ctx.storyteller.emit('night:setActiveRole', 'fortune_teller');
+    const firstIdx = await firstWakeUp;
+    const secondIdx = firstIdx === 0 ? 1 : 0;
 
-    await activePromise0;
-    await activePromise1;
-
-    // 이야기꾼에게 night:actionReceived 2건 수신 확인
-    const actions: Array<{ playerId: string; roleId: string }> = [];
-    const bothReceived = new Promise<void>((resolve) => {
-      ctx.storyteller.on('night:actionReceived', (action) => {
-        actions.push(action);
-        if (actions.length >= 2) resolve();
-      });
-    });
-
-    // p0(Drunk) 행동 제출 — 점쟁이는 2명 선택
-    ctx.players[0].emit('night:action', {
+    // 첫 번째 플레이어 행동 제출
+    const action1Promise = waitForEvent<{ playerId: string; roleId: string }>(
+      ctx.storyteller as Socket,
+      'night:actionReceived',
+    );
+    ctx.players[firstIdx].emit('night:action', {
       targets: [playerIds[2], playerIds[3]],
     });
-    // p1(진짜 점쟁이) 행동 제출
-    ctx.players[1].emit('night:action', {
+    const action1 = await action1Promise;
+    expect(action1.roleId).toBe('fortune_teller');
+
+    // 피드백 전송 → 두 번째 wakeUp 트리거
+    const secondWakeUp = waitForEvent(
+      ctx.players[secondIdx] as Socket,
+      'night:wakeUp',
+    );
+    ctx.storyteller.emit('night:sendFeedback', {
+      playerId: playerIds[firstIdx],
+      feedback: { type: 'yes_no', value: true },
+    });
+    await secondWakeUp;
+
+    // 두 번째 플레이어 행동 제출
+    const action2Promise = waitForEvent<{ playerId: string; roleId: string }>(
+      ctx.storyteller as Socket,
+      'night:actionReceived',
+    );
+    ctx.players[secondIdx].emit('night:action', {
       targets: [playerIds[3], playerIds[4]],
     });
-
-    await bothReceived;
-
-    expect(actions).toHaveLength(2);
-    const submitterIds = actions.map((a) => a.playerId);
-    expect(submitterIds).toContain(playerIds[0]);
-    expect(submitterIds).toContain(playerIds[1]);
-    // 둘 다 fortune_teller로 보고됨
-    expect(actions.every((a) => a.roleId === 'fortune_teller')).toBe(true);
+    const action2 = await action2Promise;
+    expect(action2.roleId).toBe('fortune_teller');
   }, 15000);
 });
 
@@ -102,40 +103,47 @@ describe('E2E: 주정뱅이 겹침 — 수도승 (select_one)', () => {
     await ctx.cleanup();
   });
 
-  it('주정뱅이(수도승) + 진짜 수도승: 둘 다 밤 행동을 제출한다', async () => {
+  it('주정뱅이(수도승) + 진짜 수도승: 순차적으로 밤 행동을 제출한다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, makeRoles('monk'));
 
-    const activePromise0 = waitForEvent(
-      ctx.players[0] as Socket,
-      'night:activeRole',
-    );
-    const activePromise1 = waitForEvent(
-      ctx.players[1] as Socket,
-      'night:activeRole',
-    );
-
-    ctx.storyteller.emit('night:setActiveRole', 'monk');
-    await activePromise0;
-    await activePromise1;
-
-    const actions: Array<{ playerId: string; roleId: string }> = [];
-    const bothReceived = new Promise<void>((resolve) => {
-      ctx.storyteller.on('night:actionReceived', (action) => {
-        actions.push(action);
-        if (actions.length >= 2) resolve();
-      });
+    // 첫 번째 wakeUp
+    const firstWakeUp = new Promise<number>((resolve) => {
+      ctx.players[0].once('night:wakeUp', () => resolve(0));
+      ctx.players[1].once('night:wakeUp', () => resolve(1));
     });
 
-    ctx.players[0].emit('night:action', { targets: [playerIds[2]] });
-    ctx.players[1].emit('night:action', { targets: [playerIds[3]] });
+    ctx.storyteller.emit('night:setActiveRole', 'monk');
+    const firstIdx = await firstWakeUp;
+    const secondIdx = firstIdx === 0 ? 1 : 0;
 
-    await bothReceived;
+    // 첫 번째 행동 제출
+    const action1Promise = waitForEvent<{ playerId: string; roleId: string }>(
+      ctx.storyteller as Socket,
+      'night:actionReceived',
+    );
+    ctx.players[firstIdx].emit('night:action', { targets: [playerIds[2]] });
+    const action1 = await action1Promise;
+    expect(action1.roleId).toBe('monk');
 
-    expect(actions).toHaveLength(2);
-    const submitterIds = actions.map((a) => a.playerId);
-    expect(submitterIds).toContain(playerIds[0]);
-    expect(submitterIds).toContain(playerIds[1]);
-    expect(actions.every((a) => a.roleId === 'monk')).toBe(true);
+    // 피드백 → 두 번째 wakeUp
+    const secondWakeUp = waitForEvent(
+      ctx.players[secondIdx] as Socket,
+      'night:wakeUp',
+    );
+    ctx.storyteller.emit('night:sendFeedback', {
+      playerId: playerIds[firstIdx],
+      feedback: { type: 'number', value: 0 },
+    });
+    await secondWakeUp;
+
+    // 두 번째 행동 제출
+    const action2Promise = waitForEvent<{ playerId: string; roleId: string }>(
+      ctx.storyteller as Socket,
+      'night:actionReceived',
+    );
+    ctx.players[secondIdx].emit('night:action', { targets: [playerIds[3]] });
+    const action2 = await action2Promise;
+    expect(action2.roleId).toBe('monk');
   }, 15000);
 });
 
@@ -162,36 +170,43 @@ describe('E2E: 주정뱅이 겹침 — 수동 역할 피드백', () => {
   });
 
   for (const { roleId, label } of PASSIVE_ROLES) {
-    it(`주정뱅이(${label}) + 진짜 ${label}: 양쪽 모두 피드백을 수신한다`, async () => {
+    it(`주정뱅이(${label}) + 진짜 ${label}: 순차 wakeUp 후 양쪽 피드백 수신`, async () => {
       const { playerIds } = await setupGameWithRoles(ctx, makeRoles(roleId));
 
-      // 역할 활성화
-      const activePromise0 = waitForEvent(
-        ctx.players[0] as Socket,
-        'night:activeRole',
-      );
-      ctx.storyteller.emit('night:setActiveRole', roleId);
-      await activePromise0;
+      // 첫 번째 wakeUp (랜덤 순서)
+      const firstWakeUp = new Promise<number>((resolve) => {
+        ctx.players[0].once('night:wakeUp', () => resolve(0));
+        ctx.players[1].once('night:wakeUp', () => resolve(1));
+      });
 
-      // p0(Drunk)에게 피드백 전송
+      ctx.storyteller.emit('night:setActiveRole', roleId);
+      const firstIdx = await firstWakeUp;
+      const secondIdx = firstIdx === 0 ? 1 : 0;
+
+      // 첫 번째에게 피드백 전송 → 두 번째 wakeUp 트리거
+      const secondWakeUp = waitForEvent(
+        ctx.players[secondIdx] as Socket,
+        'night:wakeUp',
+      );
       const fb0Promise = waitForEvent(
-        ctx.players[0] as Socket,
+        ctx.players[firstIdx] as Socket,
         'night:feedback',
       );
       ctx.storyteller.emit('night:sendFeedback', {
-        playerId: playerIds[0],
+        playerId: playerIds[firstIdx],
         feedback: { type: 'number', value: 0 },
       });
       const fb0 = await fb0Promise;
       expect(fb0).toBeDefined();
+      await secondWakeUp;
 
-      // p1(진짜 역할)에게 피드백 전송
+      // 두 번째에게 피드백 전송
       const fb1Promise = waitForEvent(
-        ctx.players[1] as Socket,
+        ctx.players[secondIdx] as Socket,
         'night:feedback',
       );
       ctx.storyteller.emit('night:sendFeedback', {
-        playerId: playerIds[1],
+        playerId: playerIds[secondIdx],
         feedback: { type: 'number', value: 1 },
       });
       const fb1 = await fb1Promise;
@@ -213,7 +228,7 @@ describe('E2E: 주정뱅이 겹침 — 까마귀지기 (onlyWhenDead)', () => {
     await ctx.cleanup();
   });
 
-  it('둘 다 이번 밤에 사망하면 양쪽 모두 night:wakeUp을 수신한다', async () => {
+  it('둘 다 이번 밤에 사망하면 순차적으로 night:wakeUp을 수신한다', async () => {
     const { playerIds } = await setupGameWithRoles(
       ctx,
       makeRoles('ravenkeeper'),
@@ -225,25 +240,45 @@ describe('E2E: 주정뱅이 겹침 — 까마귀지기 (onlyWhenDead)', () => {
     ctx.storyteller.emit('game:kill', playerIds[1]);
     await waitForEvent(ctx.storyteller as Socket, 'game:state');
 
-    // wakeUp 리스너 등록
-    const wakeUp0 = waitForEvent<{ roleId: string }>(
-      ctx.players[0] as Socket,
-      'night:wakeUp',
-    );
-    const wakeUp1 = waitForEvent<{ roleId: string }>(
-      ctx.players[1] as Socket,
-      'night:wakeUp',
+    // 첫 번째 wakeUp 수신 대기 (랜덤이므로 어느 쪽이든)
+    const wakeUps: string[] = [];
+    const firstWakeUp = new Promise<{ roleId: string; socket: number }>(
+      (resolve) => {
+        ctx.players[0].once('night:wakeUp', (data: { roleId: string }) => {
+          wakeUps.push(playerIds[0]);
+          resolve({ ...data, socket: 0 });
+        });
+        ctx.players[1].once('night:wakeUp', (data: { roleId: string }) => {
+          wakeUps.push(playerIds[1]);
+          resolve({ ...data, socket: 1 });
+        });
+      },
     );
 
     ctx.storyteller.emit('night:setActiveRole', 'ravenkeeper');
 
-    const result0 = await wakeUp0;
-    const result1 = await wakeUp1;
-    expect(result0.roleId).toBe('ravenkeeper');
-    expect(result1.roleId).toBe('ravenkeeper');
+    const first = await firstWakeUp;
+    expect(first.roleId).toBe('ravenkeeper');
+    expect(wakeUps).toHaveLength(1);
+
+    // 두 번째 플레이어는 아직 wakeUp을 받지 않음
+    // 첫 번째 플레이어에게 피드백 전송 → 두 번째 wakeUp 트리거
+    const secondIdx = first.socket === 0 ? 1 : 0;
+    const secondWakeUp = waitForEvent<{ roleId: string }>(
+      ctx.players[secondIdx] as Socket,
+      'night:wakeUp',
+    );
+
+    ctx.storyteller.emit('night:sendFeedback', {
+      playerId: wakeUps[0],
+      feedback: { type: 'role', roleId: 'imp' },
+    });
+
+    const second = await secondWakeUp;
+    expect(second.roleId).toBe('ravenkeeper');
   }, 15000);
 
-  it('둘 다 사망 후 양쪽 모두 밤 행동을 제출한다', async () => {
+  it('둘 다 사망 후 순차적으로 밤 행동을 제출한다', async () => {
     const { playerIds } = await setupGameWithRoles(
       ctx,
       makeRoles('ravenkeeper'),
@@ -255,28 +290,44 @@ describe('E2E: 주정뱅이 겹침 — 까마귀지기 (onlyWhenDead)', () => {
     ctx.storyteller.emit('game:kill', playerIds[1]);
     await waitForEvent(ctx.storyteller as Socket, 'game:state');
 
-    // 까마귀지기 활성화
-    ctx.storyteller.emit('night:setActiveRole', 'ravenkeeper');
-    await waitForEvent(ctx.players[0] as Socket, 'night:wakeUp');
-
-    const actions: Array<{ playerId: string; roleId: string }> = [];
-    const bothReceived = new Promise<void>((resolve) => {
-      ctx.storyteller.on('night:actionReceived', (action) => {
-        actions.push(action);
-        if (actions.length >= 2) resolve();
-      });
+    // 까마귀지기 활성화 → 첫 번째 wakeUp
+    const firstWakeUp = new Promise<number>((resolve) => {
+      ctx.players[0].once('night:wakeUp', () => resolve(0));
+      ctx.players[1].once('night:wakeUp', () => resolve(1));
     });
 
-    // 양쪽 행동 제출
-    ctx.players[0].emit('night:action', { targets: [playerIds[2]] });
-    ctx.players[1].emit('night:action', { targets: [playerIds[3]] });
+    ctx.storyteller.emit('night:setActiveRole', 'ravenkeeper');
+    const firstIdx = await firstWakeUp;
+    const secondIdx = firstIdx === 0 ? 1 : 0;
 
-    await bothReceived;
+    // 첫 번째 행동 제출
+    const action1Promise = waitForEvent<{ playerId: string }>(
+      ctx.storyteller as Socket,
+      'night:actionReceived',
+    );
+    ctx.players[firstIdx].emit('night:action', { targets: [playerIds[2]] });
+    const action1 = await action1Promise;
+    expect(action1.playerId).toBe(playerIds[firstIdx]);
 
-    expect(actions).toHaveLength(2);
-    const submitterIds = actions.map((a) => a.playerId);
-    expect(submitterIds).toContain(playerIds[0]);
-    expect(submitterIds).toContain(playerIds[1]);
+    // 피드백 전송 → 두 번째 wakeUp 트리거
+    const secondWakeUp = waitForEvent(
+      ctx.players[secondIdx] as Socket,
+      'night:wakeUp',
+    );
+    ctx.storyteller.emit('night:sendFeedback', {
+      playerId: playerIds[firstIdx],
+      feedback: { type: 'role', roleId: 'imp' },
+    });
+    await secondWakeUp;
+
+    // 두 번째 행동 제출
+    const action2Promise = waitForEvent<{ playerId: string }>(
+      ctx.storyteller as Socket,
+      'night:actionReceived',
+    );
+    ctx.players[secondIdx].emit('night:action', { targets: [playerIds[3]] });
+    const action2 = await action2Promise;
+    expect(action2.playerId).toBe(playerIds[secondIdx]);
   }, 15000);
 
   it('주정뱅이(까마귀지기)가 이전에 이미 죽은 경우 wakeUp을 수신하지 않는다', async () => {
