@@ -29,6 +29,7 @@ interface NightPanelProps {
   onSendFeedback: (playerId: string, feedback: unknown) => void;
   onKill: (playerId: string) => void;
   onSetStatus: (playerId: string, status: PlayerStatus) => void;
+  nightWakeUpTargets: string[];
   styles: ReturnType<typeof createGrimoireStyles>;
 }
 
@@ -51,6 +52,7 @@ export function NightPanel({
   onSendFeedback,
   onKill,
   onSetStatus,
+  nightWakeUpTargets,
   styles,
 }: NightPanelProps) {
   const [feedbackCollapsed, setFeedbackCollapsed] = useState(false);
@@ -91,6 +93,9 @@ export function NightPanel({
     const fbDef = NIGHT_FEEDBACK[activeNightRoleId];
     if (!fbDef || fbDef.type === 'none' || fbDef.type === 'grimoire')
       return false;
+    // 서버가 알려준 wakeUp 대상이 있으면 그것으로 판단
+    if (nightWakeUpTargets.length > 0) return true;
+    // fallback
     const isOnlyWhenDead =
       NIGHT_ACTIONS[activeNightRoleId]?.onlyWhenDead === true;
     return players.some(
@@ -99,7 +104,7 @@ export function NightPanel({
           (p.role?.id === 'drunk' && p.drunkAs === activeNightRoleId)) &&
         (isOnlyWhenDead ? !p.isAlive : p.isAlive),
     );
-  }, [activeNightRoleId, players]);
+  }, [activeNightRoleId, players, nightWakeUpTargets]);
 
   // Expose nightOrderComplete to parent
   useEffect(() => {
@@ -229,6 +234,7 @@ export function NightPanel({
                   setFeedbackSentForRole(activeNightRoleId);
                   setFeedbackCollapsed(true);
                 }}
+                wakeUpTargetIds={nightWakeUpTargets}
               />
             </View>
           )}

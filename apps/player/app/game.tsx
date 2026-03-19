@@ -1,4 +1,3 @@
-import { NIGHT_ACTIONS } from '@clocktower/shared';
 import { DictionaryModal } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -162,23 +161,19 @@ export default function GameScreen() {
   const drunkAs = usePlayerStore((s) => s.drunkAs);
   const nightWakeUp = usePlayerStore((s) => s.nightWakeUp);
   const activeRoleId = nightProgress?.activeRoleId;
-  const effectiveRoleId = drunkAs ?? role?.id;
-  const isOnlyWhenDead =
-    effectiveRoleId != null &&
-    NIGHT_ACTIONS[effectiveRoleId]?.onlyWhenDead === true;
   const isRoleActive =
     role != null &&
     (activeRoleId === role.id || (drunkAs != null && activeRoleId === drunkAs));
-  // onlyWhenDead 역할: 서버에서 night:wakeUp을 받았을 때만 차례로 인정
-  const isMyTurn =
-    isRoleActive && (isOnlyWhenDead ? nightWakeUp != null : isAlive);
+  // 서버가 night:wakeUp을 개별 전송하므로, wakeUp 수신 시에만 차례로 인정
+  const isMyTurn = isRoleActive && nightWakeUp != null;
 
-  // night:wakeUp 수신 시 전용 오버레이 표시
+  // 까마귀지기가 밤에 죽었을 때만 전용 오버레이 표시
+  const effectiveRoleId = drunkAs ?? role?.id;
   useEffect(() => {
-    if (nightWakeUp && isRoleActive) {
+    if (nightWakeUp && isRoleActive && effectiveRoleId === 'ravenkeeper') {
       setRavenkeeperOverlay(true);
     }
-  }, [nightWakeUp, isRoleActive]);
+  }, [nightWakeUp, isRoleActive, effectiveRoleId]);
 
   const handleNominate = async (nomineeId: string) => {
     setNominateModalVisible(false);

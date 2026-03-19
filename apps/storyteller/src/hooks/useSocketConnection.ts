@@ -169,6 +169,9 @@ export function useSocketConnection() {
             .getState()
             .setMayorNightDeath(data.mayorId, data.mayorName);
         });
+        newSocket.on('night:wakeUpTargets', (data) => {
+          useGameStore.getState().setNightWakeUpTargets(data.candidateIds);
+        });
         newSocket.on('chat:receiveFromPlayer', (message) => {
           const store = useGameStore.getState();
           store.addChatMessage(message);

@@ -67,6 +67,9 @@ export class GameManager {
   private lastPromotedPlayer: Player | null = null;
   // 임프 자해 시 지연된 승계 (밤→낮 전환 시 실행)
   private pendingImpPromotion: { minionId: string } | null = null;
+  // 밤 역할 겹침 시 순차 wakeUp 대기열 (다음 night:wakeUp 대상 플레이어 ID)
+  private nightWakeUpQueue: string[] = [];
+  private nightWakeUpRoleId: string | null = null;
 
   create(): string {
     const id = randomUUID().slice(0, 8);
@@ -92,6 +95,8 @@ export class GameManager {
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
     this.fortuneTellerRedHerring = null;
+    this.nightWakeUpQueue = [];
+    this.nightWakeUpRoleId = null;
     this.clearVoteTimer();
     return id;
   }
@@ -152,6 +157,8 @@ export class GameManager {
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
     this.fortuneTellerRedHerring = null;
+    this.nightWakeUpQueue = [];
+    this.nightWakeUpRoleId = null;
     this.clearVoteTimer();
   }
 
@@ -309,6 +316,26 @@ export class GameManager {
     const kills = [...this.pendingNightKills];
     this.pendingNightKills = [];
     return kills;
+  }
+
+  /** 밤 역할 겹침 시 순차 wakeUp 대기열 설정 */
+  setNightWakeUpQueue(playerIds: string[], roleId: string): void {
+    this.nightWakeUpQueue = playerIds;
+    this.nightWakeUpRoleId = roleId;
+  }
+
+  /** 대기열에서 다음 플레이어 꺼내기 */
+  popNightWakeUp(): { playerId: string; roleId: string } | null {
+    if (this.nightWakeUpQueue.length === 0 || !this.nightWakeUpRoleId)
+      return null;
+    const playerId = this.nightWakeUpQueue.shift();
+    if (!playerId) return null;
+    return { playerId, roleId: this.nightWakeUpRoleId };
+  }
+
+  clearNightWakeUpQueue(): void {
+    this.nightWakeUpQueue = [];
+    this.nightWakeUpRoleId = null;
   }
 
   revive(playerId: string): void {

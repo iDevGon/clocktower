@@ -71,6 +71,8 @@ interface NightFeedbackPanelProps {
   executedPlayerName?: string;
   onSendFeedback: (playerId: string, feedback: NightFeedbackPayload) => void;
   onAllFeedbackSent?: () => void;
+  /** 서버에서 전달받은 실제 wakeUp 대상 플레이어 ID 목록 */
+  wakeUpTargetIds?: string[];
 }
 
 /** Fisher-Yates shuffle (creates a new array) */
@@ -93,6 +95,7 @@ export function NightFeedbackPanel({
   executedPlayerName,
   onSendFeedback,
   onAllFeedbackSent,
+  wakeUpTargetIds,
 }: NightFeedbackPanelProps) {
   const { fontSize } = useResponsive();
   const scale = fontSize.md / 12;
@@ -101,9 +104,16 @@ export function NightFeedbackPanel({
   const [sentIds, setSentIds] = useState<Set<string>>(new Set());
   const prevRoleIdRef = useRef(activeRoleId);
 
-  // 대상 플레이어 목록 (Drunk + 실제 역할 모두 포함, 랜덤 순서)
+  // 대상 플레이어 목록 (서버의 wakeUp 대상과 동기화)
   const targetPlayers = useMemo(() => {
     if (!activeRoleId) return [];
+    // 서버가 알려준 wakeUp 대상이 있으면 그것만 사용 (순서 유지)
+    if (wakeUpTargetIds && wakeUpTargetIds.length > 0) {
+      return wakeUpTargetIds
+        .map((id) => players.find((p) => p.id === id))
+        .filter((p): p is NonNullable<typeof p> => p != null);
+    }
+    // fallback: 서버 정보 없으면 기존 로직
     const isOnlyWhenDead = NIGHT_ACTIONS[activeRoleId]?.onlyWhenDead === true;
     const matched = players.filter(
       (p) =>
@@ -112,7 +122,7 @@ export function NightFeedbackPanel({
         (isOnlyWhenDead ? !p.isAlive : p.isAlive),
     );
     return shuffle(matched);
-  }, [activeRoleId, players]);
+  }, [activeRoleId, players, wakeUpTargetIds]);
 
   // activeRoleId 변경 시 sent 상태 초기화
   if (prevRoleIdRef.current !== activeRoleId) {

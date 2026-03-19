@@ -65,6 +65,8 @@ interface GameStore {
   mayorNightDeathName: string | null;
   setMayorNightDeath: (id: string, name: string) => void;
   clearMayorNightDeath: () => void;
+  nightWakeUpTargets: string[];
+  setNightWakeUpTargets: (ids: string[]) => void;
   chatToast: { playerName: string; message: string } | null;
   showChatToast: (toast: { playerName: string; message: string }) => void;
   dismissChatToast: () => void;
@@ -136,6 +138,8 @@ export const useGameStore = create<GameStore>()(
       activeChatPlayerId: null,
       roleRevealShown: false,
       setRoleRevealShown: (shown) => set({ roleRevealShown: shown }),
+      nightWakeUpTargets: [],
+      setNightWakeUpTargets: (ids) => set({ nightWakeUpTargets: ids }),
       slayerWaitingAck: false,
       setSlayerWaitingAck: (waiting) => set({ slayerWaitingAck: waiting }),
       sweetheartDiedPending: false,
@@ -310,6 +314,7 @@ export const useGameStore = create<GameStore>()(
           gameState: null,
           nightActions: [],
           activeNightRoleId: null,
+          nightWakeUpTargets: [],
           activeWhispers: [],
           playerStatuses: {},
           tokenPositions: {},

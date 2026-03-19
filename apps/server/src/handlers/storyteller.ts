@@ -271,6 +271,21 @@ export function registerStorytellerHandlers(
     socket.on('night:sendFeedback', ({ playerId, feedback }) => {
       playerIo.to(playerId).emit('night:feedback', { feedback });
       console.log(`Feedback -> ${playerId}: ${JSON.stringify(feedback)}`);
+
+      // 대기열에 다음 플레이어가 있으면 순차 wakeUp
+      const next = game.popNightWakeUp();
+      if (next) {
+        const role = getRoleById(next.roleId);
+        const roleName = role?.name ?? next.roleId;
+        sendPushNotification(
+          next.playerId,
+          '🌙 당신의 차례입니다',
+          `${roleName}, 행동을 수행하세요`,
+        );
+        playerIo
+          .to(next.playerId)
+          .emit('night:wakeUp', { roleId: next.roleId });
+      }
     });
 
     socket.on('night:setActiveRole', (roleId) => {
@@ -280,52 +295,48 @@ export function registerStorytellerHandlers(
       game.setNightProgress(roleId, order);
       playerIo.emit('night:activeRole', { roleId, order, players });
 
-      // Push notification to the active role's player
+      // 대상 플레이어 수집 → 셔플 → 첫 번째만 wakeUp, 나머지는 큐
+      game.clearNightWakeUpQueue();
       if (roleId) {
         const actionDef = NIGHT_ACTIONS[roleId];
         const isOnlyWhenDead = actionDef?.onlyWhenDead === true;
 
-        // onlyWhenDead 역할: 이번 밤에 죽은 플레이어에게만 알림 / 일반 역할: 살아있는 플레이어에게만 알림
-        const activePlayer = state.players.find(
+        // 실제 역할 + 주정뱅이(drunkAs) 모두 수집
+        const candidates = state.players.filter(
           (p) =>
-            p.role?.id === roleId &&
+            (p.role?.id === roleId ||
+              (p.role?.id === 'drunk' && p.drunkAs === roleId)) &&
             (isOnlyWhenDead
               ? !p.isAlive && game.hasPendingNightKill(p.id)
               : p.isAlive),
         );
-        if (activePlayer) {
-          const role = getRoleById(roleId);
-          const roleName = role?.name ?? roleId;
-          sendPushNotification(
-            activePlayer.id,
-            '🌙 당신의 차례입니다',
-            `${roleName}, 행동을 수행하세요`,
-          );
-          // onlyWhenDead 역할이 이번 밤에 죽었을 때: 해당 플레이어에게 wakeUp 이벤트 전송
-          if (isOnlyWhenDead) {
-            playerIo.to(activePlayer.id).emit('night:wakeUp', { roleId });
-          }
+
+        // Fisher-Yates 셔플
+        for (let i = candidates.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
         }
-        // 주정뱅이: 가짜 역할의 차례에 알림 전송
-        const drunkPlayer = state.players.find(
-          (p) =>
-            p.role?.id === 'drunk' &&
-            p.drunkAs === roleId &&
-            (isOnlyWhenDead
-              ? !p.isAlive && game.hasPendingNightKill(p.id)
-              : p.isAlive),
-        );
-        if (drunkPlayer) {
+
+        // 이야기꾼에게 실제 wakeUp 대상 목록 전송
+        const candidateIds = candidates.map((p) => p.id);
+        storytellerIo.emit('night:wakeUpTargets', { candidateIds });
+
+        if (candidates.length > 0) {
+          // 첫 번째 플레이어에게 즉시 wakeUp
+          const first = candidates[0];
           const role = getRoleById(roleId);
           const roleName = role?.name ?? roleId;
           sendPushNotification(
-            drunkPlayer.id,
+            first.id,
             '🌙 당신의 차례입니다',
             `${roleName}, 행동을 수행하세요`,
           );
-          // 주정뱅이도 onlyWhenDead 역할로 이번 밤에 죽었을 때 wakeUp
-          if (isOnlyWhenDead) {
-            playerIo.to(drunkPlayer.id).emit('night:wakeUp', { roleId });
+          playerIo.to(first.id).emit('night:wakeUp', { roleId });
+
+          // 나머지는 대기열에 저장 (night:sendFeedback 시 순차 전송)
+          if (candidates.length > 1) {
+            const remaining = candidates.slice(1).map((p) => p.id);
+            game.setNightWakeUpQueue(remaining, roleId);
           }
         }
       }

@@ -46,7 +46,6 @@ export function NightPhase({
           order={nightProgress.order}
           myRole={role}
           drunkAs={drunkAs}
-          isAlive={!isDead}
           nightWakeUp={nightWakeUp != null}
         />
       )}

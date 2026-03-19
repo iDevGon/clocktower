@@ -1,7 +1,7 @@
 import type { Role } from '@clocktower/shared';
-import { getRoleById, NIGHT_ACTIONS } from '@clocktower/shared';
+import { getRoleById } from '@clocktower/shared';
 import { useEffect } from 'react';
-import { Text, Vibration, View } from 'react-native';
+import { Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -49,8 +49,7 @@ interface NightProgressProps {
   order: string[];
   myRole: Role | null;
   drunkAs?: string | null;
-  isAlive?: boolean;
-  /** 서버에서 night:wakeUp을 받았는지 여부 (onlyWhenDead 역할용) */
+  /** 서버에서 night:wakeUp을 받았는지 여부 */
   nightWakeUp?: boolean;
 }
 
@@ -59,18 +58,14 @@ export function NightProgress({
   order,
   myRole,
   drunkAs,
-  isAlive = true,
   nightWakeUp = false,
 }: NightProgressProps) {
   const isRoleActive =
     myRole != null &&
     (activeRoleId === myRole.id ||
       (drunkAs != null && activeRoleId === drunkAs));
-  const effectiveRoleId = drunkAs ?? myRole?.id;
-  const isOnlyWhenDead =
-    effectiveRoleId != null &&
-    NIGHT_ACTIONS[effectiveRoleId]?.onlyWhenDead === true;
-  const isMyTurn = isRoleActive && (isOnlyWhenDead ? nightWakeUp : isAlive);
+  // 서버가 night:wakeUp을 개별 전송하므로, wakeUp 수신 시에만 차례로 인정
+  const isMyTurn = isRoleActive && nightWakeUp;
   const pulseAnim = useSharedValue(1);
 
   useEffect(() => {
@@ -79,8 +74,7 @@ export function NightProgress({
       pulseAnim.value = 1;
       return;
     }
-    Vibration.vibrate([0, 400, 200, 400, 200, 400]);
-
+    // 진동은 night:wakeUp 리스너에서 처리 (이중 진동 방지)
     pulseAnim.value = withRepeat(
       withSequence(
         withTiming(0.3, { duration: 800, easing: Easing.inOut(Easing.ease) }),

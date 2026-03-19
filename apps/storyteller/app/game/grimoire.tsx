@@ -134,6 +134,7 @@ export default function GrimoireScreen() {
   const nightActions = useGameStore((s) => s.nightActions);
   const activeWhispers = useGameStore((s) => s.activeWhispers);
   const activeNightRoleId = useGameStore((s) => s.activeNightRoleId);
+  const nightWakeUpTargets = useGameStore((s) => s.nightWakeUpTargets);
   const playerStatuses = useGameStore((s) => s.playerStatuses);
   const whisperClock = useGameStore((s) => s.whisperClock);
   const slayerWaitingAck = useGameStore((s) => s.slayerWaitingAck);
@@ -1033,6 +1034,7 @@ export default function GrimoireScreen() {
           onSendFeedback={sendNightFeedback}
           onKill={kill}
           onSetStatus={setPlayerStatus}
+          nightWakeUpTargets={nightWakeUpTargets}
           styles={styles}
         />
       )}
