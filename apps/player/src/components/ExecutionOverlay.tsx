@@ -250,7 +250,7 @@ export function ExecutionOverlay({
           {'\uCC98\uD615\uB418\uC5C8\uC2B5\uB2C8\uB2E4'}
         </Animated.Text>
 
-        <GameTip tip={tip} color="#c07840" glowColor="#8b3a00" delay={1600} />
+        <GameTip tip={tip} color="#c47070" glowColor="#8b2020" delay={1600} />
 
         <Animated.Text
           entering={FadeIn.delay(2000).duration(500)}
