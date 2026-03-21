@@ -117,6 +117,7 @@ export interface ServerToStorytellerEvents {
   'vote:confirmed': ServerToClientEvents['vote:confirmed'];
   'vote:clockStart': ServerToClientEvents['vote:clockStart'];
   'vote:result': ServerToClientEvents['vote:result'];
+  'vote:start': ServerToClientEvents['vote:start'];
   'vote:proceedToVote': ServerToClientEvents['vote:proceedToVote'];
   'chat:receiveFromPlayer': ServerToClientEvents['chat:receiveFromPlayer'];
   'virgin:triggered': ServerToClientEvents['virgin:triggered'];

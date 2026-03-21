@@ -48,6 +48,9 @@ interface PlayerTokenProps {
   voteIndicator?: VoteIndicator;
   isPreselected?: boolean;
   isExecutionCandidate?: boolean;
+  hasNominated?: boolean;
+  wasNominated?: boolean;
+  memo?: string;
   onPress?: () => void;
 }
 
@@ -60,6 +63,9 @@ export function PlayerToken({
   voteIndicator,
   isPreselected,
   isExecutionCandidate,
+  hasNominated,
+  wasNominated,
+  memo,
   onPress,
 }: PlayerTokenProps) {
   const [tooltipStatus, setTooltipStatus] = useState<PlayerStatus | null>(null);
@@ -207,6 +213,23 @@ export function PlayerToken({
               </Text>
             </View>
           </View>
+        )}
+        {hasNominated && (
+          <Text style={[styles.nominationBadge, { fontSize: scaledFont.md }]}>
+            👆
+          </Text>
+        )}
+        {wasNominated && (
+          <Text
+            style={[styles.nominationTargetBadge, { fontSize: scaledFont.md }]}
+          >
+            🎯
+          </Text>
+        )}
+        {memo && memo.length > 0 && (
+          <Text style={[styles.memoBadge, { fontSize: scaledFont.sm }]}>
+            📝
+          </Text>
         )}
       </View>
 

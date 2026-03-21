@@ -120,6 +120,17 @@ export function useSocketConnection() {
               'death',
             );
         });
+        newSocket.on('vote:start', (data) => {
+          const gs = useGameStore.getState();
+          gs.addNomination(data.nominatorId, data.nomineeId);
+          useLogStore
+            .getState()
+            .addLog(
+              gs.gameState?.day ?? 0,
+              'day',
+              `🎯 ${data.nominatorName}이(가) ${data.nomineeName}을(를) 지목했습니다`,
+            );
+        });
         newSocket.on('vote:proceedToVote', () => {
           useGameStore
             .getState()

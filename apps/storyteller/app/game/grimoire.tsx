@@ -10,7 +10,15 @@ import {
 import { DictionaryModal } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import {
+  Alert,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -266,6 +274,11 @@ export default function GrimoireScreen() {
     [assignRedHerring],
   );
 
+  const playerMemos = useGameStore((s) => s.playerMemos);
+  const setPlayerMemo = useGameStore((s) => s.setPlayerMemo);
+  const nominatedPlayers = useGameStore((s) => s.nominatedPlayers);
+  const nominatorPlayers = useGameStore((s) => s.nominatorPlayers);
+
   const playerOrder = useGameStore((s) => s.playerOrder);
   const swapPlayerOrder = useGameStore((s) => s.swapPlayerOrder);
   const [settingsVisible, setSettingsVisible] = useState(false);
@@ -461,6 +474,11 @@ export default function GrimoireScreen() {
       },
     };
 
+    const memoOption: ActionModalOption = {
+      text: `메모${(playerMemos[playerId] ?? '').length > 0 ? ' ✏️' : ''}`,
+      onPress: () => openMemoModal(playerId, playerName),
+    };
+
     const options: ActionModalOption[] = isAlive
       ? [
           {
@@ -476,6 +494,7 @@ export default function GrimoireScreen() {
             onPress: () => handleStatusMenu(playerId, playerName),
           },
           chatOption,
+          memoOption,
           {
             text: '사망 처리',
             style: 'destructive',
@@ -490,6 +509,7 @@ export default function GrimoireScreen() {
             onPress: () => handleStatusMenu(playerId, playerName),
           },
           chatOption,
+          memoOption,
           { text: '취소', style: 'cancel' },
         ];
 
@@ -587,6 +607,29 @@ export default function GrimoireScreen() {
     () => Object.values(chatUnreadCounts).reduce<number>((a, b) => a + b, 0),
     [chatUnreadCounts],
   );
+
+  // Memo modal state
+  const [memoModalVisible, setMemoModalVisible] = useState(false);
+  const [memoPlayerId, setMemoPlayerId] = useState<string | null>(null);
+  const [memoPlayerName, setMemoPlayerName] = useState('');
+  const [memoText, setMemoText] = useState('');
+
+  const openMemoModal = useCallback(
+    (playerId: string, playerName: string) => {
+      setMemoPlayerId(playerId);
+      setMemoPlayerName(playerName);
+      setMemoText(playerMemos[playerId] ?? '');
+      setMemoModalVisible(true);
+    },
+    [playerMemos],
+  );
+
+  const saveMemo = useCallback(() => {
+    if (memoPlayerId) {
+      setPlayerMemo(memoPlayerId, memoText);
+    }
+    setMemoModalVisible(false);
+  }, [memoPlayerId, memoText, setPlayerMemo]);
 
   const [nightOrderComplete, setNightOrderComplete] = useState(false);
   const [executionBannerDismissed, setExecutionBannerDismissed] =
@@ -958,6 +1001,9 @@ export default function GrimoireScreen() {
                 isExecutionCandidate={
                   executionCandidateData?.playerId === player.id
                 }
+                hasNominated={nominatorPlayers.includes(player.id)}
+                wasNominated={nominatedPlayers.includes(player.id)}
+                memo={playerMemos[player.id]}
                 tokenSize={dynamicTokenSize}
                 initialX={pos.x}
                 initialY={pos.y}
@@ -1224,6 +1270,58 @@ export default function GrimoireScreen() {
         dismissable={false}
         scale={scale}
       />
+
+      {/* 메모 입력 모달 */}
+      <Modal
+        visible={memoModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={saveMemo}
+      >
+        <Pressable
+          style={styles.memoOverlay}
+          onPress={saveMemo}
+        >
+          <Pressable
+            style={styles.memoPanel}
+            onPress={(e) => e.stopPropagation?.()}
+          >
+            <Text style={styles.memoTitle}>
+              {memoPlayerName} 메모
+            </Text>
+            <TextInput
+              style={styles.memoInput}
+              value={memoText}
+              onChangeText={setMemoText}
+              placeholder="메모를 입력하세요..."
+              placeholderTextColor="#5c5a58"
+              multiline
+              autoFocus
+            />
+            <View style={styles.memoButtons}>
+              {memoText.length > 0 && (
+                <Pressable
+                  style={styles.memoClearButton}
+                  onPress={() => {
+                    setMemoText('');
+                    if (memoPlayerId) {
+                      setPlayerMemo(memoPlayerId, '');
+                    }
+                  }}
+                >
+                  <Text style={styles.memoClearText}>지우기</Text>
+                </Pressable>
+              )}
+              <Pressable
+                style={styles.memoSaveButton}
+                onPress={saveMemo}
+              >
+                <Text style={styles.memoSaveText}>저장</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* 게임 시작 시 플레이어 직업 공개 대기 오버레이 */}
       {showRoleRevealWaiting && (

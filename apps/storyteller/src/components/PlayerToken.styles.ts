@@ -53,6 +53,21 @@ export const styles = StyleSheet.create({
     top: -8,
     right: -8,
   },
+  nominationBadge: {
+    position: 'absolute',
+    top: -6,
+    left: -6,
+  },
+  nominationTargetBadge: {
+    position: 'absolute',
+    bottom: -6,
+    right: -6,
+  },
+  memoBadge: {
+    position: 'absolute',
+    bottom: -6,
+    left: -6,
+  },
   tooltipOverlay: {
     flex: 1,
     justifyContent: 'center',

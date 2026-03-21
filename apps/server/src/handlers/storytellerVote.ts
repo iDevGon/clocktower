@@ -205,12 +205,14 @@ export function registerVoteHandlers(
     const nominator = game.getPlayer(nominatorId);
     const nominee = game.getPlayer(nomineeId);
     playerIo.emit('day:subPhase', 'defense');
-    playerIo.emit('vote:start', {
+    const voteStartData = {
       nominatorId,
       nomineeId,
       nominatorName: nominator?.name ?? nominatorId,
       nomineeName: nominee?.name ?? nomineeId,
-    });
+    };
+    playerIo.emit('vote:start', voteStartData);
+    storytellerIo.emit('vote:start', voteStartData);
     storytellerIo.emit('game:state', game.getState());
 
     const state = game.getState();

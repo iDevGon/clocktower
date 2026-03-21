@@ -324,6 +324,73 @@ export function createGrimoireStyles(scale: number) {
       color: '#e0ddd8',
       fontWeight: '600',
     },
+
+    /* ---- Memo modal ---- */
+    memoOverlay: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.7)',
+    },
+    memoPanel: {
+      backgroundColor: '#1e1e24',
+      borderRadius: 12,
+      padding: s(20),
+      width: '85%',
+      maxWidth: 400,
+      borderWidth: 1,
+      borderColor: '#3a3a42',
+    },
+    memoTitle: {
+      color: '#e0ddd8',
+      fontSize: s(16),
+      fontWeight: '700',
+      marginBottom: s(12),
+      textAlign: 'center',
+    },
+    memoInput: {
+      backgroundColor: '#121214',
+      borderWidth: 1,
+      borderColor: '#2e2e34',
+      borderRadius: 8,
+      padding: s(12),
+      color: '#e0ddd8',
+      fontSize: s(14),
+      minHeight: s(100),
+      textAlignVertical: 'top',
+    },
+    memoButtons: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: s(10),
+      marginTop: s(12),
+    },
+    memoClearButton: {
+      backgroundColor: '#2a1a1a',
+      paddingHorizontal: s(16),
+      paddingVertical: s(10),
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#4a2a2a',
+    },
+    memoClearText: {
+      color: '#c47070',
+      fontSize: s(14),
+      fontWeight: '600',
+    },
+    memoSaveButton: {
+      backgroundColor: '#1a2a1a',
+      paddingHorizontal: s(16),
+      paddingVertical: s(10),
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: '#2a4a2a',
+    },
+    memoSaveText: {
+      color: '#7dce82',
+      fontSize: s(14),
+      fontWeight: '600',
+    },
   });
 }
 
