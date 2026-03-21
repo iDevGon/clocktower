@@ -1,7 +1,9 @@
 import type { Socket } from 'socket.io-client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  advanceToDay,
   setupFullGame,
+  setupGameWithRoles,
   setupTestServer,
   type TestContext,
   waitForEvent,
@@ -378,5 +380,267 @@ describe('E2E: 재접속', () => {
     expect(rejoinRes.playerName).toBe(player.name);
     expect(rejoinRes.roleId).toBeDefined();
     expect(rejoinRes.phase).toBe('night');
+  }, 15000);
+});
+
+describe('E2E: rejoin 상태 복원', () => {
+  let ctx: TestContext;
+
+  beforeEach(async () => {
+    ctx = await setupTestServer();
+  }, 10000);
+
+  afterEach(async () => {
+    await ctx.cleanup();
+  });
+
+  it('rejoin 시 현재 지목/투표 정보가 포함된다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'washerwoman' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+
+    await advanceToDay(ctx, 'nomination');
+
+    // 지명
+    const voteStartPromise = waitForEvent(
+      ctx.players[0] as Socket,
+      'vote:start',
+    );
+    ctx.storyteller.emit('vote:nominate', {
+      nominatorId: playerIds[0],
+      nomineeId: playerIds[1],
+    });
+    await voteStartPromise;
+
+    // 플레이어 소켓 연결을 끊고 새로 연결
+    const newSocket = await ctx.connectPlayer();
+    const rejoinRes = await new Promise<{
+      success: boolean;
+      nomination?: {
+        nominatorId: string;
+        nomineeId: string;
+        nominatorName: string;
+        nomineeName: string;
+      };
+    }>((resolve) => {
+      newSocket.emit('game:rejoin', { playerId: playerIds[0] }, resolve);
+    });
+
+    expect(rejoinRes.success).toBe(true);
+    expect(rejoinRes.nomination).toBeDefined();
+    expect(rejoinRes.nomination?.nominatorId).toBe(playerIds[0]);
+    expect(rejoinRes.nomination?.nomineeId).toBe(playerIds[1]);
+    expect(rejoinRes.nomination?.nominatorName).toBe('Player1');
+    expect(rejoinRes.nomination?.nomineeName).toBe('Player2');
+  }, 15000);
+
+  it('rejoin 시 executionCandidate 정보가 포함된다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'washerwoman' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+
+    await advanceToDay(ctx, 'nomination');
+
+    // 지명
+    const voteStartPromise = waitForEvent(
+      ctx.players[0] as Socket,
+      'vote:start',
+    );
+    ctx.storyteller.emit('vote:nominate', {
+      nominatorId: playerIds[0],
+      nomineeId: playerIds[1],
+    });
+    await voteStartPromise;
+
+    // 투표 진행으로 전환
+    ctx.storyteller.emit('vote:proceedToVote');
+    await waitForEvent(ctx.players[0] as Socket, 'vote:proceedToVote');
+
+    // 3명 투표 (과반수)
+    for (let i = 0; i < 3; i++) {
+      await new Promise<void>((resolve) => {
+        ctx.players[i].emit('vote:cast', () => resolve());
+      });
+    }
+
+    // 투표 종료 → 처형 대상 생성
+    const resultPromise = waitForEvent(ctx.players[0] as Socket, 'vote:result');
+    ctx.storyteller.emit('vote:close');
+    await resultPromise;
+
+    // 플레이어 재연결
+    const newSocket = await ctx.connectPlayer();
+    const rejoinRes = await new Promise<{
+      success: boolean;
+      executionCandidate?: {
+        playerId: string;
+        playerName: string;
+        guiltyVotes: number;
+      };
+    }>((resolve) => {
+      newSocket.emit('game:rejoin', { playerId: playerIds[2] }, resolve);
+    });
+
+    expect(rejoinRes.success).toBe(true);
+    expect(rejoinRes.executionCandidate).toBeDefined();
+    expect(rejoinRes.executionCandidate?.playerId).toBe(playerIds[1]);
+    expect(rejoinRes.executionCandidate?.playerName).toBe('Player2');
+    expect(rejoinRes.executionCandidate?.guiltyVotes).toBeGreaterThanOrEqual(3);
+  }, 15000);
+});
+
+describe('E2E: 유령 투표 제한', () => {
+  let ctx: TestContext;
+
+  beforeEach(async () => {
+    ctx = await setupTestServer();
+  }, 10000);
+
+  afterEach(async () => {
+    await ctx.cleanup();
+  });
+
+  it('사망한 플레이어는 한 게임에서 한 번만 투표 가능', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'washerwoman' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+
+    // 플레이어 0 사망 처리
+    ctx.storyteller.emit('game:kill', playerIds[0]);
+    await waitForEvent(ctx.storyteller as Socket, 'game:state');
+
+    await advanceToDay(ctx, 'nomination');
+
+    // 첫 번째 지목 + 투표
+    const voteStartPromise1 = waitForEvent(
+      ctx.players[0] as Socket,
+      'vote:start',
+    );
+    ctx.storyteller.emit('vote:nominate', {
+      nominatorId: playerIds[1],
+      nomineeId: playerIds[2],
+    });
+    await voteStartPromise1;
+
+    // 사망 플레이어(p0) 투표 → 성공
+    const voteRes1 = await new Promise<{
+      success: boolean;
+      error?: string;
+    }>((resolve) => {
+      ctx.players[0].emit('vote:cast', resolve);
+    });
+    expect(voteRes1.success).toBe(true);
+
+    // 투표 종료
+    const resultPromise1 = waitForEvent(
+      ctx.players[1] as Socket,
+      'vote:result',
+    );
+    ctx.storyteller.emit('vote:close');
+    await resultPromise1;
+
+    // 두 번째 지목 + 투표
+    const voteStartPromise2 = waitForEvent(
+      ctx.players[0] as Socket,
+      'vote:start',
+    );
+    ctx.storyteller.emit('vote:nominate', {
+      nominatorId: playerIds[3],
+      nomineeId: playerIds[4],
+    });
+    await voteStartPromise2;
+
+    // 사망 플레이어(p0) 두 번째 투표 → 실패
+    const voteRes2 = await new Promise<{
+      success: boolean;
+      error?: string;
+    }>((resolve) => {
+      ctx.players[0].emit('vote:cast', resolve);
+    });
+    expect(voteRes2.success).toBe(false);
+  }, 15000);
+});
+
+describe('E2E: 블러프 직업 선택', () => {
+  let ctx: TestContext;
+
+  beforeEach(async () => {
+    ctx = await setupTestServer();
+  }, 10000);
+
+  afterEach(async () => {
+    await ctx.cleanup();
+  });
+
+  it('이야기꾼이 블러프를 사전 선택할 수 있다', async () => {
+    // 게임 생성
+    const statePromise = waitForEvent(ctx.storyteller as Socket, 'game:state');
+    await new Promise<void>((resolve) => {
+      ctx.storyteller.emit('game:create', (res) => {
+        if (res.success) resolve();
+      });
+    });
+    await statePromise;
+
+    // 플레이어 5명 참가
+    const playerIds: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const playerSocket = await ctx.connectPlayer();
+      ctx.players.push(playerSocket);
+      const joinStatePromise = waitForEvent(
+        ctx.storyteller as Socket,
+        'game:state',
+      );
+      const joinResult = await new Promise<{
+        success: boolean;
+        playerId?: string;
+      }>((resolve) => {
+        playerSocket.emit(
+          'game:join',
+          { playerName: `Player${i + 1}` },
+          resolve,
+        );
+      });
+      if (joinResult.playerId) playerIds.push(joinResult.playerId);
+      await joinStatePromise;
+    }
+
+    // 블러프 역할 사전 선택하여 역할 배분
+    const bluffRoleIds = ['monk', 'ravenkeeper', 'slayer'];
+
+    // game:state 리스너를 먼저 등록
+    const storyStatePromise = waitForEvent<{
+      bluffRoles?: { id: string; name: string }[];
+    }>(ctx.storyteller as Socket, 'game:state');
+
+    await new Promise<void>((resolve, reject) => {
+      ctx.storyteller.emit('game:distributeRoles', { bluffRoleIds }, (res) => {
+        if (res.success) resolve();
+        else reject(new Error(res.error));
+      });
+    });
+
+    const storyState = await storyStatePromise;
+
+    // 이야기꾼에게 전달된 bluffRoles 확인
+    expect(storyState.bluffRoles).toBeDefined();
+    expect(storyState.bluffRoles).toHaveLength(3);
+
+    const bluffIds = storyState.bluffRoles?.map((r) => r.id) ?? [];
+    expect(bluffIds).toContain('monk');
+    expect(bluffIds).toContain('ravenkeeper');
+    expect(bluffIds).toContain('slayer');
   }, 15000);
 });

@@ -619,4 +619,346 @@ describe('GameManager', () => {
       expect(settings.whisperMode).toBe('chat');
     });
   });
+
+  describe('투표 동률 threshold', () => {
+    it('동률 발생 시 executionCandidate가 null이 된다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+      gm.setDaySubPhase('nomination');
+
+      // 첫 번째 투표: Player1 지명, 3표 → 처형 대상
+      gm.nominate(players[0].id, players[1].id);
+      gm.castVote(players[0].id);
+      gm.castVote(players[2].id);
+      gm.castVote(players[3].id);
+      const result1 = gm.closeVote();
+      expect(result1?.guilty).toBe(true);
+      expect(result1?.executionStatus).toBe('new_candidate');
+      expect(gm.getExecutionCandidate()?.playerId).toBe(players[1].id);
+
+      // 두 번째 투표: Player3 지명, 동일 3표 → 동률 → 처형 대상 제거
+      gm.nominate(players[2].id, players[3].id);
+      gm.castVote(players[0].id);
+      gm.castVote(players[2].id);
+      gm.castVote(players[4].id);
+      const result2 = gm.closeVote();
+      expect(result2?.guilty).toBe(false);
+      expect(result2?.executionStatus).toBe('candidate_cleared');
+      expect(gm.getExecutionCandidate()).toBeNull();
+    });
+
+    it('동률 후 같은 표수로는 새 처형 대상이 되지 않는다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+      gm.setDaySubPhase('nomination');
+
+      // 첫 번째 투표: 3표 → 처형 대상
+      gm.nominate(players[0].id, players[1].id);
+      gm.castVote(players[0].id);
+      gm.castVote(players[2].id);
+      gm.castVote(players[3].id);
+      gm.closeVote();
+
+      // 두 번째 투표: 동일 3표 → 동률 → 처형 대상 제거
+      gm.nominate(players[2].id, players[3].id);
+      gm.castVote(players[0].id);
+      gm.castVote(players[2].id);
+      gm.castVote(players[4].id);
+      gm.closeVote();
+
+      // 세 번째 투표: 같은 3표 → threshold 초과 못함 → no_change
+      gm.nominate(players[4].id, players[0].id);
+      gm.castVote(players[2].id);
+      gm.castVote(players[3].id);
+      gm.castVote(players[4].id);
+      const result3 = gm.closeVote();
+      expect(result3?.executionStatus).toBe('no_change');
+      expect(gm.getExecutionCandidate()).toBeNull();
+    });
+
+    it('동률 후 threshold를 초과하면 새 처형 대상이 된다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+      gm.setDaySubPhase('nomination');
+
+      // 첫 번째 투표: 3표 → 처형 대상
+      gm.nominate(players[0].id, players[1].id);
+      gm.castVote(players[0].id);
+      gm.castVote(players[2].id);
+      gm.castVote(players[3].id);
+      gm.closeVote();
+
+      // 두 번째 투표: 동일 3표 → 동률
+      gm.nominate(players[2].id, players[3].id);
+      gm.castVote(players[0].id);
+      gm.castVote(players[2].id);
+      gm.castVote(players[4].id);
+      gm.closeVote();
+
+      // 세 번째 투표: 4표 → threshold(3) 초과 → 새 처형 대상
+      gm.nominate(players[4].id, players[0].id);
+      gm.castVote(players[1].id);
+      gm.castVote(players[2].id);
+      gm.castVote(players[3].id);
+      gm.castVote(players[4].id);
+      const result3 = gm.closeVote();
+      expect(result3?.guilty).toBe(true);
+      expect(result3?.executionStatus).toBe('new_candidate');
+      expect(gm.getExecutionCandidate()?.playerId).toBe(players[0].id);
+    });
+
+    it('closeVote() 결과의 executionStatus가 올바르게 반환된다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+      gm.setDaySubPhase('nomination');
+
+      // new_candidate
+      gm.nominate(players[0].id, players[1].id);
+      gm.castVote(players[0].id);
+      gm.castVote(players[2].id);
+      gm.castVote(players[3].id);
+      const r1 = gm.closeVote();
+      expect(r1?.executionStatus).toBe('new_candidate');
+
+      // candidate_changed: 더 많은 표로 다른 플레이어가 처형 대상
+      gm.nominate(players[2].id, players[3].id);
+      gm.castVote(players[0].id);
+      gm.castVote(players[1].id);
+      gm.castVote(players[2].id);
+      gm.castVote(players[4].id);
+      const r2 = gm.closeVote();
+      expect(r2?.executionStatus).toBe('candidate_changed');
+
+      // no_change: 과반수 미달
+      gm.nominate(players[4].id, players[0].id);
+      gm.castVote(players[4].id);
+      const r3 = gm.closeVote();
+      expect(r3?.executionStatus).toBe('no_change');
+    });
+  });
+
+  describe('유령 투표 제한', () => {
+    it('살아있는 플레이어는 여러 투표에서 투표 가능하다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+      gm.setDaySubPhase('nomination');
+
+      gm.nominate(players[0].id, players[1].id);
+      expect(gm.castVote(players[2].id).success).toBe(true);
+      gm.closeVote();
+
+      gm.nominate(players[3].id, players[4].id);
+      expect(gm.castVote(players[2].id).success).toBe(true);
+    });
+
+    it('사망한 플레이어의 첫 투표는 성공한다', () => {
+      const { gm, players } = createStartedGame();
+      gm.kill(players[2].id);
+      gm.setPhase('day');
+      gm.setDaySubPhase('nomination');
+
+      gm.nominate(players[0].id, players[1].id);
+      expect(gm.castVote(players[2].id).success).toBe(true);
+    });
+
+    it('사망한 플레이어의 두 번째 투표는 실패한다', () => {
+      const { gm, players } = createStartedGame();
+      gm.kill(players[2].id);
+      gm.setPhase('day');
+      gm.setDaySubPhase('nomination');
+
+      gm.nominate(players[0].id, players[1].id);
+      gm.castVote(players[2].id);
+      gm.closeVote();
+
+      gm.nominate(players[3].id, players[4].id);
+      const result = gm.castVote(players[2].id);
+      expect(result.success).toBe(false);
+    });
+
+    it('isGhostVoteUsed()가 올바르게 동작한다', () => {
+      const { gm, players } = createStartedGame();
+      gm.kill(players[2].id);
+      gm.setPhase('day');
+      gm.setDaySubPhase('nomination');
+
+      // 사망 직후에는 아직 미사용
+      expect(gm.isGhostVoteUsed(players[2].id)).toBe(false);
+
+      // 살아있는 플레이어는 항상 false
+      expect(gm.isGhostVoteUsed(players[0].id)).toBe(false);
+
+      // 투표 후 사용됨
+      gm.nominate(players[0].id, players[1].id);
+      gm.castVote(players[2].id);
+      expect(gm.isGhostVoteUsed(players[2].id)).toBe(true);
+    });
+
+    it('게임 초기화 시 ghostVotesUsed도 초기화된다', () => {
+      const { gm, players } = createStartedGame();
+      gm.kill(players[2].id);
+      gm.setPhase('day');
+      gm.setDaySubPhase('nomination');
+
+      gm.nominate(players[0].id, players[1].id);
+      gm.castVote(players[2].id);
+      expect(gm.isGhostVoteUsed(players[2].id)).toBe(true);
+
+      gm.restart();
+      // restart 후 모든 플레이어가 살아있으므로 isGhostVoteUsed는 false
+      const state = gm.getState();
+      const player2 = state.players.find((p) => p.name === 'Player3');
+      expect(player2).toBeDefined();
+      expect(player2?.isAlive).toBe(true);
+      expect(gm.isGhostVoteUsed(player2?.id ?? '')).toBe(false);
+    });
+  });
+
+  describe('블러프 역할 관리', () => {
+    it('setBluffRoles()로 설정한 블러프가 getBluffRoles()로 조회된다', () => {
+      const { gm } = createStartedGame();
+      const bluffs = [
+        { id: 'chef', name: '요리사' },
+        { id: 'monk', name: '수도승' },
+        { id: 'ravenkeeper', name: '묘지기' },
+      ];
+      gm.setBluffRoles(bluffs);
+      expect(gm.getBluffRoles()).toEqual(bluffs);
+    });
+
+    it('getStorytellerState()에 bluffRoles가 포함된다', () => {
+      const { gm } = createStartedGame();
+      const bluffs = [{ id: 'chef', name: '요리사' }];
+      gm.setBluffRoles(bluffs);
+      const state = gm.getStorytellerState();
+      expect(state.bluffRoles).toEqual(bluffs);
+    });
+
+    it('getState()에는 bluffRoles가 포함되지 않는다', () => {
+      const { gm } = createStartedGame();
+      const bluffs = [{ id: 'chef', name: '요리사' }];
+      gm.setBluffRoles(bluffs);
+      const state = gm.getState();
+      expect(state.bluffRoles).toBeUndefined();
+    });
+
+    it('게임 초기화 시 블러프도 초기화된다', () => {
+      const { gm } = createStartedGame();
+      gm.setBluffRoles([{ id: 'chef', name: '요리사' }]);
+      gm.restart();
+      expect(gm.getBluffRoles()).toEqual([]);
+    });
+  });
+
+  describe('지목 타이머', () => {
+    it('startNominationTimer()로 시작한다', () => {
+      const { gm } = createStartedGame();
+      gm.startNominationTimer(30000);
+      expect(gm.getNominationRemainingMs()).toBe(30000);
+    });
+
+    it('pauseNominationTimer()로 일시정지하면 남은 시간이 계산된다', () => {
+      const { gm } = createStartedGame();
+      const now = Date.now();
+      vi.spyOn(Date, 'now')
+        .mockReturnValueOnce(now)
+        .mockReturnValueOnce(now + 10000);
+
+      gm.startNominationTimer(30000);
+      gm.pauseNominationTimer();
+
+      expect(gm.getNominationRemainingMs()).toBe(20000);
+      vi.restoreAllMocks();
+    });
+
+    it('resumeNominationTimer()로 재개하면 남은 시간을 반환한다', () => {
+      const { gm } = createStartedGame();
+      const now = Date.now();
+      vi.spyOn(Date, 'now')
+        .mockReturnValueOnce(now)
+        .mockReturnValueOnce(now + 10000)
+        .mockReturnValueOnce(now + 10000);
+
+      gm.startNominationTimer(30000);
+      gm.pauseNominationTimer();
+
+      const remaining = gm.resumeNominationTimer();
+      expect(remaining).toBe(20000);
+      vi.restoreAllMocks();
+    });
+
+    it('clearNominationTimer()로 초기화한다', () => {
+      const { gm } = createStartedGame();
+      gm.startNominationTimer(30000);
+      gm.clearNominationTimer();
+      expect(gm.getNominationRemainingMs()).toBeNull();
+    });
+
+    it('타이머 미시작 시 resumeNominationTimer()는 null을 반환한다', () => {
+      const { gm } = createStartedGame();
+      expect(gm.resumeNominationTimer()).toBeNull();
+    });
+  });
+
+  describe('게임 재시작', () => {
+    it('restart() 후 플레이어 목록이 유지된다', () => {
+      const { gm } = createStartedGame();
+      gm.restart();
+      const state = gm.getState();
+      expect(state.players).toHaveLength(5);
+      expect(state.players.map((p) => p.name)).toEqual([
+        'Player1',
+        'Player2',
+        'Player3',
+        'Player4',
+        'Player5',
+      ]);
+    });
+
+    it('restart() 후 역할/상태가 초기화된다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPlayerStatuses(players[0].id, ['poisoned']);
+      gm.restart();
+      const state = gm.getState();
+      expect(state.players.every((p) => p.role === undefined)).toBe(true);
+      expect(state.players.every((p) => p.statuses.length === 0)).toBe(true);
+      expect(state.players.every((p) => p.isAlive)).toBe(true);
+    });
+
+    it('restart() 후 phase가 setup으로 변경된다', () => {
+      const { gm } = createStartedGame();
+      gm.setPhase('day');
+      gm.restart();
+      const state = gm.getState();
+      expect(state.phase).toBe('setup');
+      expect(state.started).toBe(false);
+      expect(state.day).toBe(0);
+    });
+
+    it('restart() 후 settings가 유지된다', () => {
+      const { gm } = createStartedGame();
+      gm.setSettings({ voteClockSeconds: 15, whisperMode: 'offline' });
+      gm.restart();
+      const settings = gm.getSettings();
+      expect(settings.voteClockSeconds).toBe(15);
+      expect(settings.whisperMode).toBe('offline');
+    });
+
+    it('restart() 후 ghostVotesUsed가 초기화된다', () => {
+      const { gm, players } = createStartedGame();
+      gm.kill(players[2].id);
+      gm.setPhase('day');
+      gm.setDaySubPhase('nomination');
+      gm.nominate(players[0].id, players[1].id);
+      gm.castVote(players[2].id);
+
+      gm.restart();
+      // restart 후 모든 플레이어는 살아있고 ghostVotesUsed 초기화됨
+      const state = gm.getState();
+      const player = state.players.find((p) => p.name === 'Player3');
+      expect(player?.isAlive).toBe(true);
+      expect(player?.deadVoteUsed).toBe(false);
+      expect(gm.isGhostVoteUsed(player?.id ?? '')).toBe(false);
+    });
+  });
 });
