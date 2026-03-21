@@ -101,42 +101,6 @@ export function createPhaseBarStyles(
       fontSize: s(isDesktop ? 16 : isTablet ? 15 : 14),
       fontWeight: '700',
     },
-
-    /* ---- phase chip list ---- */
-    chipList: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      paddingHorizontal: s(isDesktop ? 24 : isTablet ? 20 : 12),
-      paddingBottom: s(isDesktop ? 10 : isTablet ? 8 : 6),
-      gap: s(isDesktop ? 6 : 5),
-    },
-    chip: {
-      paddingHorizontal: s(isDesktop ? 14 : isTablet ? 12 : 10),
-      paddingVertical: s(isDesktop ? 6 : 5),
-      borderRadius: s(6),
-      borderWidth: 1,
-      borderColor: '#2a2a34',
-      backgroundColor: '#14141a',
-      minHeight: 44,
-      justifyContent: 'center' as const,
-    },
-    chipActive: {
-      borderWidth: 1.5,
-    },
-    chipPast: {
-      opacity: 0.35,
-    },
-    chipText: {
-      fontSize: s(isDesktop ? 11 : isTablet ? 10 : 9),
-      fontWeight: '500',
-      color: '#707078',
-    },
-    chipTextActive: {
-      fontWeight: '700',
-    },
-    chipTextPast: {
-      color: '#404048',
-    },
   });
 }
 

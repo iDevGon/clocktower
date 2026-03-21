@@ -5,6 +5,7 @@ import {
   getRoleById,
   getRolesForEdition,
   ROLE_DISTRIBUTION,
+  TEAM_COLORS,
 } from '@clocktower/shared';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -558,7 +559,15 @@ export default function LobbyScreen() {
                 </View>
                 <View style={styles.playerRoleContainer}>
                   {item.role && (
-                    <Text style={lobbyDynamic.playerRoleText(rolesVeiled, s)}>
+                    <Text
+                      style={lobbyDynamic.playerRoleText(
+                        rolesVeiled,
+                        s,
+                        !rolesVeiled && item.role.team
+                          ? TEAM_COLORS[item.role.team]
+                          : undefined,
+                      )}
+                    >
                       {rolesVeiled ? '???' : item.role.name}
                       {!rolesVeiled && item.role.id === 'drunk' && item.drunkAs
                         ? ` (${getRoleById(item.drunkAs)?.name ?? '?'})`

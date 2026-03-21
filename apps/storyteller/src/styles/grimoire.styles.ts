@@ -120,6 +120,62 @@ export function createGrimoireStyles(scale: number) {
       fontSize: s(12),
     },
 
+    /* ---- Execution candidate bar ---- */
+    executionCandidateBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#1a1218',
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderColor: '#c47070',
+      paddingHorizontal: s(16),
+      paddingVertical: s(10),
+      gap: s(10),
+    },
+    executionCandidateLabel: {
+      color: '#c47070',
+      fontSize: s(11),
+      fontWeight: '700',
+    },
+    executionCandidateName: {
+      color: '#e0ddd8',
+      fontSize: s(15),
+      fontWeight: '700',
+      flex: 1,
+    },
+    executionCandidateVotes: {
+      color: '#908e8a',
+      fontSize: s(12),
+    },
+
+    /* ---- Execution confirmed bar ---- */
+    executionConfirmedBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#1a0a0a',
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderColor: '#f5c542',
+      paddingHorizontal: s(16),
+      paddingVertical: s(10),
+      gap: s(10),
+    },
+    executionConfirmedLabel: {
+      color: '#f5c542',
+      fontSize: s(11),
+      fontWeight: '700',
+    },
+    executionConfirmedName: {
+      color: '#e0ddd8',
+      fontSize: s(15),
+      fontWeight: '700',
+      flex: 1,
+    },
+    executionConfirmedRole: {
+      color: '#908e8a',
+      fontSize: s(12),
+    },
+
     /* ---- Night feedback overlay ---- */
     nightFloatingTimer: {
       flexDirection: 'row',

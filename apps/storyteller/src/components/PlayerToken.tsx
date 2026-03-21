@@ -5,6 +5,7 @@ import {
   PLAYER_STATUS_LABELS,
   type Player,
   type PlayerStatus,
+  TEAM_COLORS,
 } from '@clocktower/shared';
 import { useCallback, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
@@ -164,7 +165,13 @@ export function PlayerToken({
         </Text>
         {player.role && (
           <Text
-            style={[styles.role, { fontSize: scaledFont.sm }]}
+            style={[
+              styles.role,
+              {
+                fontSize: scaledFont.sm,
+                color: team ? TEAM_COLORS[team] : '#908e8a',
+              },
+            ]}
             numberOfLines={1}
           >
             {player.role.name}

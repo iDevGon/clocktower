@@ -267,8 +267,12 @@ export const lobbyDynamic = {
     backgroundColor: isAlive ? '#5a8068' : '#943c3c',
     marginRight: s(10),
   }),
-  playerRoleText: (veiled: boolean, s: (v: number) => number) => ({
-    color: veiled ? '#4a4a4e' : '#908e8a',
+  playerRoleText: (
+    veiled: boolean,
+    s: (v: number) => number,
+    teamColor?: string,
+  ) => ({
+    color: veiled ? '#4a4a4e' : (teamColor ?? '#908e8a'),
     fontSize: s(14),
   }),
   veilToggleButton: (veiled: boolean, s: (v: number) => number) => ({

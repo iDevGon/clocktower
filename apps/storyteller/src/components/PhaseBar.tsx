@@ -134,41 +134,6 @@ export function PhaseBar({
           </Text>
         </Pressable>
       </View>
-
-      {/* Phase chips */}
-      <View style={styles.chipList}>
-        {ALL_PHASES.map((phase) => {
-          const pc =
-            PHASE_COLORS[phase.value as keyof typeof PHASE_COLORS] ??
-            PHASE_COLORS.night;
-          const isActive = phase.value === currentPhase;
-
-          return (
-            <Pressable
-              key={phase.value}
-              onPress={() => onSetPhase(phase.value)}
-              accessibilityLabel={`${phase.label} 페이즈로 전환`}
-              accessibilityRole="button"
-              style={[
-                styles.chip,
-                isActive && [
-                  styles.chipActive,
-                  { borderColor: pc.border, backgroundColor: pc.bg },
-                ],
-              ]}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  isActive && [styles.chipTextActive, { color: pc.text }],
-                ]}
-              >
-                {phase.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
     </View>
   );
 }

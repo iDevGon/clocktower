@@ -107,10 +107,6 @@ export function useSocketConnection() {
         );
         newSocket.on('execution:announced', (data: ExecutionAnnouncement) => {
           const gs = useGameStore.getState().gameState;
-          useGameStore.getState().showEventToast({
-            title: '사망',
-            message: data.detail,
-          });
           useLogStore
             .getState()
             .addLog(
@@ -204,6 +200,9 @@ export function useSocketConnection() {
           }
           if (data.guilty) {
             store.setLastExecutedPlayerId(data.nomineeId);
+          }
+          if (data.executionStatus === 'candidate_cleared') {
+            store.setLastExecutedPlayerId(null);
           }
           // 투표 결과 로그 기록
           const day = store.gameState?.day ?? 0;

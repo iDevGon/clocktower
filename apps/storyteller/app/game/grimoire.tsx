@@ -36,10 +36,7 @@ import {
   DraggablePlayerToken,
 } from '../../src/components/DraggablePlayerToken';
 import { EventToast } from '../../src/components/EventToast';
-import {
-  ExecutionBanner,
-  GameEndBanner,
-} from '../../src/components/GameResultBanners';
+import { GameEndBanner } from '../../src/components/GameResultBanners';
 import { GrimoireBottomBar } from '../../src/components/GrimoireBottomBar';
 import { GrimoireTopBar } from '../../src/components/GrimoireTopBar';
 import { NightPanel } from '../../src/components/NightPanel';
@@ -167,7 +164,6 @@ export default function GrimoireScreen() {
     proceedToVote,
     setActiveNightRole: rawSetActiveNightRole,
     sendNightFeedback,
-    createGame,
     setPlayerStatuses: syncPlayerStatuses,
     setGameSettings,
     setPlayerOrder: syncPlayerOrder,
@@ -389,7 +385,6 @@ export default function GrimoireScreen() {
     }
     if (phase === 'day') {
       setExecutedPlayerId(null);
-      setExecutionBannerDismissed(false);
     }
     // 종료 상태에서 다른 페이즈로 전환 시 결과 초기화
     if (gameState?.phase === 'ended' && phase !== 'ended') {
@@ -553,9 +548,9 @@ export default function GrimoireScreen() {
   };
 
   const handleRestartGame = () => {
-    showModal('게임 재시작', [
+    showModal('게임 초기화', [
       {
-        text: '플레이어 유지하고 재시작',
+        text: '플레이어 유지하고 초기화',
         onPress: async () => {
           useGameStore.getState().reset();
           useLogStore.getState().clearLogs();
@@ -564,27 +559,6 @@ export default function GrimoireScreen() {
             router.replace('/game/lobby');
           } catch {
             Alert.alert('오류', '게임 재시작에 실패했습니다.');
-          }
-        },
-      },
-      { text: '취소', style: 'cancel' },
-    ]);
-  };
-
-  const handleResetGame = () => {
-    showModal('게임 초기화', [
-      {
-        text: '모든 데이터 초기화',
-        style: 'destructive',
-        onPress: async () => {
-          resetGame();
-          useGameStore.getState().reset();
-          useLogStore.getState().clearLogs();
-          try {
-            await createGame();
-            router.replace('/game/lobby');
-          } catch {
-            router.replace('/');
           }
         },
       },
@@ -622,13 +596,9 @@ export default function GrimoireScreen() {
         onPress: () => setSettingsVisible(true),
       },
       {
-        text: '게임 재시작 (플레이어 유지)',
-        onPress: () => handleRestartGame(),
-      },
-      {
         text: '게임 초기화',
         style: 'destructive',
-        onPress: () => handleResetGame(),
+        onPress: () => handleRestartGame(),
       },
       {
         text: '서버 연결 해제',
@@ -697,8 +667,6 @@ export default function GrimoireScreen() {
 
   const [showBluffs, setShowBluffs] = useState(true);
   const [nightOrderComplete, setNightOrderComplete] = useState(false);
-  const [executionBannerDismissed, setExecutionBannerDismissed] =
-    useState(false);
 
   const [areaSize, setAreaSize] = useState({ width: 0, height: 0 });
 
@@ -1176,13 +1144,31 @@ export default function GrimoireScreen() {
           onDismissResult={() => setVoteResult(null)}
         />
       )}
-      {executedPlayer && !executionBannerDismissed && (
-        <ExecutionBanner
-          executedPlayer={executedPlayer}
-          onDismiss={() => setExecutionBannerDismissed(true)}
-          styles={styles}
-        />
-      )}
+      {!hasActiveVote &&
+        !voteResult &&
+        gameState.phase !== 'night' &&
+        gameState.phase !== 'ended' &&
+        (executedPlayer ? (
+          <View style={styles.executionConfirmedBar}>
+            <Text style={styles.executionConfirmedLabel}>처형 확정</Text>
+            <Text style={styles.executionConfirmedName}>
+              {executedPlayer.name}
+            </Text>
+            <Text style={styles.executionConfirmedRole}>
+              {executedPlayer.role?.name ?? '역할 미배정'}
+            </Text>
+          </View>
+        ) : executionCandidateData ? (
+          <View style={styles.executionCandidateBar}>
+            <Text style={styles.executionCandidateLabel}>처형 예정</Text>
+            <Text style={styles.executionCandidateName}>
+              {executionCandidateData.playerName}
+            </Text>
+            <Text style={styles.executionCandidateVotes}>
+              찬성 {executionCandidateData.guiltyVotes}표
+            </Text>
+          </View>
+        ) : null)}
       {gameState.phase === 'ended' && gameResult && (
         <GameEndBanner
           gameResult={gameResult}

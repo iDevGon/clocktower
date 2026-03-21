@@ -98,23 +98,26 @@ export function VotePanel({
         </Text>
       </View>
       {isDefensePhase ? (
-        <View style={styles.countdownRow}>
-          <Text style={styles.countdownText}>
-            변론 중 — 투표 준비 {voteConsentReadyIds.length}/
-            {players.filter((p) => p.isAlive).length}명
-          </Text>
-          {voteConsentReadyIds.length > 0 && (
-            <Text
-              style={[
-                styles.countdownText,
-                { fontSize: 11 * scale, marginTop: 4 },
-              ]}
-            >
-              {voteConsentReadyIds
-                .map((id) => players.find((p) => p.id === id)?.name ?? '?')
-                .join(', ')}
+        <View style={styles.defenseRow}>
+          <Text style={styles.countdownText}>변론 중</Text>
+          <View style={styles.consentBadge}>
+            <Text style={styles.consentBadgeText}>
+              투표 준비 {voteConsentReadyIds.length}/
+              {players.filter((p) => p.isAlive).length}명
             </Text>
-          )}
+            {voteConsentReadyIds.length > 0 && (
+              <Text
+                style={[
+                  styles.consentBadgeText,
+                  { fontSize: 10 * scale, opacity: 0.7 },
+                ]}
+              >
+                {voteConsentReadyIds
+                  .map((id) => players.find((p) => p.id === id)?.name ?? '?')
+                  .join(', ')}
+              </Text>
+            )}
+          </View>
         </View>
       ) : isCountingDown ? (
         <View style={styles.countdownRow}>
