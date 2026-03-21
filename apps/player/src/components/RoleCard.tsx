@@ -1,5 +1,5 @@
 import type { Role, Team } from '@clocktower/shared';
-import { AbilityText } from '@clocktower/ui';
+import { AbilityText, RoleTips } from '@clocktower/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -208,6 +208,7 @@ function FrontFace({
       </Text>
       <View style={styles.divider} />
       <AbilityText text={role.ability} style={styles.ability} />
+      <RoleTips roleId={role.id} playOnly />
 
       {evilInfo && role.team === 'demon' && (
         <View style={styles.evilInfoSection}>

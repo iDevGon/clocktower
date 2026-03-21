@@ -16,6 +16,7 @@ export type {
   TaggedCandidate,
 } from './components/QuickSuggestions';
 export { QuickSuggestions } from './components/QuickSuggestions';
+export { RoleTips } from './components/RoleTips';
 export { RotatingGameTip } from './components/RotatingGameTip';
 export type { ParticleConfig } from './components/SmokeParticles';
 export {
