@@ -254,16 +254,61 @@ export function registerStorytellerHandlers(
     });
 
     socket.on('day:setSubPhase', (subPhase) => {
+      const prevSubPhase = game.getState().daySubPhase;
       game.setDaySubPhase(subPhase);
       playerIo.emit('day:subPhase', subPhase);
       storytellerIo.emit('game:state', game.getState());
 
+      const settings = game.getSettings();
+
       if (subPhase === 'whisper') {
-        const whisperSec = game.getSettings().whisperClockSeconds;
-        if (whisperSec > 0) {
-          const durationMs = whisperSec * 1000;
+        if (settings.whisperClockSeconds > 0) {
+          const durationMs = settings.whisperClockSeconds * 1000;
           playerIo.emit('whisper:clockStart', { durationMs });
           storytellerIo.emit('whisper:clockStart', { durationMs });
+        }
+      }
+
+      if (subPhase === 'discussion') {
+        game.clearNominationTimer();
+        if (settings.discussionClockSeconds > 0) {
+          const durationMs = settings.discussionClockSeconds * 1000;
+          playerIo.emit('discussion:clockStart', { durationMs });
+          storytellerIo.emit('discussion:clockStart', { durationMs });
+        }
+      }
+
+      if (subPhase === 'nomination') {
+        // nomination으로 돌아온 경우: 타이머 재개
+        if (
+          prevSubPhase === 'defense' &&
+          game.getNominationRemainingMs() !== null
+        ) {
+          const remainingMs = game.resumeNominationTimer();
+          if (remainingMs !== null && remainingMs > 0) {
+            playerIo.emit('nomination:clockResume', { remainingMs });
+            storytellerIo.emit('nomination:clockResume', { remainingMs });
+          }
+        } else if (settings.nominationClockSeconds > 0) {
+          // 새로운 지목 페이즈 시작
+          const durationMs = settings.nominationClockSeconds * 1000;
+          game.startNominationTimer(durationMs);
+          playerIo.emit('nomination:clockStart', { durationMs });
+          storytellerIo.emit('nomination:clockStart', { durationMs });
+        }
+      }
+
+      // defense/vote 진입 시 지목 타이머 일시정지
+      if (subPhase === 'defense') {
+        if (game.getNominationRemainingMs() !== null) {
+          game.pauseNominationTimer();
+          playerIo.emit('nomination:clockPause');
+          storytellerIo.emit('nomination:clockPause');
+        }
+        if (settings.defenseClockSeconds > 0) {
+          const durationMs = settings.defenseClockSeconds * 1000;
+          playerIo.emit('defense:clockStart', { durationMs });
+          storytellerIo.emit('defense:clockStart', { durationMs });
         }
       }
     });

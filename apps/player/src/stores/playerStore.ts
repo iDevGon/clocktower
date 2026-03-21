@@ -115,6 +115,11 @@ interface PlayerState {
   butlerMasterName: string | null;
   /** onlyWhenDead 역할이 밤에 죽어서 깨어남 (서버에서 night:wakeUp 수신) */
   nightWakeUp: string | null;
+  discussionClock: VoteClock | null;
+  nominationClock: VoteClock | null;
+  nominationPaused: boolean;
+  nominationRemainingMs: number | null;
+  defenseClock: VoteClock | null;
   set: (partial: Partial<PlayerState>) => void;
   addFeedback: (day: number, feedback: NightFeedbackPayload) => void;
   reset: () => void;
@@ -169,6 +174,11 @@ const initialState = {
   pendingRolePromotion: null as Role | null,
   butlerMasterName: null as string | null,
   nightWakeUp: null as string | null,
+  discussionClock: null as VoteClock | null,
+  nominationClock: null as VoteClock | null,
+  nominationPaused: false,
+  nominationRemainingMs: null as number | null,
+  defenseClock: null as VoteClock | null,
 };
 
 export const usePlayerStore = create<PlayerState>()(

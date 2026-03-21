@@ -1,6 +1,16 @@
 import type { GameSettings } from '@clocktower/shared';
+import { useState } from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
 import { ClockSpeedSetting } from './ClockSpeedSetting';
+import { CollapsibleSection } from './CollapsibleSection';
+
+const TIMER_OPTIONS = [30, 60, 90, 120, 180, 300];
+
+function formatTimerOption(sec: number): string {
+  if (sec < 60) return `${sec}초`;
+  if (sec % 60 === 0) return `${sec / 60}분`;
+  return `${Math.floor(sec / 60)}분${sec % 60}초`;
+}
 
 interface SettingsPanelProps {
   settings: GameSettings;
@@ -21,6 +31,8 @@ export function SettingsPanel({
   fontSize,
   styles,
 }: SettingsPanelProps) {
+  const [timerOpen, setTimerOpen] = useState(false);
+
   return (
     <View style={styles.settingsOverlay}>
       <View style={styles.settingsPanel}>
@@ -92,7 +104,7 @@ export function SettingsPanel({
         )}
 
         {settings.votingMode === 'online' && (
-          <View style={styles.settingsClockMarginLast}>
+          <View style={styles.settingsClockMargin}>
             <ClockSpeedSetting
               value={settings.voteClockSeconds}
               onChange={(val) => onSettingsChange({ voteClockSeconds: val })}
@@ -102,6 +114,47 @@ export function SettingsPanel({
             />
           </View>
         )}
+
+        <CollapsibleSection
+          label="타이머 설정"
+          isOpen={timerOpen}
+          onToggle={() => setTimerOpen((v) => !v)}
+          scale={scale}
+        >
+          <View style={{ gap: 8 }}>
+            <ClockSpeedSetting
+              value={settings.discussionClockSeconds}
+              onChange={(val) =>
+                onSettingsChange({ discussionClockSeconds: val })
+              }
+              scale={scale}
+              label="공개토론 시간"
+              showOff
+              options={TIMER_OPTIONS}
+              formatOption={formatTimerOption}
+            />
+            <ClockSpeedSetting
+              value={settings.nominationClockSeconds}
+              onChange={(val) =>
+                onSettingsChange({ nominationClockSeconds: val })
+              }
+              scale={scale}
+              label="지목 시간"
+              showOff
+              options={TIMER_OPTIONS}
+              formatOption={formatTimerOption}
+            />
+            <ClockSpeedSetting
+              value={settings.defenseClockSeconds}
+              onChange={(val) => onSettingsChange({ defenseClockSeconds: val })}
+              scale={scale}
+              label="변론 시간"
+              showOff
+              options={TIMER_OPTIONS}
+              formatOption={formatTimerOption}
+            />
+          </View>
+        </CollapsibleSection>
 
         <Pressable onPress={onClose} style={styles.settingsCloseButton}>
           <Text style={[styles.settingsCloseText, { fontSize: fontSize.md }]}>

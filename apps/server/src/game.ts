@@ -70,6 +70,9 @@ export class GameManager {
   // 밤 역할 겹침 시 순차 wakeUp 대기열 (다음 night:wakeUp 대상 플레이어 ID)
   private nightWakeUpQueue: string[] = [];
   private nightWakeUpRoleId: string | null = null;
+  // 지목 타이머 일시정지/재개용 남은 시간 (ms)
+  private nominationRemainingMs: number | null = null;
+  private nominationStartedAt: number | null = null;
 
   create(): string {
     const id = randomUUID().slice(0, 8);
@@ -98,6 +101,7 @@ export class GameManager {
     this.nightWakeUpQueue = [];
     this.nightWakeUpRoleId = null;
     this.clearVoteTimer();
+    this.clearNominationTimer();
     return id;
   }
 
@@ -160,6 +164,7 @@ export class GameManager {
     this.nightWakeUpQueue = [];
     this.nightWakeUpRoleId = null;
     this.clearVoteTimer();
+    this.clearNominationTimer();
   }
 
   getState(): GameState {
@@ -976,5 +981,42 @@ export class GameManager {
   clearSlayerAckState(): void {
     this.voteClockPausedNomineeId = null;
     this.slayerAcks.clear();
+  }
+
+  // ── 지목 타이머 관리 ──
+
+  startNominationTimer(durationMs: number): void {
+    this.nominationRemainingMs = durationMs;
+    this.nominationStartedAt = Date.now();
+  }
+
+  pauseNominationTimer(): void {
+    if (
+      this.nominationStartedAt === null ||
+      this.nominationRemainingMs === null
+    )
+      return;
+    const elapsed = Date.now() - this.nominationStartedAt;
+    this.nominationRemainingMs = Math.max(
+      0,
+      this.nominationRemainingMs - elapsed,
+    );
+    this.nominationStartedAt = null;
+  }
+
+  resumeNominationTimer(): number | null {
+    if (this.nominationRemainingMs === null || this.nominationRemainingMs <= 0)
+      return null;
+    this.nominationStartedAt = Date.now();
+    return this.nominationRemainingMs;
+  }
+
+  clearNominationTimer(): void {
+    this.nominationRemainingMs = null;
+    this.nominationStartedAt = null;
+  }
+
+  getNominationRemainingMs(): number | null {
+    return this.nominationRemainingMs;
   }
 }

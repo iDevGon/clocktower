@@ -137,6 +137,10 @@ export default function GrimoireScreen() {
   const nightWakeUpTargets = useGameStore((s) => s.nightWakeUpTargets);
   const playerStatuses = useGameStore((s) => s.playerStatuses);
   const whisperClock = useGameStore((s) => s.whisperClock);
+  const discussionClock = useGameStore((s) => s.discussionClock);
+  const nominationClock = useGameStore((s) => s.nominationClock);
+  const nominationPaused = useGameStore((s) => s.nominationPaused);
+  const defenseClock = useGameStore((s) => s.defenseClock);
   const slayerWaitingAck = useGameStore((s) => s.slayerWaitingAck);
   const roleRevealShown = useGameStore((s) => s.roleRevealShown);
   const setRoleRevealShown = useGameStore((s) => s.setRoleRevealShown);
@@ -919,11 +923,15 @@ export default function GrimoireScreen() {
         styles={styles}
       />
 
-      {gameState.phase === 'day' && gameState.daySubPhase !== 'defense' && (
+      {gameState.phase === 'day' && (
         <DaySubPhaseBar
           currentSubPhase={gameState.daySubPhase}
           onSetSubPhase={setDaySubPhase}
           whisperClock={whisperClock}
+          discussionClock={discussionClock}
+          nominationClock={nominationClock}
+          nominationPaused={nominationPaused}
+          defenseClock={defenseClock}
         />
       )}
 

@@ -1,3 +1,4 @@
+import { CountdownTimer } from '@clocktower/ui';
 import type { ComponentProps } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
@@ -147,6 +148,25 @@ export function VoteVignette() {
   );
 }
 
+function DefensePhaseView({ nomineeName }: { nomineeName: string }) {
+  const defenseClock = usePlayerStore((s) => s.defenseClock);
+  return (
+    <View style={styles.countdownContainer}>
+      <Text style={styles.countdownMessage}>변론 중</Text>
+      {defenseClock && (
+        <CountdownTimer
+          startedAt={defenseClock.startedAt}
+          durationMs={defenseClock.durationMs}
+          phaseColor="#c47070"
+        />
+      )}
+      <Text style={styles.countdownHint}>
+        {nomineeName}의 변론을 들어보세요
+      </Text>
+    </View>
+  );
+}
+
 interface VotePromptProps {
   nominatorName: string;
   nomineeName: string;
@@ -225,14 +245,7 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
         {'(을)를 지목했습니다'}
       </Text>
 
-      {isDefensePhase && (
-        <View style={styles.countdownContainer}>
-          <Text style={styles.countdownMessage}>변론 중</Text>
-          <Text style={styles.countdownHint}>
-            {nomineeName}의 변론을 들어보세요
-          </Text>
-        </View>
-      )}
+      {isDefensePhase && <DefensePhaseView nomineeName={nomineeName} />}
 
       {!isDefensePhase && isCountingDown && (
         <View style={styles.countdownContainer}>

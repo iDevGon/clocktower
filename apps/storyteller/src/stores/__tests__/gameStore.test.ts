@@ -45,6 +45,9 @@ function makeGameState(overrides?: Partial<GameState>): GameState {
       votingMode: 'online',
       voteClockSeconds: 3,
       whisperClockSeconds: 0,
+      discussionClockSeconds: 0,
+      nominationClockSeconds: 0,
+      defenseClockSeconds: 0,
     },
     ...overrides,
   };

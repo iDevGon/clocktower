@@ -171,6 +171,9 @@ export interface GameSettings {
   votingMode: 'online' | 'offline';
   voteClockSeconds: number;
   whisperClockSeconds: number;
+  discussionClockSeconds: number;
+  nominationClockSeconds: number;
+  defenseClockSeconds: number;
 }
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
@@ -178,6 +181,9 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
   votingMode: 'online',
   voteClockSeconds: 3,
   whisperClockSeconds: 0,
+  discussionClockSeconds: 0,
+  nominationClockSeconds: 0,
+  defenseClockSeconds: 0,
 };
 
 export interface StorytellerMessage {

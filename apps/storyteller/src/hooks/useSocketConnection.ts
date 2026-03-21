@@ -137,6 +137,35 @@ export function useSocketConnection() {
             durationMs: data.durationMs,
           });
         });
+        newSocket.on('discussion:clockStart', (data) => {
+          useGameStore.getState().setDiscussionClock({
+            startedAt: Date.now(),
+            durationMs: data.durationMs,
+          });
+        });
+        newSocket.on('nomination:clockStart', (data) => {
+          useGameStore.getState().setNominationClock({
+            startedAt: Date.now(),
+            durationMs: data.durationMs,
+          });
+          useGameStore.getState().setNominationPaused(false);
+        });
+        newSocket.on('nomination:clockPause', () => {
+          useGameStore.getState().setNominationPaused(true);
+        });
+        newSocket.on('nomination:clockResume', (data) => {
+          useGameStore.getState().setNominationClock({
+            startedAt: Date.now(),
+            durationMs: data.remainingMs,
+          });
+          useGameStore.getState().setNominationPaused(false);
+        });
+        newSocket.on('defense:clockStart', (data) => {
+          useGameStore.getState().setDefenseClock({
+            startedAt: Date.now(),
+            durationMs: data.durationMs,
+          });
+        });
         newSocket.on('vote:clockPause', () => {
           useGameStore.getState().setVoteClock(null);
         });
