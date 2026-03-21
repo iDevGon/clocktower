@@ -4,6 +4,7 @@ import {
   RotatingGameTip,
   SmokeParticles,
   STORYTELLER_SMOKE_PARTICLES,
+  useReducedMotion,
 } from '@clocktower/ui';
 import { useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -70,8 +71,10 @@ export default function HomeScreen() {
   }, [isConnected, gameId, navigateToGame]);
 
   // Title glow pulse — golden
-  const glowPulse = useSharedValue(0);
+  const reduced = useReducedMotion();
+  const glowPulse = useSharedValue(reduced ? 0.5 : 0);
   useEffect(() => {
+    if (reduced) return;
     glowPulse.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.sin) }),
@@ -80,7 +83,7 @@ export default function HomeScreen() {
       -1,
       false,
     );
-  }, [glowPulse]);
+  }, [glowPulse, reduced]);
 
   const titleGlowStyle = useAnimatedStyle(() => ({
     textShadowRadius: interpolate(glowPulse.value, [0, 1], [20, 40]),

@@ -1,5 +1,5 @@
 import { getRandomTipText } from '@clocktower/shared';
-import { GameTip } from '@clocktower/ui';
+import { GameTip, useReducedMotion } from '@clocktower/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -18,10 +18,11 @@ import Animated, {
 const AUTO_DISMISS_MS = 10000;
 const FADE_OUT_MS = 600;
 
-function PulsingDot({ index }: { index: number }) {
-  const opacity = useSharedValue(0.3);
+function PulsingDot({ index, reduced }: { index: number; reduced: boolean }) {
+  const opacity = useSharedValue(reduced ? 0.65 : 0.3);
 
   useEffect(() => {
+    if (reduced) return;
     opacity.value = withDelay(
       index * 300,
       withRepeat(
@@ -33,7 +34,7 @@ function PulsingDot({ index }: { index: number }) {
       ),
     );
     return () => cancelAnimation(opacity);
-  }, [opacity, index]);
+  }, [opacity, index, reduced]);
 
   const style = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -72,6 +73,7 @@ export function RoleRevealWaitingOverlay({
   playerCount,
   onDismiss,
 }: RoleRevealWaitingOverlayProps) {
+  const reduced = useReducedMotion();
   const tip = useMemo(() => getRandomTipText('storyteller'), []);
   const fadeOut = useSharedValue(1);
 
@@ -148,9 +150,9 @@ export function RoleRevealWaitingOverlay({
             entering={FadeIn.delay(1000).duration(400)}
             style={s.dotsRow}
           >
-            <PulsingDot index={0} />
-            <PulsingDot index={1} />
-            <PulsingDot index={2} />
+            <PulsingDot index={0} reduced={reduced} />
+            <PulsingDot index={1} reduced={reduced} />
+            <PulsingDot index={2} reduced={reduced} />
           </Animated.View>
 
           <Animated.View entering={FadeIn.delay(1200).duration(400)}>

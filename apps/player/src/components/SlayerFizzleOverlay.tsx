@@ -1,5 +1,5 @@
 import { getRandomGameTip } from '@clocktower/shared';
-import { FullScreenVignette, GameTip } from '@clocktower/ui';
+import { FullScreenVignette, GameTip, useReducedMotion } from '@clocktower/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { Dimensions, Pressable, Text, Vibration, View } from 'react-native';
 import Animated, {
@@ -101,6 +101,7 @@ function SmokeWisp({ index }: { index: number }) {
 // ── Gun icon with recoil + smoke puff ──
 
 function GunIcon() {
+  const reduced = useReducedMotion();
   const recoil = useSharedValue(0);
   const smokeOpacity = useSharedValue(0);
 
@@ -115,20 +116,22 @@ function GunIcon() {
       ),
     );
     // Arrow miss — flies right and fades out (반복 테스트)
-    smokeOpacity.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 200 }),
-        withTiming(0, { duration: 1500, easing: Easing.out(Easing.quad) }),
-        withTiming(0, { duration: 500 }),
-      ),
-      -1,
-      false,
-    );
+    if (!reduced) {
+      smokeOpacity.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 200 }),
+          withTiming(0, { duration: 1500, easing: Easing.out(Easing.quad) }),
+          withTiming(0, { duration: 500 }),
+        ),
+        -1,
+        false,
+      );
+    }
     return () => {
       cancelAnimation(recoil);
       cancelAnimation(smokeOpacity);
     };
-  }, [recoil, smokeOpacity]);
+  }, [recoil, smokeOpacity, reduced]);
 
   const bowStyle = useAnimatedStyle(() => ({
     transform: [
@@ -199,6 +202,7 @@ const SMOKE_COUNT = 8;
 // ── Effects layer ──
 
 function FizzleEffects() {
+  const reduced = useReducedMotion();
   return (
     <>
       <FullScreenVignette
@@ -206,9 +210,10 @@ function FizzleEffects() {
         opacityRange={[0.6, 0.75]}
         duration={3000}
       />
-      {Array.from({ length: SMOKE_COUNT }).map((_, i) => (
-        <SmokeWisp key={`s-${i}`} index={i} />
-      ))}
+      {!reduced &&
+        Array.from({ length: SMOKE_COUNT }).map((_, i) => (
+          <SmokeWisp key={`s-${i}`} index={i} />
+        ))}
     </>
   );
 }

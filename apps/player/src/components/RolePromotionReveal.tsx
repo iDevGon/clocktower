@@ -1,5 +1,5 @@
 import { getRandomGameTip, type Role, type Team } from '@clocktower/shared';
-import { AbilityText, GameTip } from '@clocktower/ui';
+import { AbilityText, GameTip, useReducedMotion } from '@clocktower/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo } from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -188,6 +188,7 @@ function CardGlow({
   fromColor: string;
   toColor: string;
 }) {
+  const reduced = useReducedMotion();
   const pulse = useSharedValue(0);
   const colorProgress = useSharedValue(0);
   const appear = useSharedValue(0);
@@ -204,23 +205,30 @@ function CardGlow({
         easing: Easing.inOut(Easing.cubic),
       }),
     );
-    pulse.value = withDelay(
-      COLOR_SHIFT_DELAY,
-      withRepeat(
-        withSequence(
-          withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
+    if (reduced) {
+      pulse.value = withDelay(
+        COLOR_SHIFT_DELAY,
+        withTiming(0.5, { duration: 0 }),
+      );
+    } else {
+      pulse.value = withDelay(
+        COLOR_SHIFT_DELAY,
+        withRepeat(
+          withSequence(
+            withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
+            withTiming(0, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
+          ),
+          -1,
+          false,
         ),
-        -1,
-        false,
-      ),
-    );
+      );
+    }
     return () => {
       cancelAnimation(pulse);
       cancelAnimation(colorProgress);
       cancelAnimation(appear);
     };
-  }, [pulse, colorProgress, appear]);
+  }, [pulse, colorProgress, appear, reduced]);
 
   const glowSize = SCREEN_W * 0.8;
 
@@ -262,6 +270,7 @@ export function RolePromotionReveal({
   role,
   onDismiss,
 }: RolePromotionRevealProps) {
+  const reduced = useReducedMotion();
   const team = TEAM_ACCENT[role.team];
   const minionAccent = TEAM_ACCENT.minion;
   const playerRole = usePlayerStore((s) => s.role);
@@ -343,13 +352,14 @@ export function RolePromotionReveal({
         </View>
 
         {/* Ember particles */}
-        {Array.from({ length: 16 }).map((_, i) => (
-          <EmberParticle
-            key={`ep-${i}`}
-            index={i}
-            color={emberColors[i % emberColors.length]}
-          />
-        ))}
+        {!reduced &&
+          Array.from({ length: 16 }).map((_, i) => (
+            <EmberParticle
+              key={`ep-${i}`}
+              index={i}
+              color={emberColors[i % emberColors.length]}
+            />
+          ))}
 
         {/* Glow behind card */}
         <CardGlow fromColor={minionAccent.glow} toColor={team.glow} />

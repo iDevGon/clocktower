@@ -1,3 +1,4 @@
+import { useReducedMotion } from '@clocktower/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect } from 'react';
 import { Dimensions, StyleSheet } from 'react-native';
@@ -63,9 +64,14 @@ export function EdgeVignette({
   duration,
   zIndex = 80,
 }: EdgeVignetteProps) {
+  const reduced = useReducedMotion();
   const pulse = useSharedValue(0);
 
   useEffect(() => {
+    if (reduced) {
+      pulse.value = 0.5;
+      return;
+    }
     pulse.value = withRepeat(
       withSequence(
         withTiming(1, { duration, easing: Easing.inOut(Easing.sin) }),
@@ -74,22 +80,32 @@ export function EdgeVignette({
       -1,
     );
     return () => cancelAnimation(pulse);
-  }, [pulse, duration]);
+  }, [pulse, duration, reduced]);
+
+  const mid = (range: [number, number]) => (range[0] + range[1]) / 2;
 
   const topStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(pulse.value, [0, 1], opacityRanges.top),
+    opacity: reduced
+      ? mid(opacityRanges.top)
+      : interpolate(pulse.value, [0, 1], opacityRanges.top),
   }));
 
   const bottomStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(pulse.value, [0, 1], opacityRanges.bottom),
+    opacity: reduced
+      ? mid(opacityRanges.bottom)
+      : interpolate(pulse.value, [0, 1], opacityRanges.bottom),
   }));
 
   const sideStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(pulse.value, [0, 1], opacityRanges.side),
+    opacity: reduced
+      ? mid(opacityRanges.side)
+      : interpolate(pulse.value, [0, 1], opacityRanges.side),
   }));
 
   const borderStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(pulse.value, [0, 1], opacityRanges.border),
+    opacity: reduced
+      ? mid(opacityRanges.border)
+      : interpolate(pulse.value, [0, 1], opacityRanges.border),
   }));
 
   return (

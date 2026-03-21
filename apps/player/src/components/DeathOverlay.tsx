@@ -3,7 +3,7 @@ import {
   type DeathReason,
   getRandomGameTip,
 } from '@clocktower/shared';
-import { GameTip } from '@clocktower/ui';
+import { GameTip, useReducedMotion } from '@clocktower/ui';
 import { useEffect, useMemo } from 'react';
 import {
   StyleSheet,
@@ -134,6 +134,8 @@ interface DeathOverlayProps {
 const DRIP_COUNT = 14;
 
 function DeathEffects() {
+  const reduced = useReducedMotion();
+  if (reduced) return <VignettePulse />;
   return (
     <>
       <VignettePulse />

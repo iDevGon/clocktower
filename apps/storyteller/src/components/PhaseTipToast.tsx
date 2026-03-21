@@ -1,4 +1,5 @@
 import type { Phase } from '@clocktower/shared';
+import { useReducedMotion } from '@clocktower/ui';
 import { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -56,6 +57,7 @@ export function PhaseTipToast({
   tip,
   onDismiss,
 }: PhaseTipToastProps) {
+  const reduced = useReducedMotion();
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-20)).current;
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -64,35 +66,44 @@ export function PhaseTipToast({
 
   useEffect(() => {
     if (visible) {
-      opacity.setValue(0);
-      translateY.setValue(-20);
+      if (reduced) {
+        opacity.setValue(1);
+        translateY.setValue(0);
+      } else {
+        opacity.setValue(0);
+        translateY.setValue(-20);
 
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
 
       timerRef.current = setTimeout(() => {
-        Animated.timing(opacity, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }).start(() => onDismissRef.current());
+        if (reduced) {
+          onDismissRef.current();
+        } else {
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 400,
+            useNativeDriver: true,
+          }).start(() => onDismissRef.current());
+        }
       }, TOAST_DURATION);
     }
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [visible, opacity, translateY]);
+  }, [visible, opacity, translateY, reduced]);
 
   if (!visible) return null;
 
@@ -109,11 +120,15 @@ export function PhaseTipToast({
         ]}
         onPress={() => {
           if (timerRef.current) clearTimeout(timerRef.current);
-          Animated.timing(opacity, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }).start(() => onDismiss());
+          if (reduced) {
+            onDismiss();
+          } else {
+            Animated.timing(opacity, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }).start(() => onDismiss());
+          }
         }}
       >
         <View style={[styles.badge, { backgroundColor: colors.badge }]}>

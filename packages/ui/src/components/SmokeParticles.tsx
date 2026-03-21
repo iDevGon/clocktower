@@ -11,6 +11,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotion } from '../ReducedMotionContext';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
@@ -200,6 +201,9 @@ interface SmokeParticlesProps {
 export function SmokeParticles({
   particles = PLAYER_SMOKE_PARTICLES,
 }: SmokeParticlesProps) {
+  const reduced = useReducedMotion();
+  if (reduced) return null;
+
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {particles.map((p, i) => (

@@ -11,6 +11,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { useReducedMotion } from '../ReducedMotionContext';
 
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
@@ -33,9 +34,14 @@ export function FullScreenVignette({
   opacityRange,
   duration,
 }: FullScreenVignetteProps) {
+  const reduced = useReducedMotion();
   const pulse = useSharedValue(0);
 
   useEffect(() => {
+    if (reduced) {
+      pulse.value = 0.5;
+      return;
+    }
     pulse.value = withRepeat(
       withSequence(
         withTiming(1, { duration, easing: Easing.inOut(Easing.sin) }),
@@ -45,10 +51,12 @@ export function FullScreenVignette({
       false,
     );
     return () => cancelAnimation(pulse);
-  }, [pulse, duration]);
+  }, [pulse, duration, reduced]);
 
   const style = useAnimatedStyle(() => ({
-    opacity: interpolate(pulse.value, [0, 1], opacityRange),
+    opacity: reduced
+      ? (opacityRange[0] + opacityRange[1]) / 2
+      : interpolate(pulse.value, [0, 1], opacityRange),
   }));
 
   const stops: [string, string, ...string[]] = [

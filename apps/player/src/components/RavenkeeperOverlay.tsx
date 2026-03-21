@@ -1,4 +1,4 @@
-import { FullScreenVignette } from '@clocktower/ui';
+import { FullScreenVignette, useReducedMotion } from '@clocktower/ui';
 import { useEffect } from 'react';
 import { Text, Vibration, View } from 'react-native';
 import Animated, {
@@ -95,6 +95,7 @@ function FeatherParticle({ index }: { index: number }) {
 const FEATHER_COUNT = 8;
 
 function RavenkeeperEffects() {
+  const reduced = useReducedMotion();
   return (
     <>
       <FullScreenVignette
@@ -102,9 +103,10 @@ function RavenkeeperEffects() {
         opacityRange={[0.6, 0.8]}
         duration={3000}
       />
-      {Array.from({ length: FEATHER_COUNT }).map((_, i) => (
-        <FeatherParticle key={`f-${i}`} index={i} />
-      ))}
+      {!reduced &&
+        Array.from({ length: FEATHER_COUNT }).map((_, i) => (
+          <FeatherParticle key={`f-${i}`} index={i} />
+        ))}
     </>
   );
 }

@@ -1,5 +1,5 @@
 import { getRandomGameTip } from '@clocktower/shared';
-import { FullScreenVignette, GameTip } from '@clocktower/ui';
+import { FullScreenVignette, GameTip, useReducedMotion } from '@clocktower/ui';
 import { useEffect, useMemo } from 'react';
 import { Text, Vibration, View } from 'react-native';
 import Animated, {
@@ -96,6 +96,7 @@ function FogParticle({ index }: { index: number }) {
 const FOG_COUNT = 8;
 
 function NightDeathEffects() {
+  const reduced = useReducedMotion();
   return (
     <>
       <FullScreenVignette
@@ -103,9 +104,10 @@ function NightDeathEffects() {
         opacityRange={[0.6, 0.8]}
         duration={3000}
       />
-      {Array.from({ length: FOG_COUNT }).map((_, i) => (
-        <FogParticle key={`f-${i}`} index={i} />
-      ))}
+      {!reduced &&
+        Array.from({ length: FOG_COUNT }).map((_, i) => (
+          <FogParticle key={`f-${i}`} index={i} />
+        ))}
     </>
   );
 }

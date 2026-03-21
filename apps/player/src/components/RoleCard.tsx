@@ -1,5 +1,5 @@
 import type { Role, Team } from '@clocktower/shared';
-import { AbilityText, RoleTips } from '@clocktower/ui';
+import { AbilityText, RoleTips, useReducedMotion } from '@clocktower/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -94,6 +94,7 @@ export function RoleCard({
   isHidden,
   butlerMasterName,
 }: RoleCardProps) {
+  const reduced = useReducedMotion();
   // 0 = front (role visible), 1 = back (hidden)
   const flip = useSharedValue(mode === 'revealed' ? 0 : 1);
   const prevModeRef = useRef(mode);
@@ -105,7 +106,9 @@ export function RoleCard({
       return;
     }
     if (mode === 'revealed') {
-      if (prevModeRef.current === 'veiled') {
+      if (reduced) {
+        flip.value = 0;
+      } else if (prevModeRef.current === 'veiled') {
         // dramatic reveal from veiled state
         flip.value = withSpring(0, {
           damping: 14,
@@ -122,12 +125,14 @@ export function RoleCard({
       return;
     }
     // hidden
-    flip.value = withTiming(1, {
-      duration: 800,
-      easing: REasing.inOut(REasing.cubic),
-    });
+    flip.value = reduced
+      ? 1
+      : withTiming(1, {
+          duration: 800,
+          easing: REasing.inOut(REasing.cubic),
+        });
     prevModeRef.current = mode;
-  }, [mode, flip]);
+  }, [mode, flip, reduced]);
 
   const frontStyle = useAnimatedStyle(() => {
     const rotateY = interpolate(flip.value, [0, 1], [0, 180]);
@@ -279,6 +284,7 @@ function FrontFace({
 // ─── Back Face ───────────────────────────────────────────────
 
 function BackFace({ isVeiled }: { isVeiled: boolean }) {
+  const reduced = useReducedMotion();
   // Shimmer animation for veiled state
   const shimmer = useRef(new RNAnimated.Value(0)).current;
   const pulse = useRef(new RNAnimated.Value(0)).current;
@@ -288,6 +294,8 @@ function BackFace({ isVeiled }: { isVeiled: boolean }) {
   );
 
   useEffect(() => {
+    if (reduced) return;
+
     const shimmerAnim = RNAnimated.loop(
       RNAnimated.sequence([
         RNAnimated.timing(shimmer, {
@@ -329,7 +337,7 @@ function BackFace({ isVeiled }: { isVeiled: boolean }) {
       shimmerAnim.stop();
       pulseAnim.stop();
     };
-  }, [shimmer, pulse]);
+  }, [shimmer, pulse, reduced]);
 
   const shimmerTranslate = shimmer.interpolate({
     inputRange: [0, 1],

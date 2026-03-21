@@ -1,4 +1,4 @@
-import { FullScreenVignette } from '@clocktower/ui';
+import { FullScreenVignette, useReducedMotion } from '@clocktower/ui';
 import { useEffect } from 'react';
 import { Dimensions } from 'react-native';
 import Animated, {
@@ -307,6 +307,8 @@ const PARTICLE_COUNT = 24;
 const SPARK_COUNT = 32;
 
 export function SlayerEffects() {
+  const reduced = useReducedMotion();
+  if (reduced) return null;
   return (
     <>
       <SlayerGlow />
@@ -318,6 +320,8 @@ export function SlayerEffects() {
 }
 
 export function VictoryEffects() {
+  const reduced = useReducedMotion();
+  if (reduced) return null;
   return (
     <>
       <VictoryGlow />
@@ -329,6 +333,7 @@ export function VictoryEffects() {
 }
 
 export function DefeatEffects() {
+  const reduced = useReducedMotion();
   return (
     <>
       <FullScreenVignette
@@ -336,12 +341,14 @@ export function DefeatEffects() {
         opacityRange={[0.3, 0.6]}
         duration={3000}
       />
-      {Array.from({ length: DRIP_COUNT }).map((_, i) => (
-        <BloodDrip key={`d-${i}`} index={i} />
-      ))}
-      {Array.from({ length: POOL_COUNT }).map((_, i) => (
-        <BloodPool key={`bp-${i}`} index={i} />
-      ))}
+      {!reduced &&
+        Array.from({ length: DRIP_COUNT }).map((_, i) => (
+          <BloodDrip key={`d-${i}`} index={i} />
+        ))}
+      {!reduced &&
+        Array.from({ length: POOL_COUNT }).map((_, i) => (
+          <BloodPool key={`bp-${i}`} index={i} />
+        ))}
     </>
   );
 }

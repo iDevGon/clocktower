@@ -1,3 +1,4 @@
+import { useReducedMotion } from '@clocktower/ui';
 import { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
@@ -121,6 +122,7 @@ export function VoteClockHand({
   centerY,
   radius,
 }: VoteClockHandProps) {
+  const reduced = useReducedMotion();
   const voteClock = useGameStore((s) => s.voteClock);
   const handAngleSV = useSharedValue(0);
 
@@ -186,7 +188,7 @@ export function VoteClockHand({
   return (
     <View style={[StyleSheet.absoluteFill, styles.pointerEventsNone]}>
       {/* Smoke particles — only when clock is active */}
-      {voteClock && smokeElements}
+      {voteClock && !reduced && smokeElements}
 
       {/* Dagger hand */}
       <Animated.View

@@ -1,3 +1,4 @@
+import { useReducedMotion } from '@clocktower/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import {
@@ -149,16 +150,18 @@ export function AnimatedBorderCard({
   style,
   children,
 }: AnimatedBorderCardProps) {
+  const reduced = useReducedMotion();
   const [size, setSize] = useState({ w: 400, h: 100 });
 
   const progress = useSharedValue(0);
   useEffect(() => {
+    if (reduced) return;
     progress.value = withRepeat(
       withTiming(1, { duration: 4000, easing: Easing.linear }),
       -1,
       false,
     );
-  }, [progress]);
+  }, [progress, reduced]);
 
   const perimeter = 2 * (size.w + size.h);
   const beamLen = perimeter * 0.1;
@@ -180,14 +183,15 @@ export function AnimatedBorderCard({
   );
   const leftStyle = useEdgeBeamStyle(progress, 'left', size.w, size.h, beamLen);
 
-  const glowOpacity = useSharedValue(0.2);
+  const glowOpacity = useSharedValue(0.35);
   useEffect(() => {
+    if (reduced) return;
     glowOpacity.value = withRepeat(
       withTiming(0.5, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
       -1,
       true,
     );
-  }, [glowOpacity]);
+  }, [glowOpacity, reduced]);
   const glowStyle = useAnimatedStyle(() => ({
     opacity: glowOpacity.value,
   }));
@@ -242,31 +246,32 @@ export function AnimatedBorderCard({
       />
 
       {/* 4 edge beams with gradient fade */}
-      {edges.map((edge, i) => {
-        const isHorizontal = edge === 'top' || edge === 'bottom';
-        const dir = beamGradientDir(edge);
-        const posStyle: ViewStyle = {
-          position: 'absolute',
-          ...(edge === 'top' && { top: 0, height: bw }),
-          ...(edge === 'bottom' && { bottom: 0, height: bw }),
-          ...(edge === 'right' && { right: 0, width: bw }),
-          ...(edge === 'left' && { left: 0, width: bw }),
-          // 기본 크기 (animated style이 덮어씀)
-          ...(isHorizontal ? { width: 0 } : { height: 0 }),
-        };
+      {!reduced &&
+        edges.map((edge, i) => {
+          const isHorizontal = edge === 'top' || edge === 'bottom';
+          const dir = beamGradientDir(edge);
+          const posStyle: ViewStyle = {
+            position: 'absolute',
+            ...(edge === 'top' && { top: 0, height: bw }),
+            ...(edge === 'bottom' && { bottom: 0, height: bw }),
+            ...(edge === 'right' && { right: 0, width: bw }),
+            ...(edge === 'left' && { left: 0, width: bw }),
+            // 기본 크기 (animated style이 덮어씀)
+            ...(isHorizontal ? { width: 0 } : { height: 0 }),
+          };
 
-        return (
-          <Animated.View key={edge} style={[posStyle, edgeStyles[i]]}>
-            <LinearGradient
-              colors={beamColors}
-              locations={[0, 0.2, 0.5, 0.8, 1]}
-              start={dir.start}
-              end={dir.end}
-              style={StyleSheet.absoluteFill}
-            />
-          </Animated.View>
-        );
-      })}
+          return (
+            <Animated.View key={edge} style={[posStyle, edgeStyles[i]]}>
+              <LinearGradient
+                colors={beamColors}
+                locations={[0, 0.2, 0.5, 0.8, 1]}
+                start={dir.start}
+                end={dir.end}
+                style={StyleSheet.absoluteFill}
+              />
+            </Animated.View>
+          );
+        })}
 
       {/* Inner content with 3-stop vertical gradient */}
       <View style={[s.inner, { borderRadius: innerBr, margin: bw }]}>

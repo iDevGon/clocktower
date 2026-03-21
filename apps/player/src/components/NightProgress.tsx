@@ -1,5 +1,6 @@
 import type { Role } from '@clocktower/shared';
 import { getRoleById } from '@clocktower/shared';
+import { useReducedMotion } from '@clocktower/ui';
 import { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import Animated, {
@@ -15,9 +16,11 @@ import Animated, {
 import { styles } from './NightProgress.styles';
 
 function ActiveGlow({ isMine }: { isMine: boolean }) {
+  const reduced = useReducedMotion();
   const progress = useSharedValue(0);
 
   useEffect(() => {
+    if (reduced) return;
     progress.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 1500, easing: Easing.out(Easing.ease) }),
@@ -26,7 +29,7 @@ function ActiveGlow({ isMine }: { isMine: boolean }) {
       -1,
     );
     return () => cancelAnimation(progress);
-  }, [progress]);
+  }, [progress, reduced]);
 
   const animStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress.value, [0, 1], [0.6, 0]),
@@ -66,10 +69,11 @@ export function NightProgress({
       (drunkAs != null && activeRoleId === drunkAs));
   // 서버가 night:wakeUp을 개별 전송하므로, wakeUp 수신 시에만 차례로 인정
   const isMyTurn = isRoleActive && nightWakeUp;
+  const reduced = useReducedMotion();
   const pulseAnim = useSharedValue(1);
 
   useEffect(() => {
-    if (!isMyTurn) {
+    if (!isMyTurn || reduced) {
       cancelAnimation(pulseAnim);
       pulseAnim.value = 1;
       return;
@@ -83,7 +87,7 @@ export function NightProgress({
       -1,
     );
     return () => cancelAnimation(pulseAnim);
-  }, [isMyTurn, pulseAnim]);
+  }, [isMyTurn, pulseAnim, reduced]);
 
   const pulseStyle = useAnimatedStyle(() => ({
     opacity: pulseAnim.value,
@@ -121,7 +125,7 @@ export function NightProgress({
                   ]}
                 />
                 <View style={styles.dotContainer}>
-                  {isActive && <ActiveGlow isMine={isMine} />}
+                  {isActive && !reduced && <ActiveGlow isMine={isMine} />}
                   <View
                     style={[
                       styles.dot,

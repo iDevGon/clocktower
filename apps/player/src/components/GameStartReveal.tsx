@@ -1,5 +1,5 @@
 import { getRandomGameTip, type Role, type Team } from '@clocktower/shared';
-import { AbilityText, GameTip } from '@clocktower/ui';
+import { AbilityText, GameTip, useReducedMotion } from '@clocktower/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo } from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -531,6 +531,7 @@ export function GameStartReveal({
   evilInfo,
   onDismiss,
 }: GameStartRevealProps) {
+  const reduced = useReducedMotion();
   const team = TEAM_ACCENT[role.team];
   const tip = useMemo(
     () => getRandomGameTip('firstNight', role.id, role.team),
@@ -598,22 +599,24 @@ export function GameStartReveal({
         {/* Night vignette atmosphere */}
         <NightVignette />
 
-        {/* Drift particles */}
-        {Array.from({ length: 20 }).map((_, i) => (
-          <DriftParticle key={`dp-${i}`} index={i} />
-        ))}
+        {/* Drift particles — skip when reduced motion */}
+        {!reduced &&
+          Array.from({ length: 20 }).map((_, i) => (
+            <DriftParticle key={`dp-${i}`} index={i} />
+          ))}
 
         {/* Card glow */}
         <CardGlow color={team.glow} />
 
-        {/* Burst particles */}
-        {Array.from({ length: 20 }).map((_, i) => (
-          <BurstParticle
-            key={`bp-${i}`}
-            index={i}
-            color={burstColors[i % burstColors.length]}
-          />
-        ))}
+        {/* Burst particles — skip when reduced motion */}
+        {!reduced &&
+          Array.from({ length: 20 }).map((_, i) => (
+            <BurstParticle
+              key={`bp-${i}`}
+              index={i}
+              color={burstColors[i % burstColors.length]}
+            />
+          ))}
 
         {/* Content */}
         <View style={s.content}>

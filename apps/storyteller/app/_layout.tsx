@@ -1,10 +1,18 @@
+import { ReducedMotionProvider } from '@clocktower/ui';
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { DevSettings, Platform } from 'react-native';
+
+const IS_DEV = process.env.EXPO_PUBLIC_DEV_MODE === 'true';
+if (__DEV__ && !IS_DEV && Platform.OS !== 'web') {
+  DevSettings.setIsShakeToShowDevMenuEnabled?.(false);
+}
+
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSocketConnection } from '../src/hooks/useSocketConnection';
 import { useConnectionStore } from '../src/stores/connectionStore';
 import { useGameStore } from '../src/stores/gameStore';
+import { useSettingsStore } from '../src/stores/settingsStore';
 
 const SCROLLBAR_CSS = `
   *::-webkit-scrollbar {
@@ -29,6 +37,7 @@ export default function RootLayout() {
   const gameId = useGameStore((s) => s.gameState?.id);
   const serverUrl = useConnectionStore((s) => s.serverUrl);
   const isConnected = useConnectionStore((s) => s.isConnected);
+  const lowPowerMode = useSettingsStore((s) => s.lowPowerMode);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -49,23 +58,25 @@ export default function RootLayout() {
   }, [gameId, serverUrl, isConnected, connect]);
 
   return (
-    <GestureHandlerRootView
-      style={{
-        flex: 1,
-        ...(Platform.OS === 'web' ? { userSelect: 'none' as const } : {}),
-      }}
-    >
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: '#1a1a1e' },
-          headerTintColor: '#e0ddd8',
-          headerTitleStyle: { fontWeight: '700' },
-          contentStyle: { backgroundColor: '#121214' },
+    <ReducedMotionProvider value={lowPowerMode}>
+      <GestureHandlerRootView
+        style={{
+          flex: 1,
+          ...(Platform.OS === 'web' ? { userSelect: 'none' as const } : {}),
         }}
       >
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="game" options={{ headerShown: false }} />
-      </Stack>
-    </GestureHandlerRootView>
+        <Stack
+          screenOptions={{
+            headerStyle: { backgroundColor: '#1a1a1e' },
+            headerTintColor: '#e0ddd8',
+            headerTitleStyle: { fontWeight: '700' },
+            contentStyle: { backgroundColor: '#121214' },
+          }}
+        >
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="game" options={{ headerShown: false }} />
+        </Stack>
+      </GestureHandlerRootView>
+    </ReducedMotionProvider>
   );
 }

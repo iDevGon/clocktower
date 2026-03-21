@@ -1,3 +1,4 @@
+import { useReducedMotion } from '@clocktower/ui';
 import { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useGameStore } from '../stores/gameStore';
@@ -5,6 +6,7 @@ import { useGameStore } from '../stores/gameStore';
 const TOAST_DURATION = 4000;
 
 export function EventToast() {
+  const reduced = useReducedMotion();
   const eventToast = useGameStore((s) => s.eventToast);
   const dismissEventToast = useGameStore((s) => s.dismissEventToast);
   const opacity = useRef(new Animated.Value(0)).current;
@@ -13,32 +15,41 @@ export function EventToast() {
 
   useEffect(() => {
     if (eventToast) {
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      if (reduced) {
+        opacity.setValue(1);
+        translateY.setValue(0);
+      } else {
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
 
       timerRef.current = setTimeout(() => {
-        Animated.timing(opacity, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }).start(() => dismissEventToast());
+        if (reduced) {
+          dismissEventToast();
+        } else {
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }).start(() => dismissEventToast());
+        }
       }, TOAST_DURATION);
     }
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [eventToast, opacity, translateY, dismissEventToast]);
+  }, [eventToast, opacity, translateY, dismissEventToast, reduced]);
 
   if (!eventToast) return null;
 

@@ -1,6 +1,7 @@
 import type { GameSettings } from '@clocktower/shared';
 import { useState } from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
+import { useSettingsStore } from '../stores/settingsStore';
 import { ClockSpeedSetting } from './ClockSpeedSetting';
 import { CollapsibleSection } from './CollapsibleSection';
 
@@ -33,6 +34,8 @@ export function SettingsPanel({
   styles,
 }: SettingsPanelProps) {
   const [timerOpen, setTimerOpen] = useState(false);
+  const lowPowerMode = useSettingsStore((s) => s.lowPowerMode);
+  const setLowPowerMode = useSettingsStore((s) => s.setLowPowerMode);
 
   return (
     <View style={styles.settingsOverlay}>
@@ -40,6 +43,26 @@ export function SettingsPanel({
         <Text style={[styles.settingsTitle, { fontSize: fontSize.lg }]}>
           게임 설정
         </Text>
+
+        <View style={styles.settingsRow}>
+          <View>
+            <Text style={[styles.settingsLabel, { fontSize: fontSize.md }]}>
+              저전력 모드
+            </Text>
+            <Text style={[styles.settingsDesc, { fontSize: fontSize.sm }]}>
+              {lowPowerMode
+                ? 'ON — 애니메이션 비활성화'
+                : 'OFF — 모든 효과 사용'}
+            </Text>
+          </View>
+          <Switch
+            value={lowPowerMode}
+            onValueChange={setLowPowerMode}
+            trackColor={{ false: '#3a3a42', true: '#2a4a2a' }}
+            thumbColor={lowPowerMode ? '#2ecc71' : '#908e8a'}
+            accessibilityLabel="저전력 모드"
+          />
+        </View>
 
         <View style={styles.settingsRow}>
           <View>

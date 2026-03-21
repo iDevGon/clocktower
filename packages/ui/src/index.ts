@@ -1,3 +1,9 @@
+// Reduced motion
+export {
+  ReducedMotionProvider,
+  useReducedMotion,
+} from './ReducedMotionContext';
+
 // Design tokens
 
 // Chat styles

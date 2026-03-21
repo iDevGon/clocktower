@@ -1,5 +1,5 @@
 import { getRandomGameTip } from '@clocktower/shared';
-import { FullScreenVignette, GameTip } from '@clocktower/ui';
+import { FullScreenVignette, GameTip, useReducedMotion } from '@clocktower/ui';
 import { useEffect, useMemo } from 'react';
 import { View } from 'react-native';
 import Animated, {
@@ -90,6 +90,7 @@ function StarParticle({ index }: { index: number }) {
 const STAR_COUNT = 12;
 
 function NightFallEffects() {
+  const reduced = useReducedMotion();
   return (
     <>
       <FullScreenVignette
@@ -97,9 +98,10 @@ function NightFallEffects() {
         opacityRange={[0.5, 0.85]}
         duration={2500}
       />
-      {Array.from({ length: STAR_COUNT }).map((_, i) => (
-        <StarParticle key={`s-${i}`} index={i} />
-      ))}
+      {!reduced &&
+        Array.from({ length: STAR_COUNT }).map((_, i) => (
+          <StarParticle key={`s-${i}`} index={i} />
+        ))}
     </>
   );
 }

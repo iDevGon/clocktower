@@ -1,3 +1,4 @@
+import { useReducedMotion } from '@clocktower/ui';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import Animated, {
@@ -219,6 +220,7 @@ const PlayerNode = React.memo(function PlayerNode({
 });
 
 export function VoteClockRing() {
+  const reduced = useReducedMotion();
   const voteOrder = usePlayerStore((s) => s.voteOrder);
   const voteClock = usePlayerStore((s) => s.voteClock);
   const playerId = usePlayerStore((s) => s.playerId);
@@ -457,8 +459,8 @@ export function VoteClockRing() {
           ))}
         </View>
 
-        {/* Smoke particles — only when clock is active */}
-        {voteClock && (
+        {/* Smoke particles — only when clock is active and motion allowed */}
+        {voteClock && !reduced && (
           <View style={styles.smokeLayer} pointerEvents="none">
             {SMOKE_CONFIGS.map((config, i) => (
               <SmokeParticle key={`s-${i}`} config={config} />
