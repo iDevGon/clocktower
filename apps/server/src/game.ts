@@ -82,6 +82,8 @@ export class GameManager {
   private nominationStartedAt: number | null = null;
   // 악마에게 전달된 블러프 역할 (이야기꾼 표시용)
   private bluffRoles: { id: string; name: string }[] = [];
+  // 이야기꾼이 사전 선택한 블러프 역할 ID (수동 배정 시 사용)
+  private preselectedBluffIds: string[] = [];
 
   create(): string {
     const id = randomUUID().slice(0, 8);
@@ -209,6 +211,20 @@ export class GameManager {
 
   getBluffRoles(): { id: string; name: string }[] {
     return this.bluffRoles;
+  }
+
+  setPreselectedBluffIds(ids: string[]): void {
+    this.preselectedBluffIds = ids;
+  }
+
+  getPreselectedBluffIds(): string[] | undefined {
+    return this.preselectedBluffIds.length > 0
+      ? this.preselectedBluffIds
+      : undefined;
+  }
+
+  clearPreselectedBluffIds(): void {
+    this.preselectedBluffIds = [];
   }
 
   getPlayer(playerId: string): Player | undefined {

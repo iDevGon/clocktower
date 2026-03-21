@@ -18,6 +18,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { BluffSelectModal } from '../../src/components/BluffSelectModal';
 import { useGameActions } from '../../src/hooks/useGameActions';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import { useGameStore } from '../../src/stores/gameStore';
@@ -58,6 +59,12 @@ export default function AssignRoleScreen() {
   // 주정뱅이 가짜 역할 선택 모달 상태
   const [drunkModalVisible, setDrunkModalVisible] = useState(false);
   const [drunkSearchQuery, setDrunkSearchQuery] = useState('');
+  // 악마 블러프 직업 선택 모달 상태
+  const [bluffModalVisible, setBluffModalVisible] = useState(false);
+  const [bluffRoleIds, setBluffRoleIds] = useState<Set<string>>(new Set());
+  const [pendingDemonRoleId, setPendingDemonRoleId] = useState<string | null>(
+    null,
+  );
 
   const selectedEditionId = editionId ?? 'trouble_brewing';
   const additionalIds = useMemo(() => {
@@ -177,6 +184,44 @@ export default function AssignRoleScreen() {
     return teams;
   }, [gameState, playerId]);
 
+  // 블러프 선택 가능한 역할: 게임에 등장하지 않는 선한 역할
+  const bluffAvailableRoles = useMemo(() => {
+    if (!gameState)
+      return ALL_ROLES.filter(
+        (r) => r.team === 'townsfolk' || r.team === 'outsider',
+      );
+    const assignedRoleIds = new Set(
+      gameState.players.flatMap((p) => [p.role?.id, p.drunkAs]).filter(Boolean),
+    );
+    return ALL_ROLES.filter(
+      (r) =>
+        (r.team === 'townsfolk' || r.team === 'outsider') &&
+        !assignedRoleIds.has(r.id),
+    );
+  }, [gameState]);
+
+  const toggleBluffRole = useCallback((roleId: string) => {
+    setBluffRoleIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(roleId)) next.delete(roleId);
+      else if (next.size < 3) next.add(roleId);
+      return next;
+    });
+  }, []);
+
+  const handleBluffAssign = useCallback(() => {
+    if (!playerId || !pendingDemonRoleId) return;
+    assignRole(
+      playerId,
+      pendingDemonRoleId,
+      undefined,
+      bluffRoleIds.size > 0 ? [...bluffRoleIds] : undefined,
+    );
+    setBluffModalVisible(false);
+    setPendingDemonRoleId(null);
+    router.back();
+  }, [playerId, pendingDemonRoleId, assignRole, bluffRoleIds, router]);
+
   const handleRandomAssign = useCallback(() => {
     if (!playerId) return;
     const unassignedRoles = availableRoles.filter(
@@ -212,8 +257,14 @@ export default function AssignRoleScreen() {
     (roleId: string) => {
       if (!playerId) return;
       if (roleId === 'drunk') {
-        // 주정뱅이를 선택하면 가짜 역할 선택 모달 표시
         setDrunkModalVisible(true);
+        return;
+      }
+      const role = ALL_ROLES.find((r) => r.id === roleId);
+      if (role?.team === 'demon') {
+        setPendingDemonRoleId(roleId);
+        setBluffRoleIds(new Set());
+        setBluffModalVisible(true);
         return;
       }
       assignRole(playerId, roleId);
@@ -327,6 +378,17 @@ export default function AssignRoleScreen() {
             <Text style={styles.listEmptyText}>검색 결과가 없습니다</Text>
           ) : null
         }
+      />
+
+      {/* 악마 블러프 직업 선택 모달 */}
+      <BluffSelectModal
+        visible={bluffModalVisible}
+        onClose={handleBluffAssign}
+        selectedBluffIds={bluffRoleIds}
+        onToggleBluff={toggleBluffRole}
+        onResetBluffs={() => setBluffRoleIds(new Set())}
+        availableRoles={bluffAvailableRoles}
+        scale={scale}
       />
 
       {/* 주정뱅이 가짜 역할 선택 모달 */}

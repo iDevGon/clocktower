@@ -79,8 +79,18 @@ export function useGameActions() {
   );
 
   const assignRole = useCallback(
-    (playerId: string, roleId: string, drunkAs?: string) =>
-      socket?.emit('game:assignRole', { playerId, roleId, drunkAs }),
+    (
+      playerId: string,
+      roleId: string,
+      drunkAs?: string,
+      bluffRoleIds?: string[],
+    ) =>
+      socket?.emit('game:assignRole', {
+        playerId,
+        roleId,
+        drunkAs,
+        bluffRoleIds,
+      }),
     [socket],
   );
 

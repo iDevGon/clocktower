@@ -8,7 +8,14 @@ import {
 } from '@clocktower/shared';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Alert, FlatList, Pressable, Text, View } from 'react-native';
+import {
+  Alert,
+  FlatList,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { BluffSelectModal } from '../../src/components/BluffSelectModal';
 import { ClockSpeedSetting } from '../../src/components/ClockSpeedSetting';
@@ -50,8 +57,6 @@ export default function LobbyScreen() {
     new Set(),
   );
   const [showMixModal, setShowMixModal] = useState(false);
-  const [bluffRoleIds, setBluffRoleIds] = useState<Set<string>>(new Set());
-  const [showBluffModal, setShowBluffModal] = useState(false);
   const [excludeSearch, setExcludeSearch] = useState('');
   const [mixSearch, setMixSearch] = useState('');
   const [roleSettingsOpen, setRoleSettingsOpen] = useState(false);
@@ -60,6 +65,47 @@ export default function LobbyScreen() {
 
   // 주정뱅이 가짜 역할 변경 모달 상태
   const [drunkModalPlayer, setDrunkModalPlayer] = useState<Player | null>(null);
+
+  // 악마 블러프 직업 변경 모달 상태
+  const [bluffChangePlayer, setBluffChangePlayer] = useState<Player | null>(
+    null,
+  );
+  const [bluffRoleIds, setBluffRoleIds] = useState<Set<string>>(new Set());
+
+  const toggleBluffRole = useCallback((roleId: string) => {
+    setBluffRoleIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(roleId)) next.delete(roleId);
+      else if (next.size < 3) next.add(roleId);
+      return next;
+    });
+  }, []);
+
+  const bluffAvailableRoles = useMemo(() => {
+    if (!gameState)
+      return ALL_ROLES.filter(
+        (r) => r.team === 'townsfolk' || r.team === 'outsider',
+      );
+    const assignedRoleIds = new Set(
+      gameState.players.flatMap((p) => [p.role?.id, p.drunkAs]).filter(Boolean),
+    );
+    return ALL_ROLES.filter(
+      (r) =>
+        (r.team === 'townsfolk' || r.team === 'outsider') &&
+        !assignedRoleIds.has(r.id),
+    );
+  }, [gameState]);
+
+  const handleBluffChange = useCallback(() => {
+    if (!bluffChangePlayer) return;
+    assignRole(
+      bluffChangePlayer.id,
+      bluffChangePlayer.role?.id ?? '',
+      undefined,
+      bluffRoleIds.size > 0 ? [...bluffRoleIds] : undefined,
+    );
+    setBluffChangePlayer(null);
+  }, [bluffChangePlayer, assignRole, bluffRoleIds]);
 
   const editionRoles = useMemo(
     () => getRolesForEdition(selectedEditionId),
@@ -89,32 +135,6 @@ export default function LobbyScreen() {
       return next;
     });
   }, []);
-
-  const toggleBluffRole = useCallback((roleId: string) => {
-    setBluffRoleIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(roleId)) next.delete(roleId);
-      else if (next.size < 3) next.add(roleId);
-      return next;
-    });
-  }, []);
-
-  // 블러프 선택 가능한 역할: 게임에 등장하지 않는 선한 역할
-  // (배분 전이므로 현재 배정된 역할 기준으로 필터)
-  const bluffAvailableRoles = useMemo(() => {
-    if (!gameState)
-      return ALL_ROLES.filter(
-        (r) => r.team === 'townsfolk' || r.team === 'outsider',
-      );
-    const assignedRoleIds = new Set(
-      gameState.players.flatMap((p) => [p.role?.id, p.drunkAs]).filter(Boolean),
-    );
-    return ALL_ROLES.filter(
-      (r) =>
-        (r.team === 'townsfolk' || r.team === 'outsider') &&
-        !assignedRoleIds.has(r.id),
-    );
-  }, [gameState]);
 
   const handleStartGame = async () => {
     try {
@@ -154,7 +174,6 @@ export default function LobbyScreen() {
         editionId: selectedEditionId,
         additionalRoleIds:
           additionalRoleIds.size > 0 ? [...additionalRoleIds] : undefined,
-        bluffRoleIds: bluffRoleIds.size > 0 ? [...bluffRoleIds] : undefined,
       });
     } catch (e) {
       Alert.alert('오류', e instanceof Error ? e.message : '알 수 없는 오류');
@@ -357,35 +376,6 @@ export default function LobbyScreen() {
               </Text>
             </Pressable>
           )}
-
-          {/* 블러프 직업 선택 버튼 */}
-          <Pressable
-            onPress={() => setShowBluffModal(true)}
-            style={({ pressed }) => ({
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingVertical: s(8),
-              marginBottom: s(8),
-              borderRadius: 6,
-              backgroundColor: pressed ? '#2a2a30' : '#1e1e22',
-              borderWidth: 1,
-              borderColor: bluffRoleIds.size > 0 ? '#8a6a9a' : '#3a3a3e',
-            })}
-          >
-            <Text
-              style={[
-                styles.roleSettingButtonText,
-                lobbyDynamic.roleSettingButtonTextColor(
-                  bluffRoleIds.size > 0,
-                  '#8a6a9a',
-                ),
-              ]}
-            >
-              블러프 직업 선택
-              {bluffRoleIds.size > 0 ? ` (${bluffRoleIds.size}개)` : ' (랜덤)'}
-            </Text>
-          </Pressable>
         </CollapsibleSection>
 
         <View style={styles.distributeRow}>
@@ -416,195 +406,220 @@ export default function LobbyScreen() {
       </View>
 
       <View style={styles.listContainer}>
-        <FlatList
-          data={gameState?.players ?? []}
-          keyExtractor={(p) => p.id}
-          contentContainerStyle={styles.playerListContent}
-          style={undefined}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() =>
-                router.push({
-                  pathname: '/game/assign-role',
-                  params: {
-                    playerId: item.id,
-                    editionId: selectedEditionId,
-                    additionalRoleIds:
-                      additionalRoleIds.size > 0
-                        ? [...additionalRoleIds].join(',')
-                        : '',
-                  },
-                })
-              }
-              onLongPress={() => {
-                Alert.alert(
-                  `${item.name} 강퇴`,
-                  '이 플레이어를 게임에서 제거하시겠습니까?',
-                  [
-                    { text: '취소', style: 'cancel' },
-                    {
-                      text: '강퇴',
-                      style: 'destructive',
-                      onPress: async () => {
-                        try {
-                          await kickPlayer(item.id);
-                        } catch (e) {
-                          Alert.alert(
-                            '오류',
-                            e instanceof Error
-                              ? e.message
-                              : '강퇴에 실패했습니다.',
-                          );
-                        }
-                      },
+        {advancedSettingsOpen && gameState ? (
+          <ScrollView
+            style={styles.settingsScrollArea}
+            contentContainerStyle={styles.settingsScrollContent}
+            bounces={false}
+          >
+            <View style={styles.settingsGap}>
+              <View style={styles.settingsToggleRow}>
+                <SettingToggle
+                  label="채팅 밀담"
+                  value={gameState.settings.whisperMode === 'chat'}
+                  onValueChange={(val: boolean) =>
+                    setGameSettings({
+                      whisperMode: val ? 'chat' : 'offline',
+                    })
+                  }
+                  scale={scale}
+                />
+                <View style={styles.settingsDivider} />
+                <SettingToggle
+                  label="온라인 투표"
+                  value={gameState.settings.votingMode === 'online'}
+                  onValueChange={(val: boolean) =>
+                    setGameSettings({
+                      votingMode: val ? 'online' : 'offline',
+                    })
+                  }
+                  scale={scale}
+                />
+              </View>
+              {gameState.settings.whisperMode === 'chat' && (
+                <View style={styles.clockSettingContainer}>
+                  <ClockSpeedSetting
+                    label="밀담 시간"
+                    value={gameState.settings.whisperClockSeconds}
+                    onChange={(val: number) =>
+                      setGameSettings({ whisperClockSeconds: val })
+                    }
+                    scale={scale}
+                    showOff
+                    options={[10, 300, 600, 900, 1200]}
+                    formatOption={(sec: number) =>
+                      sec < 60 ? `${sec}초` : `${sec / 60}분`
+                    }
+                  />
+                </View>
+              )}
+              {gameState.settings.votingMode === 'online' && (
+                <View style={styles.clockSettingContainer}>
+                  <ClockSpeedSetting
+                    label="1인당 투표 시간"
+                    value={gameState.settings.voteClockSeconds}
+                    onChange={(val: number) =>
+                      setGameSettings({ voteClockSeconds: val })
+                    }
+                    scale={scale}
+                    options={[2, 3, 4, 5, 6]}
+                  />
+                </View>
+              )}
+              <View style={styles.clockSettingContainer}>
+                <ClockSpeedSetting
+                  label="공개토론 시간"
+                  value={gameState.settings.discussionClockSeconds}
+                  onChange={(val: number) =>
+                    setGameSettings({ discussionClockSeconds: val })
+                  }
+                  scale={scale}
+                  showOff
+                  options={[600, 1200, 1800]}
+                  formatOption={(sec: number) => `${sec / 60}분`}
+                />
+              </View>
+              <View style={styles.clockSettingContainer}>
+                <ClockSpeedSetting
+                  label="지목 시간"
+                  value={gameState.settings.nominationClockSeconds}
+                  onChange={(val: number) =>
+                    setGameSettings({ nominationClockSeconds: val })
+                  }
+                  scale={scale}
+                  showOff
+                  options={[300, 600, 900]}
+                  formatOption={(sec: number) => `${sec / 60}분`}
+                />
+              </View>
+              <View style={styles.clockSettingContainer}>
+                <ClockSpeedSetting
+                  label="변론 시간"
+                  value={gameState.settings.defenseClockSeconds}
+                  onChange={(val: number) =>
+                    setGameSettings({ defenseClockSeconds: val })
+                  }
+                  scale={scale}
+                  showOff
+                  options={[30, 60, 90, 120, 180, 300]}
+                  formatOption={(sec: number) =>
+                    sec < 60 ? `${sec}초` : `${sec / 60}분`
+                  }
+                />
+              </View>
+            </View>
+          </ScrollView>
+        ) : (
+          <FlatList
+            data={gameState?.players ?? []}
+            keyExtractor={(p) => p.id}
+            contentContainerStyle={styles.playerListContent}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: '/game/assign-role',
+                    params: {
+                      playerId: item.id,
+                      editionId: selectedEditionId,
+                      additionalRoleIds:
+                        additionalRoleIds.size > 0
+                          ? [...additionalRoleIds].join(',')
+                          : '',
                     },
-                  ],
-                );
-              }}
-              style={styles.playerRow}
-            >
-              <View style={styles.playerNameRow}>
-                <View style={lobbyDynamic.aliveDot(item.isAlive, s)} />
-                <Text style={styles.playerName}>{item.name}</Text>
-              </View>
-              <View style={styles.playerRoleContainer}>
-                {item.role && (
-                  <Text style={lobbyDynamic.playerRoleText(rolesVeiled, s)}>
-                    {rolesVeiled ? '???' : item.role.name}
-                    {!rolesVeiled && item.role.id === 'drunk' && item.drunkAs
-                      ? ` (${getRoleById(item.drunkAs)?.name ?? '?'})`
-                      : ''}
-                  </Text>
-                )}
-                {!rolesVeiled && item.role?.id === 'drunk' && item.drunkAs && (
-                  <Pressable
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      setDrunkModalPlayer(item);
-                    }}
-                    hitSlop={8}
-                    style={styles.drunkChangeButton}
-                  >
-                    <Text style={styles.drunkChangeText}>가짜역할 변경</Text>
-                  </Pressable>
-                )}
-              </View>
-            </Pressable>
-          )}
-        />
+                  })
+                }
+                onLongPress={() => {
+                  Alert.alert(
+                    `${item.name} 강퇴`,
+                    '이 플레이어를 게임에서 제거하시겠습니까?',
+                    [
+                      { text: '취소', style: 'cancel' },
+                      {
+                        text: '강퇴',
+                        style: 'destructive',
+                        onPress: async () => {
+                          try {
+                            await kickPlayer(item.id);
+                          } catch (e) {
+                            Alert.alert(
+                              '오류',
+                              e instanceof Error
+                                ? e.message
+                                : '강퇴에 실패했습니다.',
+                            );
+                          }
+                        },
+                      },
+                    ],
+                  );
+                }}
+                style={styles.playerRow}
+              >
+                <View style={styles.playerNameRow}>
+                  <View style={lobbyDynamic.aliveDot(item.isAlive, s)} />
+                  <Text style={styles.playerName}>{item.name}</Text>
+                </View>
+                <View style={styles.playerRoleContainer}>
+                  {item.role && (
+                    <Text style={lobbyDynamic.playerRoleText(rolesVeiled, s)}>
+                      {rolesVeiled ? '???' : item.role.name}
+                      {!rolesVeiled && item.role.id === 'drunk' && item.drunkAs
+                        ? ` (${getRoleById(item.drunkAs)?.name ?? '?'})`
+                        : ''}
+                    </Text>
+                  )}
+                  {!rolesVeiled &&
+                    item.role?.id === 'drunk' &&
+                    item.drunkAs && (
+                      <Pressable
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          setDrunkModalPlayer(item);
+                        }}
+                        hitSlop={8}
+                        style={styles.drunkChangeButton}
+                      >
+                        <Text style={styles.drunkChangeText}>
+                          가짜역할 변경
+                        </Text>
+                      </Pressable>
+                    )}
+                  {!rolesVeiled && item.role?.team === 'demon' && (
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        setBluffRoleIds(new Set());
+                        setBluffChangePlayer(item);
+                      }}
+                      hitSlop={8}
+                      style={styles.drunkChangeButton}
+                    >
+                      <Text
+                        style={[styles.drunkChangeText, { color: '#8a6a9a' }]}
+                      >
+                        블러프 변경
+                      </Text>
+                    </Pressable>
+                  )}
+                </View>
+              </Pressable>
+            )}
+          />
+        )}
       </View>
 
       <View style={styles.footer}>
         {gameState && (
-          <View style={styles.footerSettingsContainer}>
-            <CollapsibleSection
-              label="상세 설정"
-              isOpen={advancedSettingsOpen}
-              onToggle={() => setAdvancedSettingsOpen((v) => !v)}
-              scale={scale}
-            >
-              <View style={styles.settingsGap}>
-                <View style={styles.settingsToggleRow}>
-                  <SettingToggle
-                    label="채팅 밀담"
-                    value={gameState.settings.whisperMode === 'chat'}
-                    onValueChange={(val: boolean) =>
-                      setGameSettings({
-                        whisperMode: val ? 'chat' : 'offline',
-                      })
-                    }
-                    scale={scale}
-                  />
-                  <View style={styles.settingsDivider} />
-                  <SettingToggle
-                    label="온라인 투표"
-                    value={gameState.settings.votingMode === 'online'}
-                    onValueChange={(val: boolean) =>
-                      setGameSettings({
-                        votingMode: val ? 'online' : 'offline',
-                      })
-                    }
-                    scale={scale}
-                  />
-                </View>
-                {gameState.settings.whisperMode === 'chat' && (
-                  <View style={styles.clockSettingContainer}>
-                    <ClockSpeedSetting
-                      label="밀담 시간"
-                      value={gameState.settings.whisperClockSeconds}
-                      onChange={(val: number) =>
-                        setGameSettings({ whisperClockSeconds: val })
-                      }
-                      scale={scale}
-                      showOff
-                      options={[10, 300, 600, 900, 1200]}
-                      formatOption={(sec: number) =>
-                        sec < 60 ? `${sec}초` : `${sec / 60}분`
-                      }
-                    />
-                  </View>
-                )}
-                {gameState.settings.votingMode === 'online' && (
-                  <View style={styles.clockSettingContainer}>
-                    <ClockSpeedSetting
-                      label="1인당 투표 시간"
-                      value={gameState.settings.voteClockSeconds}
-                      onChange={(val: number) =>
-                        setGameSettings({ voteClockSeconds: val })
-                      }
-                      scale={scale}
-                      options={[2, 3, 4, 5, 6]}
-                    />
-                  </View>
-                )}
-                <View style={styles.clockSettingContainer}>
-                  <ClockSpeedSetting
-                    label="공개토론 시간"
-                    value={gameState.settings.discussionClockSeconds}
-                    onChange={(val: number) =>
-                      setGameSettings({ discussionClockSeconds: val })
-                    }
-                    scale={scale}
-                    showOff
-                    options={[30, 60, 90, 120, 180, 300]}
-                    formatOption={(sec: number) =>
-                      sec < 60 ? `${sec}초` : `${sec / 60}분`
-                    }
-                  />
-                </View>
-                <View style={styles.clockSettingContainer}>
-                  <ClockSpeedSetting
-                    label="지목 시간"
-                    value={gameState.settings.nominationClockSeconds}
-                    onChange={(val: number) =>
-                      setGameSettings({ nominationClockSeconds: val })
-                    }
-                    scale={scale}
-                    showOff
-                    options={[30, 60, 90, 120, 180, 300]}
-                    formatOption={(sec: number) =>
-                      sec < 60 ? `${sec}초` : `${sec / 60}분`
-                    }
-                  />
-                </View>
-                <View style={styles.clockSettingContainer}>
-                  <ClockSpeedSetting
-                    label="변론 시간"
-                    value={gameState.settings.defenseClockSeconds}
-                    onChange={(val: number) =>
-                      setGameSettings({ defenseClockSeconds: val })
-                    }
-                    scale={scale}
-                    showOff
-                    options={[30, 60, 90, 120, 180, 300]}
-                    formatOption={(sec: number) =>
-                      sec < 60 ? `${sec}초` : `${sec / 60}분`
-                    }
-                  />
-                </View>
-              </View>
-            </CollapsibleSection>
-          </View>
+          <Pressable
+            onPress={() => setAdvancedSettingsOpen((v) => !v)}
+            style={styles.settingsToggleButton}
+          >
+            <Text style={styles.settingsToggleLabel}>상세 설정</Text>
+            <Text style={styles.settingsToggleChevron}>
+              {advancedSettingsOpen ? '▼' : '▲'}
+            </Text>
+          </Pressable>
         )}
         <Pressable
           onPress={handleStartGame}
@@ -620,6 +635,16 @@ export default function LobbyScreen() {
         </Pressable>
       </View>
 
+      {/* 악마 블러프 직업 변경 모달 */}
+      <BluffSelectModal
+        visible={!!bluffChangePlayer}
+        onClose={handleBluffChange}
+        selectedBluffIds={bluffRoleIds}
+        onToggleBluff={toggleBluffRole}
+        onResetBluffs={() => setBluffRoleIds(new Set())}
+        availableRoles={bluffAvailableRoles}
+        scale={scale}
+      />
       {/* 주정뱅이 가짜 역할 변경 모달 */}
       <DrunkFakeRoleModal
         drunkModalPlayer={drunkModalPlayer}
@@ -658,16 +683,6 @@ export default function LobbyScreen() {
         mixableRoles={mixableRoles}
         searchText={mixSearch}
         onSearchChange={setMixSearch}
-        scale={scale}
-      />
-      {/* 블러프 직업 선택 모달 */}
-      <BluffSelectModal
-        visible={showBluffModal}
-        onClose={() => setShowBluffModal(false)}
-        selectedBluffIds={bluffRoleIds}
-        onToggleBluff={toggleBluffRole}
-        onResetBluffs={() => setBluffRoleIds(new Set())}
-        availableRoles={bluffAvailableRoles}
         scale={scale}
       />
     </View>

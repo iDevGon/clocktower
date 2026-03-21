@@ -562,76 +562,90 @@ export function registerStorytellerHandlers(
       callback({ success: true });
     });
 
-    socket.on('game:assignRole', ({ playerId, roleId, drunkAs }) => {
-      // 이미 다른 플레이어가 같은 역할을 갖고 있으면 스왑
-      const state = game.getState();
-      const currentPlayer = state.players.find((p) => p.id === playerId);
-      const existingOwner = state.players.find(
-        (p) => p.id !== playerId && p.role?.id === roleId,
-      );
+    socket.on(
+      'game:assignRole',
+      ({ playerId, roleId, drunkAs, bluffRoleIds }) => {
+        // 이미 다른 플레이어가 같은 역할을 갖고 있으면 스왑
+        const state = game.getState();
+        const currentPlayer = state.players.find((p) => p.id === playerId);
+        const existingOwner = state.players.find(
+          (p) => p.id !== playerId && p.role?.id === roleId,
+        );
 
-      if (existingOwner && currentPlayer) {
-        // 스왑: 기존 소유자에게 현재 플레이어의 역할을 부여
-        const oldRole = currentPlayer.role;
-        if (oldRole) {
-          game.assignRole(existingOwner.id, oldRole.id);
-          playerIo.to(existingOwner.id).emit('role:assign', {
-            roleId: oldRole.id,
-            roleName: oldRole.name,
-          });
+        if (existingOwner && currentPlayer) {
+          // 스왑: 기존 소유자에게 현재 플레이어의 역할을 부여
+          const oldRole = currentPlayer.role;
+          if (oldRole) {
+            game.assignRole(existingOwner.id, oldRole.id);
+            playerIo.to(existingOwner.id).emit('role:assign', {
+              roleId: oldRole.id,
+              roleName: oldRole.name,
+            });
+          } else {
+            // 현재 플레이어에게 역할이 없으면 기존 소유자의 역할을 해제
+            game.unassignRole(existingOwner.id);
+          }
+        }
+
+        if (roleId === 'drunk') {
+          // 수동 주정뱅이 배정: 이야기꾼이 가짜 역할을 지정하거나, 없으면 랜덤 선택
+          let fakeRoleId = drunkAs;
+          if (!fakeRoleId) {
+            const freshState = game.getState();
+            const assignedRoleIds = freshState.players
+              .filter((p) => p.id !== playerId)
+              .map((p) => p.role?.id)
+              .filter(Boolean);
+            const availableTownsfolk = ALL_ROLES.filter(
+              (r) => r.team === 'townsfolk' && !assignedRoleIds.includes(r.id),
+            );
+            fakeRoleId =
+              availableTownsfolk.length > 0
+                ? availableTownsfolk[
+                    Math.floor(Math.random() * availableTownsfolk.length)
+                  ].id
+                : undefined;
+          }
+          game.assignRole(playerId, roleId, fakeRoleId);
+          if (fakeRoleId) {
+            const fakeRole = getRoleById(fakeRoleId);
+            playerIo.to(playerId).emit('role:assign', {
+              roleId: fakeRoleId,
+              roleName: fakeRole?.name ?? fakeRoleId,
+              drunkAs: fakeRoleId,
+            });
+          }
         } else {
-          // 현재 플레이어에게 역할이 없으면 기존 소유자의 역할을 해제
-          game.unassignRole(existingOwner.id);
+          game.assignRole(playerId, roleId);
+          const player = game.getPlayer(playerId);
+          if (player?.role) {
+            playerIo.to(playerId).emit('role:assign', {
+              roleId: player.role.id,
+              roleName: player.role.name,
+            });
+          }
         }
-      }
+        // 악마 역할 배정 시 블러프 ID 저장
+        const assignedRole = getRoleById(roleId);
+        if (
+          assignedRole?.team === 'demon' &&
+          bluffRoleIds &&
+          bluffRoleIds.length > 0
+        ) {
+          game.setPreselectedBluffIds(bluffRoleIds);
+        }
 
-      if (roleId === 'drunk') {
-        // 수동 주정뱅이 배정: 이야기꾼이 가짜 역할을 지정하거나, 없으면 랜덤 선택
-        let fakeRoleId = drunkAs;
-        if (!fakeRoleId) {
-          const freshState = game.getState();
-          const assignedRoleIds = freshState.players
-            .filter((p) => p.id !== playerId)
-            .map((p) => p.role?.id)
-            .filter(Boolean);
-          const availableTownsfolk = ALL_ROLES.filter(
-            (r) => r.team === 'townsfolk' && !assignedRoleIds.includes(r.id),
-          );
-          fakeRoleId =
-            availableTownsfolk.length > 0
-              ? availableTownsfolk[
-                  Math.floor(Math.random() * availableTownsfolk.length)
-                ].id
-              : undefined;
+        // 모든 플레이어에게 역할이 배정되면 악한 팀 정보 전송
+        const updatedState = game.getState();
+        if (updatedState.players.every((p) => p.role)) {
+          sendEvilInfo(playerIo, game, game.getPreselectedBluffIds());
+          game.clearPreselectedBluffIds();
+          // 점쟁이가 배정되면 Red Herring 자동 지정
+          game.assignFortuneTellerRedHerring();
         }
-        game.assignRole(playerId, roleId, fakeRoleId);
-        if (fakeRoleId) {
-          const fakeRole = getRoleById(fakeRoleId);
-          playerIo.to(playerId).emit('role:assign', {
-            roleId: fakeRoleId,
-            roleName: fakeRole?.name ?? fakeRoleId,
-            drunkAs: fakeRoleId,
-          });
-        }
-      } else {
-        game.assignRole(playerId, roleId);
-        const player = game.getPlayer(playerId);
-        if (player?.role) {
-          playerIo.to(playerId).emit('role:assign', {
-            roleId: player.role.id,
-            roleName: player.role.name,
-          });
-        }
-      }
-      // 모든 플레이어에게 역할이 배정되면 악한 팀 정보 전송
-      const updatedState = game.getState();
-      if (updatedState.players.every((p) => p.role)) {
-        sendEvilInfo(playerIo, game);
-        // 점쟁이가 배정되면 Red Herring 자동 지정
-        game.assignFortuneTellerRedHerring();
-      }
-      storytellerIo.emit('game:state', game.getStorytellerState());
-    });
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      },
+    );
 
     socket.on('game:kill', (playerId) => {
       const killedPlayer = game.getPlayer(playerId);

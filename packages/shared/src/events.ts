@@ -230,6 +230,8 @@ export interface StorytellerToServerEvents {
     playerId: string;
     roleId: string;
     drunkAs?: string;
+    /** 악마 역할 배정 시 이야기꾼이 사전 선택한 블러프 역할 ID (최대 3개) */
+    bluffRoleIds?: string[];
   }) => void;
   'game:kill': (playerId: string) => void;
   'game:revive': (playerId: string) => void;
