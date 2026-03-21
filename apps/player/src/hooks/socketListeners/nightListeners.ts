@@ -14,9 +14,14 @@ export function attachNightListeners(socket: AppSocket) {
     });
   });
 
-  // onlyWhenDead 역할(까마귀지기 등)이 밤에 죽었을 때 서버에서 전송
+  // 서버가 이 플레이어의 차례임을 알림 (모든 역할 대상)
   socket.on('night:wakeUp', ({ roleId }) => {
-    usePlayerStore.getState().set({ nightWakeUp: roleId });
+    const store = usePlayerStore.getState();
+    usePlayerStore.getState().set({
+      nightWakeUp: roleId,
+      // 승계 오버레이가 밤 행동 UI를 가리지 않도록 즉시 해제
+      ...(store.rolePromotion ? { rolePromotion: null } : {}),
+    });
     vibrateAlert();
   });
 

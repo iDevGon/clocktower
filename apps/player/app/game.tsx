@@ -167,6 +167,13 @@ export default function GameScreen() {
   // 서버가 night:wakeUp을 개별 전송하므로, wakeUp 수신 시에만 차례로 인정
   const isMyTurn = isRoleActive && nightWakeUp != null;
 
+  // nightWakeUp 수신 시 밤 행동 UI를 가리는 오버레이 자동 해제
+  useEffect(() => {
+    if (nightWakeUp && isRoleActive) {
+      setShowNightFall(false);
+    }
+  }, [nightWakeUp, isRoleActive]);
+
   // 까마귀지기가 밤에 죽었을 때만 전용 오버레이 표시
   const effectiveRoleId = drunkAs ?? role?.id;
   useEffect(() => {
