@@ -91,6 +91,8 @@ export interface ServerToClientEvents {
   'chat:receiveFromStoryteller': (message: StorytellerMessage) => void;
   'chat:receiveFromPlayer': (message: StorytellerMessage) => void;
   'vote:proceedToVote': () => void;
+  /** 변론 중 투표 동의 현황 (ready인 플레이어 ID 목록) */
+  'vote:consentStatus': (data: { readyPlayerIds: string[] }) => void;
   'execution:announced': (data: ExecutionAnnouncement) => void;
   'night:deaths': (data: {
     deaths: Array<{ id: string; name: string }>;
@@ -118,6 +120,7 @@ export interface ServerToStorytellerEvents {
   'vote:clockStart': ServerToClientEvents['vote:clockStart'];
   'vote:result': ServerToClientEvents['vote:result'];
   'vote:proceedToVote': ServerToClientEvents['vote:proceedToVote'];
+  'vote:consentStatus': ServerToClientEvents['vote:consentStatus'];
   'chat:receiveFromPlayer': ServerToClientEvents['chat:receiveFromPlayer'];
   'virgin:triggered': ServerToClientEvents['virgin:triggered'];
   'execution:announced': ServerToClientEvents['execution:announced'];
@@ -178,6 +181,8 @@ export interface ClientToServerEvents {
   'push:register': (data: { token: string }) => void;
   'chat:sendToStoryteller': (data: { message: string }) => void;
   'slayer:ack': () => void;
+  /** 변론 중 투표 준비 완료 토글 */
+  'vote:consentReady': (data: { ready: boolean }) => void;
 }
 
 export interface StorytellerToServerEvents {

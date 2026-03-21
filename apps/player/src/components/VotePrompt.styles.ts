@@ -130,4 +130,37 @@ export const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: 'center',
   },
+  consentButton: {
+    backgroundColor: '#1a1a20',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center' as const,
+    borderWidth: 1.5,
+    borderColor: '#3a3a42',
+    marginTop: 16,
+  },
+  consentButtonReady: {
+    backgroundColor: '#1a4a2a',
+    borderColor: '#3cb060',
+    shadowColor: '#3cb060',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  consentText: {
+    color: '#5c5a58',
+    fontWeight: '800' as const,
+    fontSize: 16,
+    letterSpacing: 1,
+  },
+  consentTextReady: {
+    color: '#ffffff',
+  },
+  consentCount: {
+    color: COLORS.boneFaded,
+    fontSize: 12,
+    textAlign: 'center' as const,
+    marginTop: 8,
+  },
 });

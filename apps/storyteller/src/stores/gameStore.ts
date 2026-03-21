@@ -70,6 +70,8 @@ interface GameStore {
   chatToast: { playerName: string; message: string } | null;
   showChatToast: (toast: { playerName: string; message: string }) => void;
   dismissChatToast: () => void;
+  voteConsentReadyIds: string[];
+  setVoteConsentReadyIds: (ids: string[]) => void;
   eventToast: { title: string; message: string } | null;
   showEventToast: (toast: { title: string; message: string }) => void;
   dismissEventToast: () => void;
@@ -166,6 +168,8 @@ export const useGameStore = create<GameStore>()(
       chatToast: null,
       showChatToast: (toast) => set({ chatToast: toast }),
       dismissChatToast: () => set({ chatToast: null }),
+      voteConsentReadyIds: [],
+      setVoteConsentReadyIds: (ids) => set({ voteConsentReadyIds: ids }),
       eventToast: null,
       showEventToast: (toast) => set({ eventToast: toast }),
       dismissEventToast: () => set({ eventToast: null }),
@@ -335,6 +339,7 @@ export const useGameStore = create<GameStore>()(
           eventToast: null,
           roleRevealShown: false,
           slayerWaitingAck: false,
+          voteConsentReadyIds: [],
         }),
     }),
     {

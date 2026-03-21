@@ -201,6 +201,7 @@ export function registerVoteHandlers(
     }
 
     // 변론 페이즈로 전환 (낮 페이즈 유지, 이야기꾼이 투표 시작을 제어)
+    game.clearVoteConsent();
     game.setDaySubPhase('defense');
     const nominator = game.getPlayer(nominatorId);
     const nominee = game.getPlayer(nomineeId);
@@ -227,6 +228,7 @@ export function registerVoteHandlers(
     const currentNomination = state.nominations[state.nominations.length - 1];
     if (!currentNomination) return;
 
+    game.clearVoteConsent();
     const nomineeId = currentNomination.nomineeId;
 
     // 변론 → 투표 페이즈 전환

@@ -70,6 +70,8 @@ export class GameManager {
   // 밤 역할 겹침 시 순차 wakeUp 대기열 (다음 night:wakeUp 대상 플레이어 ID)
   private nightWakeUpQueue: string[] = [];
   private nightWakeUpRoleId: string | null = null;
+  // 변론 중 투표 동의 (ready) 플레이어 추적
+  private voteConsentReady = new Set<string>();
 
   create(): string {
     const id = randomUUID().slice(0, 8);
@@ -159,6 +161,7 @@ export class GameManager {
     this.fortuneTellerRedHerring = null;
     this.nightWakeUpQueue = [];
     this.nightWakeUpRoleId = null;
+    this.voteConsentReady.clear();
     this.clearVoteTimer();
   }
 
@@ -976,5 +979,23 @@ export class GameManager {
   clearSlayerAckState(): void {
     this.voteClockPausedNomineeId = null;
     this.slayerAcks.clear();
+  }
+
+  // ── 변론 중 투표 동의 ──
+
+  setVoteConsent(playerId: string, ready: boolean): void {
+    if (ready) {
+      this.voteConsentReady.add(playerId);
+    } else {
+      this.voteConsentReady.delete(playerId);
+    }
+  }
+
+  getVoteConsentReadyIds(): string[] {
+    return [...this.voteConsentReady];
+  }
+
+  clearVoteConsent(): void {
+    this.voteConsentReady.clear();
   }
 }

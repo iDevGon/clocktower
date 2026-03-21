@@ -100,6 +100,13 @@ export function useGameActions() {
     [],
   );
 
+  const consentReady = useCallback((ready: boolean) => {
+    const socket = useConnectionStore.getState().socket;
+    if (socket) {
+      socket.emit('vote:consentReady', { ready });
+    }
+  }, []);
+
   return {
     castVote,
     preselectVote,
@@ -108,5 +115,6 @@ export function useGameActions() {
     sendChatToStoryteller,
     nominatePlayer,
     useSlayer,
+    consentReady,
   };
 }

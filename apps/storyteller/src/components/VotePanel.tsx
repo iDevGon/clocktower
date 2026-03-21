@@ -43,6 +43,7 @@ export function VotePanel({
 
   const gameState = useGameStore((s) => s.gameState);
   const isDefensePhase = gameState?.daySubPhase === 'defense';
+  const voteConsentReadyIds = useGameStore((s) => s.voteConsentReadyIds);
   const voteCountdown = useGameStore((s) => s.voteCountdown);
   const voteClock = useGameStore((s) => s.voteClock);
   const votePreselections = useGameStore((s) => s.votePreselections);
@@ -97,8 +98,16 @@ export function VotePanel({
       {isDefensePhase ? (
         <View style={styles.countdownRow}>
           <Text style={styles.countdownText}>
-            변론 중 — {nomineeName}의 변론을 들어보세요
+            변론 중 — 투표 준비 {voteConsentReadyIds.length}/
+            {players.filter((p) => p.isAlive).length}명
           </Text>
+          {voteConsentReadyIds.length > 0 && (
+            <Text style={[styles.countdownText, { fontSize: 11 * scale, marginTop: 4 }]}>
+              {voteConsentReadyIds
+                .map((id) => players.find((p) => p.id === id)?.name ?? '?')
+                .join(', ')}
+            </Text>
+          )}
         </View>
       ) : isCountingDown ? (
         <View style={styles.countdownRow}>

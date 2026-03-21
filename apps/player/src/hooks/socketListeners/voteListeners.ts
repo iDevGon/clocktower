@@ -13,6 +13,7 @@ export function attachVoteListeners(socket: AppSocket) {
       votePreselections: {},
       voteClock: null,
       voteCountdown: null,
+      voteConsentReadyIds: [],
       nominatedTodayIds: prev.nominatedTodayIds.includes(data.nomineeId)
         ? prev.nominatedTodayIds
         : [...prev.nominatedTodayIds, data.nomineeId],
@@ -80,6 +81,10 @@ export function attachVoteListeners(socket: AppSocket) {
     usePlayerStore.getState().set({
       votePreselections: { ...prev, [playerId]: guilty },
     });
+  });
+
+  socket.on('vote:consentStatus', ({ readyPlayerIds }) => {
+    usePlayerStore.getState().set({ voteConsentReadyIds: readyPlayerIds });
   });
 
   socket.on('execution:announced', (data) => {

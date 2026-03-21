@@ -424,6 +424,20 @@ export function registerPlayerHandlers(
       }
     });
 
+    // 변론 중 투표 동의 토글
+    socket.on('vote:consentReady', ({ ready }) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) return;
+
+      const state = game.getState();
+      if (state.phase !== 'day' || state.daySubPhase !== 'defense') return;
+
+      game.setVoteConsent(playerId, ready);
+      const readyPlayerIds = game.getVoteConsentReadyIds();
+      playerIo.emit('vote:consentStatus', { readyPlayerIds });
+      storytellerIo.emit('vote:consentStatus', { readyPlayerIds });
+    });
+
     socket.on('whisper:send', ({ conversationId, participantIds, message }) => {
       const state = game.getState();
       if (state.phase !== 'day' || state.daySubPhase !== 'whisper') return;

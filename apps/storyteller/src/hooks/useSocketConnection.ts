@@ -120,6 +120,9 @@ export function useSocketConnection() {
               'death',
             );
         });
+        newSocket.on('vote:consentStatus', ({ readyPlayerIds }) => {
+          useGameStore.getState().setVoteConsentReadyIds(readyPlayerIds);
+        });
         newSocket.on('vote:proceedToVote', () => {
           useGameStore
             .getState()

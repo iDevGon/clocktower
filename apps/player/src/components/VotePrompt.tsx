@@ -153,13 +153,18 @@ interface VotePromptProps {
 }
 
 export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
-  const { preselectVote } = useGameActions();
+  const { preselectVote, consentReady } = useGameActions();
   const playerId = usePlayerStore((s) => s.playerId);
   const voteClock = usePlayerStore((s) => s.voteClock);
   const voteCountdown = usePlayerStore((s) => s.voteCountdown);
   const daySubPhase = usePlayerStore((s) => s.daySubPhase);
   const isDefensePhase = daySubPhase === 'defense';
   const votePreselections = usePlayerStore((s) => s.votePreselections);
+  const voteConsentReadyIds = usePlayerStore((s) => s.voteConsentReadyIds);
+  const gamePlayers = usePlayerStore((s) => s.gamePlayers);
+  const isConsentReady = voteConsentReadyIds.includes(playerId);
+  const aliveCount = gamePlayers.filter((p) => p.isAlive).length;
+  const consentCount = voteConsentReadyIds.length;
 
   const { canVote, hasPassed, isMyTurn } = useVoteProgress(1000);
 
@@ -230,6 +235,27 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
           <Text style={styles.countdownMessage}>변론 중</Text>
           <Text style={styles.countdownHint}>
             {nomineeName}의 변론을 들어보세요
+          </Text>
+          <Pressable
+            style={[
+              styles.consentButton,
+              isConsentReady && styles.consentButtonReady,
+            ]}
+            onPress={() => consentReady(!isConsentReady)}
+            accessibilityLabel="투표 준비 완료"
+            accessibilityRole="button"
+          >
+            <Text
+              style={[
+                styles.consentText,
+                isConsentReady && styles.consentTextReady,
+              ]}
+            >
+              {isConsentReady ? '✓ 투표 준비 완료' : '투표 준비 완료'}
+            </Text>
+          </Pressable>
+          <Text style={styles.consentCount}>
+            {consentCount}/{aliveCount}명 준비 완료
           </Text>
         </View>
       )}
