@@ -102,7 +102,12 @@ export function VotePanel({
             {players.filter((p) => p.isAlive).length}명
           </Text>
           {voteConsentReadyIds.length > 0 && (
-            <Text style={[styles.countdownText, { fontSize: 11 * scale, marginTop: 4 }]}>
+            <Text
+              style={[
+                styles.countdownText,
+                { fontSize: 11 * scale, marginTop: 4 },
+              ]}
+            >
               {voteConsentReadyIds
                 .map((id) => players.find((p) => p.id === id)?.name ?? '?')
                 .join(', ')}
