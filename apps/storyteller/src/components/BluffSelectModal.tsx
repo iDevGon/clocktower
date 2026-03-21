@@ -1,33 +1,28 @@
-import type { Role, Team } from '@clocktower/shared';
+import type { Role } from '@clocktower/shared';
+import { AbilityText } from '@clocktower/ui';
 import { useMemo, useState } from 'react';
 import {
+  FlatList,
   Modal,
   Pressable,
-  ScrollView,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import {
-  checkboxStyle,
   createBluffSelectModalStyles,
-  roleAbilityStyle,
+  randomButtonStyle,
   roleItemStyle,
-  roleNameStyle,
 } from './BluffSelectModal.styles';
-import { EditionBadge } from './EditionBadge';
-
-const TEAM_SECTIONS = [
-  { team: 'townsfolk' as Team, label: '마을주민', color: '#7090c4' },
-  { team: 'outsider' as Team, label: '외지인', color: '#50a090' },
-] as const;
 
 interface BluffSelectModalProps {
   visible: boolean;
-  onClose: () => void;
-  selectedBluffIds: Set<string>;
-  onToggleBluff: (roleId: string) => void;
-  onResetBluffs: () => void;
+  /** 선택 완료 (확인) 콜백 — 빈 배열이면 랜덤 */
+  onConfirm: (selectedIds: string[]) => void;
+  /** 변경 없이 닫기 콜백 */
+  onCancel: () => void;
+  /** 모달 열릴 때의 초기 선택 ID */
+  initialSelectedIds?: string[];
   /** 게임에 등장하지 않는 선한 역할 목록 */
   availableRoles: Role[];
   scale: number;
@@ -35,74 +30,61 @@ interface BluffSelectModalProps {
 
 export function BluffSelectModal({
   visible,
-  onClose,
-  selectedBluffIds,
-  onToggleBluff,
-  onResetBluffs,
+  onConfirm,
+  onCancel,
+  initialSelectedIds,
   availableRoles,
   scale,
 }: BluffSelectModalProps) {
   const s = (v: number) => Math.round(v * scale);
   const st = createBluffSelectModalStyles(s);
   const [searchText, setSearchText] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const selectedRoleNames = useMemo(
-    () =>
-      availableRoles
-        .filter((r) => selectedBluffIds.has(r.id))
-        .map((r) => ({ id: r.id, name: r.name })),
-    [availableRoles, selectedBluffIds],
-  );
+  const handleShow = () => {
+    setSearchText('');
+    setSelectedIds(new Set(initialSelectedIds ?? []));
+  };
 
-  const filteredSections = useMemo(() => {
-    const query = searchText.toLowerCase().trim();
-    return TEAM_SECTIONS.map(({ team, label, color }) => {
-      const roles = availableRoles.filter(
-        (r) =>
-          r.team === team &&
-          (query === '' || r.name.toLowerCase().includes(query)),
-      );
-      return { team, label, color, roles };
-    }).filter((sec) => sec.roles.length > 0);
+  const toggleRole = (roleId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(roleId)) next.delete(roleId);
+      else if (next.size < 3) next.add(roleId);
+      return next;
+    });
+  };
+
+  const filteredRoles = useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+    if (!query) return availableRoles;
+    return availableRoles.filter((r) => r.name.toLowerCase().includes(query));
   }, [availableRoles, searchText]);
+
+  const handleConfirm = () => {
+    onConfirm(selectedIds.size > 0 ? [...selectedIds] : []);
+  };
+
+  const handleRandom = () => {
+    onConfirm([]);
+  };
 
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
-      onShow={() => setSearchText('')}
+      onRequestClose={onCancel}
+      onShow={handleShow}
     >
-      <Pressable style={st.overlay} onPress={onClose}>
+      <Pressable style={st.overlay} onPress={onCancel}>
         <Pressable style={st.modal} onPress={(e) => e.stopPropagation()}>
           <View style={st.header}>
             <Text style={st.headerTitle}>블러프 직업 선택</Text>
-            <Text style={st.headerSubtitle}>
-              악마에게 전달할 블러프 직업을 최대 3개 선택하세요 (미선택 시 랜덤)
+            <Text style={st.headerDesc}>
+              악마에게 전달할 블러프 직업을 최대 3개 선택하세요
             </Text>
           </View>
-
-          {selectedRoleNames.length > 0 && (
-            <View style={st.selectedContainer}>
-              <Text style={st.selectedLabel}>
-                선택됨 ({selectedRoleNames.length}/3)
-              </Text>
-              <View style={st.selectedRow}>
-                {selectedRoleNames.map((r) => (
-                  <Pressable
-                    key={r.id}
-                    onPress={() => onToggleBluff(r.id)}
-                    style={st.selectedChip}
-                  >
-                    <Text style={st.selectedChipText}>{r.name}</Text>
-                    <Text style={st.selectedChipRemove}>×</Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-          )}
-
           <TextInput
             value={searchText}
             onChangeText={setSearchText}
@@ -112,107 +94,57 @@ export function BluffSelectModal({
             autoCapitalize="none"
             autoCorrect={false}
           />
-
-          <ScrollView contentContainerStyle={st.scrollContent}>
-            {filteredSections.map(({ team, label, color, roles }) => (
-              <View key={team} style={st.teamSection}>
-                <Text style={[st.teamLabel, { color }]}>{label}</Text>
-                {roles.map((role) => {
-                  const isSelected = selectedBluffIds.has(role.id);
-                  const isDisabled = !isSelected && selectedBluffIds.size >= 3;
-                  return (
-                    <Pressable
-                      key={role.id}
-                      onPress={() => {
-                        if (isDisabled) return;
-                        onToggleBluff(role.id);
-                      }}
-                      disabled={isDisabled}
-                      style={({ pressed }) =>
-                        roleItemStyle(s, isSelected, pressed)
-                      }
-                    >
-                      <View
-                        style={[
-                          checkboxStyle(s, isSelected),
-                          isDisabled && { opacity: 0.3 },
-                        ]}
-                      >
-                        {isSelected && (
-                          <Text
-                            style={{
-                              color: '#1e1e22',
-                              fontSize: s(12),
-                              fontWeight: '900',
-                              lineHeight: s(14),
-                            }}
-                          >
-                            ✓
-                          </Text>
-                        )}
-                      </View>
-                      <View
-                        style={[st.roleContent, isDisabled && { opacity: 0.4 }]}
-                      >
-                        <View style={st.roleNameRow}>
-                          <Text style={roleNameStyle(s, isSelected)}>
-                            {role.name}
-                          </Text>
-                          <EditionBadge
-                            editionId={role.edition}
-                            scale={scale}
-                          />
-                        </View>
-                        <Text style={roleAbilityStyle(s)} numberOfLines={2}>
-                          {role.ability}
-                        </Text>
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ))}
-          </ScrollView>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              borderTopWidth: 1,
-              borderTopColor: '#3a3a42',
-            }}
-          >
-            {selectedBluffIds.size > 0 && (
+          <FlatList
+            data={filteredRoles}
+            keyExtractor={(r) => r.id}
+            contentContainerStyle={st.listContent}
+            ListHeaderComponent={
               <Pressable
-                onPress={onResetBluffs}
-                style={{
-                  flex: 1,
-                  paddingVertical: s(14),
-                  borderRightWidth: 1,
-                  borderRightColor: '#3a3a42',
-                }}
+                onPress={handleRandom}
+                style={({ pressed }) => randomButtonStyle(s, pressed)}
               >
-                <Text
-                  style={{
-                    color: '#c47070',
-                    fontSize: s(14),
-                    fontWeight: '600',
-                    textAlign: 'center',
-                  }}
-                >
-                  초기화
-                </Text>
+                <Text style={st.randomButtonText}>랜덤 배정</Text>
               </Pressable>
-            )}
-            <Pressable
-              style={{ flex: 2, paddingVertical: s(14) }}
-              onPress={onClose}
-            >
-              <Text style={st.footerText}>
-                {selectedBluffIds.size > 0
-                  ? `선택 완료 (${selectedBluffIds.size}개)`
-                  : '랜덤으로 진행'}
-              </Text>
+            }
+            renderItem={({ item }) => {
+              const isSelected = selectedIds.has(item.id);
+              const isDisabled = !isSelected && selectedIds.size >= 3;
+              return (
+                <Pressable
+                  onPress={() => {
+                    if (!isDisabled) toggleRole(item.id);
+                  }}
+                  disabled={isDisabled}
+                  style={({ pressed }) =>
+                    roleItemStyle(s, isSelected, pressed, isDisabled)
+                  }
+                >
+                  <View style={st.itemRow}>
+                    <Text style={st.itemName}>{item.name}</Text>
+                    {isSelected && <Text style={st.selectedBadge}>선택됨</Text>}
+                  </View>
+                  <AbilityText text={item.ability} style={st.abilityText} />
+                </Pressable>
+              );
+            }}
+            ListEmptyComponent={
+              <Text style={st.emptyText}>선택 가능한 역할이 없습니다</Text>
+            }
+          />
+          <View style={st.footerRow}>
+            <Pressable style={st.footerButton} onPress={onCancel}>
+              <Text style={st.footerCloseText}>닫기</Text>
             </Pressable>
+            {selectedIds.size > 0 && (
+              <>
+                <View style={st.footerDivider} />
+                <Pressable style={st.footerButton} onPress={handleConfirm}>
+                  <Text style={st.footerConfirmText}>
+                    선택 완료 ({selectedIds.size}개)
+                  </Text>
+                </Pressable>
+              </>
+            )}
           </View>
         </Pressable>
       </Pressable>

@@ -70,42 +70,38 @@ export default function LobbyScreen() {
   const [bluffChangePlayer, setBluffChangePlayer] = useState<Player | null>(
     null,
   );
-  const [bluffRoleIds, setBluffRoleIds] = useState<Set<string>>(new Set());
-
-  const toggleBluffRole = useCallback((roleId: string) => {
-    setBluffRoleIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(roleId)) next.delete(roleId);
-      else if (next.size < 3) next.add(roleId);
-      return next;
-    });
-  }, []);
 
   const bluffAvailableRoles = useMemo(() => {
-    if (!gameState)
-      return ALL_ROLES.filter(
-        (r) => r.team === 'townsfolk' || r.team === 'outsider',
-      );
+    const editionRoleIds = new Set(
+      getRolesForEdition(selectedEditionId).map((r) => r.id),
+    );
+    const activeRoleIds = new Set([...editionRoleIds, ...additionalRoleIds]);
     const assignedRoleIds = new Set(
-      gameState.players.flatMap((p) => [p.role?.id, p.drunkAs]).filter(Boolean),
+      gameState?.players
+        .flatMap((p) => [p.role?.id, p.drunkAs])
+        .filter(Boolean) ?? [],
     );
     return ALL_ROLES.filter(
       (r) =>
         (r.team === 'townsfolk' || r.team === 'outsider') &&
+        activeRoleIds.has(r.id) &&
         !assignedRoleIds.has(r.id),
     );
-  }, [gameState]);
+  }, [gameState, selectedEditionId, additionalRoleIds]);
 
-  const handleBluffChange = useCallback(() => {
-    if (!bluffChangePlayer) return;
-    assignRole(
-      bluffChangePlayer.id,
-      bluffChangePlayer.role?.id ?? '',
-      undefined,
-      bluffRoleIds.size > 0 ? [...bluffRoleIds] : undefined,
-    );
-    setBluffChangePlayer(null);
-  }, [bluffChangePlayer, assignRole, bluffRoleIds]);
+  const handleBluffConfirm = useCallback(
+    (selectedIds: string[]) => {
+      if (!bluffChangePlayer) return;
+      assignRole(
+        bluffChangePlayer.id,
+        bluffChangePlayer.role?.id ?? '',
+        undefined,
+        selectedIds.length > 0 ? selectedIds : undefined,
+      );
+      setBluffChangePlayer(null);
+    },
+    [bluffChangePlayer, assignRole],
+  );
 
   const editionRoles = useMemo(
     () => getRolesForEdition(selectedEditionId),
@@ -567,6 +563,9 @@ export default function LobbyScreen() {
                       {!rolesVeiled && item.role.id === 'drunk' && item.drunkAs
                         ? ` (${getRoleById(item.drunkAs)?.name ?? '?'})`
                         : ''}
+                      {!rolesVeiled &&
+                        item.role.team === 'demon' &&
+                        ` (${gameState?.bluffRoles && gameState.bluffRoles.length > 0 ? gameState.bluffRoles.map((r) => r.name).join(', ') : '랜덤'})`}
                     </Text>
                   )}
                   {!rolesVeiled &&
@@ -589,7 +588,6 @@ export default function LobbyScreen() {
                     <Pressable
                       onPress={(e) => {
                         e.stopPropagation();
-                        setBluffRoleIds(new Set());
                         setBluffChangePlayer(item);
                       }}
                       hitSlop={8}
@@ -638,10 +636,9 @@ export default function LobbyScreen() {
       {/* 악마 블러프 직업 변경 모달 */}
       <BluffSelectModal
         visible={!!bluffChangePlayer}
-        onClose={handleBluffChange}
-        selectedBluffIds={bluffRoleIds}
-        onToggleBluff={toggleBluffRole}
-        onResetBluffs={() => setBluffRoleIds(new Set())}
+        onConfirm={handleBluffConfirm}
+        onCancel={() => setBluffChangePlayer(null)}
+        initialSelectedIds={gameState?.bluffRoles?.map((r) => r.id)}
         availableRoles={bluffAvailableRoles}
         scale={scale}
       />

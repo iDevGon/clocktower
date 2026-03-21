@@ -1,5 +1,6 @@
 import type {
   ClientToServerEvents,
+  Role,
   ServerToClientEvents,
   ServerToStorytellerEvents,
   StorytellerToServerEvents,
@@ -54,16 +55,22 @@ function emitPromotionIfAny(
 /**
  * 게임에 등장하지 않는 선한 역할 목록을 반환합니다.
  * Drunk의 drunkAs 역할도 "등장하는 역할"로 간주합니다.
+ * 게임에 배정된 역할들의 에디션에 속하는 역할만 후보로 반환합니다.
  */
 function getNotInPlayGoodRoles(game: GameManager) {
   const state = game.getState();
+  const assignedRoles = state.players
+    .map((p) => p.role)
+    .filter((r): r is Role => !!r);
   const assignedRoleIds = new Set(
     state.players.flatMap((p) => [p.role?.id, p.drunkAs]).filter(Boolean),
   );
+  const activeEditions = new Set(assignedRoles.map((r) => r.edition));
   return ALL_ROLES.filter(
     (r) =>
       (r.team === 'townsfolk' || r.team === 'outsider') &&
-      !assignedRoleIds.has(r.id),
+      !assignedRoleIds.has(r.id) &&
+      activeEditions.has(r.edition),
   );
 }
 
@@ -199,13 +206,17 @@ export function registerStorytellerHandlers(
         callback(result);
         return;
       }
+      // 악한 팀 정보 전송 (블러프 포함)
+      sendEvilInfo(playerIo, game, game.getPreselectedBluffIds());
+      game.clearPreselectedBluffIds();
+
       const state = game.getState();
       playerIo.emit('game:phase', 'night');
       const order = getNightOrder(state.day);
       const players = getPlayerInfoList(game);
       game.setNightProgress(null, order);
       playerIo.emit('night:activeRole', { roleId: null, order, players });
-      storytellerIo.emit('game:state', state);
+      storytellerIo.emit('game:state', game.getStorytellerState());
       callback({ success: true });
     });
 
@@ -467,9 +478,8 @@ export function registerStorytellerHandlers(
 
     socket.on('game:setPlayerOrder', (order) => {
       game.setPlayerOrder(order);
-      const state = game.getState();
-      storytellerIo.emit('game:state', state);
-      playerIo.emit('game:state', state);
+      storytellerIo.emit('game:state', game.getStorytellerState());
+      playerIo.emit('game:state', game.getState());
     });
 
     socket.on('game:addDummyPlayers', (count) => {
@@ -557,7 +567,12 @@ export function registerStorytellerHandlers(
           });
         }
       });
-      sendEvilInfo(playerIo, game, options.bluffRoleIds);
+      // 블러프 사전 선택 저장 (게임 시작 시 sendEvilInfo에서 사용)
+      if (options.bluffRoleIds && options.bluffRoleIds.length > 0) {
+        game.setPreselectedBluffIds(options.bluffRoleIds);
+        const resolved = resolveBluffRoles(game, options.bluffRoleIds);
+        game.setBluffRoles(resolved);
+      }
       storytellerIo.emit('game:state', game.getStorytellerState());
       callback({ success: true });
     });
@@ -627,20 +642,22 @@ export function registerStorytellerHandlers(
         }
         // 악마 역할 배정 시 블러프 ID 저장
         const assignedRole = getRoleById(roleId);
-        if (
-          assignedRole?.team === 'demon' &&
-          bluffRoleIds &&
-          bluffRoleIds.length > 0
-        ) {
-          game.setPreselectedBluffIds(bluffRoleIds);
+        if (assignedRole?.team === 'demon' && bluffRoleIds) {
+          if (bluffRoleIds.length > 0) {
+            // 이야기꾼이 직접 선택 → 즉시 resolve하여 bluffRoles에 저장
+            game.setPreselectedBluffIds(bluffRoleIds);
+            const resolved = resolveBluffRoles(game, bluffRoleIds);
+            game.setBluffRoles(resolved);
+          } else {
+            // 랜덤 선택 → bluffRoles 초기화 (게임 시작 시 resolve)
+            game.setPreselectedBluffIds([]);
+            game.setBluffRoles([]);
+          }
         }
 
-        // 모든 플레이어에게 역할이 배정되면 악한 팀 정보 전송
+        // 모든 플레이어에게 역할이 배정되면 점쟁이 Red Herring 자동 지정
         const updatedState = game.getState();
         if (updatedState.players.every((p) => p.role)) {
-          sendEvilInfo(playerIo, game, game.getPreselectedBluffIds());
-          game.clearPreselectedBluffIds();
-          // 점쟁이가 배정되면 Red Herring 자동 지정
           game.assignFortuneTellerRedHerring();
         }
         storytellerIo.emit('game:state', game.getStorytellerState());

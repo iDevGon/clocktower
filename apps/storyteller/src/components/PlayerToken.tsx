@@ -39,6 +39,11 @@ const VOTE_GLOW_COLORS: Record<VoteIndicator, string> = {
   nominee: '#c43c3c',
 };
 
+export interface BluffRole {
+  id: string;
+  name: string;
+}
+
 interface PlayerTokenProps {
   player: Player;
   statuses?: PlayerStatus[];
@@ -51,6 +56,9 @@ interface PlayerTokenProps {
   hasNominated?: boolean;
   wasNominated?: boolean;
   memo?: string;
+  bluffRoles?: BluffRole[];
+  showBluffs?: boolean;
+  onToggleBluffs?: () => void;
   onPress?: () => void;
 }
 
@@ -66,6 +74,9 @@ export function PlayerToken({
   hasNominated,
   wasNominated,
   memo,
+  bluffRoles,
+  showBluffs,
+  onToggleBluffs,
   onPress,
 }: PlayerTokenProps) {
   const [tooltipStatus, setTooltipStatus] = useState<PlayerStatus | null>(null);
@@ -232,6 +243,87 @@ export function PlayerToken({
           </Text>
         )}
       </View>
+
+      {bluffRoles && bluffRoles.length > 0 && (
+        <View
+          style={{
+            position: 'absolute',
+            top: s + 2,
+            left: (s - s * 0.9) / 2,
+            width: s * 0.9,
+            alignItems: 'center',
+            gap: 1,
+          }}
+        >
+          {showBluffs ? (
+            <>
+              {bluffRoles.map((r) => (
+                <View
+                  key={r.id}
+                  style={{
+                    backgroundColor: '#1a1420',
+                    borderWidth: 1,
+                    borderColor: '#3a2a4a',
+                    borderRadius: 3,
+                    paddingHorizontal: 4,
+                    paddingVertical: 1,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: '#b090c0',
+                      fontSize: Math.max(scaledFont.xs, 8),
+                      fontWeight: '600',
+                      textAlign: 'center',
+                    }}
+                    numberOfLines={1}
+                  >
+                    {r.name}
+                  </Text>
+                </View>
+              ))}
+              <Pressable
+                onPress={onToggleBluffs}
+                style={{
+                  paddingHorizontal: 4,
+                  paddingVertical: 1,
+                }}
+              >
+                <Text
+                  style={{
+                    color: '#6a5a7a',
+                    fontSize: Math.max(scaledFont.xs, 8),
+                  }}
+                >
+                  ▲ 숨기기
+                </Text>
+              </Pressable>
+            </>
+          ) : (
+            <Pressable
+              onPress={onToggleBluffs}
+              style={{
+                backgroundColor: '#1a1420',
+                borderWidth: 1,
+                borderColor: '#3a2a4a',
+                borderRadius: 3,
+                paddingHorizontal: 6,
+                paddingVertical: 2,
+              }}
+            >
+              <Text
+                style={{
+                  color: '#b090c0',
+                  fontSize: Math.max(scaledFont.xs, 8),
+                  fontWeight: '600',
+                }}
+              >
+                블러프 ▼
+              </Text>
+            </Pressable>
+          )}
+        </View>
+      )}
 
       {tooltipStatus && (
         <Modal

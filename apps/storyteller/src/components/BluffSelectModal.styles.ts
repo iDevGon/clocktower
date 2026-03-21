@@ -14,7 +14,7 @@ export function createBluffSelectModalStyles(s: (v: number) => number) {
       width: '90%',
       maxHeight: '80%',
       borderWidth: 2,
-      borderColor: '#4a4a5a',
+      borderColor: '#8a6a9a',
     },
     header: {
       paddingHorizontal: s(16),
@@ -24,93 +24,86 @@ export function createBluffSelectModalStyles(s: (v: number) => number) {
       borderBottomColor: '#3a3a42',
     },
     headerTitle: {
-      color: '#e0ddd8',
+      color: '#8a6a9a',
       fontSize: s(18),
       fontWeight: '700',
+      textAlign: 'center',
+      marginBottom: s(4),
     },
-    headerSubtitle: {
+    headerDesc: {
       color: '#908e8a',
-      fontSize: s(12),
-      marginTop: s(4),
-    },
-    selectedContainer: {
-      paddingHorizontal: s(12),
-      paddingVertical: s(8),
-      borderBottomWidth: 1,
-      borderBottomColor: '#2a2a2e',
-    },
-    selectedLabel: {
-      color: '#b85c5c',
-      fontSize: s(12),
-      fontWeight: '600',
-      marginBottom: s(6),
-    },
-    selectedRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: s(6),
-    },
-    selectedChip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: s(4),
-      paddingVertical: s(4),
-      paddingHorizontal: s(10),
-      backgroundColor: '#2a1e2e',
-      borderRadius: 6,
-      borderWidth: 1,
-      borderColor: '#5a3a6a',
-    },
-    selectedChipText: {
-      color: '#c4a0d0',
       fontSize: s(13),
-      fontWeight: '600',
-    },
-    selectedChipRemove: {
-      color: '#c47070',
-      fontSize: s(14),
-      fontWeight: '700',
+      textAlign: 'center',
     },
     searchInput: {
       marginHorizontal: s(12),
       marginTop: s(8),
       marginBottom: s(4),
-      paddingVertical: s(8),
       paddingHorizontal: s(12),
-      backgroundColor: '#252528',
+      paddingVertical: s(10),
+      backgroundColor: '#28282e',
       borderRadius: 8,
       borderWidth: 1,
-      borderColor: '#3a3a3e',
+      borderColor: '#3a3a42',
       color: '#e0ddd8',
       fontSize: s(14),
     },
-    scrollContent: {
+    listContent: {
       paddingHorizontal: s(12),
       paddingVertical: s(8),
     },
-    teamSection: {
-      marginBottom: s(12),
-    },
-    teamLabel: {
+    randomButtonText: {
+      color: '#a0a0c0',
       fontSize: s(14),
-      fontWeight: '700',
-      marginBottom: s(6),
+      fontWeight: '600',
     },
-    roleContent: {
-      flex: 1,
-    },
-    roleNameRow: {
+    itemRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: s(6),
+      justifyContent: 'space-between',
     },
-    footer: {
-      paddingVertical: s(14),
+    itemName: {
+      color: '#e0ddd8',
+      fontSize: s(15),
+      fontWeight: '600',
+    },
+    selectedBadge: {
+      color: '#8a6a9a',
+      fontSize: s(11),
+      fontWeight: '600',
+    },
+    abilityText: {
+      color: '#787674',
+      fontSize: s(12),
+      lineHeight: s(17),
+    },
+    emptyText: {
+      color: '#908e8a',
+      fontSize: s(14),
+      textAlign: 'center',
+      paddingVertical: s(20),
+    },
+    footerRow: {
+      flexDirection: 'row',
       borderTopWidth: 1,
       borderTopColor: '#3a3a42',
     },
-    footerText: {
-      color: '#7070c4',
+    footerButton: {
+      flex: 1,
+      paddingVertical: s(14),
+    },
+    footerDivider: {
+      width: 1,
+      backgroundColor: '#3a3a42',
+    },
+    footerCloseText: {
+      color: '#908e8a',
+      fontSize: s(15),
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    footerConfirmText: {
+      color: '#8a6a9a',
       fontSize: s(15),
       fontWeight: '600',
       textAlign: 'center',
@@ -118,48 +111,33 @@ export function createBluffSelectModalStyles(s: (v: number) => number) {
   });
 }
 
+export function randomButtonStyle(s: (v: number) => number, pressed: boolean) {
+  return {
+    marginBottom: s(8),
+    padding: s(12),
+    backgroundColor: pressed ? '#303040' : '#252530',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#4a4a5a',
+    alignItems: 'center' as const,
+  };
+}
+
 export function roleItemStyle(
   s: (v: number) => number,
   isSelected: boolean,
   pressed: boolean,
+  isDisabled: boolean,
 ) {
   return {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    paddingVertical: s(8),
-    paddingHorizontal: s(10),
-    marginBottom: s(2),
-    borderRadius: 6,
-    backgroundColor: isSelected ? '#2a1e2e' : pressed ? '#2a2a30' : '#252528',
-  };
-}
-
-export function checkboxStyle(s: (v: number) => number, isSelected: boolean) {
-  return {
-    width: s(18),
-    height: s(18),
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: isSelected ? '#8a6a9a' : '#5a5a5e',
-    backgroundColor: isSelected ? '#8a6a9a' : 'transparent',
-    marginRight: s(10),
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  };
-}
-
-export function roleNameStyle(s: (v: number) => number, isSelected: boolean) {
-  return {
-    color: isSelected ? '#c4a0d0' : '#e0ddd8',
-    fontSize: s(14),
-    fontWeight: '600' as const,
-  };
-}
-
-export function roleAbilityStyle(s: (v: number) => number) {
-  return {
-    color: '#787674',
-    fontSize: s(11),
-    lineHeight: s(15),
+    paddingVertical: s(12),
+    paddingHorizontal: s(12),
+    marginBottom: s(4),
+    backgroundColor: isSelected ? '#2a1e2e' : '#252528',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: isSelected ? '#8a6a9a' : '#555',
+    opacity: isDisabled ? 0.4 : 1,
+    ...(pressed && !isDisabled ? { backgroundColor: '#353538' } : {}),
   };
 }
