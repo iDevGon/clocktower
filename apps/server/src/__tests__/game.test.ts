@@ -961,4 +961,167 @@ describe('GameManager', () => {
       expect(gm.isGhostVoteUsed(player?.id ?? '')).toBe(false);
     });
   });
+
+  describe('은둔자/첩자 위장 (misregistered)', () => {
+    function createMisregisterGame() {
+      const { gm, players } = createTestGame(7);
+      // 0: empath, 1: recluse, 2: fortune_teller, 3: chef, 4: spy, 5: poisoner, 6: imp
+      gm.assignRole(players[0].id, 'empath');
+      gm.assignRole(players[1].id, 'recluse');
+      gm.assignRole(players[2].id, 'fortune_teller');
+      gm.assignRole(players[3].id, 'chef');
+      gm.assignRole(players[4].id, 'spy');
+      gm.assignRole(players[5].id, 'poisoner');
+      gm.assignRole(players[6].id, 'imp');
+      gm.start();
+      return { gm, players };
+    }
+
+    describe('공감자 + 은둔자', () => {
+      it('위장 없는 은둔자는 선으로 감지된다', () => {
+        const { gm, players } = createMisregisterGame();
+        // playerOrder: [0, 1, 2, 3, 4, 5, 6]
+        // empath(0)의 이웃: 왼쪽=imp(6), 오른쪽=recluse(1)
+        const info = gm.getEmpathNeighborInfo(players[0].id);
+        const recluseNeighbor = info.neighbors.find(
+          (n) => n.id === players[1].id,
+        );
+        expect(recluseNeighbor?.isEvil).toBe(false);
+      });
+
+      it('misregistered 은둔자는 악으로 감지된다', () => {
+        const { gm, players } = createMisregisterGame();
+        gm.setPlayerStatuses(players[1].id, ['misregistered']);
+        const info = gm.getEmpathNeighborInfo(players[0].id);
+        const recluseNeighbor = info.neighbors.find(
+          (n) => n.id === players[1].id,
+        );
+        expect(recluseNeighbor?.isEvil).toBe(true);
+      });
+    });
+
+    describe('공감자 + 첩자', () => {
+      it('위장 없는 첩자는 악으로 감지된다', () => {
+        createMisregisterGame();
+        // chef(3)을 empath로 교체해서 spy(4)가 이웃이 되도록 구성
+        // 대신 직접 spy를 이웃에 두는 게임 생성
+        const { gm: gm2, players: p } = createTestGame(5);
+        gm2.assignRole(p[0].id, 'empath');
+        gm2.assignRole(p[1].id, 'spy');
+        gm2.assignRole(p[2].id, 'chef');
+        gm2.assignRole(p[3].id, 'poisoner');
+        gm2.assignRole(p[4].id, 'imp');
+        gm2.start();
+
+        const info = gm2.getEmpathNeighborInfo(p[0].id);
+        const spyNeighbor = info.neighbors.find((n) => n.id === p[1].id);
+        expect(spyNeighbor?.isEvil).toBe(true);
+      });
+
+      it('misregistered 첩자는 선으로 감지된다', () => {
+        const { gm, players: p } = createTestGame(5);
+        gm.assignRole(p[0].id, 'empath');
+        gm.assignRole(p[1].id, 'spy');
+        gm.assignRole(p[2].id, 'chef');
+        gm.assignRole(p[3].id, 'poisoner');
+        gm.assignRole(p[4].id, 'imp');
+        gm.start();
+        gm.setPlayerStatuses(p[1].id, ['misregistered']);
+
+        const info = gm.getEmpathNeighborInfo(p[0].id);
+        const spyNeighbor = info.neighbors.find((n) => n.id === p[1].id);
+        expect(spyNeighbor?.isEvil).toBe(false);
+      });
+    });
+
+    describe('점쟁이 + 은둔자', () => {
+      it('위장 없는 은둔자는 악마로 감지되지 않는다', () => {
+        const { gm, players } = createMisregisterGame();
+        const result = gm.judgeFortuneTeller([players[1].id, players[3].id]);
+        expect(result).toBe(false);
+      });
+
+      it('misregistered 은둔자는 악마로 감지된다', () => {
+        const { gm, players } = createMisregisterGame();
+        gm.setPlayerStatuses(players[1].id, ['misregistered']);
+        const result = gm.judgeFortuneTeller([players[1].id, players[3].id]);
+        expect(result).toBe(true);
+      });
+    });
+
+    describe('점쟁이 + 첩자', () => {
+      it('위장 없는 첩자는 악으로 감지되지 않는다 (하수인은 원래 감지 안됨)', () => {
+        const { gm, players } = createMisregisterGame();
+        const result = gm.judgeFortuneTeller([players[4].id, players[3].id]);
+        expect(result).toBe(false);
+      });
+
+      it('misregistered 첩자도 선으로 감지된다 (변화 없음)', () => {
+        const { gm, players } = createMisregisterGame();
+        gm.setPlayerStatuses(players[4].id, ['misregistered']);
+        const result = gm.judgeFortuneTeller([players[4].id, players[3].id]);
+        expect(result).toBe(false);
+      });
+    });
+
+    describe('점쟁이 + 악마 + 첩자 위장', () => {
+      it('악마와 misregistered 첩자를 함께 선택하면 악마로 인해 true', () => {
+        const { gm, players } = createMisregisterGame();
+        gm.setPlayerStatuses(players[4].id, ['misregistered']);
+        const result = gm.judgeFortuneTeller([players[4].id, players[6].id]);
+        expect(result).toBe(true);
+      });
+    });
+
+    describe('위장 상태가 다른 역할에는 영향 없음', () => {
+      it('misregistered가 일반 마을주민에게는 효과 없다', () => {
+        const { gm, players } = createMisregisterGame();
+        gm.setPlayerStatuses(players[3].id, ['misregistered']); // chef
+        const info = gm.getEmpathNeighborInfo(players[0].id);
+        // chef는 은둔자도 첩자도 아니므로 실제 진영(선) 유지
+        const _chefNeighbor = info.neighbors.find(
+          (n) => n.id === players[3].id,
+        );
+        // chef가 이웃이 아닐 수 있으므로 직접 테스트
+        const { gm: gm2, players: p } = createTestGame(5);
+        gm2.assignRole(p[0].id, 'empath');
+        gm2.assignRole(p[1].id, 'chef');
+        gm2.assignRole(p[2].id, 'washerwoman');
+        gm2.assignRole(p[3].id, 'poisoner');
+        gm2.assignRole(p[4].id, 'imp');
+        gm2.start();
+        gm2.setPlayerStatuses(p[1].id, ['misregistered']);
+
+        const info2 = gm2.getEmpathNeighborInfo(p[0].id);
+        const neighbor = info2.neighbors.find((n) => n.id === p[1].id);
+        expect(neighbor?.isEvil).toBe(false);
+      });
+
+      it('misregistered가 일반 하수인에게는 효과 없다', () => {
+        const { gm, players: p } = createTestGame(5);
+        gm.assignRole(p[0].id, 'empath');
+        gm.assignRole(p[1].id, 'poisoner');
+        gm.assignRole(p[2].id, 'washerwoman');
+        gm.assignRole(p[3].id, 'chef');
+        gm.assignRole(p[4].id, 'imp');
+        gm.start();
+        gm.setPlayerStatuses(p[1].id, ['misregistered']);
+
+        const info = gm.getEmpathNeighborInfo(p[0].id);
+        const neighbor = info.neighbors.find((n) => n.id === p[1].id);
+        expect(neighbor?.isEvil).toBe(true);
+      });
+    });
+
+    describe('중독 + 위장 조합', () => {
+      it('점쟁이 중독 + misregistered 은둔자 → 결과 반전 (false)', () => {
+        const { gm, players } = createMisregisterGame();
+        gm.setPlayerStatuses(players[1].id, ['misregistered']); // recluse
+        gm.setPlayerStatuses(players[2].id, ['poisoned']); // fortune_teller
+        const result = gm.judgeFortuneTeller([players[1].id, players[3].id]);
+        // misregistered 은둔자는 true지만, 점쟁이 중독으로 반전 → false
+        expect(result).toBe(false);
+      });
+    });
+  });
 });

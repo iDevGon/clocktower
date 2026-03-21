@@ -20,6 +20,25 @@ function isPoisonedOrDrunk(player: Player): boolean {
   );
 }
 
+/**
+ * 정보 능력에서 플레이어가 악으로 감지되는지 판정합니다.
+ * - 은둔자(outsider) + misregistered → 악으로 감지
+ * - 첩자(minion) + misregistered → 선으로 감지
+ * - 그 외 → 실제 진영 기준
+ */
+function isDetectedAsEvil(player: Player): boolean {
+  const actualEvil =
+    player.role?.team === 'minion' || player.role?.team === 'demon';
+  if (!player.statuses.includes('misregistered')) return actualEvil;
+
+  // 은둔자: 선 → 악으로 위장
+  if (player.role?.id === 'recluse') return true;
+  // 첩자: 악 → 선으로 위장
+  if (player.role?.id === 'spy') return false;
+
+  return actualEvil;
+}
+
 export class GameManager {
   private state: GameState = {
     id: '',
@@ -492,7 +511,19 @@ export class GameManager {
     const hasDemonOrRedHerring = targets.some((targetId) => {
       const target = this.getPlayer(targetId);
       if (!target) return false;
+      // 첩자 위장: misregistered 첩자는 선으로 감지 (악마 판정 회피)
+      if (
+        target.role?.id === 'spy' &&
+        target.statuses.includes('misregistered')
+      )
+        return false;
       if (target.role?.team === 'demon') return true;
+      // 은둔자 위장: misregistered 은둔자는 악마로 감지
+      if (
+        target.role?.id === 'recluse' &&
+        target.statuses.includes('misregistered')
+      )
+        return true;
       if (targetId === this.fortuneTellerRedHerring) return true;
       return false;
     });
@@ -1015,9 +1046,11 @@ export class GameManager {
       const idx = (empathIndex + i) % order.length;
       const player = this.getPlayer(order[idx]);
       if (player?.isAlive) {
-        const isEvil =
-          player.role?.team === 'minion' || player.role?.team === 'demon';
-        neighbors.push({ id: player.id, name: player.name, isEvil });
+        neighbors.push({
+          id: player.id,
+          name: player.name,
+          isEvil: isDetectedAsEvil(player),
+        });
         break;
       }
     }
@@ -1029,9 +1062,11 @@ export class GameManager {
       if (player?.isAlive) {
         // 같은 플레이어가 양쪽 이웃일 수 있음 (2명만 살아있는 경우)
         if (neighbors.length > 0 && neighbors[0].id === player.id) break;
-        const isEvil =
-          player.role?.team === 'minion' || player.role?.team === 'demon';
-        neighbors.push({ id: player.id, name: player.name, isEvil });
+        neighbors.push({
+          id: player.id,
+          name: player.name,
+          isEvil: isDetectedAsEvil(player),
+        });
         break;
       }
     }

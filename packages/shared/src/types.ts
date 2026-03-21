@@ -107,7 +107,8 @@ export type PlayerStatus =
   | 'drunk'
   | 'protected'
   | 'cursed'
-  | 'master';
+  | 'master'
+  | 'misregistered';
 
 export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
   poisoned: '중독',
@@ -115,6 +116,7 @@ export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
   protected: '보호',
   cursed: '저주',
   master: '주인',
+  misregistered: '위장',
 };
 
 export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
@@ -123,6 +125,7 @@ export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
   protected: '#2ecc71',
   cursed: '#8e44ad',
   master: '#3a7ca5',
+  misregistered: '#e74c3c',
 };
 
 export const PLAYER_STATUS_DESCRIPTIONS: Record<PlayerStatus, string> = {
@@ -133,6 +136,8 @@ export const PLAYER_STATUS_DESCRIPTIONS: Record<PlayerStatus, string> = {
     '수도사에 의해 보호됨. 이 플레이어는 오늘 밤 악마에게 죽지 않습니다.',
   cursed: '점쟁이의 저주. 점쟁이에게 악마로 감지됩니다.',
   master: '집사의 주인. 이 주인이 투표해야만 집사도 투표할 수 있습니다.',
+  misregistered:
+    '진영 위장. 은둔자는 악으로, 첩자는 선으로 정보 능력에 감지됩니다.',
 };
 
 export type WinningTeam = 'good' | 'evil';
