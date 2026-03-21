@@ -24,6 +24,9 @@ interface DraggablePlayerTokenProps {
   voteIndicator?: VoteIndicator;
   isPreselected?: boolean;
   isExecutionCandidate?: boolean;
+  hasNominated?: boolean;
+  wasNominated?: boolean;
+  memo?: string;
   tokenSize?: number;
   initialX: number;
   initialY: number;
@@ -44,6 +47,9 @@ export function DraggablePlayerToken({
   voteIndicator,
   isPreselected,
   isExecutionCandidate,
+  hasNominated,
+  wasNominated,
+  memo,
   tokenSize: tokenSizeProp,
   initialX,
   initialY,
@@ -140,6 +146,9 @@ export function DraggablePlayerToken({
           voteIndicator={voteIndicator}
           isPreselected={isPreselected}
           isExecutionCandidate={isExecutionCandidate}
+          hasNominated={hasNominated}
+          wasNominated={wasNominated}
+          memo={memo}
           size={tokenSize}
         />
       </Animated.View>

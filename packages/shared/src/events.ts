@@ -129,6 +129,7 @@ export interface ServerToStorytellerEvents {
   'vote:confirmed': ServerToClientEvents['vote:confirmed'];
   'vote:clockStart': ServerToClientEvents['vote:clockStart'];
   'vote:result': ServerToClientEvents['vote:result'];
+  'vote:start': ServerToClientEvents['vote:start'];
   'vote:proceedToVote': ServerToClientEvents['vote:proceedToVote'];
   'vote:consentStatus': ServerToClientEvents['vote:consentStatus'];
   'chat:receiveFromPlayer': ServerToClientEvents['chat:receiveFromPlayer'];

@@ -56,6 +56,13 @@ interface GameStore {
   chatMessages: Record<string, StorytellerMessage[]>;
   chatUnreadCounts: Record<string, number>;
   activeChatPlayerId: string | null;
+  playerMemos: Record<string, string>;
+  setPlayerMemo: (playerId: string, memo: string) => void;
+  clearPlayerMemos: () => void;
+  nominatedPlayers: string[];
+  nominatorPlayers: string[];
+  addNomination: (nominatorId: string, nomineeId: string) => void;
+  clearNominations: () => void;
   roleRevealShown: boolean;
   setRoleRevealShown: (shown: boolean) => void;
   slayerWaitingAck: boolean;
@@ -156,6 +163,25 @@ export const useGameStore = create<GameStore>()(
       chatMessages: {},
       chatUnreadCounts: {},
       activeChatPlayerId: null,
+      playerMemos: {},
+      setPlayerMemo: (playerId, memo) =>
+        set((s) => ({
+          playerMemos: { ...s.playerMemos, [playerId]: memo },
+        })),
+      clearPlayerMemos: () => set({ playerMemos: {} }),
+      nominatedPlayers: [],
+      nominatorPlayers: [],
+      addNomination: (nominatorId, nomineeId) =>
+        set((s) => ({
+          nominatorPlayers: s.nominatorPlayers.includes(nominatorId)
+            ? s.nominatorPlayers
+            : [...s.nominatorPlayers, nominatorId],
+          nominatedPlayers: s.nominatedPlayers.includes(nomineeId)
+            ? s.nominatedPlayers
+            : [...s.nominatedPlayers, nomineeId],
+        })),
+      clearNominations: () =>
+        set({ nominatedPlayers: [], nominatorPlayers: [] }),
       roleRevealShown: false,
       setRoleRevealShown: (shown) => set({ roleRevealShown: shown }),
       nightWakeUpTargets: [],
@@ -223,7 +249,12 @@ export const useGameStore = create<GameStore>()(
             ? { voteCountdown: null, voteClock: null }
             : {}),
           ...(state.phase === 'night' || state.phase === 'setup'
-            ? { executionCandidate: null, voteResult: null }
+            ? {
+                executionCandidate: null,
+                voteResult: null,
+                nominatedPlayers: [],
+                nominatorPlayers: [],
+              }
             : {}),
           ...(state.daySubPhase !== 'whisper' ? { whisperClock: null } : {}),
           ...(state.daySubPhase !== 'discussion'
@@ -367,6 +398,9 @@ export const useGameStore = create<GameStore>()(
           activeChatPlayerId: null,
           chatToast: null,
           eventToast: null,
+          playerMemos: {},
+          nominatedPlayers: [],
+          nominatorPlayers: [],
           roleRevealShown: false,
           slayerWaitingAck: false,
           voteConsentReadyIds: [],
@@ -383,6 +417,7 @@ export const useGameStore = create<GameStore>()(
         activeNightRoleId: state.activeNightRoleId,
         nightActions: state.nightActions,
         playerOrder: state.playerOrder,
+        playerMemos: state.playerMemos,
         roleRevealShown: state.roleRevealShown,
       }),
     },
