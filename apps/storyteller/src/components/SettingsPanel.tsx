@@ -4,7 +4,8 @@ import { Pressable, Switch, Text, View } from 'react-native';
 import { ClockSpeedSetting } from './ClockSpeedSetting';
 import { CollapsibleSection } from './CollapsibleSection';
 
-const TIMER_OPTIONS = [30, 60, 90, 120, 180, 300];
+const DISCUSSION_OPTIONS = [600, 1200, 1800];
+const NOMINATION_OPTIONS = [300, 600, 900];
 
 function formatTimerOption(sec: number): string {
   if (sec < 60) return `${sec}초`;
@@ -130,7 +131,7 @@ export function SettingsPanel({
               scale={scale}
               label="공개토론 시간"
               showOff
-              options={TIMER_OPTIONS}
+              options={DISCUSSION_OPTIONS}
               formatOption={formatTimerOption}
             />
             <ClockSpeedSetting
@@ -141,7 +142,7 @@ export function SettingsPanel({
               scale={scale}
               label="지목 시간"
               showOff
-              options={TIMER_OPTIONS}
+              options={NOMINATION_OPTIONS}
               formatOption={formatTimerOption}
             />
             <ClockSpeedSetting
@@ -150,7 +151,7 @@ export function SettingsPanel({
               scale={scale}
               label="변론 시간"
               showOff
-              options={TIMER_OPTIONS}
+              options={NOMINATION_OPTIONS}
               formatOption={formatTimerOption}
             />
           </View>

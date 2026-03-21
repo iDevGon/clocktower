@@ -173,11 +173,34 @@ export function createLobbyStyles(scale: number) {
       fontWeight: '600',
     },
 
-    /* ---- Footer advanced settings ---- */
-    footerSettingsContainer: {
-      marginBottom: s(12),
-      paddingHorizontal: s(12),
+    /* ---- 상세 설정 영역 (listContainer 내부) ---- */
+    settingsScrollArea: {
+      flex: 1,
     },
+    settingsScrollContent: {
+      padding: s(16),
+      paddingBottom: s(8),
+    },
+    /* ---- 상세 설정 토글 버튼 ---- */
+    settingsToggleButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: s(6),
+      paddingVertical: s(8),
+      marginBottom: s(8),
+    },
+    settingsToggleLabel: {
+      color: '#908e8a',
+      fontSize: s(13),
+      fontWeight: '600',
+    },
+    settingsToggleChevron: {
+      color: '#706e6a',
+      fontSize: s(10),
+    },
+
+    /* ---- Footer advanced settings ---- */
     settingsGap: {
       gap: s(10),
     },
