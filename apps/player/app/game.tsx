@@ -282,25 +282,17 @@ export default function GameScreen() {
                 )}
               </Pressable>
             )}
-            {feedbackHistory.length > 0 && currentPhase !== 'setup' && (
+            {currentPhase !== 'setup' && (
               <Pressable
                 onPress={() => setFeedbackHistoryVisible(true)}
                 style={[
                   styles.feedbackHistoryButton,
                   !isAlive && styles.feedbackHistoryButtonDead,
                 ]}
-                accessibilityLabel="피드백 기록"
+                accessibilityLabel="받은정보"
                 accessibilityRole="button"
               >
                 <Text style={styles.feedbackHistoryIcon}>📜</Text>
-                <Text
-                  style={[
-                    styles.feedbackHistoryCount,
-                    !isAlive && styles.feedbackHistoryCountDead,
-                  ]}
-                >
-                  {feedbackHistory.length}
-                </Text>
               </Pressable>
             )}
             {!isAlive && (
