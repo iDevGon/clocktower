@@ -496,10 +496,29 @@ export default function GrimoireScreen() {
     showModal(playerName, options);
   };
 
+  const handleRestartGame = () => {
+    showModal('게임 재시작', [
+      {
+        text: '플레이어 유지하고 재시작',
+        onPress: async () => {
+          useGameStore.getState().reset();
+          useLogStore.getState().clearLogs();
+          try {
+            await restartGame();
+            router.replace('/game/lobby');
+          } catch {
+            Alert.alert('오류', '게임 재시작에 실패했습니다.');
+          }
+        },
+      },
+      { text: '취소', style: 'cancel' },
+    ]);
+  };
+
   const handleResetGame = () => {
     showModal('게임 초기화', [
       {
-        text: '새 게임 시작',
+        text: '모든 데이터 초기화',
         style: 'destructive',
         onPress: async () => {
           resetGame();
@@ -556,6 +575,10 @@ export default function GrimoireScreen() {
           useGameStore.getState().clearTokenPositions();
           addLog(getDay(), getPhase(), '토큰 위치 초기화');
         },
+      },
+      {
+        text: '게임 재시작 (플레이어 유지)',
+        onPress: () => handleRestartGame(),
       },
       {
         text: '게임 초기화',
