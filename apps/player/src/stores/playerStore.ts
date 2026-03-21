@@ -117,6 +117,11 @@ interface PlayerState {
   nightWakeUp: string | null;
   /** 변론 중 투표 동의 현황 (ready인 플레이어 ID 목록) */
   voteConsentReadyIds: string[];
+  discussionClock: VoteClock | null;
+  nominationClock: VoteClock | null;
+  nominationPaused: boolean;
+  nominationRemainingMs: number | null;
+  defenseClock: VoteClock | null;
   set: (partial: Partial<PlayerState>) => void;
   addFeedback: (day: number, feedback: NightFeedbackPayload) => void;
   reset: () => void;
@@ -172,6 +177,11 @@ const initialState = {
   butlerMasterName: null as string | null,
   nightWakeUp: null as string | null,
   voteConsentReadyIds: [] as string[],
+  discussionClock: null as VoteClock | null,
+  nominationClock: null as VoteClock | null,
+  nominationPaused: false,
+  nominationRemainingMs: null as number | null,
+  defenseClock: null as VoteClock | null,
 };
 
 export const usePlayerStore = create<PlayerState>()(

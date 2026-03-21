@@ -6,6 +6,7 @@ export { AbilityText } from './components/AbilityText';
 export type { BaseToastProps } from './components/BaseToast';
 // Components
 export { BaseToast } from './components/BaseToast';
+export { CountdownTimer } from './components/CountdownTimer';
 export { DictionaryModal } from './components/DictionaryModal';
 export { FullScreenVignette } from './components/FullScreenVignette';
 export { GameTip } from './components/GameTip';

@@ -76,6 +76,11 @@ export interface ServerToClientEvents {
   }) => void;
   'whisper:activeChats': (chats: ActiveWhisperChat[]) => void;
   'whisper:clockStart': (data: { durationMs: number }) => void;
+  'discussion:clockStart': (data: { durationMs: number }) => void;
+  'nomination:clockStart': (data: { durationMs: number }) => void;
+  'nomination:clockPause': () => void;
+  'nomination:clockResume': (data: { remainingMs: number }) => void;
+  'defense:clockStart': (data: { durationMs: number }) => void;
   'game:settings': (settings: GameSettings) => void;
   'vote:clockStart': (data: { durationMs: number }) => void;
   'vote:preselected': (data: {
@@ -111,6 +116,11 @@ export interface ServerToStorytellerEvents {
   'night:actionReceived': ServerToClientEvents['night:actionReceived'];
   'whisper:activeChats': ServerToClientEvents['whisper:activeChats'];
   'whisper:clockStart': ServerToClientEvents['whisper:clockStart'];
+  'discussion:clockStart': ServerToClientEvents['discussion:clockStart'];
+  'nomination:clockStart': ServerToClientEvents['nomination:clockStart'];
+  'nomination:clockPause': ServerToClientEvents['nomination:clockPause'];
+  'nomination:clockResume': ServerToClientEvents['nomination:clockResume'];
+  'defense:clockStart': ServerToClientEvents['defense:clockStart'];
   'slayer:declared': ServerToClientEvents['slayer:declared'];
   'slayer:noEffect': ServerToClientEvents['slayer:noEffect'];
   'slayer:allAcked': ServerToClientEvents['slayer:allAcked'];

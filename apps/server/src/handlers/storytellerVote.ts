@@ -134,6 +134,14 @@ export function startClockwiseVote(
         game.returnToNomination();
         playerIo.emit('game:phase', 'day');
         playerIo.emit('day:subPhase', 'nomination');
+
+        // 지목 타이머 재개
+        const remainingMs = game.resumeNominationTimer();
+        if (remainingMs !== null && remainingMs > 0) {
+          playerIo.emit('nomination:clockResume', { remainingMs });
+          storytellerIo.emit('nomination:clockResume', { remainingMs });
+        }
+
         storytellerIo.emit('game:state', game.getState());
       }
     }
@@ -203,6 +211,22 @@ export function registerVoteHandlers(
     // 변론 페이즈로 전환 (낮 페이즈 유지, 이야기꾼이 투표 시작을 제어)
     game.clearVoteConsent();
     game.setDaySubPhase('defense');
+
+    // 지목 타이머 일시정지
+    if (game.getNominationRemainingMs() !== null) {
+      game.pauseNominationTimer();
+      playerIo.emit('nomination:clockPause');
+      storytellerIo.emit('nomination:clockPause');
+    }
+
+    // 변론 타이머 시작
+    const defenseClockSec = game.getSettings().defenseClockSeconds;
+    if (defenseClockSec > 0) {
+      const durationMs = defenseClockSec * 1000;
+      playerIo.emit('defense:clockStart', { durationMs });
+      storytellerIo.emit('defense:clockStart', { durationMs });
+    }
+
     const nominator = game.getPlayer(nominatorId);
     const nominee = game.getPlayer(nomineeId);
     playerIo.emit('day:subPhase', 'defense');
@@ -264,6 +288,14 @@ export function registerVoteHandlers(
       game.returnToNomination();
       playerIo.emit('game:phase', 'day');
       playerIo.emit('day:subPhase', 'nomination');
+
+      // 지목 타이머 재개
+      const remainingMs = game.resumeNominationTimer();
+      if (remainingMs !== null && remainingMs > 0) {
+        playerIo.emit('nomination:clockResume', { remainingMs });
+        storytellerIo.emit('nomination:clockResume', { remainingMs });
+      }
+
       storytellerIo.emit('game:state', game.getState());
     }
   });

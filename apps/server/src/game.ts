@@ -72,6 +72,9 @@ export class GameManager {
   private nightWakeUpRoleId: string | null = null;
   // 변론 중 투표 동의 (ready) 플레이어 추적
   private voteConsentReady = new Set<string>();
+  // 지목 타이머 일시정지/재개용 남은 시간 (ms)
+  private nominationRemainingMs: number | null = null;
+  private nominationStartedAt: number | null = null;
 
   create(): string {
     const id = randomUUID().slice(0, 8);
@@ -100,6 +103,7 @@ export class GameManager {
     this.nightWakeUpQueue = [];
     this.nightWakeUpRoleId = null;
     this.clearVoteTimer();
+    this.clearNominationTimer();
     return id;
   }
 
@@ -163,6 +167,7 @@ export class GameManager {
     this.nightWakeUpRoleId = null;
     this.voteConsentReady.clear();
     this.clearVoteTimer();
+    this.clearNominationTimer();
   }
 
   getState(): GameState {
@@ -997,5 +1002,42 @@ export class GameManager {
 
   clearVoteConsent(): void {
     this.voteConsentReady.clear();
+  }
+
+  // ── 지목 타이머 관리 ──
+
+  startNominationTimer(durationMs: number): void {
+    this.nominationRemainingMs = durationMs;
+    this.nominationStartedAt = Date.now();
+  }
+
+  pauseNominationTimer(): void {
+    if (
+      this.nominationStartedAt === null ||
+      this.nominationRemainingMs === null
+    )
+      return;
+    const elapsed = Date.now() - this.nominationStartedAt;
+    this.nominationRemainingMs = Math.max(
+      0,
+      this.nominationRemainingMs - elapsed,
+    );
+    this.nominationStartedAt = null;
+  }
+
+  resumeNominationTimer(): number | null {
+    if (this.nominationRemainingMs === null || this.nominationRemainingMs <= 0)
+      return null;
+    this.nominationStartedAt = Date.now();
+    return this.nominationRemainingMs;
+  }
+
+  clearNominationTimer(): void {
+    this.nominationRemainingMs = null;
+    this.nominationStartedAt = null;
+  }
+
+  getNominationRemainingMs(): number | null {
+    return this.nominationRemainingMs;
   }
 }

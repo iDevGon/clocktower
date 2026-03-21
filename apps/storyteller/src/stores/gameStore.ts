@@ -39,6 +39,10 @@ interface GameStore {
   voteCountdown: { startedAt: number; durationMs: number } | null;
   voteClock: { startedAt: number; durationMs: number } | null;
   whisperClock: { startedAt: number; durationMs: number } | null;
+  discussionClock: { startedAt: number; durationMs: number } | null;
+  nominationClock: { startedAt: number; durationMs: number } | null;
+  nominationPaused: boolean;
+  defenseClock: { startedAt: number; durationMs: number } | null;
   votePreselections: Record<string, boolean | null>;
   voteConfirmed: Record<string, boolean>;
   voteResult: VoteResult | null;
@@ -90,6 +94,16 @@ interface GameStore {
   setWhisperClock: (
     clock: { startedAt: number; durationMs: number } | null,
   ) => void;
+  setDiscussionClock: (
+    clock: { startedAt: number; durationMs: number } | null,
+  ) => void;
+  setNominationClock: (
+    clock: { startedAt: number; durationMs: number } | null,
+  ) => void;
+  setNominationPaused: (paused: boolean) => void;
+  setDefenseClock: (
+    clock: { startedAt: number; durationMs: number } | null,
+  ) => void;
   setVotePreselection: (playerId: string, guilty: boolean | null) => void;
   setVoteConfirmed: (playerId: string, guilty: boolean) => void;
   clearVotePreselections: () => void;
@@ -129,6 +143,10 @@ export const useGameStore = create<GameStore>()(
       voteCountdown: null,
       voteClock: null,
       whisperClock: null,
+      discussionClock: null,
+      nominationClock: null,
+      nominationPaused: false,
+      defenseClock: null,
       votePreselections: {},
       voteConfirmed: {},
       voteResult: null,
@@ -208,6 +226,10 @@ export const useGameStore = create<GameStore>()(
             ? { executionCandidate: null, voteResult: null }
             : {}),
           ...(state.daySubPhase !== 'whisper' ? { whisperClock: null } : {}),
+          ...(state.daySubPhase !== 'discussion'
+            ? { discussionClock: null }
+            : {}),
+          ...(state.daySubPhase !== 'defense' ? { defenseClock: null } : {}),
         });
       },
       addNightAction: (action) =>
@@ -219,6 +241,10 @@ export const useGameStore = create<GameStore>()(
       setVoteCountdown: (countdown) => set({ voteCountdown: countdown }),
       setVoteClock: (clock) => set({ voteClock: clock, voteCountdown: null }),
       setWhisperClock: (clock) => set({ whisperClock: clock }),
+      setDiscussionClock: (clock) => set({ discussionClock: clock }),
+      setNominationClock: (clock) => set({ nominationClock: clock }),
+      setNominationPaused: (paused) => set({ nominationPaused: paused }),
+      setDefenseClock: (clock) => set({ defenseClock: clock }),
       setVotePreselection: (playerId, guilty) =>
         set((s) => ({
           votePreselections: { ...s.votePreselections, [playerId]: guilty },
@@ -326,6 +352,10 @@ export const useGameStore = create<GameStore>()(
           voteCountdown: null,
           voteClock: null,
           whisperClock: null,
+          discussionClock: null,
+          nominationClock: null,
+          nominationPaused: false,
+          defenseClock: null,
           votePreselections: {},
           voteConfirmed: {},
           voteResult: null,

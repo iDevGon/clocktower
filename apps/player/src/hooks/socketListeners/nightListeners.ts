@@ -39,6 +39,42 @@ export function attachNightListeners(socket: AppSocket) {
     usePlayerStore.getState().set({
       daySubPhase: subPhase,
       ...(subPhase !== 'whisper' ? { whisperClock: null } : {}),
+      ...(subPhase !== 'discussion' ? { discussionClock: null } : {}),
+      ...(subPhase !== 'defense' ? { defenseClock: null } : {}),
+    });
+  });
+
+  socket.on('discussion:clockStart', ({ durationMs }) => {
+    usePlayerStore.getState().set({
+      discussionClock: { startedAt: Date.now(), durationMs },
+    });
+  });
+
+  socket.on('nomination:clockStart', ({ durationMs }) => {
+    usePlayerStore.getState().set({
+      nominationClock: { startedAt: Date.now(), durationMs },
+      nominationPaused: false,
+      nominationRemainingMs: null,
+    });
+  });
+
+  socket.on('nomination:clockPause', () => {
+    usePlayerStore.getState().set({
+      nominationPaused: true,
+    });
+  });
+
+  socket.on('nomination:clockResume', ({ remainingMs }) => {
+    usePlayerStore.getState().set({
+      nominationClock: { startedAt: Date.now(), durationMs: remainingMs },
+      nominationPaused: false,
+      nominationRemainingMs: remainingMs,
+    });
+  });
+
+  socket.on('defense:clockStart', ({ durationMs }) => {
+    usePlayerStore.getState().set({
+      defenseClock: { startedAt: Date.now(), durationMs },
     });
   });
 }

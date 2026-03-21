@@ -1,4 +1,6 @@
+import { CountdownTimer } from '@clocktower/ui';
 import { Pressable, Text, View } from 'react-native';
+import { usePlayerStore } from '../../stores/playerStore';
 import { styles } from '../../styles/game.styles';
 
 interface NominationPhaseProps {
@@ -19,6 +21,8 @@ export function NominationPhase({
   onOpenNominate,
 }: NominationPhaseProps) {
   const isDead = !isAlive;
+  const nominationClock = usePlayerStore((s) => s.nominationClock);
+  const nominationPaused = usePlayerStore((s) => s.nominationPaused);
   if (!visible) return null;
 
   if (votingMode === 'offline') {
@@ -39,6 +43,12 @@ export function NominationPhase({
   return (
     <View style={styles.phaseContent}>
       <Text style={[styles.dayTitle, isDead && styles.dayTitleDead]}>지목</Text>
+      {nominationClock && !nominationPaused && (
+        <CountdownTimer
+          startedAt={nominationClock.startedAt}
+          durationMs={nominationClock.durationMs}
+        />
+      )}
       <Text style={styles.phaseDescription}>
         처형할 플레이어를 지목하세요.{'\n'}하루에 한 번 지목할 수 있습니다.
       </Text>

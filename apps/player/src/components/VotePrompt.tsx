@@ -1,3 +1,4 @@
+import { CountdownTimer } from '@clocktower/ui';
 import type { ComponentProps } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
@@ -161,6 +162,7 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
   const isDefensePhase = daySubPhase === 'defense';
   const votePreselections = usePlayerStore((s) => s.votePreselections);
   const voteConsentReadyIds = usePlayerStore((s) => s.voteConsentReadyIds);
+  const defenseClock = usePlayerStore((s) => s.defenseClock);
   const gamePlayers = usePlayerStore((s) => s.gamePlayers);
   const isConsentReady = voteConsentReadyIds.includes(playerId);
   const aliveCount = gamePlayers.filter((p) => p.isAlive).length;
@@ -233,6 +235,13 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
       {isDefensePhase && (
         <View style={styles.countdownContainer}>
           <Text style={styles.countdownMessage}>변론 중</Text>
+          {defenseClock && (
+            <CountdownTimer
+              startedAt={defenseClock.startedAt}
+              durationMs={defenseClock.durationMs}
+              phaseColor="#c47070"
+            />
+          )}
           <Text style={styles.countdownHint}>
             {nomineeName}의 변론을 들어보세요
           </Text>

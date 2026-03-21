@@ -472,6 +472,51 @@ export default function LobbyScreen() {
                     />
                   </View>
                 )}
+                <View style={styles.clockSettingContainer}>
+                  <ClockSpeedSetting
+                    label="공개토론 시간"
+                    value={gameState.settings.discussionClockSeconds}
+                    onChange={(val: number) =>
+                      setGameSettings({ discussionClockSeconds: val })
+                    }
+                    scale={scale}
+                    showOff
+                    options={[30, 60, 90, 120, 180, 300]}
+                    formatOption={(sec: number) =>
+                      sec < 60 ? `${sec}초` : `${sec / 60}분`
+                    }
+                  />
+                </View>
+                <View style={styles.clockSettingContainer}>
+                  <ClockSpeedSetting
+                    label="지목 시간"
+                    value={gameState.settings.nominationClockSeconds}
+                    onChange={(val: number) =>
+                      setGameSettings({ nominationClockSeconds: val })
+                    }
+                    scale={scale}
+                    showOff
+                    options={[30, 60, 90, 120, 180, 300]}
+                    formatOption={(sec: number) =>
+                      sec < 60 ? `${sec}초` : `${sec / 60}분`
+                    }
+                  />
+                </View>
+                <View style={styles.clockSettingContainer}>
+                  <ClockSpeedSetting
+                    label="변론 시간"
+                    value={gameState.settings.defenseClockSeconds}
+                    onChange={(val: number) =>
+                      setGameSettings({ defenseClockSeconds: val })
+                    }
+                    scale={scale}
+                    showOff
+                    options={[30, 60, 90, 120, 180, 300]}
+                    formatOption={(sec: number) =>
+                      sec < 60 ? `${sec}초` : `${sec / 60}분`
+                    }
+                  />
+                </View>
               </View>
             </CollapsibleSection>
           </View>

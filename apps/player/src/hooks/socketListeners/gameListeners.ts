@@ -60,6 +60,11 @@ export function attachGameListeners(socket: AppSocket) {
             nominatedTodayIds: [],
             voteResult: null,
             executionCandidate: null,
+            discussionClock: null,
+            nominationClock: null,
+            nominationPaused: false,
+            nominationRemainingMs: null,
+            defenseClock: null,
           }
         : {}),
       // 새 게임 시작 (setup): 역할/상태 초기화, 피드백 히스토리 리셋

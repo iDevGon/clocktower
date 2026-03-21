@@ -1,6 +1,6 @@
 import type { DaySubPhase } from '@clocktower/shared';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, Text, Vibration, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
 import {
   createDaySubPhaseBarStyles,
@@ -19,16 +19,86 @@ function formatTimer(remaining: number): string {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
+type ClockData = { startedAt: number; durationMs: number } | null;
+
+function useClockRemaining(clock: ClockData, isPaused = false): number | null {
+  const [remaining, setRemaining] = useState<number | null>(null);
+  useEffect(() => {
+    if (!clock) {
+      setRemaining(null);
+      return;
+    }
+    if (isPaused) return;
+    const update = () => {
+      const elapsed = Date.now() - clock.startedAt;
+      const left = Math.max(0, Math.ceil((clock.durationMs - elapsed) / 1000));
+      setRemaining(left);
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [clock, isPaused]);
+
+  // 5초 이하일 때 진동
+  useEffect(() => {
+    if (remaining === null || remaining > 5 || remaining <= 0) return;
+    if (isPaused) return;
+    if (Platform.OS !== 'web') {
+      Vibration.vibrate(100);
+    }
+  }, [remaining, isPaused]);
+
+  return remaining;
+}
+
+function TimerText({
+  remaining,
+  activeColor,
+  isActive,
+}: {
+  remaining: number;
+  activeColor: string;
+  isActive: boolean;
+}) {
+  const color =
+    remaining === 0
+      ? '#555'
+      : remaining <= 5
+        ? '#e05050'
+        : isActive
+          ? activeColor
+          : undefined;
+  return (
+    <Text
+      style={{
+        color,
+        fontVariant: ['tabular-nums'],
+        textDecorationLine: remaining === 0 ? 'line-through' : 'none',
+      }}
+    >
+      ({formatTimer(remaining)})
+    </Text>
+  );
+}
+
 interface DaySubPhaseBarProps {
   currentSubPhase: DaySubPhase | null;
   onSetSubPhase: (subPhase: DaySubPhase) => void;
-  whisperClock?: { startedAt: number; durationMs: number } | null;
+  whisperClock?: ClockData;
+  discussionClock?: ClockData;
+  nominationClock?: ClockData;
+  nominationPaused?: boolean;
+  defenseClock?: ClockData;
 }
 
 export function DaySubPhaseBar({
   currentSubPhase,
   onSetSubPhase,
   whisperClock,
+  discussionClock,
+  nominationClock,
+  nominationPaused = false,
+  defenseClock,
 }: DaySubPhaseBarProps) {
   const { fontSize, device } = useResponsive();
   const scale = fontSize.md / 12;
@@ -37,24 +107,20 @@ export function DaySubPhaseBar({
     [scale, device],
   );
 
-  const [whisperRemaining, setWhisperRemaining] = useState<number | null>(null);
-  useEffect(() => {
-    if (!whisperClock) {
-      setWhisperRemaining(null);
-      return;
-    }
-    const update = () => {
-      const elapsed = Date.now() - whisperClock.startedAt;
-      const left = Math.max(
-        0,
-        Math.ceil((whisperClock.durationMs - elapsed) / 1000),
-      );
-      setWhisperRemaining(left);
-    };
-    update();
-    const id = setInterval(update, 1000);
-    return () => clearInterval(id);
-  }, [whisperClock]);
+  const whisperRemaining = useClockRemaining(whisperClock ?? null);
+  const discussionRemaining = useClockRemaining(discussionClock ?? null);
+  const nominationRemaining = useClockRemaining(
+    nominationClock ?? null,
+    nominationPaused,
+  );
+  const defenseRemaining = useClockRemaining(defenseClock ?? null);
+
+  const getTimerRemaining = (value: DaySubPhase): number | null => {
+    if (value === 'whisper') return whisperRemaining;
+    if (value === 'discussion') return discussionRemaining;
+    if (value === 'nomination') return nominationRemaining;
+    return null;
+  };
 
   const currentIndex = DAY_SUB_PHASES.findIndex(
     (p) => p.value === currentSubPhase,
@@ -74,6 +140,10 @@ export function DaySubPhaseBar({
     if (currentIndex >= DAY_SUB_PHASES.length - 1) return;
     onSetSubPhase(DAY_SUB_PHASES[currentIndex + 1].value);
   };
+
+  // 변론 타이머 표시 (defense 서브페이즈일 때)
+  const showDefenseTimer =
+    currentSubPhase === 'defense' && defenseRemaining !== null;
 
   return (
     <View style={styles.container}>
@@ -128,22 +198,27 @@ export function DaySubPhaseBar({
           <View style={[styles.subPhaseDot, { backgroundColor: colors.dot }]} />
           <Text style={[styles.subPhaseLabel, { color: colors.text }]}>
             {active?.label ?? '밀담'}
-            {active?.value === 'whisper' && whisperRemaining !== null && (
-              <Text
-                style={{
-                  color:
-                    whisperRemaining === 0
-                      ? '#555'
-                      : whisperRemaining <= 10
-                        ? '#e05050'
-                        : colors.text,
-                  fontVariant: ['tabular-nums'],
-                  textDecorationLine:
-                    whisperRemaining === 0 ? 'line-through' : 'none',
-                }}
-              >
-                ({formatTimer(whisperRemaining)})
-              </Text>
+            {active &&
+              (() => {
+                const remaining = getTimerRemaining(active.value);
+                if (remaining === null) return null;
+                return (
+                  <TimerText
+                    remaining={remaining}
+                    activeColor={colors.text}
+                    isActive
+                  />
+                );
+              })()}
+            {showDefenseTimer && (
+              <>
+                {' '}
+                <TimerText
+                  remaining={defenseRemaining}
+                  activeColor="#e05050"
+                  isActive
+                />
+              </>
             )}
           </Text>
         </View>
@@ -171,6 +246,7 @@ export function DaySubPhaseBar({
             SUB_PHASE_COLORS.whisper;
           const isActive = index === currentIndex;
           const isPast = currentIndex >= 0 && index < currentIndex;
+          const remaining = getTimerRemaining(phase.value);
 
           return (
             <Pressable
@@ -193,24 +269,12 @@ export function DaySubPhaseBar({
                 ]}
               >
                 {phase.label}
-                {phase.value === 'whisper' && whisperRemaining !== null && (
-                  <Text
-                    style={{
-                      color:
-                        whisperRemaining === 0
-                          ? '#555'
-                          : whisperRemaining <= 10
-                            ? '#e05050'
-                            : isActive
-                              ? pc.text
-                              : undefined,
-                      fontVariant: ['tabular-nums'],
-                      textDecorationLine:
-                        whisperRemaining === 0 ? 'line-through' : 'none',
-                    }}
-                  >
-                    ({formatTimer(whisperRemaining)})
-                  </Text>
+                {remaining !== null && (
+                  <TimerText
+                    remaining={remaining}
+                    activeColor={pc.text}
+                    isActive={isActive}
+                  />
                 )}
               </Text>
             </Pressable>
