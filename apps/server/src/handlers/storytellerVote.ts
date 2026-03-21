@@ -297,7 +297,6 @@ export function registerVoteHandlers(
       game.returnToNomination();
       playerIo.emit('game:phase', 'day');
       playerIo.emit('day:subPhase', 'nomination');
-<<<<<<< HEAD
 
       // 지목 타이머 재개
       const remainingMs = game.resumeNominationTimer();

@@ -1346,17 +1346,12 @@ export default function GrimoireScreen() {
         animationType="fade"
         onRequestClose={saveMemo}
       >
-        <Pressable
-          style={styles.memoOverlay}
-          onPress={saveMemo}
-        >
+        <Pressable style={styles.memoOverlay} onPress={saveMemo}>
           <Pressable
             style={styles.memoPanel}
             onPress={(e) => e.stopPropagation?.()}
           >
-            <Text style={styles.memoTitle}>
-              {memoPlayerName} 메모
-            </Text>
+            <Text style={styles.memoTitle}>{memoPlayerName} 메모</Text>
             <TextInput
               style={styles.memoInput}
               value={memoText}
@@ -1380,10 +1375,7 @@ export default function GrimoireScreen() {
                   <Text style={styles.memoClearText}>지우기</Text>
                 </Pressable>
               )}
-              <Pressable
-                style={styles.memoSaveButton}
-                onPress={saveMemo}
-              >
+              <Pressable style={styles.memoSaveButton} onPress={saveMemo}>
                 <Text style={styles.memoSaveText}>저장</Text>
               </Pressable>
             </View>
