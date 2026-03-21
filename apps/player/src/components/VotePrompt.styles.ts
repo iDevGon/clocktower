@@ -138,6 +138,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#3a3a42',
     marginTop: 16,
+    paddingHorizontal: 16,
   },
   consentButtonReady: {
     backgroundColor: '#1a4a2a',

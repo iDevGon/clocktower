@@ -1,4 +1,4 @@
-import { CountdownTimer } from '@clocktower/ui';
+import { CountdownTimer, useReducedMotion } from '@clocktower/ui';
 import type { ComponentProps } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
@@ -106,11 +106,13 @@ const VOTE_OPACITY_RANGES_MY_TURN = {
  * Fades in when canVote becomes true and pulses gently.
  */
 export function VoteVignette() {
+  const reduced = useReducedMotion();
   const { visible, isMyTurn } = useVoteProgress(300);
 
   const fadeIn = useSharedValue(0);
 
   useEffect(() => {
+    if (reduced) return;
     if (visible) {
       fadeIn.value = withTiming(1, {
         duration: 600,
@@ -122,12 +124,14 @@ export function VoteVignette() {
         easing: Easing.in(Easing.ease),
       });
     }
-  }, [visible, fadeIn]);
+  }, [visible, fadeIn, reduced]);
 
   const containerStyle = useAnimatedStyle(() => ({
     opacity: fadeIn.value,
     pointerEvents: 'none' as const,
   }));
+
+  if (reduced) return null;
 
   const colors = isMyTurn ? VOTE_COLORS_MY_TURN : VOTE_COLORS_DEFAULT;
   const opacityRanges = isMyTurn
