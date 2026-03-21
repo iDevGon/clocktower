@@ -2,7 +2,15 @@ import { DictionaryModal } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DeadVignette } from '../src/components/DeadVignette';
 import { FeedbackHistoryModal } from '../src/components/FeedbackHistoryModal';
@@ -28,6 +36,7 @@ import { WhisperToast } from '../src/components/WhisperToast';
 import { useGameActions } from '../src/hooks/useGameActions';
 import { useChatStore } from '../src/stores/chatStore';
 import { usePlayerStore } from '../src/stores/playerStore';
+import { useSettingsStore } from '../src/stores/settingsStore';
 import { useWhisperStore } from '../src/stores/whisperStore';
 import { styles } from '../src/styles/game.styles';
 
@@ -154,6 +163,9 @@ export default function GameScreen() {
   const [dictionaryVisible, setDictionaryVisible] = useState(false);
   const [chatModalVisible, setChatModalVisible] = useState(false);
   const [seatingChartVisible, setSeatingChartVisible] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const lowPowerMode = useSettingsStore((s) => s.lowPowerMode);
+  const setLowPowerMode = useSettingsStore((s) => s.setLowPowerMode);
   const [ravenkeeperOverlay, setRavenkeeperOverlay] = useState(false);
   const feedbackHistory = usePlayerStore((s) => s.feedbackHistory);
   const chatUnreadCount = useChatStore((s) => s.unreadCount);
@@ -240,30 +252,6 @@ export default function GameScreen() {
             </Text>
           </View>
           <View style={styles.headerRight}>
-            {gamePlayers.length > 0 && currentPhase !== 'setup' && (
-              <Pressable
-                onPress={() => setSeatingChartVisible(true)}
-                style={[
-                  styles.feedbackHistoryButton,
-                  !isAlive && styles.feedbackHistoryButtonDead,
-                ]}
-                accessibilityLabel="좌석 배치"
-                accessibilityRole="button"
-              >
-                <Text style={styles.feedbackHistoryIcon}>🪑</Text>
-              </Pressable>
-            )}
-            <Pressable
-              onPress={() => setDictionaryVisible(true)}
-              style={[
-                styles.feedbackHistoryButton,
-                !isAlive && styles.feedbackHistoryButtonDead,
-              ]}
-              accessibilityLabel="역할 사전"
-              accessibilityRole="button"
-            >
-              <Text style={styles.feedbackHistoryIcon}>📖</Text>
-            </Pressable>
             {currentPhase !== 'setup' && (
               <Pressable
                 onPress={() => setChatModalVisible(true)}
@@ -271,7 +259,7 @@ export default function GameScreen() {
                   styles.feedbackHistoryButton,
                   !isAlive && styles.feedbackHistoryButtonDead,
                 ]}
-                accessibilityLabel="밀담"
+                accessibilityLabel="이야기꾼과 채팅"
                 accessibilityRole="button"
               >
                 <Text style={styles.feedbackHistoryIcon}>💬</Text>
@@ -291,51 +279,21 @@ export default function GameScreen() {
                 )}
               </Pressable>
             )}
-            {currentPhase !== 'setup' && (
-              <Pressable
-                onPress={() => setFeedbackHistoryVisible(true)}
-                style={[
-                  styles.feedbackHistoryButton,
-                  !isAlive && styles.feedbackHistoryButtonDead,
-                ]}
-                accessibilityLabel="받은정보"
-                accessibilityRole="button"
-              >
-                <Text style={styles.feedbackHistoryIcon}>📜</Text>
-              </Pressable>
-            )}
             {!isAlive && (
               <Text style={styles.deadSkull} accessibilityLabel="사망자 목록">
                 💀
               </Text>
             )}
             <Pressable
-              onPress={() => {
-                Alert.alert('게임 나가기', '정말 게임에서 나가시겠습니까?', [
-                  { text: '취소', style: 'cancel' },
-                  {
-                    text: '나가기',
-                    style: 'destructive',
-                    onPress: async () => {
-                      const res = await leaveGame();
-                      if (res.success) {
-                        const name = usePlayerStore.getState().playerName;
-                        usePlayerStore.getState().reset();
-                        usePlayerStore.getState().set({ playerName: name });
-                        router.replace('/');
-                      }
-                    },
-                  },
-                ]);
-              }}
+              onPress={() => setSettingsVisible(true)}
               style={[
                 styles.feedbackHistoryButton,
                 !isAlive && styles.feedbackHistoryButtonDead,
               ]}
-              accessibilityLabel="게임 나가기"
+              accessibilityLabel="설정"
               accessibilityRole="button"
             >
-              <Text style={styles.feedbackHistoryIcon}>🚪</Text>
+              <Text style={styles.feedbackHistoryIcon}>⚙️</Text>
             </Pressable>
           </View>
         </View>
@@ -468,6 +426,61 @@ export default function GameScreen() {
         )}
       </ScrollView>
 
+      {currentPhase !== 'setup' && currentPhase !== 'ended' && (
+        <View style={[styles.bottomNav, !isAlive && styles.bottomNavDead]}>
+          {gamePlayers.length > 0 && (
+            <Pressable
+              onPress={() => setSeatingChartVisible(true)}
+              style={styles.bottomNavItem}
+              accessibilityLabel="좌석 배치"
+              accessibilityRole="button"
+            >
+              <Text style={styles.bottomNavIcon}>🪑</Text>
+              <Text
+                style={[
+                  styles.bottomNavLabel,
+                  !isAlive && styles.bottomNavLabelDead,
+                ]}
+              >
+                좌석
+              </Text>
+            </Pressable>
+          )}
+          <Pressable
+            onPress={() => setFeedbackHistoryVisible(true)}
+            style={styles.bottomNavItem}
+            accessibilityLabel="받은 정보"
+            accessibilityRole="button"
+          >
+            <Text style={styles.bottomNavIcon}>📜</Text>
+            <Text
+              style={[
+                styles.bottomNavLabel,
+                !isAlive && styles.bottomNavLabelDead,
+              ]}
+            >
+              받은 정보
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setDictionaryVisible(true)}
+            style={styles.bottomNavItem}
+            accessibilityLabel="역할 사전"
+            accessibilityRole="button"
+          >
+            <Text style={styles.bottomNavIcon}>📖</Text>
+            <Text
+              style={[
+                styles.bottomNavLabel,
+                !isAlive && styles.bottomNavLabelDead,
+              ]}
+            >
+              역할 사전
+            </Text>
+          </Pressable>
+        </View>
+      )}
+
       <GameOverlays
         showStartReveal={showStartReveal}
         role={role}
@@ -553,6 +566,74 @@ export default function GameScreen() {
         visible={dictionaryVisible}
         onClose={() => setDictionaryVisible(false)}
       />
+
+      <Modal
+        visible={settingsVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSettingsVisible(false)}
+      >
+        <Pressable
+          style={styles.settingsOverlay}
+          onPress={() => setSettingsVisible(false)}
+        >
+          <Pressable
+            style={styles.settingsPanel}
+            onPress={(e) => e.stopPropagation?.()}
+          >
+            <Text style={styles.settingsTitle}>설정</Text>
+            <View style={styles.settingsRow}>
+              <View>
+                <Text style={styles.settingsLabel}>저전력 모드</Text>
+                <Text style={styles.settingsDesc}>
+                  {lowPowerMode
+                    ? 'ON — 애니메이션 비활성화'
+                    : 'OFF — 모든 효과 사용'}
+                </Text>
+              </View>
+              <Switch
+                value={lowPowerMode}
+                onValueChange={setLowPowerMode}
+                trackColor={{ false: '#3a3a42', true: '#2a4a2a' }}
+                thumbColor={lowPowerMode ? '#2ecc71' : '#908e8a'}
+                accessibilityLabel="저전력 모드"
+              />
+            </View>
+            <Pressable
+              onPress={() => {
+                setSettingsVisible(false);
+                Alert.alert('게임 나가기', '정말 게임에서 나가시겠습니까?', [
+                  { text: '취소', style: 'cancel' },
+                  {
+                    text: '나가기',
+                    style: 'destructive',
+                    onPress: async () => {
+                      const res = await leaveGame();
+                      if (res.success) {
+                        const name = usePlayerStore.getState().playerName;
+                        usePlayerStore.getState().reset();
+                        usePlayerStore.getState().set({ playerName: name });
+                        router.replace('/');
+                      }
+                    },
+                  },
+                ]);
+              }}
+              style={styles.settingsLeaveButton}
+              accessibilityLabel="게임 나가기"
+              accessibilityRole="button"
+            >
+              <Text style={styles.settingsLeaveText}>게임 나가기</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setSettingsVisible(false)}
+              style={styles.settingsCloseButton}
+            >
+              <Text style={styles.settingsCloseText}>닫기</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <StorytellerChatModal
         visible={chatModalVisible}

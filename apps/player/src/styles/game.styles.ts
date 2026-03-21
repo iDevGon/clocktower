@@ -300,4 +300,99 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+
+  /* ── Settings modal ── */
+  settingsOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+  },
+  settingsPanel: {
+    backgroundColor: '#1e1e24',
+    borderRadius: 12,
+    padding: 20,
+    width: '85%',
+    maxWidth: 400,
+    borderWidth: 1,
+    borderColor: '#3a3a42',
+  },
+  settingsTitle: {
+    color: '#e0ddd8',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  settingsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  settingsLabel: {
+    color: '#e0ddd8',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  settingsDesc: {
+    color: '#706e6a',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  settingsLeaveButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginTop: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(200,80,80,0.25)',
+  },
+  settingsLeaveText: {
+    color: '#c45050',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  settingsCloseButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  settingsCloseText: {
+    color: '#e0ddd8',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  /* ── Bottom navigation bar ── */
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderColor: '#2e2e34',
+    backgroundColor: '#18181c',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  bottomNavDead: {
+    borderColor: 'rgba(160,165,180,0.15)',
+    backgroundColor: 'rgba(20,22,28,0.85)',
+  },
+  bottomNavItem: {
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+  },
+  bottomNavIcon: {
+    fontSize: 20,
+    marginBottom: 2,
+  },
+  bottomNavLabel: {
+    color: '#908e8a',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  bottomNavLabelDead: {
+    color: '#6a6c74',
+  },
 });

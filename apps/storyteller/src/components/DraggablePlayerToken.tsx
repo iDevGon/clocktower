@@ -1,4 +1,5 @@
 import type { Player, PlayerStatus } from '@clocktower/shared';
+import { useReducedMotion } from '@clocktower/ui';
 import { useEffect } from 'react';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -8,7 +9,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useResponsive } from '../hooks/useResponsive';
-import { PlayerToken, type VoteIndicator } from './PlayerToken';
+import { type BluffRole, PlayerToken, type VoteIndicator } from './PlayerToken';
 
 export interface CircularPosition {
   x: number;
@@ -27,6 +28,9 @@ interface DraggablePlayerTokenProps {
   hasNominated?: boolean;
   wasNominated?: boolean;
   memo?: string;
+  bluffRoles?: BluffRole[];
+  showBluffs?: boolean;
+  onToggleBluffs?: () => void;
   tokenSize?: number;
   initialX: number;
   initialY: number;
@@ -50,6 +54,9 @@ export function DraggablePlayerToken({
   hasNominated,
   wasNominated,
   memo,
+  bluffRoles,
+  showBluffs,
+  onToggleBluffs,
   tokenSize: tokenSizeProp,
   initialX,
   initialY,
@@ -59,6 +66,7 @@ export function DraggablePlayerToken({
   onSwap,
   positionIndex,
 }: DraggablePlayerTokenProps) {
+  const reduced = useReducedMotion();
   const responsive = useResponsive();
   const tokenSize = tokenSizeProp ?? responsive.tokenSize;
   const half = tokenSize / 2;
@@ -67,9 +75,14 @@ export function DraggablePlayerToken({
   const translateY = useSharedValue(initialY);
 
   useEffect(() => {
+    if (reduced) {
+      translateX.value = initialX;
+      translateY.value = initialY;
+      return;
+    }
     translateX.value = withSpring(initialX);
     translateY.value = withSpring(initialY);
-  }, [initialX, initialY, translateX, translateY]);
+  }, [initialX, initialY, translateX, translateY, reduced]);
 
   const contextX = useSharedValue(0);
   const contextY = useSharedValue(0);
@@ -79,14 +92,14 @@ export function DraggablePlayerToken({
     .onStart(() => {
       contextX.value = translateX.value;
       contextY.value = translateY.value;
-      scale.value = withSpring(1.1);
+      scale.value = reduced ? 1.1 : withSpring(1.1);
     })
     .onUpdate((e) => {
       translateX.value = contextX.value + e.translationX;
       translateY.value = contextY.value + e.translationY;
     })
     .onEnd(() => {
-      scale.value = withSpring(1);
+      scale.value = reduced ? 1 : withSpring(1);
       if (
         circularPositions &&
         circularPositions.length > 0 &&
@@ -107,11 +120,15 @@ export function DraggablePlayerToken({
         );
         const closestIdx = closest.index;
         if (closestIdx !== positionIndex) {
+          // 목표 위치로 먼저 스냅한 뒤 스왑 실행 (사라짐 방지)
+          const targetPos = circularPositions[closestIdx];
+          translateX.value = reduced ? targetPos.x : withSpring(targetPos.x);
+          translateY.value = reduced ? targetPos.y : withSpring(targetPos.y);
           runOnJS(onSwap)(positionIndex, closestIdx);
         } else {
           // 원래 위치로 스냅백
-          translateX.value = withSpring(initialX);
-          translateY.value = withSpring(initialY);
+          translateX.value = reduced ? initialX : withSpring(initialX);
+          translateY.value = reduced ? initialY : withSpring(initialY);
         }
       } else if (onPositionChange) {
         runOnJS(onPositionChange)(translateX.value, translateY.value);
@@ -133,6 +150,7 @@ export function DraggablePlayerToken({
     top: translateY.value - half,
     transform: [{ scale: scale.value }],
     zIndex: scale.value > 1 ? 100 : 1,
+    overflow: 'visible' as const,
   }));
 
   return (
@@ -149,6 +167,9 @@ export function DraggablePlayerToken({
           hasNominated={hasNominated}
           wasNominated={wasNominated}
           memo={memo}
+          bluffRoles={bluffRoles}
+          showBluffs={showBluffs}
+          onToggleBluffs={onToggleBluffs}
           size={tokenSize}
         />
       </Animated.View>

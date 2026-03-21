@@ -1,21 +1,11 @@
-import { Pressable, Text, View } from 'react-native';
-import { IS_DEV } from '../constants';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { createGrimoireStyles } from '../styles/grimoire.styles';
 
 interface GrimoireTopBarProps {
   day: number;
   phase: string;
   daySubPhase?: string;
-  activeWhispersCount: number;
-  slayerWaitingAck: boolean;
-  totalChatUnread: number;
-  onWhispersPress: () => void;
-  onNominatePress: () => void;
-  onSlayerForceAck: () => void;
-  onDictionaryPress: () => void;
-  onChatPress: () => void;
-  onLogPress: () => void;
-  onMenuPress: () => void;
+  onMenuPress?: () => void;
   styles: ReturnType<typeof createGrimoireStyles>;
 }
 
@@ -23,57 +13,51 @@ export function GrimoireTopBar({
   day,
   phase,
   daySubPhase,
-  activeWhispersCount,
-  slayerWaitingAck,
-  totalChatUnread,
-  onWhispersPress,
-  onNominatePress,
-  onSlayerForceAck,
-  onDictionaryPress,
-  onChatPress,
-  onLogPress,
   onMenuPress,
   styles,
 }: GrimoireTopBarProps) {
+  const phaseLabel =
+    phase === 'setup'
+      ? '준비'
+      : phase === 'night'
+        ? '밤'
+        : phase === 'day'
+          ? daySubPhase === 'whisper'
+            ? '낮 · 밀담'
+            : daySubPhase === 'discussion'
+              ? '낮 · 토론'
+              : daySubPhase === 'nomination'
+                ? '낮 · 지목'
+                : daySubPhase === 'defense'
+                  ? '낮 · 변론'
+                  : '낮'
+          : phase === 'vote'
+            ? '투표'
+            : phase === 'ended'
+              ? '종료'
+              : '';
+
   return (
     <View style={styles.topBar}>
-      <Text style={styles.dayText}>{day}일차</Text>
-      <View style={styles.topBarRight}>
-        {phase === 'day' && daySubPhase === 'whisper' && (
-          <Pressable onPress={onWhispersPress} style={styles.whisperButton}>
-            <Text style={styles.whisperButtonText}>
-              밀담 {activeWhispersCount > 0 ? `(${activeWhispersCount})` : ''}
-            </Text>
-          </Pressable>
-        )}
-        {IS_DEV && phase === 'day' && daySubPhase === 'nomination' && (
-          <Pressable onPress={onNominatePress} style={styles.nominateButton}>
-            <Text style={styles.nominateText}>지목 (수동)</Text>
-          </Pressable>
-        )}
-        {IS_DEV && slayerWaitingAck && (
-          <Pressable
-            onPress={onSlayerForceAck}
-            style={[styles.nominateButton, { backgroundColor: '#7a2a2a' }]}
-          >
-            <Text style={styles.nominateText}>처단자 강제확인</Text>
-          </Pressable>
-        )}
-        <Pressable onPress={onDictionaryPress} style={styles.logButton}>
-          <Text style={styles.logText}>사전</Text>
+      <Text style={styles.dayText}>
+        {day}일차 · {phaseLabel}
+      </Text>
+      {onMenuPress && (
+        <Pressable onPress={onMenuPress} style={localStyles.menuButton}>
+          <Text style={localStyles.menuIcon}>☰</Text>
         </Pressable>
-        <Pressable onPress={onChatPress} style={styles.logButton}>
-          <Text style={styles.logText}>
-            채팅{totalChatUnread > 0 ? ` (${totalChatUnread})` : ''}
-          </Text>
-        </Pressable>
-        <Pressable onPress={onLogPress} style={styles.logButton}>
-          <Text style={styles.logText}>로그</Text>
-        </Pressable>
-        <Pressable onPress={onMenuPress} style={styles.menuButton}>
-          <Text style={styles.menuText}>메뉴</Text>
-        </Pressable>
-      </View>
+      )}
     </View>
   );
 }
+
+const localStyles = StyleSheet.create({
+  menuButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  menuIcon: {
+    color: '#908e8a',
+    fontSize: 18,
+  },
+});

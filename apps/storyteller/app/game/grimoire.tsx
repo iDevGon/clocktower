@@ -40,6 +40,7 @@ import {
   ExecutionBanner,
   GameEndBanner,
 } from '../../src/components/GameResultBanners';
+import { GrimoireBottomBar } from '../../src/components/GrimoireBottomBar';
 import { GrimoireTopBar } from '../../src/components/GrimoireTopBar';
 import { NightPanel } from '../../src/components/NightPanel';
 import { PhaseBar } from '../../src/components/PhaseBar';
@@ -617,19 +618,8 @@ export default function GrimoireScreen() {
   const handleMenu = () => {
     showModal('메뉴', [
       {
-        text: '게임 로그',
-        onPress: () => router.push('/game/log'),
-      },
-      {
         text: '게임 설정',
         onPress: () => setSettingsVisible(true),
-      },
-      {
-        text: '토큰 위치 초기화',
-        onPress: () => {
-          useGameStore.getState().clearTokenPositions();
-          addLog(getDay(), getPhase(), '토큰 위치 초기화');
-        },
       },
       {
         text: '게임 재시작 (플레이어 유지)',
@@ -666,11 +656,17 @@ export default function GrimoireScreen() {
     [chatUnreadCounts],
   );
 
-  // Memo modal state
+  // Memo modal state (per-player)
   const [memoModalVisible, setMemoModalVisible] = useState(false);
   const [memoPlayerId, setMemoPlayerId] = useState<string | null>(null);
   const [memoPlayerName, setMemoPlayerName] = useState('');
   const [memoText, setMemoText] = useState('');
+
+  // General memo state
+  const generalMemo = useGameStore((s) => s.generalMemo);
+  const setGeneralMemo = useGameStore((s) => s.setGeneralMemo);
+  const [generalMemoVisible, setGeneralMemoVisible] = useState(false);
+  const [generalMemoText, setGeneralMemoText] = useState('');
 
   const openMemoModal = useCallback(
     (playerId: string, playerName: string) => {
@@ -689,6 +685,17 @@ export default function GrimoireScreen() {
     setMemoModalVisible(false);
   }, [memoPlayerId, memoText, setPlayerMemo]);
 
+  const openGeneralMemo = useCallback(() => {
+    setGeneralMemoText(generalMemo);
+    setGeneralMemoVisible(true);
+  }, [generalMemo]);
+
+  const saveGeneralMemo = useCallback(() => {
+    setGeneralMemo(generalMemoText);
+    setGeneralMemoVisible(false);
+  }, [generalMemoText, setGeneralMemo]);
+
+  const [showBluffs, setShowBluffs] = useState(true);
   const [nightOrderComplete, setNightOrderComplete] = useState(false);
   const [executionBannerDismissed, setExecutionBannerDismissed] =
     useState(false);
@@ -1003,59 +1010,12 @@ export default function GrimoireScreen() {
       <GrimoireTopBar
         day={gameState.day}
         phase={gameState.phase}
-        daySubPhase={gameState.daySubPhase}
-        activeWhispersCount={activeWhispers.length}
-        slayerWaitingAck={slayerWaitingAck}
-        totalChatUnread={totalChatUnread}
-        onWhispersPress={() => router.push('/game/whispers')}
-        onNominatePress={() => router.push('/game/nominate')}
-        onSlayerForceAck={() => socket?.emit('slayer:forceAck')}
-        onDictionaryPress={() => setDictionaryVisible(true)}
-        onChatPress={() => {
-          setChatInitialPlayerId(null);
-          setChatModalVisible(true);
-        }}
-        onLogPress={() => router.push('/game/log')}
+        daySubPhase={gameState.daySubPhase ?? undefined}
         onMenuPress={handleMenu}
         styles={styles}
       />
 
-      {gameState.bluffRoles && gameState.bluffRoles.length > 0 && (
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingHorizontal: 12,
-            paddingVertical: 6,
-            backgroundColor: '#1a1a22',
-            borderBottomWidth: 1,
-            borderColor: '#2e2e34',
-            gap: 8,
-          }}
-        >
-          <Text style={{ color: '#8a6a9a', fontSize: 11, fontWeight: '600' }}>
-            블러프
-          </Text>
-          {gameState.bluffRoles.map((r) => (
-            <Text
-              key={r.id}
-              style={{
-                color: '#c4a0d0',
-                fontSize: 12,
-                backgroundColor: '#2a1e2e',
-                paddingHorizontal: 8,
-                paddingVertical: 2,
-                borderRadius: 4,
-                borderWidth: 1,
-                borderColor: '#3a2a4a',
-                overflow: 'hidden',
-              }}
-            >
-              {r.name}
-            </Text>
-          ))}
-        </View>
-      )}
+      {/* 블러프 직업은 악마 토큰 내부에 표시 */}
 
       {gameState.phase === 'day' && (
         <DaySubPhaseBar
@@ -1103,6 +1063,13 @@ export default function GrimoireScreen() {
                 hasNominated={nominatorPlayers.includes(player.id)}
                 wasNominated={nominatedPlayers.includes(player.id)}
                 memo={playerMemos[player.id]}
+                bluffRoles={
+                  player.role?.team === 'demon'
+                    ? gameState.bluffRoles
+                    : undefined
+                }
+                showBluffs={showBluffs}
+                onToggleBluffs={() => setShowBluffs((v) => !v)}
                 tokenSize={dynamicTokenSize}
                 initialX={pos.x}
                 initialY={pos.y}
@@ -1413,6 +1380,71 @@ export default function GrimoireScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* 공용 메모 모달 */}
+      <Modal
+        visible={generalMemoVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={saveGeneralMemo}
+      >
+        <Pressable style={styles.memoOverlay} onPress={saveGeneralMemo}>
+          <Pressable
+            style={styles.memoPanel}
+            onPress={(e) => e.stopPropagation?.()}
+          >
+            <Text style={styles.memoTitle}>메모</Text>
+            <TextInput
+              style={styles.memoInput}
+              value={generalMemoText}
+              onChangeText={setGeneralMemoText}
+              placeholder="메모를 입력하세요..."
+              placeholderTextColor="#5c5a58"
+              multiline
+              autoFocus
+            />
+            <View style={styles.memoButtons}>
+              {generalMemoText.length > 0 && (
+                <Pressable
+                  style={styles.memoClearButton}
+                  onPress={() => {
+                    setGeneralMemoText('');
+                    setGeneralMemo('');
+                  }}
+                >
+                  <Text style={styles.memoClearText}>지우기</Text>
+                </Pressable>
+              )}
+              <Pressable
+                style={styles.memoSaveButton}
+                onPress={saveGeneralMemo}
+              >
+                <Text style={styles.memoSaveText}>저장</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <GrimoireBottomBar
+        phase={gameState.phase}
+        daySubPhase={gameState.daySubPhase ?? undefined}
+        activeWhispersCount={activeWhispers.length}
+        slayerWaitingAck={slayerWaitingAck}
+        totalChatUnread={totalChatUnread}
+        hasMemo={generalMemo.length > 0}
+        onWhispersPress={() => router.push('/game/whispers')}
+        onNominatePress={() => router.push('/game/nominate')}
+        onSlayerForceAck={() => socket?.emit('slayer:forceAck')}
+        onDictionaryPress={() => setDictionaryVisible(true)}
+        onMemoPress={openGeneralMemo}
+        onChatPress={() => {
+          setChatInitialPlayerId(null);
+          setChatModalVisible(true);
+        }}
+        onLogPress={() => router.push('/game/log')}
+        scale={scale}
+      />
 
       {/* 게임 시작 시 플레이어 직업 공개 대기 오버레이 */}
       {showRoleRevealWaiting && (

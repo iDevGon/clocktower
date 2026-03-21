@@ -62,6 +62,8 @@ interface GameStore {
   playerMemos: Record<string, string>;
   setPlayerMemo: (playerId: string, memo: string) => void;
   clearPlayerMemos: () => void;
+  generalMemo: string;
+  setGeneralMemo: (memo: string) => void;
   nominatedPlayers: string[];
   nominatorPlayers: string[];
   addNomination: (nominatorId: string, nomineeId: string) => void;
@@ -172,6 +174,8 @@ export const useGameStore = create<GameStore>()(
           playerMemos: { ...s.playerMemos, [playerId]: memo },
         })),
       clearPlayerMemos: () => set({ playerMemos: {} }),
+      generalMemo: '',
+      setGeneralMemo: (memo) => set({ generalMemo: memo }),
       nominatedPlayers: [],
       nominatorPlayers: [],
       addNomination: (nominatorId, nomineeId) =>
@@ -402,6 +406,7 @@ export const useGameStore = create<GameStore>()(
           chatToast: null,
           eventToast: null,
           playerMemos: {},
+          generalMemo: '',
           nominatedPlayers: [],
           nominatorPlayers: [],
           roleRevealShown: false,
@@ -421,6 +426,7 @@ export const useGameStore = create<GameStore>()(
         nightActions: state.nightActions,
         playerOrder: state.playerOrder,
         playerMemos: state.playerMemos,
+        generalMemo: state.generalMemo,
         roleRevealShown: state.roleRevealShown,
       }),
     },
