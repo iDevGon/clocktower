@@ -33,7 +33,7 @@ function emitPromotionIfAny(
       roleId: promoted.role.id,
       roleName: promoted.role.name,
     });
-    storytellerIo.emit('game:state', game.getState());
+    storytellerIo.emit('game:state', game.getStorytellerState());
   }
 }
 
@@ -134,7 +134,7 @@ export function startClockwiseVote(
         game.returnToNomination();
         playerIo.emit('game:phase', 'day');
         playerIo.emit('day:subPhase', 'nomination');
-        storytellerIo.emit('game:state', game.getState());
+        storytellerIo.emit('game:state', game.getStorytellerState());
       }
     }
   }, 100);
@@ -184,7 +184,7 @@ export function registerVoteHandlers(
         });
         playerIo.emit('game:playerUpdate', killedNominator);
       }
-      storytellerIo.emit('game:state', game.getState());
+      storytellerIo.emit('game:state', game.getStorytellerState());
 
       // 성결자 트리거 후 승리 조건 체크
       const winResult = game.checkWinCondition();
@@ -193,7 +193,7 @@ export function registerVoteHandlers(
         playerIo.emit('game:end', winResult);
         playerIo.emit('game:phase', 'ended');
         storytellerIo.emit('game:end', winResult);
-        storytellerIo.emit('game:state', game.getState());
+        storytellerIo.emit('game:state', game.getStorytellerState());
         return;
       }
       emitPromotionIfAny(game, playerIo, storytellerIo);
@@ -211,7 +211,7 @@ export function registerVoteHandlers(
       nominatorName: nominator?.name ?? nominatorId,
       nomineeName: nominee?.name ?? nomineeId,
     });
-    storytellerIo.emit('game:state', game.getState());
+    storytellerIo.emit('game:state', game.getStorytellerState());
 
     const state = game.getState();
     const allIds = state.players.map((p) => p.id);
@@ -234,7 +234,7 @@ export function registerVoteHandlers(
     playerIo.emit('game:phase', 'vote');
     playerIo.emit('vote:proceedToVote');
     storytellerIo.emit('vote:proceedToVote');
-    storytellerIo.emit('game:state', game.getState());
+    storytellerIo.emit('game:state', game.getStorytellerState());
 
     // 시계방향 투표 시작 (온라인 투표 모드일 때만) - 5초 카운트다운 후 시작
     if (state.settings.votingMode === 'online') {
@@ -262,7 +262,7 @@ export function registerVoteHandlers(
       game.returnToNomination();
       playerIo.emit('game:phase', 'day');
       playerIo.emit('day:subPhase', 'nomination');
-      storytellerIo.emit('game:state', game.getState());
+      storytellerIo.emit('game:state', game.getStorytellerState());
     }
   });
 

@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import { BluffSelectModal } from '../../src/components/BluffSelectModal';
 import { ClockSpeedSetting } from '../../src/components/ClockSpeedSetting';
 import { CollapsibleSection } from '../../src/components/CollapsibleSection';
 import { DrunkFakeRoleModal } from '../../src/components/DrunkFakeRoleModal';
@@ -48,6 +49,8 @@ export default function LobbyScreen() {
     new Set(),
   );
   const [showMixModal, setShowMixModal] = useState(false);
+  const [bluffRoleIds, setBluffRoleIds] = useState<Set<string>>(new Set());
+  const [showBluffModal, setShowBluffModal] = useState(false);
   const [excludeSearch, setExcludeSearch] = useState('');
   const [mixSearch, setMixSearch] = useState('');
   const [roleSettingsOpen, setRoleSettingsOpen] = useState(false);
@@ -85,6 +88,32 @@ export default function LobbyScreen() {
       return next;
     });
   }, []);
+
+  const toggleBluffRole = useCallback((roleId: string) => {
+    setBluffRoleIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(roleId)) next.delete(roleId);
+      else if (next.size < 3) next.add(roleId);
+      return next;
+    });
+  }, []);
+
+  // 블러프 선택 가능한 역할: 게임에 등장하지 않는 선한 역할
+  // (배분 전이므로 현재 배정된 역할 기준으로 필터)
+  const bluffAvailableRoles = useMemo(() => {
+    if (!gameState)
+      return ALL_ROLES.filter(
+        (r) => r.team === 'townsfolk' || r.team === 'outsider',
+      );
+    const assignedRoleIds = new Set(
+      gameState.players.flatMap((p) => [p.role?.id, p.drunkAs]).filter(Boolean),
+    );
+    return ALL_ROLES.filter(
+      (r) =>
+        (r.team === 'townsfolk' || r.team === 'outsider') &&
+        !assignedRoleIds.has(r.id),
+    );
+  }, [gameState]);
 
   const handleStartGame = async () => {
     try {
@@ -124,6 +153,7 @@ export default function LobbyScreen() {
         editionId: selectedEditionId,
         additionalRoleIds:
           additionalRoleIds.size > 0 ? [...additionalRoleIds] : undefined,
+        bluffRoleIds: bluffRoleIds.size > 0 ? [...bluffRoleIds] : undefined,
       });
     } catch (e) {
       Alert.alert('오류', e instanceof Error ? e.message : '알 수 없는 오류');
@@ -326,6 +356,35 @@ export default function LobbyScreen() {
               </Text>
             </Pressable>
           )}
+
+          {/* 블러프 직업 선택 버튼 */}
+          <Pressable
+            onPress={() => setShowBluffModal(true)}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingVertical: s(8),
+              marginBottom: s(8),
+              borderRadius: 6,
+              backgroundColor: pressed ? '#2a2a30' : '#1e1e22',
+              borderWidth: 1,
+              borderColor: bluffRoleIds.size > 0 ? '#8a6a9a' : '#3a3a3e',
+            })}
+          >
+            <Text
+              style={[
+                styles.roleSettingButtonText,
+                lobbyDynamic.roleSettingButtonTextColor(
+                  bluffRoleIds.size > 0,
+                  '#8a6a9a',
+                ),
+              ]}
+            >
+              블러프 직업 선택
+              {bluffRoleIds.size > 0 ? ` (${bluffRoleIds.size}개)` : ' (랜덤)'}
+            </Text>
+          </Pressable>
         </CollapsibleSection>
 
         <View style={styles.distributeRow}>
@@ -528,6 +587,16 @@ export default function LobbyScreen() {
         mixableRoles={mixableRoles}
         searchText={mixSearch}
         onSearchChange={setMixSearch}
+        scale={scale}
+      />
+      {/* 블러프 직업 선택 모달 */}
+      <BluffSelectModal
+        visible={showBluffModal}
+        onClose={() => setShowBluffModal(false)}
+        selectedBluffIds={bluffRoleIds}
+        onToggleBluff={toggleBluffRole}
+        onResetBluffs={() => setBluffRoleIds(new Set())}
+        availableRoles={bluffAvailableRoles}
         scale={scale}
       />
     </View>

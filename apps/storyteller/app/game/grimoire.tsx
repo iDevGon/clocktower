@@ -10,7 +10,7 @@ import {
 import { DictionaryModal } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -918,6 +918,43 @@ export default function GrimoireScreen() {
         onMenuPress={handleMenu}
         styles={styles}
       />
+
+      {gameState.bluffRoles && gameState.bluffRoles.length > 0 && (
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            backgroundColor: '#1a1a22',
+            borderBottomWidth: 1,
+            borderColor: '#2e2e34',
+            gap: 8,
+          }}
+        >
+          <Text style={{ color: '#8a6a9a', fontSize: 11, fontWeight: '600' }}>
+            블러프
+          </Text>
+          {gameState.bluffRoles.map((r) => (
+            <Text
+              key={r.id}
+              style={{
+                color: '#c4a0d0',
+                fontSize: 12,
+                backgroundColor: '#2a1e2e',
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: 4,
+                borderWidth: 1,
+                borderColor: '#3a2a4a',
+                overflow: 'hidden',
+              }}
+            >
+              {r.name}
+            </Text>
+          ))}
+        </View>
+      )}
 
       {gameState.phase === 'day' && gameState.daySubPhase !== 'defense' && (
         <DaySubPhaseBar
