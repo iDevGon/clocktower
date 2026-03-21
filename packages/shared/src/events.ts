@@ -107,6 +107,10 @@ export interface ServerToClientEvents {
   }) => void;
   /** onlyWhenDead 역할(까마귀지기 등)이 밤에 죽었을 때 해당 플레이어에게만 전송 */
   'night:wakeUp': (data: { roleId: string }) => void;
+  /** 이야기꾼이 플레이어를 강퇴했을 때 해당 플레이어에게 전송 */
+  'player:kicked': () => void;
+  /** 플레이어가 퇴장하거나 강퇴되었을 때 전체 플레이어에게 전송 */
+  'player:left': (data: { playerId: string; playerName: string }) => void;
 }
 
 /**
@@ -142,6 +146,7 @@ export interface ServerToStorytellerEvents {
   'mayor:nightDeath': (data: { mayorId: string; mayorName: string }) => void;
   'night:wakeUpTargets': (data: { candidateIds: string[] }) => void;
   'game:reset': () => void;
+  'player:left': ServerToClientEvents['player:left'];
 }
 
 export interface ClientToServerEvents {
@@ -208,6 +213,10 @@ export interface ClientToServerEvents {
   'slayer:ack': () => void;
   /** 변론 중 투표 준비 완료 토글 */
   'vote:consentReady': (data: { ready: boolean }) => void;
+  /** 플레이어가 자발적으로 게임 퇴장 */
+  'player:leave': (
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
 }
 
 export interface StorytellerToServerEvents {
@@ -267,4 +276,9 @@ export interface StorytellerToServerEvents {
   'game:setPlayerOrder': (order: string[]) => void;
   'chat:sendToPlayer': (data: { playerId: string; message: string }) => void;
   'slayer:forceAck': () => void;
+  /** 이야기꾼이 플레이어를 강퇴 */
+  'player:kick': (
+    playerId: string,
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
 }

@@ -125,6 +125,8 @@ interface PlayerState {
   nominationPaused: boolean;
   nominationRemainingMs: number | null;
   defenseClock: VoteClock | null;
+  /** 이야기꾼에 의해 강퇴됨 */
+  kicked: boolean;
   set: (partial: Partial<PlayerState>) => void;
   addFeedback: (day: number, feedback: NightFeedbackPayload) => void;
   reset: () => void;
@@ -185,6 +187,7 @@ const initialState = {
   nominationPaused: false,
   nominationRemainingMs: null as number | null,
   defenseClock: null as VoteClock | null,
+  kicked: false,
 };
 
 export const usePlayerStore = create<PlayerState>()(

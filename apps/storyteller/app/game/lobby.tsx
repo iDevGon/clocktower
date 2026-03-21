@@ -38,6 +38,7 @@ export default function LobbyScreen() {
     addDummyPlayers,
     removeDummyPlayers,
     setGameSettings,
+    kickPlayer,
   } = useGameActions();
   const [distributing, setDistributing] = useState(false);
   const [selectedEditionId, setSelectedEditionId] = useState('trouble_brewing');
@@ -435,6 +436,31 @@ export default function LobbyScreen() {
                   },
                 })
               }
+              onLongPress={() => {
+                Alert.alert(
+                  `${item.name} 강퇴`,
+                  '이 플레이어를 게임에서 제거하시겠습니까?',
+                  [
+                    { text: '취소', style: 'cancel' },
+                    {
+                      text: '강퇴',
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await kickPlayer(item.id);
+                        } catch (e) {
+                          Alert.alert(
+                            '오류',
+                            e instanceof Error
+                              ? e.message
+                              : '강퇴에 실패했습니다.',
+                          );
+                        }
+                      },
+                    },
+                  ],
+                );
+              }}
               style={styles.playerRow}
             >
               <View style={styles.playerNameRow}>

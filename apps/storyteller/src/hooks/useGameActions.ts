@@ -188,6 +188,19 @@ export function useGameActions() {
     [socket],
   );
 
+  const kickPlayer = useCallback(
+    (playerId: string): Promise<{ success: boolean; error?: string }> =>
+      new Promise((resolve, reject) => {
+        const s = getSocket();
+        if (!s) return reject(new Error('Not connected'));
+        s.emit('player:kick', playerId, (res) => {
+          if (res.success) resolve(res);
+          else reject(new Error(res.error ?? '플레이어 강퇴 실패'));
+        });
+      }),
+    [],
+  );
+
   return {
     createGame,
     startGame,
@@ -214,5 +227,6 @@ export function useGameActions() {
     sweetheartDrunk,
     mayorRedirect,
     sendChatToPlayer,
+    kickPlayer,
   };
 }

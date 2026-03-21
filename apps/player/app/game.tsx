@@ -72,19 +72,28 @@ export default function GameScreen() {
   const rolePromotion = usePlayerStore((s) => s.rolePromotion);
   const butlerMasterName = usePlayerStore((s) => s.butlerMasterName);
   const dismissDeath = usePlayerStore((s) => s.set);
+  const kicked = usePlayerStore((s) => s.kicked);
   const {
     submitNightAction,
     sendWhisper,
     sendChatToStoryteller,
     nominatePlayer,
     useSlayer: activateSlayer,
+    leaveGame,
   } = useGameActions();
 
   useEffect(() => {
+    if (kicked) {
+      usePlayerStore.getState().set({ kicked: false });
+      Alert.alert('강퇴됨', '이야기꾼에 의해 게임에서 제거되었습니다.', [
+        { text: '확인', onPress: () => router.replace('/') },
+      ]);
+      return;
+    }
     if (!playerId) {
       router.replace('/');
     }
-  }, [playerId, router]);
+  }, [playerId, kicked, router]);
 
   useEffect(() => {
     setWhisperModalVisible(false);
@@ -300,6 +309,34 @@ export default function GameScreen() {
                 💀
               </Text>
             )}
+            <Pressable
+              onPress={() => {
+                Alert.alert('게임 나가기', '정말 게임에서 나가시겠습니까?', [
+                  { text: '취소', style: 'cancel' },
+                  {
+                    text: '나가기',
+                    style: 'destructive',
+                    onPress: async () => {
+                      const res = await leaveGame();
+                      if (res.success) {
+                        const name = usePlayerStore.getState().playerName;
+                        usePlayerStore.getState().reset();
+                        usePlayerStore.getState().set({ playerName: name });
+                        router.replace('/');
+                      }
+                    },
+                  },
+                ]);
+              }}
+              style={[
+                styles.feedbackHistoryButton,
+                !isAlive && styles.feedbackHistoryButtonDead,
+              ]}
+              accessibilityLabel="게임 나가기"
+              accessibilityRole="button"
+            >
+              <Text style={styles.feedbackHistoryIcon}>🚪</Text>
+            </Pressable>
           </View>
         </View>
       </View>

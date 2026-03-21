@@ -565,6 +565,29 @@ export function registerPlayerHandlers(
       console.log(`Chat ${player.name} -> ST: ${message}`);
     });
 
+    socket.on('player:leave', (callback) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      const player = game.getPlayer(playerId);
+      if (!player) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      const playerName = player.name;
+      game.removePlayer(playerId);
+      socket.leave(playerId);
+      callback({ success: true });
+
+      // 나머지 플레이어와 이야기꾼에게 알림
+      playerIo.emit('player:left', { playerId, playerName });
+      storytellerIo.emit('player:left', { playerId, playerName });
+      storytellerIo.emit('game:state', game.getStorytellerState());
+      console.log(`Player left game: ${playerName}`);
+    });
+
     socket.on('push:register', ({ token }) => {
       const playerId = getPlayerIdFromSocket(socket);
       if (playerId) {

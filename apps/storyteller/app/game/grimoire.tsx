@@ -174,6 +174,7 @@ export default function GrimoireScreen() {
     sweetheartDrunk,
     mayorRedirect,
     assignRedHerring,
+    kickPlayer,
   } = useGameActions();
 
   const sweetheartDiedPending = useGameStore((s) => s.sweetheartDiedPending);
@@ -483,6 +484,34 @@ export default function GrimoireScreen() {
       onPress: () => openMemoModal(playerId, playerName),
     };
 
+    const kickOption: ActionModalOption = {
+      text: '강퇴',
+      style: 'destructive',
+      onPress: () => {
+        Alert.alert(
+          `${playerName} 강퇴`,
+          '이 플레이어를 게임에서 제거하시겠습니까?',
+          [
+            { text: '취소', style: 'cancel' },
+            {
+              text: '강퇴',
+              style: 'destructive',
+              onPress: async () => {
+                try {
+                  await kickPlayer(playerId);
+                } catch (e) {
+                  Alert.alert(
+                    '오류',
+                    e instanceof Error ? e.message : '강퇴에 실패했습니다.',
+                  );
+                }
+              },
+            },
+          ],
+        );
+      },
+    };
+
     const options: ActionModalOption[] = isAlive
       ? [
           {
@@ -504,6 +533,7 @@ export default function GrimoireScreen() {
             style: 'destructive',
             onPress: () => kill(playerId),
           },
+          kickOption,
           { text: '취소', style: 'cancel' },
         ]
       : [
@@ -514,6 +544,7 @@ export default function GrimoireScreen() {
           },
           chatOption,
           memoOption,
+          kickOption,
           { text: '취소', style: 'cancel' },
         ];
 

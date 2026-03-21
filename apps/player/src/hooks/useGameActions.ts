@@ -107,6 +107,22 @@ export function useGameActions() {
     }
   }, []);
 
+  const leaveGame = useCallback((): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    return new Promise((resolve) => {
+      const socket = useConnectionStore.getState().socket;
+      if (!socket || !socket.connected) {
+        resolve({ success: false, error: '연결되어 있지 않습니다' });
+        return;
+      }
+      socket.emit('player:leave', (res) => {
+        resolve(res);
+      });
+    });
+  }, []);
+
   return {
     castVote,
     preselectVote,
@@ -116,5 +132,6 @@ export function useGameActions() {
     nominatePlayer,
     useSlayer,
     consentReady,
+    leaveGame,
   };
 }

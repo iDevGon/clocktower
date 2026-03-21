@@ -746,6 +746,27 @@ export function registerStorytellerHandlers(
       console.log(`ST Chat -> ${player.name}: ${message}`);
     });
 
+    socket.on('player:kick', (playerId, callback) => {
+      const player = game.getPlayer(playerId);
+      if (!player) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      const playerName = player.name;
+      game.removePlayer(playerId);
+
+      // 강퇴 대상에게 알림 후 방에서 제거
+      playerIo.to(playerId).emit('player:kicked');
+      playerIo.in(playerId).socketsLeave(playerId);
+
+      // 나머지 플레이어와 이야기꾼에게 알림
+      playerIo.emit('player:left', { playerId, playerName });
+      storytellerIo.emit('player:left', { playerId, playerName });
+      storytellerIo.emit('game:state', game.getStorytellerState());
+      callback({ success: true });
+      console.log(`Player kicked: ${playerName}`);
+    });
+
     socket.on('disconnect', () => {
       console.log('Storyteller disconnected');
     });

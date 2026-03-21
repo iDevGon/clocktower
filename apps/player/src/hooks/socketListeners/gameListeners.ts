@@ -178,4 +178,12 @@ export function attachGameListeners(socket: AppSocket) {
   socket.on('game:settings', (settings) => {
     usePlayerStore.getState().set({ gameSettings: settings });
   });
+
+  socket.on('player:kicked', () => {
+    const { playerName } = usePlayerStore.getState();
+    usePlayerStore.getState().reset();
+    usePlayerStore.getState().set({ playerName, kicked: true });
+    useWhisperStore.getState().reset();
+    useChatStore.getState().reset();
+  });
 }
