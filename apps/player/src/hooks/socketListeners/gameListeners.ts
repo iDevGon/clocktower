@@ -90,11 +90,17 @@ export function attachGameListeners(socket: AppSocket) {
   });
 
   socket.on('game:state', (state) => {
-    const players = state.players.map(({ id, name, isAlive }) => ({
-      id,
-      name,
-      isAlive,
-    }));
+    const playerMap = new Map(
+      state.players.map(({ id, name, isAlive }) => [id, { id, name, isAlive }]),
+    );
+
+    // playerOrder가 있으면 그 순서대로, 없으면 원래 순서 유지
+    const players =
+      state.playerOrder?.length > 0
+        ? state.playerOrder
+            .map((id) => playerMap.get(id))
+            .filter((p): p is NonNullable<typeof p> => p != null)
+        : state.players.map(({ id, name, isAlive }) => ({ id, name, isAlive }));
 
     // Game was reset - player no longer exists in the game
     const { playerId, playerName } = usePlayerStore.getState();
