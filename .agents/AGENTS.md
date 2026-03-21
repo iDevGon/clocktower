@@ -109,6 +109,7 @@ import { colors } from '@clocktower/ui';
 - This project is a digital implementation of Blood on the Clocktower. pnpm workspace + Turborepo monorepo consisting of server / player app / storyteller app / shared packages
 - Player app and storyteller app are independent Expo projects, each with separate socket hooks
 - Server is in-memory state; game data is lost on restart
+- Server dashboard (`/dashboard`) auto-opens on startup, showing QR codes for server/player/storyteller apps
 - Storyteller app persists `gameId`, `gameState`, `serverUrl`, `gameLogs` via AsyncStorage
 - `IS_DEV` flag (`EXPO_PUBLIC_DEV_MODE` env var) is only active in `pnpm dev`, disabled in `pnpm start`
 - Push notifications use Expo Push API, sent at: night start, day start, player turn, nomination
@@ -131,7 +132,7 @@ import { colors } from '@clocktower/ui';
 
 ### Game Settings
 
-`GameSettings`: whisperMode (`'chat'` | `'offline'`), votingMode (`'online'` | `'offline'`), voteClockSeconds, whisperClockSeconds
+`GameSettings`: whisperMode (`'chat'` | `'offline'`), votingMode (`'online'` | `'offline'`), voteClockSeconds, whisperClockSeconds, discussionClockSeconds, nominationClockSeconds, defenseClockSeconds
 
 ### Role System
 
@@ -166,7 +167,7 @@ apps/server/src/whisper.ts          # WhisperTracker class (whisper tracking)
 apps/server/src/handlers/player.ts  # Player socket event handlers
 apps/server/src/handlers/storyteller.ts # Storyteller socket event handlers
 apps/server/src/handlers/storytellerVote.ts # Vote-related handlers
-apps/server/src/createApp.ts        # Server factory function (for testing)
+apps/server/src/createApp.ts        # Server factory function (for testing) + dashboard route
 apps/server/src/pushNotifications.ts # Expo push notification management
 apps/server/src/__tests__/          # Server unit tests
 apps/server/src/__tests__/e2e/      # Socket-based E2E tests
@@ -194,13 +195,13 @@ packages/shared/src/dictionary.ts   # Status/phase dictionary, team labels/color
 packages/shared/src/logic.ts        # Server-side non-RN re-export
 packages/ui/src/tokens.ts           # Design tokens (colors)
 packages/ui/src/chatStyles.ts       # Chat style factory
-packages/ui/src/components/         # Shared components (AbilityText, GameTip, BaseToast, etc.)
+packages/ui/src/components/         # Shared components (AbilityText, GameTip, BaseToast, RoleTips, CountdownTimer, etc.)
 packages/ui/src/utils/              # Utilities (chosung search, chat commons)
 ```
 
 ### Event List
 
-**Client → Server**: `game:join`, `game:rejoin`, `slayer:use`, `slayer:ack`, `whisper:send`, `nominate:request`, `vote:cast`, `vote:preselect`, `night:action`, `chat:sendToStoryteller`, `push:register`
-**Server → Client**: `game:state`, `game:phase`, `game:playerUpdate`, `role:assign`, `evil:info`, `night:activeRole`, `night:actionReceived`, `night:feedback`, `night:deaths`, `night:wakeUp`, `vote:start`, `vote:result`, `vote:order`, `vote:clockStart`, `vote:clockPause`, `vote:confirmed`, `vote:preselected`, `vote:proceedToVote`, `execution:announced`, `slayer:declared`, `slayer:noEffect`, `slayer:allAcked`, `virgin:triggered`, `whisper:receive`, `whisper:activeChats`, `whisper:clockStart`, `day:subPhase`, `game:settings`, `game:end`, `chat:receiveFromStoryteller`, `chat:receiveFromPlayer`
+**Client → Server**: `game:join`, `game:rejoin`, `slayer:use`, `slayer:ack`, `whisper:send`, `nominate:request`, `vote:cast`, `vote:preselect`, `vote:consentReady`, `night:action`, `chat:sendToStoryteller`, `push:register`, `player:leave`
+**Server → Client**: `game:state`, `game:phase`, `game:playerUpdate`, `role:assign`, `evil:info`, `night:activeRole`, `night:actionReceived`, `night:feedback`, `night:deaths`, `night:wakeUp`, `vote:start`, `vote:result`, `vote:order`, `vote:clockStart`, `vote:clockPause`, `vote:confirmed`, `vote:preselected`, `vote:proceedToVote`, `vote:consentStatus`, `execution:announced`, `slayer:declared`, `slayer:noEffect`, `slayer:allAcked`, `virgin:triggered`, `whisper:receive`, `whisper:activeChats`, `whisper:clockStart`, `discussion:clockStart`, `nomination:clockStart`, `nomination:clockPause`, `nomination:clockResume`, `defense:clockStart`, `day:subPhase`, `game:settings`, `game:end`, `chat:receiveFromStoryteller`, `chat:receiveFromPlayer`, `player:kicked`, `player:left`
 **Server → Storyteller**: ServerToClientEvents subset + `sweetheart:died`, `mayor:nightDeath`, `chat:receiveFromPlayer`
-**Storyteller → Server**: `game:create`, `game:start`, `game:setPhase`, `day:setSubPhase`, `game:assignRole`, `game:distributeRoles`, `game:kill`, `game:revive`, `game:reset`, `game:restart`, `vote:nominate`, `vote:proceedToVote`, `vote:close`, `vote:castForPlayer`, `night:setActiveRole`, `night:sendFeedback`, `player:setStatuses`, `game:setSettings`, `game:setPlayerOrder`, `chat:sendToPlayer`, `game:addDummyPlayers`, `game:removeDummyPlayers`, `slayer:forceAck`, `game:assignRedHerring`, `game:mayorRedirect`, `game:sweetheartDrunk`
+**Storyteller → Server**: `game:create`, `game:start`, `game:setPhase`, `day:setSubPhase`, `game:assignRole`, `game:distributeRoles`, `game:kill`, `game:revive`, `game:reset`, `game:restart`, `vote:nominate`, `vote:proceedToVote`, `vote:close`, `vote:castForPlayer`, `night:setActiveRole`, `night:sendFeedback`, `player:setStatuses`, `game:setSettings`, `game:setPlayerOrder`, `chat:sendToPlayer`, `game:addDummyPlayers`, `game:removeDummyPlayers`, `slayer:forceAck`, `game:assignRedHerring`, `game:mayorRedirect`, `game:sweetheartDrunk`, `player:kick`
