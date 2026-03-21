@@ -617,8 +617,8 @@ describe('E2E: 블러프 직업 선택', () => {
       await joinStatePromise;
     }
 
-    // 블러프 역할 사전 선택하여 역할 배분
-    const bluffRoleIds = ['monk', 'ravenkeeper', 'slayer'];
+    // 블러프 역할 사전 선택 (5인 게임에 포함되지 않을 역할 선택)
+    const bluffRoleIds = ['monk', 'ravenkeeper', 'mayor'];
 
     // game:state 리스너를 먼저 등록
     const storyStatePromise = waitForEvent<{
@@ -641,6 +641,6 @@ describe('E2E: 블러프 직업 선택', () => {
     const bluffIds = storyState.bluffRoles?.map((r) => r.id) ?? [];
     expect(bluffIds).toContain('monk');
     expect(bluffIds).toContain('ravenkeeper');
-    expect(bluffIds).toContain('slayer');
+    expect(bluffIds).toContain('mayor');
   }, 15000);
 });

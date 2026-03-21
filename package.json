@@ -2,11 +2,11 @@
   "name": "clocktower",
   "private": true,
   "scripts": {
-    "start": "turbo start",
+    "start": "turbo start --filter=@clocktower/server & turbo start --filter=@clocktower/player & { sleep 4 && turbo start --filter=@clocktower/storyteller; }",
     "start:server": "turbo start --filter=@clocktower/server",
     "start:storyteller": "turbo start --filter=@clocktower/storyteller",
     "start:player": "turbo start --filter=@clocktower/player",
-    "dev": "turbo dev",
+    "dev": "turbo dev --filter=@clocktower/server & turbo dev --filter=@clocktower/player & { sleep 4 && turbo dev --filter=@clocktower/storyteller; }",
     "dev:server": "turbo dev --filter=@clocktower/server",
     "dev:storyteller": "turbo dev --filter=@clocktower/storyteller",
     "dev:player": "turbo dev --filter=@clocktower/player",
