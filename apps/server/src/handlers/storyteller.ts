@@ -179,7 +179,7 @@ export function registerStorytellerHandlers(
 
     socket.on('game:restart', (callback) => {
       const newId = game.restart();
-      clearPushTokens();
+      // 플레이어 유지이므로 푸시 토큰은 유지 (clearPushTokens 호출하지 않음)
       // 플레이어에게 새 게임 상태 전송 (플레이어 목록 유지, 역할/상태 초기화)
       playerIo.emit('game:phase', 'setup');
       playerIo.emit('game:state', game.getState());
