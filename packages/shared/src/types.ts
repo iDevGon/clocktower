@@ -35,6 +35,8 @@ export interface GameState {
   butlerMasters?: Record<string, string>;
   playerOrder: string[];
   settings: GameSettings;
+  /** 이야기꾼 전용: 악마에게 전달된 블러프 역할 목록 */
+  bluffRoles?: { id: string; name: string }[];
 }
 
 export interface Nomination {

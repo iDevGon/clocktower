@@ -46,6 +46,7 @@ export function useGameActions() {
       excludedRoleIds?: string[];
       editionId?: string;
       additionalRoleIds?: string[];
+      bluffRoleIds?: string[];
     }) =>
       new Promise<{ redHerringPlayerId?: string }>((resolve, reject) => {
         const s = getSocket();

@@ -75,6 +75,8 @@ export class GameManager {
   // 지목 타이머 일시정지/재개용 남은 시간 (ms)
   private nominationRemainingMs: number | null = null;
   private nominationStartedAt: number | null = null;
+  // 악마에게 전달된 블러프 역할 (이야기꾼 표시용)
+  private bluffRoles: { id: string; name: string }[] = [];
 
   create(): string {
     const id = randomUUID().slice(0, 8);
@@ -102,6 +104,7 @@ export class GameManager {
     this.fortuneTellerRedHerring = null;
     this.nightWakeUpQueue = [];
     this.nightWakeUpRoleId = null;
+    this.bluffRoles = [];
     this.clearVoteTimer();
     this.clearNominationTimer();
     return id;
@@ -166,6 +169,7 @@ export class GameManager {
     this.nightWakeUpQueue = [];
     this.nightWakeUpRoleId = null;
     this.voteConsentReady.clear();
+    this.bluffRoles = [];
     this.clearVoteTimer();
     this.clearNominationTimer();
   }
@@ -180,6 +184,22 @@ export class GameManager {
       butlerMasters:
         Object.keys(butlerMasters).length > 0 ? butlerMasters : undefined,
     };
+  }
+
+  /** 이야기꾼 전용 상태: 블러프 역할 포함 */
+  getStorytellerState(): GameState {
+    return {
+      ...this.getState(),
+      bluffRoles: this.bluffRoles.length > 0 ? this.bluffRoles : undefined,
+    };
+  }
+
+  setBluffRoles(roles: { id: string; name: string }[]): void {
+    this.bluffRoles = roles;
+  }
+
+  getBluffRoles(): { id: string; name: string }[] {
+    return this.bluffRoles;
   }
 
   getPlayer(playerId: string): Player | undefined {
