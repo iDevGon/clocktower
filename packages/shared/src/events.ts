@@ -172,6 +172,17 @@ export interface ClientToServerEvents {
       };
       gamePlayers?: PlayerInfo[];
       butlerMasterName?: string;
+      nomination?: {
+        nominatorId: string;
+        nomineeId: string;
+        nominatorName: string;
+        nomineeName: string;
+      };
+      executionCandidate?: {
+        playerId: string;
+        playerName: string;
+        guiltyVotes: number;
+      };
     }) => void,
   ) => void;
   'vote:cast': (

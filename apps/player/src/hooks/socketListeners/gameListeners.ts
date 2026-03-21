@@ -1,35 +1,59 @@
 import { getRoleById, NIGHT_ACTIONS } from '@clocktower/shared';
+import { AppState } from 'react-native';
 import { useChatStore } from '../../stores/chatStore';
 import { usePlayerStore } from '../../stores/playerStore';
 import { useWhisperStore } from '../../stores/whisperStore';
 import type { AppSocket } from './types';
 
-export function attachGameListeners(socket: AppSocket) {
-  socket.on('connect', () => {
-    const { playerId } = usePlayerStore.getState();
-    if (playerId) {
-      socket.emit('game:rejoin', { playerId }, (res) => {
-        if (!res.success) {
-          // Game was reset or no longer exists — clear game state but keep connection
-          const { playerName } = usePlayerStore.getState();
-          usePlayerStore.getState().reset();
-          usePlayerStore.getState().set({ playerName });
-          useWhisperStore.getState().reset();
-          useChatStore.getState().reset();
-          return;
-        }
-        usePlayerStore.getState().set({
-          role: res.roleId ? (getRoleById(res.roleId) ?? null) : null,
-          drunkAs: res.drunkAs ?? null,
-          currentPhase: res.phase ?? 'setup',
-          isAlive: res.isAlive ?? true,
-          daySubPhase: res.daySubPhase ?? null,
-          hasNominatedToday: res.hasNominatedToday ?? false,
-          deadVoteUsed: res.deadVoteUsed ?? false,
-          nightProgress: res.nightProgress ?? null,
-        });
-      });
+function handleRejoin(socket: AppSocket) {
+  const { playerId } = usePlayerStore.getState();
+  if (!playerId) return;
+  if (!socket.connected) return;
+
+  socket.emit('game:rejoin', { playerId }, (res) => {
+    if (!res.success) {
+      const { playerName } = usePlayerStore.getState();
+      usePlayerStore.getState().reset();
+      usePlayerStore.getState().set({ playerName });
+      useWhisperStore.getState().reset();
+      useChatStore.getState().reset();
+      return;
     }
+    usePlayerStore.getState().set({
+      role: res.roleId ? (getRoleById(res.roleId) ?? null) : null,
+      drunkAs: res.drunkAs ?? null,
+      currentPhase: res.phase ?? 'setup',
+      isAlive: res.isAlive ?? true,
+      daySubPhase: res.daySubPhase ?? null,
+      hasNominatedToday: res.hasNominatedToday ?? false,
+      deadVoteUsed: res.deadVoteUsed ?? false,
+      nightProgress: res.nightProgress ?? null,
+      nomination: res.nomination ?? null,
+      executionCandidate: res.executionCandidate ?? null,
+    });
+  });
+}
+
+export function attachGameListeners(socket: AppSocket) {
+  // 소켓 재연결 시 상태 동기화
+  socket.on('connect', () => {
+    handleRejoin(socket);
+  });
+
+  // 앱 백그라운드 복귀 시 상태 동기화
+  let appState = AppState.currentState;
+  const appStateSubscription = AppState.addEventListener(
+    'change',
+    (nextState) => {
+      if (appState.match(/inactive|background/) && nextState === 'active') {
+        handleRejoin(socket);
+      }
+      appState = nextState;
+    },
+  );
+  // 소켓 해제 시 AppState 리스너도 제거
+  socket.on('disconnect', () => {
+    appStateSubscription.remove();
   });
 
   socket.on('game:end', (result) => {

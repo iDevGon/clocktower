@@ -112,6 +112,44 @@ export function registerPlayerHandlers(
         }
       }
 
+      // 현재 지목/투표 진행 중인 경우 nomination 정보 포함
+      let nomination:
+        | {
+            nominatorId: string;
+            nomineeId: string;
+            nominatorName: string;
+            nomineeName: string;
+          }
+        | undefined;
+      if (
+        (state.daySubPhase === 'defense' || state.phase === 'vote') &&
+        state.nominations.length > 0
+      ) {
+        const current = state.nominations[state.nominations.length - 1];
+        const nominator = game.getPlayer(current.nominatorId);
+        const nominee = game.getPlayer(current.nomineeId);
+        nomination = {
+          nominatorId: current.nominatorId,
+          nomineeId: current.nomineeId,
+          nominatorName: nominator?.name ?? current.nominatorId,
+          nomineeName: nominee?.name ?? current.nomineeId,
+        };
+      }
+
+      // 현재 처형 예정자 정보
+      const execCandidate = game.getExecutionCandidate();
+      let executionCandidate:
+        | { playerId: string; playerName: string; guiltyVotes: number }
+        | undefined;
+      if (execCandidate) {
+        const execPlayer = game.getPlayer(execCandidate.playerId);
+        executionCandidate = {
+          playerId: execCandidate.playerId,
+          playerName: execPlayer?.name ?? execCandidate.playerId,
+          guiltyVotes: execCandidate.guiltyVotes,
+        };
+      }
+
       callback({
         success: true,
         playerName: player.name,
@@ -125,9 +163,12 @@ export function registerPlayerHandlers(
         nightProgress,
         gamePlayers,
         butlerMasterName,
+        nomination,
+        executionCandidate,
       });
-      // 설정 전송
+      // 설정 + 전체 상태 전송 (백그라운드 복귀 시 놓친 이벤트 보상)
       socket.emit('game:settings', state.settings);
+      socket.emit('game:state', state);
       console.log(`Player rejoined: ${player.name}`);
     });
 
