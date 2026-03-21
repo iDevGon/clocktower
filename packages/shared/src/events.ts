@@ -2,6 +2,7 @@ import type {
   ActiveWhisperChat,
   DaySubPhase,
   ExecutionAnnouncement,
+  ExecutionStatus,
   GameResult,
   GameSettings,
   GameState,
@@ -41,6 +42,8 @@ export interface ServerToClientEvents {
       playerName: string;
       guiltyVotes: number;
     } | null;
+    executionStatus: ExecutionStatus;
+    executionMessage: string;
   }) => void;
   'night:activeRole': (data: {
     roleId: string | null;

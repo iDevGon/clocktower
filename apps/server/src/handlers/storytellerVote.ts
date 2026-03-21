@@ -106,8 +106,15 @@ export function startClockwiseVote(
         if (voted && game.isButlerRestricted(next.playerId)) {
           voted = false;
         }
+        // 유령 투표 제한: 이미 사용했으면 강제 불참
+        if (voted && game.isGhostVoteUsed(next.playerId)) {
+          voted = false;
+        }
         if (voted) {
-          game.castVote(next.playerId);
+          const result = game.castVote(next.playerId);
+          if (!result.success) {
+            voted = false;
+          }
         }
         playerIo.emit('vote:confirmed', {
           playerId: next.playerId,

@@ -16,6 +16,8 @@ interface VoteResultData {
     playerName: string;
     guiltyVotes: number;
   } | null;
+  executionStatus?: string;
+  executionMessage?: string;
 }
 
 interface VotePanelProps {
@@ -209,16 +211,15 @@ export function VotePanel({
           <Text
             style={[
               styles.resultSentence,
-              voteResult.guilty
+              voteResult.executionStatus === 'new_candidate' ||
+              voteResult.executionStatus === 'candidate_changed'
                 ? styles.resultSentenceGuilty
-                : styles.resultSentenceInnocent,
+                : voteResult.executionStatus === 'candidate_cleared'
+                  ? styles.resultSentenceCleared
+                  : styles.resultSentenceInnocent,
             ]}
           >
-            {voteResult.guilty
-              ? `${voteResult.nomineeName}님이 처형 예정입니다`
-              : voteResult.executionCandidate
-                ? `기존 처형 예정자 유지: ${voteResult.executionCandidate.playerName} (${voteResult.executionCandidate.guiltyVotes}표)`
-                : '아무도 처형되지 않았습니다'}
+            {voteResult.executionMessage || '아무도 처형되지 않았습니다'}
           </Text>
           {onDismissResult && (
             <Pressable onPress={onDismissResult} style={styles.resultDismiss}>

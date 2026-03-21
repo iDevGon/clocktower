@@ -30,9 +30,8 @@ export function attachVoteListeners(socket: AppSocket) {
   });
 
   socket.on('vote:result', (data) => {
-    // 처형 예정자 추적: 유죄 판결이면 새 후보, 아니면 기존 유지
-    const newCandidate =
-      data.executionCandidate ?? usePlayerStore.getState().executionCandidate;
+    // 처형 예정자 추적: 서버에서 보내는 executionCandidate를 그대로 사용
+    // 동률 시 null이 전달되므로 기존 값 유지하지 않음
     usePlayerStore.getState().set({
       voteResult: data,
       nomination: null,
@@ -40,7 +39,7 @@ export function attachVoteListeners(socket: AppSocket) {
       voteClock: null,
       voteCountdown: null,
       votePreselections: {},
-      executionCandidate: newCandidate,
+      executionCandidate: data.executionCandidate ?? null,
     });
     // 5초 후 phase만 day로 전환 (voteResult는 유지)
     setTimeout(() => {

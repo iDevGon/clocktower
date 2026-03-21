@@ -203,6 +203,9 @@ export function createVotePanelStyles(scale: number) {
     resultSentenceInnocent: {
       color: '#6a9a6a',
     },
+    resultSentenceCleared: {
+      color: '#c4a050',
+    },
     resultDismiss: {
       backgroundColor: '#2a2a36',
       borderRadius: 6,

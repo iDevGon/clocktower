@@ -62,4 +62,7 @@ export const styles = StyleSheet.create({
   sentenceInnocent: {
     color: '#6a9a6a',
   },
+  sentenceCleared: {
+    color: '#c4a050',
+  },
 });

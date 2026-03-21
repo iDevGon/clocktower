@@ -199,10 +199,22 @@ export function useSocketConnection() {
           // 처형 예정자 추적
           if (data.executionCandidate) {
             store.setExecutionCandidate(data.executionCandidate);
+          } else {
+            store.setExecutionCandidate(null);
           }
           if (data.guilty) {
             store.setLastExecutedPlayerId(data.nomineeId);
           }
+          // 투표 결과 로그 기록
+          const day = store.gameState?.day ?? 0;
+          const voteCount = Object.keys(data.votes).length;
+          useLogStore
+            .getState()
+            .addLog(
+              day,
+              'vote',
+              `${data.nomineeName}: ${voteCount}표 (${data.guilty ? '유죄' : '무죄'}) - ${data.executionMessage}`,
+            );
         });
         newSocket.on('sweetheart:died', (data) => {
           useGameStore.getState().setSweetheartDied(data.sweetheartName);
