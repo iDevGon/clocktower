@@ -1,5 +1,6 @@
 import type {
   ActiveWhisperChat,
+  ExecutionStatus,
   GameResult,
   GameState,
   NightAction,
@@ -25,6 +26,8 @@ interface VoteResult {
     playerName: string;
     guiltyVotes: number;
   } | null;
+  executionStatus?: ExecutionStatus;
+  executionMessage?: string;
 }
 
 interface GameStore {

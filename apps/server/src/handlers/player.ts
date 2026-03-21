@@ -240,6 +240,9 @@ export function registerPlayerHandlers(
       const current = game.getState().nominations.at(-1);
       if (current && playerId in current.votes) return;
 
+      // 유령 투표 제한: 이미 투표권을 사용한 유령은 찬성 프리셀렉트 불가
+      if (guilty && game.isGhostVoteUsed(playerId)) return;
+
       // 집사 투표 제한: 찬성 프리셀렉트 시 주인이 투표/프리셀렉트하지 않았으면 거부
       if (guilty && game.isButlerRestricted(playerId)) return;
 

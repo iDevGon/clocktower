@@ -384,6 +384,8 @@ export default function GameScreen() {
             guilty={voteResult.guilty}
             votes={voteResult.votes}
             executionCandidate={voteResult.executionCandidate}
+            executionStatus={voteResult.executionStatus}
+            executionMessage={voteResult.executionMessage}
           />
         )}
 

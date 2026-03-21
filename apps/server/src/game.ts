@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type {
   DaySubPhase,
+  ExecutionStatus,
   GameResult,
   GameSettings,
   GameState,
@@ -56,6 +57,10 @@ export class GameManager {
     playerId: string;
     guiltyVotes: number;
   } | null = null;
+  // 동률로 처형 대상이 사라진 경우, 이후 투표에서 이 표수를 초과해야 새 처형 대상이 됨
+  private executionCandidateThreshold = 0;
+  // 유령 투표 사용 추적 (게임 전체에서 1회만 사용 가능)
+  private ghostVotesUsed = new Set<string>();
   // 밤 중 사망한 플레이어 (낮 전환 시 알림용)
   private pendingNightKills: string[] = [];
   // 현재 활성 밤 역할 및 순서 (재접속 시 복원용)
@@ -91,6 +96,8 @@ export class GameManager {
     this.voteClockPausedNomineeId = null;
     this.virginTriggered = false;
     this.executionToday = false;
+    this.executionCandidateThreshold = 0;
+    this.ghostVotesUsed.clear();
     this.pendingNightKills = [];
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
@@ -153,6 +160,8 @@ export class GameManager {
     this.virginTriggered = false;
     this.executionToday = false;
     this.executionCandidate = null;
+    this.executionCandidateThreshold = 0;
+    this.ghostVotesUsed.clear();
     this.pendingNightKills = [];
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
@@ -238,6 +247,7 @@ export class GameManager {
       this.nightActionTargets.clear();
       this.executionToday = false;
       this.executionCandidate = null;
+      this.executionCandidateThreshold = 0;
       this.pendingNightKills = [];
       this.state.players.forEach((p) => {
         p.hasNominatedToday = false;
@@ -563,18 +573,27 @@ export class GameManager {
 
   // ── 집사 투표 제한 포함 ──
 
+  /** 유령(사망) 플레이어가 이미 투표권을 사용했는지 확인 */
+  isGhostVoteUsed(playerId: string): boolean {
+    const player = this.getPlayer(playerId);
+    if (!player) return false;
+    if (player.isAlive) return false;
+    return player.deadVoteUsed || this.ghostVotesUsed.has(playerId);
+  }
+
   castVote(playerId: string): { success: boolean; error?: string } {
     const player = this.getPlayer(playerId);
     if (!player)
       return { success: false, error: '플레이어를 찾을 수 없습니다' };
 
     if (!player.isAlive) {
-      if (player.deadVoteUsed)
+      if (player.deadVoteUsed || this.ghostVotesUsed.has(playerId))
         return {
           success: false,
           error: '사망한 플레이어는 게임당 한 번만 투표할 수 있습니다',
         };
       player.deadVoteUsed = true;
+      this.ghostVotesUsed.add(playerId);
     }
 
     // 집사 투표 제한: 주인이 투표해야만 투표 가능 (중독된 집사는 제한 없음)
@@ -751,6 +770,8 @@ export class GameManager {
       playerName: string;
       guiltyVotes: number;
     } | null;
+    executionStatus: ExecutionStatus;
+    executionMessage: string;
   } | null {
     const current = this.state.nominations[this.state.nominations.length - 1];
     if (!current) return null;
@@ -770,31 +791,55 @@ export class GameManager {
     const guiltyVotes = Object.keys(current.votes).length;
     const reachedMajority = guiltyVotes >= Math.ceil(alivePlayers / 2);
 
-    // 과반수를 넘겼고, 이전 최다 투표보다 많으면 처형 대상 교체
+    const nominee = this.getPlayer(current.nomineeId);
+    const nomineeName = nominee?.name ?? current.nomineeId;
+    const prevCandidate = this.executionCandidate;
+
     let guilty = false;
+    let executionStatus: ExecutionStatus = 'no_change';
+    let executionMessage = '';
+
     if (reachedMajority) {
-      if (
-        !this.executionCandidate ||
-        guiltyVotes > this.executionCandidate.guiltyVotes
-      ) {
+      // 과반수를 넘겼고, 이전 최다 투표(또는 동률 threshold)보다 많으면 처형 대상 교체
+      const threshold = this.executionCandidate
+        ? this.executionCandidate.guiltyVotes
+        : this.executionCandidateThreshold;
+
+      if (guiltyVotes > threshold) {
+        const isChange = prevCandidate !== null;
         this.executionCandidate = {
           playerId: current.nomineeId,
           guiltyVotes,
         };
+        this.executionCandidateThreshold = 0;
         guilty = true;
+        executionStatus = isChange ? 'candidate_changed' : 'new_candidate';
+        executionMessage = isChange
+          ? `${nomineeName}이(가) 더 많은 표를 받아 새 처형 대상이 되었습니다`
+          : `${nomineeName}이(가) 처형 대상이 되었습니다`;
       }
-      // 동률이면 처형 없음 (기존 후보 유지하지 않음)
+      // 동률이면 처형 없음 (기존 후보 제거)
       if (
         this.executionCandidate &&
         guiltyVotes === this.executionCandidate.guiltyVotes &&
         this.executionCandidate.playerId !== current.nomineeId
       ) {
+        const prevName =
+          this.getPlayer(this.executionCandidate.playerId)?.name ??
+          this.executionCandidate.playerId;
+        this.executionCandidateThreshold = this.executionCandidate.guiltyVotes;
         this.executionCandidate = null;
         guilty = false;
+        executionStatus = 'candidate_cleared';
+        executionMessage = `${nomineeName}과(와) ${prevName}이(가) 동률이므로 처형 대상이 없습니다`;
       }
     }
 
-    const nominee = this.getPlayer(current.nomineeId);
+    if (executionStatus === 'no_change') {
+      executionMessage = this.executionCandidate
+        ? `기존 처형 예정자 유지: ${this.getPlayer(this.executionCandidate.playerId)?.name ?? this.executionCandidate.playerId}`
+        : '아무도 처형되지 않았습니다';
+    }
 
     this.clearVoteTimer();
 
@@ -810,10 +855,12 @@ export class GameManager {
 
     return {
       nomineeId: current.nomineeId,
-      nomineeName: nominee?.name ?? current.nomineeId,
+      nomineeName: nomineeName,
       guilty,
       votes: current.votes,
       executionCandidate: candidateInfo,
+      executionStatus,
+      executionMessage,
     };
   }
 

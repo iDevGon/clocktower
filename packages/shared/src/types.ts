@@ -189,6 +189,12 @@ export interface StorytellerMessage {
   timestamp: number;
 }
 
+export type ExecutionStatus =
+  | 'new_candidate'
+  | 'candidate_changed'
+  | 'candidate_cleared'
+  | 'no_change';
+
 export type DeathReason = 'execution' | 'virgin' | 'slayer' | 'night_kill';
 
 export const DEATH_REASON_LABELS: Record<DeathReason, string> = {

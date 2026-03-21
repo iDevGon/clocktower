@@ -2,6 +2,7 @@ import type {
   DaySubPhase,
   DeathReason,
   ExecutionAnnouncement,
+  ExecutionStatus,
   GameResult,
   GameSettings,
   NightFeedbackPayload,
@@ -30,6 +31,8 @@ interface VoteResult {
     playerName: string;
     guiltyVotes: number;
   } | null;
+  executionStatus?: ExecutionStatus;
+  executionMessage?: string;
 }
 
 export interface NightProgress {

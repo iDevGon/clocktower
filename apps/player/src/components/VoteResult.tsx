@@ -1,3 +1,4 @@
+import type { ExecutionStatus } from '@clocktower/shared';
 import { Text, View } from 'react-native';
 import { styles } from './VoteResult.styles';
 
@@ -10,15 +11,22 @@ interface VoteResultProps {
     playerName: string;
     guiltyVotes: number;
   } | null;
+  executionStatus?: ExecutionStatus;
+  executionMessage?: string;
 }
 
 export function VoteResult({
   nomineeName,
   guilty,
   votes,
-  executionCandidate,
+  executionStatus,
+  executionMessage,
 }: VoteResultProps) {
   const yesCount = Object.keys(votes).length;
+  const isCleared = executionStatus === 'candidate_cleared';
+  const isGuiltyStyle =
+    executionStatus === 'new_candidate' ||
+    executionStatus === 'candidate_changed';
 
   return (
     <View style={styles.card}>
@@ -40,14 +48,14 @@ export function VoteResult({
       <Text
         style={[
           styles.sentence,
-          guilty ? styles.sentenceGuilty : styles.sentenceInnocent,
+          isGuiltyStyle
+            ? styles.sentenceGuilty
+            : isCleared
+              ? styles.sentenceCleared
+              : styles.sentenceInnocent,
         ]}
       >
-        {guilty
-          ? `${nomineeName}님이 처형 예정입니다`
-          : executionCandidate
-            ? `기존 처형 예정자 유지: ${executionCandidate.playerName}`
-            : '아무도 처형되지 않았습니다'}
+        {executionMessage || '아무도 처형되지 않았습니다'}
       </Text>
     </View>
   );
