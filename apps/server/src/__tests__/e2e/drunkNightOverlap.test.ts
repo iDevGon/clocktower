@@ -271,7 +271,7 @@ describe('E2E: 주정뱅이 겹침 — 까마귀지기 (onlyWhenDead)', () => {
 
     ctx.storyteller.emit('night:sendFeedback', {
       playerId: wakeUps[0],
-      feedback: { type: 'role', roleId: 'imp' },
+      feedback: { type: 'role', roleName: 'imp' },
     });
 
     const second = await secondWakeUp;
@@ -316,7 +316,7 @@ describe('E2E: 주정뱅이 겹침 — 까마귀지기 (onlyWhenDead)', () => {
     );
     ctx.storyteller.emit('night:sendFeedback', {
       playerId: playerIds[firstIdx],
-      feedback: { type: 'role', roleId: 'imp' },
+      feedback: { type: 'role', roleName: 'imp' },
     });
     await secondWakeUp;
 

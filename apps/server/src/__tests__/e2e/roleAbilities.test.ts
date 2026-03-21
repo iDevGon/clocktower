@@ -354,6 +354,77 @@ describe('E2E: 탕녀 승계', () => {
   }, 15000);
 });
 
+describe('E2E: 탕녀 승계 후 밤 능력 사용', () => {
+  let ctx: TestContext;
+
+  beforeEach(async () => {
+    ctx = await setupTestServer();
+  }, 10000);
+
+  afterEach(async () => {
+    await ctx.cleanup();
+  });
+
+  it('탕녀가 임프로 승계된 후 다음 밤에 night:wakeUp을 받고 행동할 수 있다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'washerwoman' },
+      { roleId: 'empath' },
+      { roleId: 'scarlet_woman' }, // p2: 탕녀
+      { roleId: 'poisoner' },
+      { roleId: 'imp' }, // p4: 임프
+      { roleId: 'chef' },
+    ]);
+
+    // 밤에 임프 사살 → 탕녀 승계
+    ctx.storyteller.emit('game:kill', playerIds[4]);
+    await waitForEvent(ctx.storyteller as Socket, 'game:state');
+
+    // 탕녀가 임프로 승계됨 확인
+    const scarletWoman = ctx.app.game.getPlayer(playerIds[2]);
+    expect(scarletWoman?.role?.id).toBe('imp');
+
+    // 탕녀 플레이어가 role:assign(imp)을 받는지 확인
+    const roleAssignPromise = waitForEvent<{ roleId: string }>(
+      ctx.players[2] as Socket,
+      'role:assign',
+    );
+    const assigned = await roleAssignPromise;
+    expect(assigned.roleId).toBe('imp');
+
+    // 낮으로 전환
+    await advanceToDay(ctx);
+
+    // 다시 밤으로 전환
+    const nightPhasePromise = waitForEvent(
+      ctx.players[2] as Socket,
+      'game:phase',
+    );
+    ctx.storyteller.emit('game:setPhase', 'night');
+    await nightPhasePromise;
+
+    // 이야기꾼이 imp 역할 활성화 → 승계된 탕녀에게 night:wakeUp이 가야 함
+    const wakeUpPromise = waitForEvent<{ roleId: string }>(
+      ctx.players[2] as Socket,
+      'night:wakeUp',
+    );
+    ctx.storyteller.emit('night:setActiveRole', 'imp');
+    const wakeUp = await wakeUpPromise;
+    expect(wakeUp.roleId).toBe('imp');
+
+    // 승계된 탕녀가 밤 행동(night:action) 제출 → 이야기꾼이 받는지 확인
+    const actionPromise = waitForEvent<{
+      playerId: string;
+      roleId: string;
+      targets: string[];
+    }>(ctx.storyteller as Socket, 'night:actionReceived');
+    ctx.players[2].emit('night:action', { targets: [playerIds[0]] });
+    const action = await actionPromise;
+    expect(action.playerId).toBe(playerIds[2]);
+    expect(action.roleId).toBe('imp');
+    expect(action.targets).toEqual([playerIds[0]]);
+  }, 15000);
+});
+
 describe('E2E: 집사 투표 제한', () => {
   let ctx: TestContext;
 
