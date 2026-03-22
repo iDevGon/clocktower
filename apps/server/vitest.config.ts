@@ -5,5 +5,6 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts'],
     exclude: ['src/__tests__/e2e/**'],
+    reporters: ['verbose'],
   },
 });
