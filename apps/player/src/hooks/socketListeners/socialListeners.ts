@@ -61,4 +61,8 @@ export function attachSocialListeners(socket: AppSocket) {
   socket.on('virgin:triggered', () => {
     vibrateAlert();
   });
+
+  socket.on('witch:curseDeath', () => {
+    vibrateAlert();
+  });
 }
