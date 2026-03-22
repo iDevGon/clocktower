@@ -2,6 +2,8 @@ import {
   type GameSettings,
   getRandomTipText,
   getRoleById,
+  getTravellersForEdition,
+  ALL_TRAVELLER_ROLES,
   NIGHT_ACTIONS,
   PLAYER_STATUS_LABELS,
   type PlayerStatus,
@@ -172,6 +174,8 @@ export default function GrimoireScreen() {
     mayorRedirect,
     assignRedHerring,
     kickPlayer,
+    addTraveller,
+    exileTraveller,
   } = useGameActions();
 
   const sweetheartDiedPending = useGameStore((s) => s.sweetheartDiedPending);
@@ -508,32 +512,77 @@ export default function GrimoireScreen() {
       },
     };
 
+    const player = players?.find((p) => p.id === playerId);
+    const isTraveller = player?.isTraveller === true;
+
+    // 역할 미배정 여행자 → 역할 배정 모달로 직접 이동
+    if (isTraveller && !player?.role) {
+      handleTravellerAssign(playerId, playerName);
+      return;
+    }
+
+    const exileOption: ActionModalOption = {
+      text: '추방 (Exile)',
+      style: 'destructive',
+      onPress: () => {
+        Alert.alert(
+          `${playerName} 추방`,
+          '여행자를 추방하시겠습니까?\n추방은 처형과 다르며 처형 효과가 발동하지 않습니다.',
+          [
+            { text: '취소', style: 'cancel' },
+            {
+              text: '추방',
+              style: 'destructive',
+              onPress: async () => {
+                try {
+                  await exileTraveller(playerId);
+                  addLog(getDay(), getPhase(), `🚪 ${playerName} 추방됨`, 'death');
+                } catch (e) {
+                  Alert.alert('오류', e instanceof Error ? e.message : '추방 실패');
+                }
+              },
+            },
+          ],
+        );
+      },
+    };
+
     const options: ActionModalOption[] = isAlive
       ? [
-          {
-            text: '역할 배정',
-            onPress: () =>
-              router.push({
-                pathname: '/game/assign-role',
-                params: { playerId },
-              }),
-          },
+          ...(isTraveller
+            ? []
+            : [
+                {
+                  text: '역할 배정',
+                  onPress: () =>
+                    router.push({
+                      pathname: '/game/assign-role',
+                      params: { playerId },
+                    }),
+                },
+              ]),
           {
             text: '상태 관리',
             onPress: () => handleStatusMenu(playerId, playerName),
           },
           chatOption,
           memoOption,
-          {
-            text: '사망 처리',
-            style: 'destructive',
-            onPress: () => kill(playerId),
-          },
+          ...(isTraveller
+            ? [exileOption]
+            : [
+                {
+                  text: '사망 처리',
+                  style: 'destructive' as const,
+                  onPress: () => kill(playerId),
+                },
+              ]),
           kickOption,
           { text: '취소', style: 'cancel' },
         ]
       : [
-          { text: '부활', onPress: () => revive(playerId) },
+          ...(isTraveller
+            ? []
+            : [{ text: '부활', onPress: () => revive(playerId) }]),
           {
             text: '상태 관리',
             onPress: () => handleStatusMenu(playerId, playerName),
@@ -589,20 +638,123 @@ export default function GrimoireScreen() {
     ]);
   };
 
+  // ── 여행자 역할 배정 ──
+
+  const handleTravellerAssign = (playerId: string, playerName: string) => {
+    // 에디션에 맞는 여행자 역할 또는 전체 여행자
+    const editionId =
+      gameState?.players?.find((p) => p.role)?.role?.edition ?? 'trouble_brewing';
+    const editionTravellers = getTravellersForEdition(editionId);
+    const travellers =
+      editionTravellers.length > 0 ? editionTravellers : ALL_TRAVELLER_ROLES;
+
+    // 먼저 진영 선택
+    showModal(`${playerName} - 여행자 진영`, [
+      {
+        text: '선한 여행자',
+        onPress: () => {
+          showModal(
+            `${playerName} - 여행자 역할`,
+            travellers.map((t) => ({
+              text: `${t.name}`,
+              onPress: async () => {
+                try {
+                  await addTraveller(playerId, t.id, 'good');
+                } catch (e) {
+                  Alert.alert('오류', e instanceof Error ? e.message : '배정 실패');
+                }
+              },
+            })).concat([{ text: '취소', style: 'cancel' as const, onPress: () => {} }]),
+          );
+        },
+      },
+      {
+        text: '악한 여행자',
+        onPress: () => {
+          showModal(
+            `${playerName} - 여행자 역할`,
+            travellers.map((t) => ({
+              text: `${t.name}`,
+              onPress: async () => {
+                try {
+                  await addTraveller(playerId, t.id, 'evil');
+                } catch (e) {
+                  Alert.alert('오류', e instanceof Error ? e.message : '배정 실패');
+                }
+              },
+            })).concat([{ text: '취소', style: 'cancel' as const, onPress: () => {} }]),
+          );
+        },
+      },
+      { text: '취소', style: 'cancel' },
+    ]);
+  };
+
+  const handleTravellerMenu = () => {
+    const travellers = players?.filter((p) => p.isTraveller) ?? [];
+    const unassigned = travellers.filter((p) => !p.role);
+    const assigned = travellers.filter((p) => p.role && p.isAlive);
+
+    const options: ActionModalOption[] = [];
+
+    if (unassigned.length > 0) {
+      options.push({
+        text: `📋 역할 미배정 여행자 (${unassigned.length}명)`,
+        onPress: () => {
+          showModal(
+            '여행자 역할 배정',
+            unassigned.map((p) => ({
+              text: p.name,
+              onPress: () => handleTravellerAssign(p.id, p.name),
+            })).concat([{ text: '닫기', style: 'cancel' as const, onPress: () => {} }]),
+          );
+        },
+      });
+    }
+
+    if (assigned.length > 0) {
+      assigned.forEach((p) => {
+        options.push({
+          text: `${p.name} (${p.role?.name ?? '?'}) - ${p.travellerAlignment === 'evil' ? '악' : '선'}`,
+          onPress: () => handlePlayerPress(p.id, p.name, p.isAlive),
+        });
+      });
+    }
+
+    if (options.length === 0) {
+      options.push({
+        text: '참가한 여행자가 없습니다',
+        onPress: () => {},
+      });
+    }
+
+    options.push({ text: '닫기', style: 'cancel' });
+    showModal('여행자 관리', options);
+  };
+
   const handleMenu = () => {
+    const hasTravellers = players?.some((p) => p.isTraveller) ?? false;
     showModal('메뉴', [
       {
         text: '게임 설정',
         onPress: () => setSettingsVisible(true),
       },
+      ...(hasTravellers
+        ? [
+            {
+              text: '여행자 관리',
+              onPress: () => handleTravellerMenu(),
+            },
+          ]
+        : []),
       {
         text: '게임 초기화',
-        style: 'destructive',
+        style: 'destructive' as const,
         onPress: () => handleRestartGame(),
       },
       {
         text: '서버 연결 해제',
-        style: 'destructive',
+        style: 'destructive' as const,
         onPress: () => handleDisconnect(),
       },
       { text: '닫기', style: 'cancel' },

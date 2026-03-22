@@ -519,7 +519,9 @@ export function registerStorytellerHandlers(
 
     socket.on('game:distributeRoles', (options, callback) => {
       const state = game.getState();
-      const playerIds = state.players.map((p) => p.id);
+      // 여행자는 역할 배분에서 제외
+      const regularPlayers = state.players.filter((p) => !p.isTraveller);
+      const playerIds = regularPlayers.map((p) => p.id);
       // 블러프 역할은 배분 대상에서 제외
       const excludedRoleIds = [
         ...(options.excludedRoleIds ?? []),

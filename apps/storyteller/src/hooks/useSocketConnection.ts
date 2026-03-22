@@ -226,6 +226,28 @@ export function useSocketConnection() {
         newSocket.on('night:wakeUpTargets', (data) => {
           useGameStore.getState().setNightWakeUpTargets(data.candidateIds);
         });
+        newSocket.on('traveller:joined', (data) => {
+          const gs = useGameStore.getState().gameState;
+          const msg = `${data.playerName}이(가) 여행자(${data.roleName})로 참가했습니다`;
+          useGameStore.getState().showEventToast({
+            title: '여행자 참가',
+            message: msg,
+          });
+          useLogStore
+            .getState()
+            .addLog(gs?.day ?? 0, gs?.phase ?? 'setup', msg);
+        });
+        newSocket.on('traveller:exiled', (data) => {
+          const gs = useGameStore.getState().gameState;
+          const msg = `${data.playerName}(${data.roleName})이(가) 추방되었습니다`;
+          useGameStore.getState().showEventToast({
+            title: '여행자 추방',
+            message: msg,
+          });
+          useLogStore
+            .getState()
+            .addLog(gs?.day ?? 0, gs?.phase ?? 'day', `🚪 ${msg}`, 'death');
+        });
         newSocket.on('chat:receiveFromPlayer', (message) => {
           const store = useGameStore.getState();
           store.addChatMessage(message);
