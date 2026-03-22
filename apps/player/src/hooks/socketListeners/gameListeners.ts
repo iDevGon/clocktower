@@ -188,10 +188,8 @@ export function attachGameListeners(socket: AppSocket) {
   });
 
   // 여행자 참가/추방 이벤트
-  socket.on('traveller:joined', (data) => {
-    console.log(
-      `여행자 참가: ${data.playerName} (${data.roleName})`,
-    );
+  socket.on('traveller:joined', (_data) => {
+    // 이야기꾼이 여행자 역할 배정 후 game:state로 상태가 갱신됨
   });
 
   socket.on('traveller:exiled', (data) => {

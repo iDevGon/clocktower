@@ -1,9 +1,9 @@
 import {
+  ALL_TRAVELLER_ROLES,
   type GameSettings,
   getRandomTipText,
   getRoleById,
   getTravellersForEdition,
-  ALL_TRAVELLER_ROLES,
   NIGHT_ACTIONS,
   PLAYER_STATUS_LABELS,
   type PlayerStatus,
@@ -536,9 +536,17 @@ export default function GrimoireScreen() {
               onPress: async () => {
                 try {
                   await exileTraveller(playerId);
-                  addLog(getDay(), getPhase(), `🚪 ${playerName} 추방됨`, 'death');
+                  addLog(
+                    getDay(),
+                    getPhase(),
+                    `🚪 ${playerName} 추방됨`,
+                    'death',
+                  );
                 } catch (e) {
-                  Alert.alert('오류', e instanceof Error ? e.message : '추방 실패');
+                  Alert.alert(
+                    '오류',
+                    e instanceof Error ? e.message : '추방 실패',
+                  );
                 }
               },
             },
@@ -643,7 +651,8 @@ export default function GrimoireScreen() {
   const handleTravellerAssign = (playerId: string, playerName: string) => {
     // 에디션에 맞는 여행자 역할 또는 전체 여행자
     const editionId =
-      gameState?.players?.find((p) => p.role)?.role?.edition ?? 'trouble_brewing';
+      gameState?.players?.find((p) => p.role)?.role?.edition ??
+      'trouble_brewing';
     const editionTravellers = getTravellersForEdition(editionId);
     const travellers =
       editionTravellers.length > 0 ? editionTravellers : ALL_TRAVELLER_ROLES;
@@ -655,16 +664,23 @@ export default function GrimoireScreen() {
         onPress: () => {
           showModal(
             `${playerName} - 여행자 역할`,
-            travellers.map((t) => ({
-              text: `${t.name}`,
-              onPress: async () => {
-                try {
-                  await addTraveller(playerId, t.id, 'good');
-                } catch (e) {
-                  Alert.alert('오류', e instanceof Error ? e.message : '배정 실패');
-                }
-              },
-            })).concat([{ text: '취소', style: 'cancel' as const, onPress: () => {} }]),
+            travellers
+              .map((t) => ({
+                text: `${t.name}`,
+                onPress: async () => {
+                  try {
+                    await addTraveller(playerId, t.id, 'good');
+                  } catch (e) {
+                    Alert.alert(
+                      '오류',
+                      e instanceof Error ? e.message : '배정 실패',
+                    );
+                  }
+                },
+              }))
+              .concat([
+                { text: '취소', style: 'cancel' as const, onPress: () => {} },
+              ]),
           );
         },
       },
@@ -673,16 +689,23 @@ export default function GrimoireScreen() {
         onPress: () => {
           showModal(
             `${playerName} - 여행자 역할`,
-            travellers.map((t) => ({
-              text: `${t.name}`,
-              onPress: async () => {
-                try {
-                  await addTraveller(playerId, t.id, 'evil');
-                } catch (e) {
-                  Alert.alert('오류', e instanceof Error ? e.message : '배정 실패');
-                }
-              },
-            })).concat([{ text: '취소', style: 'cancel' as const, onPress: () => {} }]),
+            travellers
+              .map((t) => ({
+                text: `${t.name}`,
+                onPress: async () => {
+                  try {
+                    await addTraveller(playerId, t.id, 'evil');
+                  } catch (e) {
+                    Alert.alert(
+                      '오류',
+                      e instanceof Error ? e.message : '배정 실패',
+                    );
+                  }
+                },
+              }))
+              .concat([
+                { text: '취소', style: 'cancel' as const, onPress: () => {} },
+              ]),
           );
         },
       },
@@ -703,10 +726,14 @@ export default function GrimoireScreen() {
         onPress: () => {
           showModal(
             '여행자 역할 배정',
-            unassigned.map((p) => ({
-              text: p.name,
-              onPress: () => handleTravellerAssign(p.id, p.name),
-            })).concat([{ text: '닫기', style: 'cancel' as const, onPress: () => {} }]),
+            unassigned
+              .map((p) => ({
+                text: p.name,
+                onPress: () => handleTravellerAssign(p.id, p.name),
+              }))
+              .concat([
+                { text: '닫기', style: 'cancel' as const, onPress: () => {} },
+              ]),
           );
         },
       });

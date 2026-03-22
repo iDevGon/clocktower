@@ -220,15 +220,10 @@ export function useGameActions() {
       new Promise((resolve, reject) => {
         const s = getSocket();
         if (!s) return reject(new Error('Not connected'));
-        s.emit(
-          'traveller:add',
-          { playerId, roleId, alignment },
-          (res) => {
-            if (res.success) resolve(res);
-            else
-              reject(new Error(res.error ?? '여행자 역할 배정 실패'));
-          },
-        );
+        s.emit('traveller:add', { playerId, roleId, alignment }, (res) => {
+          if (res.success) resolve(res);
+          else reject(new Error(res.error ?? '여행자 역할 배정 실패'));
+        });
       }),
     [],
   );

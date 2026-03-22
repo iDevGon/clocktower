@@ -527,7 +527,10 @@ export function registerStorytellerHandlers(
         ...(options.excludedRoleIds ?? []),
         ...(options.bluffRoleIds ?? []),
       ];
-      const result = distributeRoles(playerIds, { ...options, excludedRoleIds });
+      const result = distributeRoles(playerIds, {
+        ...options,
+        excludedRoleIds,
+      });
       if (!result) {
         const hasExcluded =
           options.excludedRoleIds && options.excludedRoleIds.length > 0;
@@ -793,7 +796,10 @@ export function registerStorytellerHandlers(
         return;
       }
       if (!player.isTraveller) {
-        callback({ success: false, error: '해당 플레이어는 여행자가 아닙니다' });
+        callback({
+          success: false,
+          error: '해당 플레이어는 여행자가 아닙니다',
+        });
         return;
       }
       const success = game.assignTravellerRole(playerId, roleId, alignment);

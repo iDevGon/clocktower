@@ -459,8 +459,7 @@ export const SECTS_AND_VIOLETS_TRAVELLERS: TravellerRole[] = [
     id: 'butcher_traveller',
     name: '백정',
     team: 'traveller',
-    ability:
-      '매일, 첫 번째 처형 후, 다시 지목할 수 있습니다.',
+    ability: '매일, 첫 번째 처형 후, 다시 지목할 수 있습니다.',
     edition: 'sects_and_violets',
   },
   {
