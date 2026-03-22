@@ -7,6 +7,7 @@ import {
   NIGHT_ACTIONS,
   PLAYER_STATUS_LABELS,
   type PlayerStatus,
+  SECTS_AND_VIOLETS_ROLES,
   type TipCategory,
 } from '@clocktower/shared';
 import { DictionaryModal } from '@clocktower/ui';
@@ -139,6 +140,15 @@ export default function GrimoireScreen() {
   const router = useRouter();
   const gameState = useGameStore((s) => s.gameState);
   const players = gameState?.players;
+  const svRoleIds = useMemo(
+    () => new Set(SECTS_AND_VIOLETS_ROLES.map((r) => r.id)),
+    [],
+  );
+  const detectedEditionId = useMemo(() => {
+    if (!players) return 'trouble_brewing';
+    const hasSv = players.some((p) => p.role && svRoleIds.has(p.role.id));
+    return hasSv ? 'sects_and_violets' : 'trouble_brewing';
+  }, [players, svRoleIds]);
   const nightActions = useGameStore((s) => s.nightActions);
   const activeWhispers = useGameStore((s) => s.activeWhispers);
   const activeNightRoleId = useGameStore((s) => s.activeNightRoleId);
@@ -1301,6 +1311,7 @@ export default function GrimoireScreen() {
           onSetStatus={setPlayerStatus}
           nightWakeUpTargets={nightWakeUpTargets}
           styles={styles}
+          editionId={detectedEditionId}
         />
       )}
       {hasActiveVote && currentNomination && (

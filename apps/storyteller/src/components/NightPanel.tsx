@@ -31,6 +31,8 @@ interface NightPanelProps {
   onSetStatus: (playerId: string, status: PlayerStatus) => void;
   nightWakeUpTargets: string[];
   styles: ReturnType<typeof createGrimoireStyles>;
+  /** 에디션 ID (밤 순서 결정에 사용) */
+  editionId?: string;
 }
 
 export function NightPanel({
@@ -54,6 +56,7 @@ export function NightPanel({
   onSetStatus,
   nightWakeUpTargets,
   styles,
+  editionId,
 }: NightPanelProps) {
   const [feedbackCollapsed, setFeedbackCollapsed] = useState(false);
   const [feedbackSentForRole, setFeedbackSentForRole] = useState<string | null>(
@@ -192,6 +195,7 @@ export function NightPanel({
             onNightComplete={() => {
               setNightOrderComplete(true);
             }}
+            editionId={editionId}
           />
 
           {/* Feedback overlay - covers NightOrderPanel */}

@@ -9,6 +9,7 @@ import {
   ALL_ROLES,
   distributeRoles,
   FIRST_NIGHT_ORDER,
+  getNightOrderForEdition,
   getRoleById,
   NIGHT_ACTIONS,
   OTHER_NIGHT_ORDER,
@@ -29,7 +30,10 @@ type StorytellerNamespace = Namespace<
   ServerToStorytellerEvents
 >;
 
-function getNightOrder(day: number): string[] {
+function getNightOrder(day: number, editionId?: string): string[] {
+  if (editionId) {
+    return getNightOrderForEdition(editionId, day);
+  }
   return day <= 1 ? FIRST_NIGHT_ORDER : OTHER_NIGHT_ORDER;
 }
 
@@ -206,13 +210,15 @@ export function registerStorytellerHandlers(
         callback(result);
         return;
       }
+      // 에디션 자동 감지 (역할 기반)
+      game.detectEdition();
       // 악한 팀 정보 전송 (블러프 포함)
       sendEvilInfo(playerIo, game, game.getPreselectedBluffIds());
       game.clearPreselectedBluffIds();
 
       const state = game.getState();
       playerIo.emit('game:phase', 'night');
-      const order = getNightOrder(state.day);
+      const order = getNightOrder(state.day, game.getEditionId());
       const players = getPlayerInfoList(game);
       game.setNightProgress(null, order);
       playerIo.emit('night:activeRole', { roleId: null, order, players });
@@ -246,7 +252,10 @@ export function registerStorytellerHandlers(
           }
           // 처형 후 승리 조건 체크
           const executedRoleId = killedPlayer?.role?.id;
-          const winResult = game.checkWinCondition(executedRoleId);
+          const winResult = game.checkWinCondition(
+            executedRoleId,
+            candidate.playerId,
+          );
           if (winResult) {
             winResult.cause = 'execution';
             playerIo.emit('game:end', winResult);
@@ -257,13 +266,46 @@ export function registerStorytellerHandlers(
           }
           emitPromotionIfAny(game, playerIo, storytellerIo);
         }
+
+        // S&V: 보르톡스 - 처형 없는 날 → 선 팀 승리
+        if (!candidate && game.hasVortox() && game.getState().day > 1) {
+          const vortoxWin = game.checkWinCondition();
+          if (!vortoxWin) {
+            // 강제로 보르톡스 승리 조건 실행
+            const state = game.getState();
+            state.phase = 'ended' as const;
+            const result = {
+              winningTeam: 'good' as const,
+              reason: '보르톡스 게임에서 처형이 없었습니다',
+              cause: 'vortox_no_execution' as const,
+              players: state.players.map((p) => ({
+                id: p.id,
+                name: p.name,
+                role: p.role ?? {
+                  id: 'unknown',
+                  name: '???',
+                  team: 'townsfolk' as const,
+                  ability: '',
+                  edition: '',
+                },
+                isAlive: p.isAlive,
+                team: (p.role?.team ?? 'townsfolk') as 'townsfolk',
+              })),
+            };
+            playerIo.emit('game:end', result);
+            playerIo.emit('game:phase', 'ended');
+            storytellerIo.emit('game:end', result);
+            storytellerIo.emit('game:state', game.getStorytellerState());
+            return;
+          }
+        }
       }
 
       game.setPhase(phase);
       playerIo.emit('game:phase', phase);
       if (phase === 'night') {
         const state = game.getState();
-        const order = getNightOrder(state.day);
+        const order = getNightOrder(state.day, game.getEditionId());
         const players = getPlayerInfoList(game);
         game.setNightProgress(null, order);
         playerIo.emit('night:activeRole', { roleId: null, order, players });
@@ -394,7 +436,7 @@ export function registerStorytellerHandlers(
 
     socket.on('night:setActiveRole', (roleId) => {
       const state = game.getState();
-      const order = getNightOrder(state.day);
+      const order = getNightOrder(state.day, game.getEditionId());
       const players = getPlayerInfoList(game);
       game.setNightProgress(roleId, order);
       playerIo.emit('night:activeRole', { roleId, order, players });
@@ -687,6 +729,12 @@ export function registerStorytellerHandlers(
       // 시장 밤 사망 감지: 사망 처리 전에 체크
       const isMayorNightDeath = killedPlayer?.role?.id === 'mayor' && isNight;
 
+      // S&V: 이발사 사망 감지
+      const isBarberDeath = killedPlayer?.role?.id === 'barber';
+
+      // S&V: 얼뜨기 사망 감지
+      const isKlutzDeath = killedPlayer?.role?.id === 'klutz';
+
       game.kill(playerId);
 
       // 임프 자해 → 하수인 승계 예약 (낮 전환 시 실행)
@@ -708,6 +756,21 @@ export function registerStorytellerHandlers(
         storytellerIo.emit('mayor:nightDeath', {
           mayorId: playerId,
           mayorName: killedPlayer.name,
+        });
+      }
+
+      // S&V: 이발사 사망 → 이야기꾼에게 역할 교환 대상 선택 요청
+      if (isBarberDeath && killedPlayer) {
+        storytellerIo.emit('barber:died', {
+          barberName: killedPlayer.name,
+        });
+      }
+
+      // S&V: 얼뜨기 사망 → 이야기꾼에게 선택 요청
+      if (isKlutzDeath && killedPlayer) {
+        storytellerIo.emit('klutz:died', {
+          klutzId: playerId,
+          klutzName: killedPlayer.name,
         });
       }
 
@@ -878,6 +941,153 @@ export function registerStorytellerHandlers(
       callback({ success: true });
       console.log(`Traveller exiled: ${player.name} (${roleName})`);
     });
+
+    // ── Sects & Violets 전용 핸들러 ──
+
+    socket.on('witch:confirmCurseDeath', ({ nominatorId, kill }) => {
+      if (!kill) return;
+      const nominator = game.getPlayer(nominatorId);
+      if (!nominator) return;
+      game.kill(nominatorId);
+      game.markExecution();
+      playerIo.emit('witch:curseDeath', {
+        nominatorId,
+        nominatorName: nominator.name,
+      });
+      storytellerIo.emit('witch:curseDeath', {
+        nominatorId,
+        nominatorName: nominator.name,
+      });
+      playerIo.emit('execution:announced', {
+        executedId: nominatorId,
+        executedName: nominator.name,
+        reason: 'witch_curse',
+        detail: `${nominator.name}이(가) 마녀의 저주로 사망했습니다`,
+      });
+      storytellerIo.emit('execution:announced', {
+        executedId: nominatorId,
+        executedName: nominator.name,
+        reason: 'witch_curse',
+        detail: `${nominator.name}이(가) 마녀의 저주로 사망했습니다`,
+      });
+      const killedPlayer = game.getPlayer(nominatorId);
+      if (killedPlayer) {
+        playerIo.emit('game:playerUpdate', killedPlayer);
+      }
+      storytellerIo.emit('game:state', game.getStorytellerState());
+
+      const winResult = game.checkWinCondition();
+      if (winResult) {
+        winResult.cause = 'witch_curse';
+        playerIo.emit('game:end', winResult);
+        playerIo.emit('game:phase', 'ended');
+        storytellerIo.emit('game:end', winResult);
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      }
+    });
+
+    socket.on('barber:swapRoles', ({ playerId1, playerId2 }) => {
+      game.swapPlayerRoles(playerId1, playerId2);
+      // 역할이 바뀐 플레이어에게 새 역할 알림
+      const p1 = game.getPlayer(playerId1);
+      const p2 = game.getPlayer(playerId2);
+      if (p1?.role) {
+        playerIo.to(playerId1).emit('role:assign', {
+          roleId: p1.role.id,
+          roleName: p1.role.name,
+        });
+      }
+      if (p2?.role) {
+        playerIo.to(playerId2).emit('role:assign', {
+          roleId: p2.role.id,
+          roleName: p2.role.name,
+        });
+      }
+      storytellerIo.emit('game:state', game.getStorytellerState());
+    });
+
+    socket.on('klutz:choose', ({ klutzId, chosenPlayerId }) => {
+      const chosen = game.getPlayer(chosenPlayerId);
+      if (!chosen) return;
+      const isEvil =
+        chosen.role?.team === 'minion' || chosen.role?.team === 'demon';
+      if (isEvil) {
+        // 얼뜨기가 악한 플레이어를 선택 → 악 팀 승리
+        const winResult = game.checkWinCondition();
+        if (!winResult) {
+          // 강제 종료
+          const state = game.getState();
+          const result = {
+            winningTeam: 'evil' as const,
+            reason: '얼뜨기가 악한 플레이어를 선택했습니다',
+            cause: 'klutz' as const,
+            players: state.players.map((p) => ({
+              id: p.id,
+              name: p.name,
+              role: p.role ?? {
+                id: 'unknown',
+                name: '???',
+                team: 'townsfolk' as const,
+                ability: '',
+                edition: '',
+              },
+              isAlive: p.isAlive,
+              team: (p.role?.team ?? 'townsfolk') as 'townsfolk',
+            })),
+          };
+          playerIo.emit('game:end', result);
+          playerIo.emit('game:phase', 'ended');
+          storytellerIo.emit('game:end', result);
+          storytellerIo.emit('game:state', game.getStorytellerState());
+        }
+      }
+      // 선한 플레이어 선택 → 게임 계속
+    });
+
+    socket.on('fangGu:confirmJump', ({ oldDemonId, newDemonId }) => {
+      const result = game.handleFangGuJump(oldDemonId, newDemonId);
+      if (!result) return;
+
+      // 새 악마에게 역할 알림
+      const fangGuRole = getRoleById('fang_gu');
+      if (fangGuRole) {
+        playerIo.to(newDemonId).emit('role:assign', {
+          roleId: fangGuRole.id,
+          roleName: fangGuRole.name,
+        });
+      }
+      game.addPendingNightKill(oldDemonId);
+      storytellerIo.emit('fangGu:jumped', {
+        oldDemonId,
+        oldDemonName: result.oldDemon.name,
+        newDemonId,
+        newDemonName: result.newDemon.name,
+      });
+      storytellerIo.emit('game:state', game.getStorytellerState());
+    });
+
+    socket.on('pitHag:changeRole', ({ targetPlayerId, newRoleId }) => {
+      const success = game.changePlayerRole(targetPlayerId, newRoleId);
+      if (!success) return;
+      const player = game.getPlayer(targetPlayerId);
+      if (player?.role) {
+        playerIo.to(targetPlayerId).emit('role:assign', {
+          roleId: player.role.id,
+          roleName: player.role.name,
+        });
+      }
+      // 에디션 재감지 (새로운 역할이 다른 에디션일 수 있음)
+      game.detectEdition();
+      storytellerIo.emit('game:state', game.getStorytellerState());
+    });
+
+    socket.on(
+      'evilTwin:assignGoodTwin',
+      ({ evilTwinPlayerId, goodTwinPlayerId }) => {
+        game.setEvilTwinPair(evilTwinPlayerId, goodTwinPlayerId);
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      },
+    );
 
     socket.on('player:kick', (playerId, callback) => {
       const player = game.getPlayer(playerId);
