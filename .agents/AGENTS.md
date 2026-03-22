@@ -128,7 +128,7 @@ import { colors } from '@clocktower/ui';
 
 ### Player Status
 
-`PlayerStatus`: `'poisoned'` | `'drunk'` | `'protected'` | `'cursed'` | `'master'`
+`PlayerStatus`: `'poisoned'` | `'drunk'` | `'protected'` | `'cursed'` | `'master'` | `'misregistered'` | `'witch_cursed'` | `'cerenovus_mad'` | `'good_twin'` | `'evil_twin'` | `'no_ability'`
 
 ### Game Settings
 
@@ -137,13 +137,16 @@ import { colors } from '@clocktower/ui';
 ### Role System
 
 - Role definitions: `packages/shared/src/roles.ts`
-- Trouble Brewing edition fully implemented (22 roles), Sects & Violets partially implemented
+- Trouble Brewing edition fully implemented (22 roles), Sects & Violets fully implemented (25 roles)
+- Traveller roles: 15 roles across 3 editions (TB 5, S&V 5, BMR 5)
 - `NIGHT_ACTIONS`: per-role night action types (select_one, select_two, passive). `onlyWhenDead` flag for roles that activate only on death
 - `NIGHT_FEEDBACK`: per-role feedback types (number, yes_no, players_and_role, role, grimoire, no_match)
-- `distributeRoles()`: automatic role distribution by player count (Drunk drunkAs auto-assigned, Baron adds +2 Outsiders)
+- `distributeRoles()`: automatic role distribution by player count (Drunk drunkAs auto-assigned, Baron adds +2 Outsiders, Fang Gu +1 Outsider, Vigormortis -1 Outsider)
+- Edition-specific night order: `FIRST_NIGHT_ORDER` / `OTHER_NIGHT_ORDER` per edition
 
 ### Implemented Special Abilities
 
+#### Trouble Brewing
 - **Drunk**: displays fake role (drunkAs), player unaware, ability nullified server-side
 - **Slayer**: one-time day declaration, instant kill if target is Demon, ineffective when poisoned
 - **Virgin**: if nominated by a Townsfolk, the nominator is executed instead
@@ -155,8 +158,27 @@ import { colors } from '@clocktower/ui';
 - **Saint**: evil team wins if executed (when not poisoned/drunk)
 - **Mayor**: night death can redirect to another player, good team wins at final 3 with no execution
 - **Ravenkeeper**: ability triggers on night death (`onlyWhenDead`), sends `night:wakeUp` event
-- **Sweetheart**: on death, storyteller assigns drunk status to a chosen player
 - **Evil team info**: Demon receives Minion names + 3 bluff roles, Minions receive Demon name + other Minion names
+
+#### Sects & Violets
+- **Witch**: curses a player each night; if cursed player nominates, they die (server checks via `checkWitchCurse`)
+- **Evil Twin**: paired with good twin; good twin execution = evil wins; evil twin immune to execution while good twin alive
+- **Fang Gu**: kills an Outsider → Outsider becomes new Demon, Fang Gu dies (once per game)
+- **Vigormortis**: kills Minions but they keep abilities; poisons 2 nearest Townsfolk to dead Minion
+- **No Dashii**: poisons 2 neighboring Townsfolk (based on playerOrder)
+- **Vortox**: all Townsfolk info is false; no-execution day = good team wins
+- **Pit-Hag**: changes a player's role mid-game (`pitHag:changeRole`)
+- **Barber**: on death, Demon can swap 2 players' roles (`barber:swapRoles`)
+- **Klutz**: on death, must choose a player; if evil chosen = evil wins (`klutz:choose`)
+- **Sweetheart**: on death, storyteller assigns drunk status to a chosen player
+- **Clockmaker**: learns Demon-to-nearest-Minion distance
+
+#### Traveller System
+- Travellers can join mid-game via `game:joinAsTraveller`
+- Storyteller assigns traveller role + alignment (good/evil) via `traveller:add`
+- Exile (추방) is separate from execution: no execution effects triggered, doesn't count as daily execution
+- Travellers excluded from win condition alive count and role distribution
+- 15 traveller roles across 3 editions (TB/S&V/BMR)
 
 ## Codebase Structure
 
@@ -201,7 +223,7 @@ packages/ui/src/utils/              # Utilities (chosung search, chat commons)
 
 ### Event List
 
-**Client → Server**: `game:join`, `game:rejoin`, `slayer:use`, `slayer:ack`, `whisper:send`, `nominate:request`, `vote:cast`, `vote:preselect`, `vote:consentReady`, `night:action`, `chat:sendToStoryteller`, `push:register`, `player:leave`
-**Server → Client**: `game:state`, `game:phase`, `game:playerUpdate`, `role:assign`, `evil:info`, `night:activeRole`, `night:actionReceived`, `night:feedback`, `night:deaths`, `night:wakeUp`, `vote:start`, `vote:result`, `vote:order`, `vote:clockStart`, `vote:clockPause`, `vote:confirmed`, `vote:preselected`, `vote:proceedToVote`, `vote:consentStatus`, `execution:announced`, `slayer:declared`, `slayer:noEffect`, `slayer:allAcked`, `virgin:triggered`, `whisper:receive`, `whisper:activeChats`, `whisper:clockStart`, `discussion:clockStart`, `nomination:clockStart`, `nomination:clockPause`, `nomination:clockResume`, `defense:clockStart`, `day:subPhase`, `game:settings`, `game:end`, `chat:receiveFromStoryteller`, `chat:receiveFromPlayer`, `player:kicked`, `player:left`
-**Server → Storyteller**: ServerToClientEvents subset + `sweetheart:died`, `mayor:nightDeath`, `chat:receiveFromPlayer`
-**Storyteller → Server**: `game:create`, `game:start`, `game:setPhase`, `day:setSubPhase`, `game:assignRole`, `game:distributeRoles`, `game:kill`, `game:revive`, `game:reset`, `game:restart`, `vote:nominate`, `vote:proceedToVote`, `vote:close`, `vote:castForPlayer`, `night:setActiveRole`, `night:sendFeedback`, `player:setStatuses`, `game:setSettings`, `game:setPlayerOrder`, `chat:sendToPlayer`, `game:addDummyPlayers`, `game:removeDummyPlayers`, `slayer:forceAck`, `game:assignRedHerring`, `game:mayorRedirect`, `game:sweetheartDrunk`, `player:kick`
+**Client → Server**: `game:join`, `game:rejoin`, `game:joinAsTraveller`, `slayer:use`, `slayer:ack`, `whisper:send`, `nominate:request`, `vote:cast`, `vote:preselect`, `vote:consentReady`, `night:action`, `chat:sendToStoryteller`, `push:register`, `player:leave`
+**Server → Client**: `game:state`, `game:phase`, `game:playerUpdate`, `role:assign`, `evil:info`, `night:activeRole`, `night:actionReceived`, `night:feedback`, `night:deaths`, `night:wakeUp`, `vote:start`, `vote:result`, `vote:order`, `vote:clockStart`, `vote:clockPause`, `vote:confirmed`, `vote:preselected`, `vote:proceedToVote`, `vote:consentStatus`, `execution:announced`, `slayer:declared`, `slayer:noEffect`, `slayer:allAcked`, `virgin:triggered`, `witch:curseDeath`, `whisper:receive`, `whisper:activeChats`, `whisper:clockStart`, `discussion:clockStart`, `nomination:clockStart`, `nomination:clockPause`, `nomination:clockResume`, `defense:clockStart`, `day:subPhase`, `game:settings`, `game:end`, `chat:receiveFromStoryteller`, `chat:receiveFromPlayer`, `player:kicked`, `player:left`, `traveller:joined`, `traveller:exiled`
+**Server → Storyteller**: ServerToClientEvents subset + `sweetheart:died`, `mayor:nightDeath`, `chat:receiveFromPlayer`, `traveller:joined`, `traveller:exiled`, `witch:curseDeath`, `barber:died`, `klutz:died`, `fangGu:jumped`
+**Storyteller → Server**: `game:create`, `game:start`, `game:setPhase`, `day:setSubPhase`, `game:assignRole`, `game:distributeRoles`, `game:kill`, `game:revive`, `game:reset`, `game:restart`, `vote:nominate`, `vote:proceedToVote`, `vote:close`, `vote:castForPlayer`, `night:setActiveRole`, `night:sendFeedback`, `player:setStatuses`, `game:setSettings`, `game:setPlayerOrder`, `chat:sendToPlayer`, `game:addDummyPlayers`, `game:removeDummyPlayers`, `slayer:forceAck`, `game:assignRedHerring`, `game:mayorRedirect`, `game:sweetheartDrunk`, `player:kick`, `traveller:add`, `traveller:exile`, `witch:confirmCurseDeath`, `barber:swapRoles`, `klutz:choose`, `fangGu:confirmJump`, `pitHag:changeRole`, `evilTwin:assignGoodTwin`
