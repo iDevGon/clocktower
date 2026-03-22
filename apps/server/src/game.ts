@@ -858,98 +858,6 @@ export class GameManager {
     return minion;
   }
 
-<<<<<<< HEAD
-  /**
-   * 승리 조건 확인. 게임 종료 시 GameResult 반환, 아직 진행 중이면 null.
-   * - 악마 사망 (탕녀 승계 조건 미충족) → 선한 팀 승리
-   * - 생존자 2명 이하 (악마 포함) → 악한 팀 승리
-   * - 성자 처형 → 악한 팀 승리 (호출 측에서 executedRoleId 전달)
-   * - 시장: 생존자 3명, 오늘 처형 없음, 살아있는 시장 → 선한 팀 승리
-   */
-  checkWinCondition(executedRoleId?: string): GameResult | null {
-    if (!this.state.started || this.state.phase === 'ended') return null;
-
-    const alivePlayers = this.state.players.filter((p) => p.isAlive);
-    // 여행자는 생존자 수 계산에서 제외 (승리 조건 판정용)
-    const aliveRegularPlayers = alivePlayers.filter((p) => !p.isTraveller);
-    const aliveCount = aliveRegularPlayers.length;
-
-    const buildResult = (
-      winningTeam: 'good' | 'evil',
-      reason: string,
-    ): GameResult => {
-      this.state.phase = 'ended';
-      return {
-        winningTeam,
-        reason,
-        players: this.state.players.map((p) => ({
-          id: p.id,
-          name: p.name,
-          role: p.role ?? {
-            id: 'unknown',
-            name: '???',
-            team: 'townsfolk',
-            ability: '',
-            edition: '',
-          },
-          isAlive: p.isAlive,
-          team: p.role?.team ?? 'townsfolk',
-        })),
-      };
-    };
-
-    // 성자(Saint) 처형 → 악한 팀 승리 (중독/취한 성자는 능력 무효화)
-    if (executedRoleId === 'saint') {
-      const saintPlayer = this.state.players.find(
-        (p) => p.role?.id === 'saint',
-      );
-      if (saintPlayer && !isPoisonedOrDrunk(saintPlayer)) {
-        return buildResult('evil', '성자가 처형되었습니다');
-      }
-    }
-
-    // 악마 사망 체크
-    const aliveDemon = alivePlayers.find((p) => p.role?.team === 'demon');
-    if (!aliveDemon) {
-      // 임프 자해 승계가 예약되어 있으면 게임 계속
-      if (this.pendingImpPromotion) {
-        return null;
-      }
-      // 탕녀 승계: 생존자 5명 이상이고 살아있는 (중독되지 않은) 탕녀가 있으면 게임 계속
-      const aliveScarletWoman = alivePlayers.find(
-        (p) =>
-          p.role?.id === 'scarlet_woman' && !p.statuses.includes('poisoned'),
-      );
-      if (aliveScarletWoman && aliveCount >= 5) {
-        // 탕녀를 임프로 자동 승계
-        const impRole = getRoleById('imp');
-        if (impRole) {
-          aliveScarletWoman.role = impRole;
-          this.lastPromotedPlayer = aliveScarletWoman;
-        }
-        return null;
-      }
-      return buildResult('good', '악마가 사망했습니다');
-    }
-
-    // 생존자 2명 이하 → 악한 팀 승리
-    if (aliveCount <= 2) {
-      return buildResult('evil', '악마가 마을을 장악했습니다');
-    }
-
-    // 시장(Mayor): 생존자 3명 + 오늘 처형 없음 + 살아있는 (중독되지 않은) 시장
-    if (aliveCount === 3 && !this.executionToday) {
-      const aliveMayor = alivePlayers.find(
-        (p) => p.role?.id === 'mayor' && !isPoisonedOrDrunk(p),
-      );
-      if (aliveMayor) {
-        return buildResult('good', '시장이 마을을 이끌었습니다');
-      }
-    }
-
-    return null;
-  }
-
   closeVote(): {
     nomineeId: string;
     nomineeName: string;
@@ -1588,7 +1496,9 @@ export class GameManager {
     if (!this.state.started || this.state.phase === 'ended') return null;
 
     const alivePlayers = this.state.players.filter((p) => p.isAlive);
-    const aliveCount = alivePlayers.length;
+    // 여행자는 생존자 수 계산에서 제외 (승리 조건 판정용)
+    const aliveRegularPlayers = alivePlayers.filter((p) => !p.isTraveller);
+    const aliveCount = aliveRegularPlayers.length;
 
     const buildResult = (
       winningTeam: 'good' | 'evil',
