@@ -121,5 +121,38 @@ export function useConnection() {
     });
   }, []);
 
-  return { connect, joinGame, rejoinGame };
+  const joinAsTraveller = useCallback(
+    (playerName: string): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        const socket = useConnectionStore.getState().socket;
+        if (!socket || !socket.connected) {
+          resolve({ success: false, error: '서버에 연결되어 있지 않습니다' });
+          return;
+        }
+
+        const timeout = setTimeout(
+          () => resolve({ success: false, error: '응답 시간 초과' }),
+          5000,
+        );
+
+        socket.emit('game:joinAsTraveller', { playerName }, (res) => {
+          clearTimeout(timeout);
+          if (!res.success || !res.playerId) {
+            resolve({ success: false, error: res.error });
+            return;
+          }
+          usePlayerStore.getState().set({ playerId: res.playerId });
+          resolve({ success: true });
+          registerForPushNotifications().then((token) => {
+            if (token && socket.connected) {
+              socket.emit('push:register', { token });
+            }
+          });
+        });
+      });
+    },
+    [],
+  );
+
+  return { connect, joinGame, joinAsTraveller, rejoinGame };
 }

@@ -186,4 +186,26 @@ export function attachGameListeners(socket: AppSocket) {
     useWhisperStore.getState().reset();
     useChatStore.getState().reset();
   });
+
+  // 여행자 참가/추방 이벤트
+  socket.on('traveller:joined', (data) => {
+    console.log(
+      `여행자 참가: ${data.playerName} (${data.roleName})`,
+    );
+  });
+
+  socket.on('traveller:exiled', (data) => {
+    const state = usePlayerStore.getState();
+    if (data.playerId === state.playerId) {
+      usePlayerStore.getState().set({
+        isAlive: false,
+        justDied: true,
+        deathReason: 'exile',
+      });
+    }
+    const updated = state.gamePlayers.map((p) =>
+      p.id === data.playerId ? { ...p, isAlive: false } : p,
+    );
+    usePlayerStore.getState().set({ gamePlayers: updated });
+  });
 }
