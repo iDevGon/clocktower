@@ -79,6 +79,7 @@ export interface PlayerInfo {
   name: string;
   isAlive: boolean;
   deadVoteUsed?: boolean;
+  isTraveller?: boolean;
 }
 
 export type FeedbackType =

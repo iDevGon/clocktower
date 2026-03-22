@@ -55,6 +55,12 @@ const TEAM_STYLES: Record<Team, TeamStyleEntry> = {
     labelColor: '#b85c5c',
     accentDim: '#4a1c1c',
   },
+  traveller: {
+    borderColor: '#6a5a8a',
+    label: '여행자',
+    labelColor: '#a090c0',
+    accentDim: '#2a2040',
+  },
 };
 
 const DEAD_TEAM_STYLE: TeamStyleEntry = {

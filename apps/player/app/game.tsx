@@ -222,6 +222,7 @@ export default function GameScreen() {
   const canUseSlayer =
     isAlive &&
     !slayerUsed &&
+    role?.team !== 'traveller' &&
     (currentPhase === 'day' || currentPhase === 'vote');
 
   const nominatablePlayers = useMemo(

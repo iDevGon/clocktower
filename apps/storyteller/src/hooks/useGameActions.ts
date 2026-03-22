@@ -125,6 +125,11 @@ export function useGameActions() {
 
   const resetGame = useCallback(() => socket?.emit('game:reset'), [socket]);
 
+  const unassignAllRoles = useCallback(
+    () => socket?.emit('game:unassignAllRoles'),
+    [socket],
+  );
+
   const restartGame = useCallback(
     () =>
       new Promise<string>((resolve, reject) => {
@@ -241,6 +246,17 @@ export function useGameActions() {
     [],
   );
 
+  const approveTraveller = useCallback(
+    (socketId: string, playerName: string) =>
+      socket?.emit('traveller:approve', { socketId, playerName }),
+    [socket],
+  );
+
+  const rejectTraveller = useCallback(
+    (socketId: string) => socket?.emit('traveller:reject', { socketId }),
+    [socket],
+  );
+
   return {
     createGame,
     startGame,
@@ -270,5 +286,8 @@ export function useGameActions() {
     kickPlayer,
     addTraveller,
     exileTraveller,
+    unassignAllRoles,
+    approveTraveller,
+    rejectTraveller,
   };
 }

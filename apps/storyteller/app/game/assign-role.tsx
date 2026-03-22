@@ -1,8 +1,10 @@
 import {
   ALL_ROLES,
+  ALL_TRAVELLER_ROLES,
   EDITION_COLORS,
   EDITION_LABELS,
   getRolesForEdition,
+  getTravellersForEdition,
   ROLE_DISTRIBUTION,
   type Team,
 } from '@clocktower/shared';
@@ -10,6 +12,7 @@ import { AbilityText } from '@clocktower/ui';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
+  Alert,
   FlatList,
   Modal,
   Pressable,
@@ -24,19 +27,21 @@ import { useResponsive } from '../../src/hooks/useResponsive';
 import { useGameStore } from '../../src/stores/gameStore';
 import { createAssignRoleStyles } from '../../src/styles/assign-role.styles';
 
-const TEAM_LABEL_COLORS = {
+const TEAM_LABEL_COLORS: Record<string, string> = {
   townsfolk: '#7090c4',
   outsider: '#50a090',
   minion: '#c48850',
   demon: '#b85c5c',
-} as const;
+  traveller: '#a090c0',
+};
 
-const TEAM_BORDER_COLORS = {
+const TEAM_BORDER_COLORS: Record<string, string> = {
   townsfolk: '#506aaa',
   outsider: '#3a8878',
   minion: '#b87838',
   demon: '#943c3c',
-} as const;
+  traveller: '#6a5a8a',
+};
 
 export default function AssignRoleScreen() {
   const router = useRouter();
@@ -47,13 +52,20 @@ export default function AssignRoleScreen() {
     playerId,
     editionId,
     additionalRoleIds: additionalRoleIdsParam,
+    travellerOnly: travellerOnlyParam,
   } = useLocalSearchParams<{
     playerId: string;
     editionId?: string;
     additionalRoleIds?: string;
+    travellerOnly?: string;
   }>();
-  const { assignRole } = useGameActions();
+  const isTravellerOnly = travellerOnlyParam === 'true';
+  const { assignRole, addTraveller } = useGameActions();
   const gameState = useGameStore((s) => s.gameState);
+
+  // 대상 플레이어가 여행자인지 확인
+  const targetPlayer = gameState?.players.find((p) => p.id === playerId);
+  const isTargetTraveller = targetPlayer?.isTraveller === true;
 
   const [searchQuery, setSearchQuery] = useState('');
   // 주정뱅이 가짜 역할 선택 모달 상태
@@ -64,6 +76,10 @@ export default function AssignRoleScreen() {
   const [pendingDemonRoleId, setPendingDemonRoleId] = useState<string | null>(
     null,
   );
+  // 여행자 진영 선택 모달 상태
+  const [travellerAlignmentModal, setTravellerAlignmentModal] = useState<
+    string | null
+  >(null);
 
   const selectedEditionId = editionId ?? 'trouble_brewing';
   const additionalIds = useMemo(() => {
@@ -96,8 +112,17 @@ export default function AssignRoleScreen() {
     );
   }, [gameState, selectedEditionId]);
 
-  // 현재 에디션 역할 + 추가된 다른 에디션 역할 + 수동 배정된 다른 에디션 역할
+  // 여행자 역할 목록 (에디션 기반)
+  const travellerRoles = useMemo(() => {
+    const editionTravellers = getTravellersForEdition(selectedEditionId);
+    return editionTravellers.length > 0
+      ? editionTravellers
+      : ALL_TRAVELLER_ROLES;
+  }, [selectedEditionId]);
+
+  // 현재 에디션 역할 + 추가된 다른 에디션 역할 + 수동 배정된 다른 에디션 역할 + 여행자
   const availableRoles = useMemo(() => {
+    if (isTravellerOnly) return travellerRoles;
     const editionRoles = getRolesForEdition(selectedEditionId);
     const editionRoleIds = new Set(editionRoles.map((r) => r.id));
     const extraRoles = ALL_ROLES.filter(
@@ -105,8 +130,14 @@ export default function AssignRoleScreen() {
         !editionRoleIds.has(r.id) &&
         (additionalIds.has(r.id) || manuallyAssignedOtherEditionIds.has(r.id)),
     );
-    return [...editionRoles, ...extraRoles];
-  }, [selectedEditionId, additionalIds, manuallyAssignedOtherEditionIds]);
+    return [...editionRoles, ...extraRoles, ...travellerRoles];
+  }, [
+    selectedEditionId,
+    additionalIds,
+    manuallyAssignedOtherEditionIds,
+    travellerRoles,
+    isTravellerOnly,
+  ]);
 
   // 검색 필터링
   const filteredRoles = useMemo(() => {
@@ -116,20 +147,25 @@ export default function AssignRoleScreen() {
   }, [availableRoles, searchQuery]);
 
   // 팀별 섹션 데이터
-  const TEAM_ORDER: Array<{ team: Team; label: string }> = [
-    { team: 'townsfolk', label: '마을주민' },
-    { team: 'outsider', label: '외지인' },
-    { team: 'minion', label: '하수인' },
-    { team: 'demon', label: '악마' },
-  ];
-
   const sections = useMemo(() => {
-    return TEAM_ORDER.map(({ team, label }) => ({
-      team,
-      title: label,
-      data: filteredRoles.filter((r) => r.team === team),
-    })).filter((s) => s.data.length > 0);
-  }, [filteredRoles, TEAM_ORDER.map]);
+    const showTravellerOnly = isTravellerOnly || isTargetTraveller;
+    const teamOrder: Array<{ team: Team; label: string }> = showTravellerOnly
+      ? [{ team: 'traveller', label: '여행자' }]
+      : [
+          { team: 'townsfolk', label: '마을주민' },
+          { team: 'outsider', label: '외지인' },
+          { team: 'minion', label: '하수인' },
+          { team: 'demon', label: '악마' },
+          { team: 'traveller', label: '여행자' },
+        ];
+    return teamOrder
+      .map(({ team, label }) => ({
+        team,
+        title: label,
+        data: filteredRoles.filter((r) => r.team === team),
+      }))
+      .filter((s) => s.data.length > 0);
+  }, [filteredRoles, isTargetTraveller, isTravellerOnly]);
 
   // 주정뱅이의 가짜 역할로 선택 가능한 마을주민 목록
   const availableTownsfolk = useMemo(
@@ -215,8 +251,12 @@ export default function AssignRoleScreen() {
 
   const handleRandomAssign = useCallback(() => {
     if (!playerId) return;
+    // 일반 역할 중에서만 랜덤 (여행자 역할 제외)
     const unassignedRoles = availableRoles.filter(
-      (r) => !roleOwnerMap.has(r.id) && allowedTeams.has(r.team),
+      (r) =>
+        r.team !== 'traveller' &&
+        !roleOwnerMap.has(r.id) &&
+        allowedTeams.has(r.team),
     );
     if (unassignedRoles.length === 0) return;
     const randomRole =
@@ -247,6 +287,12 @@ export default function AssignRoleScreen() {
   const handleAssign = useCallback(
     (roleId: string) => {
       if (!playerId) return;
+      // 여행자 역할이면 진영 선택 모달
+      const traveller = ALL_TRAVELLER_ROLES.find((r) => r.id === roleId);
+      if (traveller) {
+        setTravellerAlignmentModal(roleId);
+        return;
+      }
       if (roleId === 'drunk') {
         setDrunkModalVisible(true);
         return;
@@ -261,6 +307,21 @@ export default function AssignRoleScreen() {
       router.back();
     },
     [playerId, assignRole, router],
+  );
+
+  const handleTravellerAlignmentSelect = useCallback(
+    async (alignment: 'good' | 'evil') => {
+      if (!playerId || !travellerAlignmentModal) return;
+      try {
+        await addTraveller(playerId, travellerAlignmentModal, alignment);
+        setTravellerAlignmentModal(null);
+        router.back();
+      } catch (e) {
+        Alert.alert('오류', e instanceof Error ? e.message : '배정 실패');
+        setTravellerAlignmentModal(null);
+      }
+    },
+    [playerId, travellerAlignmentModal, addTraveller, router],
   );
 
   const handleDrunkAssign = useCallback(
@@ -455,6 +516,64 @@ export default function AssignRoleScreen() {
             <Pressable
               style={styles.drunkCancelButton}
               onPress={() => setDrunkModalVisible(false)}
+            >
+              <Text style={styles.drunkCancelText}>취소</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* 여행자 진영 선택 모달 */}
+      <Modal
+        visible={!!travellerAlignmentModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTravellerAlignmentModal(null)}
+      >
+        <Pressable
+          style={styles.drunkOverlay}
+          onPress={() => setTravellerAlignmentModal(null)}
+        >
+          <Pressable
+            style={[styles.drunkModal, { maxHeight: '40%' }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.drunkModalHeader}>
+              <Text style={styles.drunkModalTitle}>여행자 진영 선택</Text>
+              <Text style={styles.drunkModalSubtitle}>
+                {ALL_TRAVELLER_ROLES.find(
+                  (r) => r.id === travellerAlignmentModal,
+                )?.name ?? ''}{' '}
+                - 진영을 선택하세요
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => handleTravellerAlignmentSelect('good')}
+              style={({ pressed }) => [
+                styles.drunkRoleItem,
+                { borderLeftColor: '#7090c4', borderLeftWidth: 3 },
+                pressed && styles.drunkRoleItemPressed,
+              ]}
+            >
+              <Text style={[styles.drunkRoleName, { color: '#7090c4' }]}>
+                선한 여행자
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => handleTravellerAlignmentSelect('evil')}
+              style={({ pressed }) => [
+                styles.drunkRoleItem,
+                { borderLeftColor: '#b85c5c', borderLeftWidth: 3 },
+                pressed && styles.drunkRoleItemPressed,
+              ]}
+            >
+              <Text style={[styles.drunkRoleName, { color: '#b85c5c' }]}>
+                악한 여행자
+              </Text>
+            </Pressable>
+            <Pressable
+              style={styles.drunkCancelButton}
+              onPress={() => setTravellerAlignmentModal(null)}
             >
               <Text style={styles.drunkCancelText}>취소</Text>
             </Pressable>

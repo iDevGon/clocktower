@@ -435,6 +435,18 @@ export class GameManager {
     player.statuses = player.statuses.filter((s) => s !== 'drunk');
   }
 
+  /** 여행자를 제외한 모든 플레이어의 역할을 해제 */
+  unassignAllRoles(): void {
+    for (const player of this.state.players) {
+      if (player.isTraveller) continue;
+      player.role = undefined;
+      player.drunkAs = undefined;
+      player.statuses = player.statuses.filter((s) => s !== 'drunk');
+    }
+    this.bluffRoles = [];
+    this.preselectedBluffIds = [];
+  }
+
   assignRole(playerId: string, roleId: string, drunkAs?: string): void {
     const player = this.getPlayer(playerId);
     if (!player) return;

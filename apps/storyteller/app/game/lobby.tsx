@@ -17,7 +17,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import QRCode from 'react-native-qrcode-svg';
 import { BluffSelectModal } from '../../src/components/BluffSelectModal';
 import { ClockSpeedSetting } from '../../src/components/ClockSpeedSetting';
 import { CollapsibleSection } from '../../src/components/CollapsibleSection';
@@ -28,7 +27,6 @@ import { SettingToggle } from '../../src/components/SettingToggle';
 import { IS_DEV } from '../../src/constants';
 import { useGameActions } from '../../src/hooks/useGameActions';
 import { useResponsive } from '../../src/hooks/useResponsive';
-import { useConnectionStore } from '../../src/stores/connectionStore';
 import { useGameStore } from '../../src/stores/gameStore';
 import { createLobbyStyles, lobbyDynamic } from '../../src/styles/lobby.styles';
 
@@ -38,7 +36,6 @@ export default function LobbyScreen() {
   const scale = fontSize.md / 12;
   const styles = useMemo(() => createLobbyStyles(scale), [scale]);
   const gameState = useGameStore((s) => s.gameState);
-  const serverUrl = useConnectionStore((s) => s.serverUrl);
   const {
     startGame,
     distributeRoles,
@@ -47,6 +44,7 @@ export default function LobbyScreen() {
     removeDummyPlayers,
     setGameSettings,
     kickPlayer,
+    unassignAllRoles,
   } = useGameActions();
   const [distributing, setDistributing] = useState(false);
   const [selectedEditionId, setSelectedEditionId] = useState('trouble_brewing');
@@ -97,7 +95,7 @@ export default function LobbyScreen() {
         bluffChangePlayer.id,
         bluffChangePlayer.role?.id ?? '',
         undefined,
-        selectedIds.length > 0 ? selectedIds : undefined,
+        selectedIds,
       );
       setBluffChangePlayer(null);
     },
@@ -145,11 +143,11 @@ export default function LobbyScreen() {
     }
   };
 
-  const playerCount = gameState?.players.length ?? 0;
+  const regularPlayers = gameState?.players.filter((p) => !p.isTraveller) ?? [];
+  const playerCount = regularPlayers.length;
   const hasPlayers = playerCount > 0;
   const canDistribute = playerCount >= 5 && playerCount <= 20;
-  const allRolesAssigned =
-    hasPlayers && gameState?.players.every((p) => p.role);
+  const allRolesAssigned = hasPlayers && regularPlayers.every((p) => p.role);
 
   const handleDistributeRoles = async () => {
     if (!canDistribute) {
@@ -215,23 +213,15 @@ export default function LobbyScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        {serverUrl && (
-          <View style={styles.qrContainer}>
-            <QRCode
-              value={JSON.stringify({ server: serverUrl })}
-              size={140}
-              backgroundColor="#121214"
-              color="#e0ddd8"
-            />
-            <Text style={styles.qrHint}>플레이어 앱에서 스캔</Text>
-          </View>
-        )}
-      </View>
+      <View style={styles.header} />
 
       <View style={styles.participantHeader}>
         <View style={styles.participantLabelRow}>
-          <Text style={styles.participantLabel}>참가자 ({playerCount})</Text>
+          <Text style={styles.participantLabel}>
+            참가자 ({playerCount})
+            {gameState?.players.some((p) => p.isTraveller) &&
+              ` +여행자 ${gameState?.players.filter((p) => p.isTraveller).length}`}
+          </Text>
           {IS_DEV && (
             <>
               <Pressable
@@ -273,9 +263,11 @@ export default function LobbyScreen() {
               key={edition.id}
               onPress={() => {
                 if (edition.disabled) return;
+                if (selectedEditionId === edition.id) return;
                 setSelectedEditionId(edition.id);
                 setExcludedRoleIds(new Set());
                 setAdditionalRoleIds(new Set());
+                unassignAllRoles();
               }}
               disabled={edition.disabled}
               style={lobbyDynamic.editionButton(
@@ -556,6 +548,23 @@ export default function LobbyScreen() {
                 <View style={styles.playerNameRow}>
                   <View style={lobbyDynamic.aliveDot(item.isAlive, s)} />
                   <Text style={styles.playerName}>{item.name}</Text>
+                  {item.isTraveller && (
+                    <Text
+                      style={[
+                        styles.travellerBadge,
+                        item.travellerAlignment === 'evil' && {
+                          color: '#b85c5c',
+                          backgroundColor: '#2e1e1e',
+                        },
+                        item.travellerAlignment === 'good' && {
+                          color: '#7090c4',
+                          backgroundColor: '#1e2030',
+                        },
+                      ]}
+                    >
+                      여행자
+                    </Text>
+                  )}
                 </View>
                 <View style={styles.playerRoleContainer}>
                   {item.role && (
@@ -602,11 +611,7 @@ export default function LobbyScreen() {
                       hitSlop={8}
                       style={styles.drunkChangeButton}
                     >
-                      <Text
-                        style={[styles.drunkChangeText, { color: '#8a6a9a' }]}
-                      >
-                        블러프 변경
-                      </Text>
+                      <Text style={styles.drunkChangeText}>블러프 변경</Text>
                     </Pressable>
                   )}
                 </View>

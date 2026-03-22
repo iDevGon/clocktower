@@ -16,15 +16,6 @@ export function createLobbyStyles(scale: number) {
       borderBottomWidth: 1,
       borderColor: '#2e2e34',
     },
-    qrContainer: {
-      marginTop: s(16),
-      alignItems: 'center',
-    },
-    qrHint: {
-      color: '#5c5a58',
-      fontSize: s(11),
-      marginTop: s(8),
-    },
     participantHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -153,6 +144,16 @@ export function createLobbyStyles(scale: number) {
       color: '#e0ddd8',
       fontSize: s(15),
     },
+    travellerBadge: {
+      marginLeft: s(6),
+      fontSize: s(11),
+      color: '#a090c0',
+      backgroundColor: '#2a2a3a',
+      paddingHorizontal: s(5),
+      paddingVertical: s(1),
+      borderRadius: s(4),
+      overflow: 'hidden',
+    } as const,
     playerRoleContainer: {
       alignItems: 'flex-end',
     },

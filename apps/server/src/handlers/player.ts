@@ -9,6 +9,7 @@ import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
 import { registerPushToken } from '../pushNotifications.js';
 import { WhisperTracker } from '../whisper.js';
+import { pendingApprovals } from './pendingApprovals.js';
 import { startClockwiseVote } from './storyteller.js';
 
 type PlayerNamespace = Namespace<ClientToServerEvents, ServerToClientEvents>;
@@ -38,8 +39,28 @@ export function registerPlayerHandlers(
         callback({ success: false, error: '게임이 생성되지 않았습니다' });
         return;
       }
+      // 게임이 이미 시작된 경우 이야기꾼에게 승인 요청
       if (state.started) {
-        callback({ success: false, error: '게임이 이미 진행 중입니다' });
+        const trimmedName = playerName?.trim();
+        if (!trimmedName || trimmedName.length > 20) {
+          callback({ success: false, error: '유효하지 않은 이름입니다' });
+          return;
+        }
+        // 즉시 "대기 중" 응답을 보내고, 승인/거절은 별도 이벤트로 전달
+        callback({
+          success: false,
+          error: '이야기꾼의 승인을 기다리고 있습니다...',
+          pending: true,
+        });
+        pendingApprovals.set(socket.id, {
+          playerName: trimmedName,
+          socket,
+        });
+        storytellerIo.emit('traveller:pendingApproval', {
+          socketId: socket.id,
+          playerName: trimmedName,
+        });
+        console.log(`Traveller approval requested: ${trimmedName}`);
         return;
       }
       const player = game.addPlayer(playerName);

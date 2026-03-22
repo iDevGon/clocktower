@@ -44,7 +44,7 @@ export default function JoinScreen() {
   const [showScanner, setShowScanner] = useState(false);
   const scannedRef = useRef(false);
   const router = useRouter();
-  const { connect, joinGame, joinAsTraveller, rejoinGame } = useConnection();
+  const { connect, joinGame, rejoinGame } = useConnection();
   const [permission, requestPermission] = useCameraPermissions();
 
   // Title glow pulse
@@ -120,29 +120,33 @@ export default function JoinScreen() {
       const trimmedName = await doConnect();
       if (!trimmedName) return;
       const result = await joinGame(trimmedName);
-      if (!result.success) {
-        setError(result.error ?? '게임에 참가할 수 없습니다.');
+      if (result.pending) {
+        // 이야기꾼 승인 대기 - 소켓 이벤트를 대기
+        setError('이야기꾼의 승인을 기다리고 있습니다...');
+        const socket = useConnectionStore.getState().socket;
+        if (!socket) return;
+        const onApproved = (data: { playerId: string }) => {
+          socket.off('traveller:approved', onApproved);
+          socket.off('traveller:rejected', onRejected);
+          usePlayerStore
+            .getState()
+            .set({ playerId: data.playerId, playerName: trimmedName });
+          setError('');
+          setIsJoining(false);
+          router.replace('/game');
+        };
+        const onRejected = (data: { error: string }) => {
+          socket.off('traveller:approved', onApproved);
+          socket.off('traveller:rejected', onRejected);
+          setError(data.error);
+          setIsJoining(false);
+        };
+        socket.on('traveller:approved', onApproved);
+        socket.on('traveller:rejected', onRejected);
         return;
       }
-      usePlayerStore.getState().set({ playerName: trimmedName });
-      router.replace('/game');
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : '서버에 연결할 수 없습니다.',
-      );
-    } finally {
-      setIsJoining(false);
-    }
-  };
-
-  const handleJoinAsTraveller = async () => {
-    setIsJoining(true);
-    try {
-      const trimmedName = await doConnect();
-      if (!trimmedName) return;
-      const result = await joinAsTraveller(trimmedName);
       if (!result.success) {
-        setError(result.error ?? '여행자로 참가할 수 없습니다.');
+        setError(result.error ?? '게임에 참가할 수 없습니다.');
         return;
       }
       usePlayerStore.getState().set({ playerName: trimmedName });
@@ -307,24 +311,6 @@ export default function JoinScreen() {
             ) : (
               <Text style={styles.joinButtonText}>게임 참가</Text>
             )}
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.joinButton,
-              { marginTop: 8 },
-              pressed && styles.joinButtonPressed,
-            ]}
-            onPress={handleJoinAsTraveller}
-            disabled={isJoining}
-          >
-            <LinearGradient
-              colors={['#3a1a4a', '#5a2a6a', '#3a1a4a']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.joinButtonGradient}
-            />
-            <Text style={styles.joinButtonText}>여행자로 참가</Text>
           </Pressable>
         </View>
 

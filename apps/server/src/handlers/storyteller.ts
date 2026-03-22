@@ -22,6 +22,7 @@ import {
   sendPushToAll,
 } from '../pushNotifications.js';
 import type { WhisperTracker } from '../whisper.js';
+import { pendingApprovals } from './pendingApprovals.js';
 import { registerVoteHandlers } from './storytellerVote.js';
 
 type PlayerNamespace = Namespace<ClientToServerEvents, ServerToClientEvents>;
@@ -154,12 +155,15 @@ function sendEvilInfo(
 }
 
 function getPlayerInfoList(game: GameManager) {
-  return game.getState().players.map(({ id, name, isAlive, deadVoteUsed }) => ({
-    id,
-    name,
-    isAlive,
-    deadVoteUsed,
-  }));
+  return game
+    .getState()
+    .players.map(({ id, name, isAlive, deadVoteUsed, isTraveller }) => ({
+      id,
+      name,
+      isAlive,
+      deadVoteUsed,
+      ...(isTraveller && { isTraveller }),
+    }));
 }
 
 export { startClockwiseVote } from './storytellerVote.js';
@@ -185,6 +189,20 @@ export function registerStorytellerHandlers(
       game.reset();
       clearPushTokens();
       playerIo.emit('game:state', game.getState());
+      storytellerIo.emit('game:state', game.getStorytellerState());
+    });
+
+    socket.on('game:unassignAllRoles', () => {
+      game.unassignAllRoles();
+      // 플레이어에게 역할 해제 알림
+      for (const player of game.getState().players) {
+        if (!player.isTraveller) {
+          playerIo.to(player.id).emit('role:assign', {
+            roleId: '',
+            roleName: '',
+          });
+        }
+      }
       storytellerIo.emit('game:state', game.getStorytellerState());
     });
 
@@ -657,6 +675,12 @@ export function registerStorytellerHandlers(
           (p) => p.id !== playerId && p.role?.id === roleId,
         );
 
+        // 여행자에게 일반 역할을 배정하면 일반 플레이어로 전환
+        if (currentPlayer?.isTraveller) {
+          currentPlayer.isTraveller = false;
+          currentPlayer.travellerAlignment = undefined;
+        }
+
         if (existingOwner && currentPlayer) {
           // 스왑: 기존 소유자에게 현재 플레이어의 역할을 부여
           const oldRole = currentPlayer.role;
@@ -873,18 +897,64 @@ export function registerStorytellerHandlers(
 
     // ── 여행자(Traveller) 관리 ──
 
+    // 게임 중 참가 승인
+    socket.on('traveller:approve', ({ socketId, playerName }) => {
+      const pending = pendingApprovals.get(socketId);
+      if (!pending) return;
+      pendingApprovals.delete(socketId);
+
+      const traveller = game.addTraveller(playerName);
+      if (!traveller) {
+        pending.socket.emit('traveller:rejected', {
+          error: '참가할 수 없습니다',
+        });
+        return;
+      }
+      pending.socket.join(traveller.id);
+      pending.socket.emit('traveller:approved', { playerId: traveller.id });
+      pending.socket.emit('game:settings', game.getSettings());
+      // 현재 게임 상태 동기화
+      const state = game.getState();
+      pending.socket.emit('game:state', state);
+      pending.socket.emit('game:phase', state.phase);
+      if (state.daySubPhase) {
+        pending.socket.emit('day:subPhase', state.daySubPhase);
+      }
+      const players = getPlayerInfoList(game);
+      pending.socket.emit('game:playerUpdate', traveller);
+      // 좌석 배치 동기화
+      pending.socket.emit('vote:order', {
+        nomineeId: '',
+        order: players,
+        fullOrder: players,
+      });
+      storytellerIo.emit('game:state', game.getStorytellerState());
+      console.log(`Traveller approved: ${playerName}`);
+    });
+
+    // 게임 중 참가 거절
+    socket.on('traveller:reject', ({ socketId }) => {
+      const pending = pendingApprovals.get(socketId);
+      if (!pending) return;
+      pendingApprovals.delete(socketId);
+      pending.socket.emit('traveller:rejected', {
+        error: '이야기꾼이 참가를 거절했습니다',
+      });
+    });
+
     socket.on('traveller:add', ({ playerId, roleId, alignment }, callback) => {
       const player = game.getPlayer(playerId);
       if (!player) {
         callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
         return;
       }
+      // 일반 플레이어도 여행자로 전환 가능
       if (!player.isTraveller) {
-        callback({
-          success: false,
-          error: '해당 플레이어는 여행자가 아닙니다',
-        });
-        return;
+        player.isTraveller = true;
+        // 기존 역할이 있으면 해제
+        if (player.role) {
+          game.unassignRole(playerId);
+        }
       }
       const success = game.assignTravellerRole(playerId, roleId, alignment);
       if (!success) {

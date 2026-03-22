@@ -123,6 +123,10 @@ export interface ServerToClientEvents {
     roleId: string;
     roleName: string;
   }) => void;
+  /** 이야기꾼이 여행자 참가를 승인했을 때 해당 플레이어에게 전송 */
+  'traveller:approved': (data: { playerId: string }) => void;
+  /** 이야기꾼이 여행자 참가를 거절했을 때 해당 플레이어에게 전송 */
+  'traveller:rejected': (data: { error: string }) => void;
   /** 여행자가 추방(exile)되었을 때 전체 플레이어에게 전송 */
   'traveller:exiled': (data: {
     playerId: string;
@@ -168,6 +172,11 @@ export interface ServerToStorytellerEvents {
   'player:left': ServerToClientEvents['player:left'];
   'traveller:joined': ServerToClientEvents['traveller:joined'];
   'traveller:exiled': ServerToClientEvents['traveller:exiled'];
+  /** 게임 중 참가 요청: 이야기꾼 승인 대기 */
+  'traveller:pendingApproval': (data: {
+    socketId: string;
+    playerName: string;
+  }) => void;
   /** 이발사 사망: 악마가 역할 교환할 2명 선택 요청 */
   'barber:died': (data: { barberName: string }) => void;
   /** 얼뜨기 사망: 선한 플레이어 선택 요청 */
@@ -188,6 +197,9 @@ export interface ClientToServerEvents {
       success: boolean;
       playerId?: string;
       error?: string;
+      isTraveller?: boolean;
+      /** 이야기꾼 승인 대기 중 */
+      pending?: boolean;
     }) => void,
   ) => void;
   'game:rejoin': (
@@ -274,6 +286,7 @@ export interface StorytellerToServerEvents {
     /** 악마 역할 배정 시 이야기꾼이 사전 선택한 블러프 역할 ID (최대 3개) */
     bluffRoleIds?: string[];
   }) => void;
+  'game:unassignAllRoles': () => void;
   'game:kill': (playerId: string) => void;
   'game:revive': (playerId: string) => void;
   'vote:nominate': (data: { nominatorId: string; nomineeId: string }) => void;
@@ -338,6 +351,11 @@ export interface StorytellerToServerEvents {
     playerId: string,
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
+
+  /** 게임 중 참가 요청 승인 */
+  'traveller:approve': (data: { socketId: string; playerName: string }) => void;
+  /** 게임 중 참가 요청 거절 */
+  'traveller:reject': (data: { socketId: string }) => void;
 
   // ── Sects & Violets ──
   /** 마녀 저주 사망 확인 (이야기꾼이 판단) */

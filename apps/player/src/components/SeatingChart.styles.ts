@@ -56,6 +56,11 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 1,
   },
+  travellerTag: {
+    color: '#a090c0',
+    fontWeight: '600',
+    marginTop: 1,
+  },
   hint: {
     color: colors.text.tertiary,
     fontSize: 12,

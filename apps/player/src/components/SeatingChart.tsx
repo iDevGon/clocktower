@@ -106,6 +106,11 @@ export function SeatingChart({
           >
             {player.name}
           </Text>
+          {player.isTraveller && (
+            <Text style={[s.travellerTag, { fontSize: fontSize - 2 }]}>
+              여행자
+            </Text>
+          )}
           {showDeath && (
             <View style={s.deadRow}>
               <Text style={[s.dead, { fontSize: fontSize - 1 }]}>사망</Text>

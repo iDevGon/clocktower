@@ -33,6 +33,7 @@ import {
   type ActionModalOption,
 } from '../../src/components/ActionModal';
 import { ChatToast } from '../../src/components/ChatToast';
+import { ConfirmModal } from '../../src/components/ConfirmModal';
 import { DaySubPhaseBar } from '../../src/components/DaySubPhaseBar';
 import {
   type CircularPosition,
@@ -186,6 +187,8 @@ export default function GrimoireScreen() {
     kickPlayer,
     addTraveller,
     exileTraveller,
+    approveTraveller,
+    rejectTraveller,
   } = useGameActions();
 
   const sweetheartDiedPending = useGameStore((s) => s.sweetheartDiedPending);
@@ -236,10 +239,18 @@ export default function GrimoireScreen() {
 
   useEffect(() => {
     if (hasFortuneTeller && !redHerringShownRef.current) {
+      // 이미 Red Herring이 배정된 상태면 모달을 띄우지 않음
+      const alreadyAssigned = players?.some((p) =>
+        p.statuses?.includes('cursed'),
+      );
+      if (alreadyAssigned) {
+        redHerringShownRef.current = true;
+        return;
+      }
       redHerringShownRef.current = true;
       setShowRedHerringModal(true);
     }
-  }, [hasFortuneTeller]);
+  }, [hasFortuneTeller, players]);
 
   // 게임 시작 시 직업 공개 대기 오버레이 (이미 표시한 적 있으면 다시 표시하지 않음)
   // 페이즈 전환 팁 토스트
@@ -318,9 +329,58 @@ export default function GrimoireScreen() {
     options: ActionModalOption[];
   }>({ visible: false, title: '', options: [] });
 
-  const showModal = (title: string, options: ActionModalOption[]) =>
-    setModal({ visible: true, title, options });
-  const closeModal = () => setModal((m) => ({ ...m, visible: false }));
+  const showModal = useCallback(
+    (title: string, options: ActionModalOption[]) =>
+      setModal({ visible: true, title, options }),
+    [],
+  );
+  const closeModal = useCallback(
+    () => setModal((m) => ({ ...m, visible: false })),
+    [],
+  );
+
+  // 게임 중 참가 요청 승인 처리 — 소켓에서 직접 수신 → ConfirmModal 표시
+  const [pendingApproval, setPendingApproval] = useState<{
+    socketId: string;
+    playerName: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const socket = useConnectionStore.getState().socket;
+    if (!socket) return;
+    const handler = (data: { socketId: string; playerName: string }) => {
+      setPendingApproval(data);
+    };
+    socket.on('traveller:pendingApproval', handler);
+    return () => {
+      socket.off('traveller:pendingApproval', handler);
+    };
+  }, []);
+
+  const handleApproveTraveller = useCallback(() => {
+    if (!pendingApproval) return;
+    const { socketId, playerName } = pendingApproval;
+    setPendingApproval(null);
+    approveTraveller(socketId, playerName);
+    setTimeout(() => {
+      const state = useGameStore.getState().gameState;
+      const newTraveller = state?.players.find(
+        (p) => p.name === playerName && p.isTraveller && !p.role,
+      );
+      if (newTraveller) {
+        router.push({
+          pathname: '/game/assign-role',
+          params: { playerId: newTraveller.id, travellerOnly: 'true' },
+        });
+      }
+    }, 500);
+  }, [pendingApproval, approveTraveller, router]);
+
+  const handleRejectTraveller = useCallback(() => {
+    if (!pendingApproval) return;
+    rejectTraveller(pendingApproval.socketId);
+    setPendingApproval(null);
+  }, [pendingApproval, rejectTraveller]);
 
   const getDay = () => useGameStore.getState().gameState?.day ?? 0;
   const getPhase = () => useGameStore.getState().gameState?.phase ?? 'setup';
@@ -614,47 +674,36 @@ export default function GrimoireScreen() {
     showModal(playerName, options);
   };
 
-  const handleRestartGame = () => {
-    showModal('게임 초기화', [
-      {
-        text: '플레이어 유지하고 초기화',
-        onPress: async () => {
-          useGameStore.getState().reset();
-          useLogStore.getState().clearLogs();
-          try {
-            await restartGame();
-            router.replace('/game/lobby');
-          } catch {
-            Alert.alert('오류', '게임 재시작에 실패했습니다.');
-          }
-        },
-      },
-      { text: '취소', style: 'cancel' },
-    ]);
-  };
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+  const handleRestartGame = () => setShowRestartConfirm(true);
+  const confirmRestartGame = useCallback(async () => {
+    setShowRestartConfirm(false);
+    useGameStore.getState().reset();
+    useLogStore.getState().clearLogs();
+    try {
+      await restartGame();
+      router.replace('/game/lobby');
+    } catch {
+      // 실패 시 무시
+    }
+  }, [restartGame, router]);
 
-  const handleDisconnect = () => {
-    showModal('서버 연결 해제', [
-      {
-        text: '연결 해제',
-        style: 'destructive',
-        onPress: () => {
-          resetGame();
-          useGameStore.getState().reset();
-          useLogStore.getState().clearLogs();
-          const { socket } = useConnectionStore.getState();
-          if (socket) socket.disconnect();
-          useConnectionStore.setState({
-            socket: null,
-            isConnected: false,
-            serverUrl: null,
-          });
-          router.replace('/');
-        },
-      },
-      { text: '취소', style: 'cancel' },
-    ]);
-  };
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
+  const handleDisconnect = () => setShowDisconnectConfirm(true);
+  const confirmDisconnect = useCallback(() => {
+    setShowDisconnectConfirm(false);
+    resetGame();
+    useGameStore.getState().reset();
+    useLogStore.getState().clearLogs();
+    const { socket: s } = useConnectionStore.getState();
+    if (s) s.disconnect();
+    useConnectionStore.setState({
+      socket: null,
+      isConnected: false,
+      serverUrl: null,
+    });
+    router.replace('/');
+  }, [resetGame, router]);
 
   // ── 여행자 역할 배정 ──
 
@@ -1465,6 +1514,38 @@ export default function GrimoireScreen() {
         title={modal.title}
         options={modal.options}
         onClose={closeModal}
+      />
+
+      <ConfirmModal
+        visible={!!pendingApproval}
+        title="여행자 참가 요청"
+        message={`${pendingApproval?.playerName ?? ''}이(가) 입장했습니다.\n이 플레이어를 여행자로 설정할까요?`}
+        confirmText="수락"
+        cancelText="거절"
+        onConfirm={handleApproveTraveller}
+        onCancel={handleRejectTraveller}
+      />
+
+      <ConfirmModal
+        visible={showRestartConfirm}
+        title="게임 초기화"
+        message="정말 게임을 초기화할까요?"
+        confirmText="초기화"
+        cancelText="취소"
+        confirmStyle="destructive"
+        onConfirm={confirmRestartGame}
+        onCancel={() => setShowRestartConfirm(false)}
+      />
+
+      <ConfirmModal
+        visible={showDisconnectConfirm}
+        title="서버 연결 해제"
+        message="서버와의 연결을 해제할까요?"
+        confirmText="연결 해제"
+        cancelText="취소"
+        confirmStyle="destructive"
+        onConfirm={confirmDisconnect}
+        onCancel={() => setShowDisconnectConfirm(false)}
       />
 
       <DictionaryModal
