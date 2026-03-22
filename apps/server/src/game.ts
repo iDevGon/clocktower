@@ -409,10 +409,7 @@ export class GameManager {
         p.hasBeenNominatedToday = false;
         // 밤 시작 시 중독/보호/세레노버스 광기 상태 자동 제거
         p.statuses = p.statuses.filter(
-          (s) =>
-            s !== 'poisoned' &&
-            s !== 'protected' &&
-            s !== 'cerenovus_mad',
+          (s) => s !== 'poisoned' && s !== 'protected' && s !== 'cerenovus_mad',
         );
       });
     }
@@ -1517,9 +1514,7 @@ export class GameManager {
 
   /** Vortox 확인: 보르톡스가 게임에 있는지 */
   hasVortox(): boolean {
-    return this.state.players.some(
-      (p) => p.isAlive && p.role?.id === 'vortox',
-    );
+    return this.state.players.some((p) => p.isAlive && p.role?.id === 'vortox');
   }
 
   /**

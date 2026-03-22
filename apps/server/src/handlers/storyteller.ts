@@ -1006,7 +1006,7 @@ export function registerStorytellerHandlers(
       storytellerIo.emit('game:state', game.getStorytellerState());
     });
 
-    socket.on('klutz:choose', ({ klutzId, chosenPlayerId }) => {
+    socket.on('klutz:choose', ({ chosenPlayerId }) => {
       const chosen = game.getPlayer(chosenPlayerId);
       if (!chosen) return;
       const isEvil =

@@ -180,7 +180,14 @@ export interface GameResult {
   winningTeam: WinningTeam;
   reason: string;
   /** 승리 원인 (특수 연출용) */
-  cause?: 'slayer' | 'execution' | 'virgin' | 'witch_curse' | 'klutz' | 'evil_twin' | 'vortox_no_execution';
+  cause?:
+    | 'slayer'
+    | 'execution'
+    | 'virgin'
+    | 'witch_curse'
+    | 'klutz'
+    | 'evil_twin'
+    | 'vortox_no_execution';
   players: {
     id: string;
     name: string;

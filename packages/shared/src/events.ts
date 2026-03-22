@@ -171,10 +171,7 @@ export interface ServerToStorytellerEvents {
   /** 이발사 사망: 악마가 역할 교환할 2명 선택 요청 */
   'barber:died': (data: { barberName: string }) => void;
   /** 얼뜨기 사망: 선한 플레이어 선택 요청 */
-  'klutz:died': (data: {
-    klutzId: string;
-    klutzName: string;
-  }) => void;
+  'klutz:died': (data: { klutzId: string; klutzName: string }) => void;
   /** 팡 구 외지인 교환: 외지인이 새 악마가 됨 알림 */
   'fangGu:jumped': (data: {
     oldDemonId: string;
@@ -349,15 +346,9 @@ export interface StorytellerToServerEvents {
     kill: boolean;
   }) => void;
   /** 이발사 사망 시 악마의 역할 교환 대상 지정 */
-  'barber:swapRoles': (data: {
-    playerId1: string;
-    playerId2: string;
-  }) => void;
+  'barber:swapRoles': (data: { playerId1: string; playerId2: string }) => void;
   /** 얼뜨기 사망 시 선택한 플레이어 지정 */
-  'klutz:choose': (data: {
-    klutzId: string;
-    chosenPlayerId: string;
-  }) => void;
+  'klutz:choose': (data: { klutzId: string; chosenPlayerId: string }) => void;
   /** 팡 구 외지인 교환 실행 */
   'fangGu:confirmJump': (data: {
     oldDemonId: string;

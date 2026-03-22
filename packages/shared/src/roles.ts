@@ -827,7 +827,10 @@ export function distributeRoles(
   const hasFangGu = selectedDemons.some((r) => r.id === 'fang_gu');
   if (hasFangGu && outsiderCount < outsiders.length) {
     outsiderCount++;
-    townsfolkCount = Math.max(0, count - outsiderCount - minionCount - demonCount);
+    townsfolkCount = Math.max(
+      0,
+      count - outsiderCount - minionCount - demonCount,
+    );
   }
 
   // S&V: 비고르모르티스 → 외지인 -1, 마을주민 +1
