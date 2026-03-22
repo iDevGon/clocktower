@@ -15,6 +15,7 @@ import {
   DEFAULT_GAME_SETTINGS,
   getRoleById,
   getTravellerById,
+  SECTS_AND_VIOLETS_ROLES,
 } from '@clocktower/shared/logic';
 
 /** 플레이어가 중독 또는 취함 상태인지 확인 (능력 무효화 판정용) */
@@ -108,6 +109,16 @@ export class GameManager {
   // 이야기꾼이 사전 선택한 블러프 역할 ID (수동 배정 시 사용)
   private preselectedBluffIds: string[] = [];
 
+  // ── Sects & Violets 전용 상태 ──
+  // 마녀 저주 대상 (witchPlayerId → cursedPlayerId)
+  private witchCursedTarget: string | null = null;
+  // 팡 구 외지인 교환 발동 여부 (게임당 1회)
+  private fangGuJumped = false;
+  // 사악한 쌍둥이 매핑 (evilTwinId → goodTwinId)
+  private evilTwinPairs = new Map<string, string>();
+  // 현재 에디션 ID (밤 순서 결정에 사용)
+  private editionId = 'trouble_brewing';
+
   create(): string {
     const id = randomUUID().slice(0, 8);
     this.state = {
@@ -137,6 +148,10 @@ export class GameManager {
     this.nightWakeUpQueue = [];
     this.nightWakeUpRoleId = null;
     this.bluffRoles = [];
+    this.witchCursedTarget = null;
+    this.fangGuJumped = false;
+    this.evilTwinPairs.clear();
+    this.editionId = 'trouble_brewing';
     this.clearVoteTimer();
     this.clearNominationTimer();
     return id;
@@ -204,6 +219,10 @@ export class GameManager {
     this.nightWakeUpRoleId = null;
     this.voteConsentReady.clear();
     this.bluffRoles = [];
+    this.witchCursedTarget = null;
+    this.fangGuJumped = false;
+    this.evilTwinPairs.clear();
+    this.editionId = 'trouble_brewing';
     this.clearVoteTimer();
     this.clearNominationTimer();
   }
@@ -387,12 +406,14 @@ export class GameManager {
       this.executionCandidate = null;
       this.executionCandidateThreshold = 0;
       this.pendingNightKills = [];
+      // 마녀 저주 초기화 (밤 시작 시)
+      this.clearWitchCurse();
       this.state.players.forEach((p) => {
         p.hasNominatedToday = false;
         p.hasBeenNominatedToday = false;
-        // 밤 시작 시 중독/보호 상태 자동 제거
+        // 밤 시작 시 중독/보호/세레노버스 광기 상태 자동 제거
         p.statuses = p.statuses.filter(
-          (s) => s !== 'poisoned' && s !== 'protected',
+          (s) => s !== 'poisoned' && s !== 'protected' && s !== 'cerenovus_mad',
         );
       });
     }
@@ -493,7 +514,23 @@ export class GameManager {
 
   setPlayerStatuses(playerId: string, statuses: PlayerStatus[]): void {
     const player = this.getPlayer(playerId);
-    if (player) player.statuses = statuses;
+    if (!player) return;
+
+    const hadWitchCursed = player.statuses.includes('witch_cursed');
+    const hasWitchCursed = statuses.includes('witch_cursed');
+    player.statuses = statuses;
+
+    // witch_cursed 상태 추가/제거 시 내부 상태 동기화
+    if (!hadWitchCursed && hasWitchCursed) {
+      this.witchCursedTarget = playerId;
+    }
+    if (
+      hadWitchCursed &&
+      !hasWitchCursed &&
+      this.witchCursedTarget === playerId
+    ) {
+      this.witchCursedTarget = null;
+    }
   }
 
   // ── 밤 진행 상태 (재접속 복원용) ──
@@ -821,97 +858,6 @@ export class GameManager {
     return minion;
   }
 
-  /**
-   * 승리 조건 확인. 게임 종료 시 GameResult 반환, 아직 진행 중이면 null.
-   * - 악마 사망 (탕녀 승계 조건 미충족) → 선한 팀 승리
-   * - 생존자 2명 이하 (악마 포함) → 악한 팀 승리
-   * - 성자 처형 → 악한 팀 승리 (호출 측에서 executedRoleId 전달)
-   * - 시장: 생존자 3명, 오늘 처형 없음, 살아있는 시장 → 선한 팀 승리
-   */
-  checkWinCondition(executedRoleId?: string): GameResult | null {
-    if (!this.state.started || this.state.phase === 'ended') return null;
-
-    const alivePlayers = this.state.players.filter((p) => p.isAlive);
-    // 여행자는 생존자 수 계산에서 제외 (승리 조건 판정용)
-    const aliveRegularPlayers = alivePlayers.filter((p) => !p.isTraveller);
-    const aliveCount = aliveRegularPlayers.length;
-
-    const buildResult = (
-      winningTeam: 'good' | 'evil',
-      reason: string,
-    ): GameResult => {
-      this.state.phase = 'ended';
-      return {
-        winningTeam,
-        reason,
-        players: this.state.players.map((p) => ({
-          id: p.id,
-          name: p.name,
-          role: p.role ?? {
-            id: 'unknown',
-            name: '???',
-            team: 'townsfolk',
-            ability: '',
-            edition: '',
-          },
-          isAlive: p.isAlive,
-          team: p.role?.team ?? 'townsfolk',
-        })),
-      };
-    };
-
-    // 성자(Saint) 처형 → 악한 팀 승리 (중독/취한 성자는 능력 무효화)
-    if (executedRoleId === 'saint') {
-      const saintPlayer = this.state.players.find(
-        (p) => p.role?.id === 'saint',
-      );
-      if (saintPlayer && !isPoisonedOrDrunk(saintPlayer)) {
-        return buildResult('evil', '성자가 처형되었습니다');
-      }
-    }
-
-    // 악마 사망 체크
-    const aliveDemon = alivePlayers.find((p) => p.role?.team === 'demon');
-    if (!aliveDemon) {
-      // 임프 자해 승계가 예약되어 있으면 게임 계속
-      if (this.pendingImpPromotion) {
-        return null;
-      }
-      // 탕녀 승계: 생존자 5명 이상이고 살아있는 (중독되지 않은) 탕녀가 있으면 게임 계속
-      const aliveScarletWoman = alivePlayers.find(
-        (p) =>
-          p.role?.id === 'scarlet_woman' && !p.statuses.includes('poisoned'),
-      );
-      if (aliveScarletWoman && aliveCount >= 5) {
-        // 탕녀를 임프로 자동 승계
-        const impRole = getRoleById('imp');
-        if (impRole) {
-          aliveScarletWoman.role = impRole;
-          this.lastPromotedPlayer = aliveScarletWoman;
-        }
-        return null;
-      }
-      return buildResult('good', '악마가 사망했습니다');
-    }
-
-    // 생존자 2명 이하 → 악한 팀 승리
-    if (aliveCount <= 2) {
-      return buildResult('evil', '악마가 마을을 장악했습니다');
-    }
-
-    // 시장(Mayor): 생존자 3명 + 오늘 처형 없음 + 살아있는 (중독되지 않은) 시장
-    if (aliveCount === 3 && !this.executionToday) {
-      const aliveMayor = alivePlayers.find(
-        (p) => p.role?.id === 'mayor' && !isPoisonedOrDrunk(p),
-      );
-      if (aliveMayor) {
-        return buildResult('good', '시장이 마을을 이끌었습니다');
-      }
-    }
-
-    return null;
-  }
-
   closeVote(): {
     nomineeId: string;
     nomineeName: string;
@@ -1234,5 +1180,416 @@ export class GameManager {
 
   getNominationRemainingMs(): number | null {
     return this.nominationRemainingMs;
+  }
+
+  // ── Sects & Violets 전용 메서드 ──
+
+  endGame(): void {
+    this.state.phase = 'ended';
+  }
+
+  setEditionId(editionId: string): void {
+    this.editionId = editionId;
+  }
+
+  getEditionId(): string {
+    return this.editionId;
+  }
+
+  /** 현재 게임의 에디션을 자동 감지하여 설정합니다 */
+  detectEdition(): void {
+    const svRoleIds = new Set(SECTS_AND_VIOLETS_ROLES.map((r) => r.id));
+    const hasSvRole = this.state.players.some(
+      (p) => p.role && svRoleIds.has(p.role.id),
+    );
+    this.editionId = hasSvRole ? 'sects_and_violets' : 'trouble_brewing';
+  }
+
+  // ── 마녀 저주 ──
+
+  setWitchCursedTarget(playerId: string | null): void {
+    // 기존 저주 대상의 상태 제거
+    if (this.witchCursedTarget) {
+      const prev = this.getPlayer(this.witchCursedTarget);
+      if (prev) {
+        prev.statuses = prev.statuses.filter((s) => s !== 'witch_cursed');
+      }
+    }
+    this.witchCursedTarget = playerId;
+    if (playerId) {
+      const target = this.getPlayer(playerId);
+      if (target && !target.statuses.includes('witch_cursed')) {
+        target.statuses.push('witch_cursed');
+      }
+    }
+  }
+
+  getWitchCursedTarget(): string | null {
+    return this.witchCursedTarget;
+  }
+
+  /** 밤 시작 시 마녀 저주 상태 초기화 */
+  clearWitchCurse(): void {
+    if (this.witchCursedTarget) {
+      const prev = this.getPlayer(this.witchCursedTarget);
+      if (prev) {
+        prev.statuses = prev.statuses.filter((s) => s !== 'witch_cursed');
+      }
+    }
+    this.witchCursedTarget = null;
+  }
+
+  /**
+   * 마녀 저주 확인: 지명자가 저주 대상이면 true.
+   * 마녀가 중독/취함이면 저주 무효.
+   * 생존자 3명 이하일 때도 저주 무효.
+   */
+  checkWitchCurse(nominatorId: string): boolean {
+    if (this.witchCursedTarget !== nominatorId) return false;
+
+    // 생존자 3명 이하면 저주 무효
+    const aliveCount = this.state.players.filter((p) => p.isAlive).length;
+    if (aliveCount <= 3) return false;
+
+    // 마녀가 중독/취함이면 저주 무효
+    const witch = this.state.players.find(
+      (p) => p.isAlive && p.role?.id === 'witch',
+    );
+    if (!witch) return false;
+    if (isPoisonedOrDrunk(witch)) return false;
+
+    return true;
+  }
+
+  // ── 사악한 쌍둥이 ──
+
+  setEvilTwinPair(evilTwinId: string, goodTwinId: string): void {
+    this.evilTwinPairs.set(evilTwinId, goodTwinId);
+    const evilTwin = this.getPlayer(evilTwinId);
+    if (evilTwin && !evilTwin.statuses.includes('evil_twin')) {
+      evilTwin.statuses.push('evil_twin');
+    }
+    const goodTwin = this.getPlayer(goodTwinId);
+    if (goodTwin && !goodTwin.statuses.includes('good_twin')) {
+      goodTwin.statuses.push('good_twin');
+    }
+  }
+
+  getGoodTwinId(evilTwinId: string): string | undefined {
+    return this.evilTwinPairs.get(evilTwinId);
+  }
+
+  /** 선한 쌍둥이가 처형되었는지 확인 (악 팀 승리 조건) */
+  isGoodTwinExecution(executedPlayerId: string): boolean {
+    for (const [evilTwinId, goodTwinId] of this.evilTwinPairs) {
+      if (goodTwinId !== executedPlayerId) continue;
+      const evilTwin = this.getPlayer(evilTwinId);
+      if (!evilTwin?.isAlive) continue;
+      if (isPoisonedOrDrunk(evilTwin)) continue;
+      return true;
+    }
+    return false;
+  }
+
+  // ── 팡 구 ──
+
+  isFangGuJumped(): boolean {
+    return this.fangGuJumped;
+  }
+
+  setFangGuJumped(): void {
+    this.fangGuJumped = true;
+  }
+
+  /**
+   * 팡 구 외지인 교환: 외지인이 새 악마가 되고 기존 팡 구는 사망.
+   * 교환 성공 시 { oldDemon, newDemon } 반환, 아니면 null.
+   */
+  handleFangGuJump(
+    oldDemonId: string,
+    targetId: string,
+  ): { oldDemon: Player; newDemon: Player } | null {
+    if (this.fangGuJumped) return null;
+    const target = this.getPlayer(targetId);
+    if (!target) return null;
+    if (target.role?.team !== 'outsider') return null;
+    if (!target.isAlive) return null;
+
+    const oldDemon = this.getPlayer(oldDemonId);
+    if (!oldDemon) return null;
+
+    this.fangGuJumped = true;
+
+    // 외지인이 새 팡 구 악마가 됨 (악 진영으로 전환)
+    const fangGuRole = getRoleById('fang_gu');
+    if (fangGuRole) {
+      target.role = fangGuRole;
+    }
+
+    // 기존 팡 구는 사망
+    oldDemon.isAlive = false;
+
+    return { oldDemon, newDemon: target };
+  }
+
+  // ── 마귀할멈: 역할 변경 ──
+
+  changePlayerRole(playerId: string, newRoleId: string): boolean {
+    const player = this.getPlayer(playerId);
+    if (!player) return false;
+
+    const newRole = getRoleById(newRoleId);
+    if (!newRole) return false;
+
+    // 같은 역할이 이미 있는지 확인
+    const existing = this.state.players.find(
+      (p) => p.id !== playerId && p.role?.id === newRoleId,
+    );
+    if (existing) return false; // 중복 역할은 이야기꾼이 처리
+
+    player.role = newRole;
+    // 주정뱅이 상태 제거 (역할 변경 시)
+    player.drunkAs = undefined;
+    player.statuses = player.statuses.filter((s) => s !== 'drunk');
+
+    return true;
+  }
+
+  // ── 이발사: 역할 교환 ──
+
+  swapPlayerRoles(playerId1: string, playerId2: string): boolean {
+    const p1 = this.getPlayer(playerId1);
+    const p2 = this.getPlayer(playerId2);
+    if (!p1 || !p2) return false;
+
+    const role1 = p1.role;
+    const role2 = p2.role;
+    p1.role = role2;
+    p2.role = role1;
+
+    // drunkAs 교환
+    const drunkAs1 = p1.drunkAs;
+    p1.drunkAs = p2.drunkAs;
+    p2.drunkAs = drunkAs1;
+
+    // 점쟁이 Red Herring 재배정: 교환된 플레이어 중 점쟁이가 있으면
+    if (p1.role?.id === 'fortune_teller' || p2.role?.id === 'fortune_teller') {
+      this.assignFortuneTellerRedHerring();
+    }
+
+    // 집사 주인 매핑 갱신: 교환된 플레이어 중 집사가 있으면
+    if (role1?.id === 'butler' && role2?.id !== 'butler') {
+      const masterId = this.butlerMasters.get(playerId1);
+      this.butlerMasters.delete(playerId1);
+      if (masterId) {
+        const stillMaster = [...this.butlerMasters.values()].includes(masterId);
+        if (!stillMaster) {
+          const master = this.getPlayer(masterId);
+          if (master) {
+            master.statuses = master.statuses.filter((s) => s !== 'master');
+          }
+        }
+      }
+    }
+    if (role2?.id === 'butler' && role1?.id !== 'butler') {
+      const masterId = this.butlerMasters.get(playerId2);
+      this.butlerMasters.delete(playerId2);
+      if (masterId) {
+        const stillMaster = [...this.butlerMasters.values()].includes(masterId);
+        if (!stillMaster) {
+          const master = this.getPlayer(masterId);
+          if (master) {
+            master.statuses = master.statuses.filter((s) => s !== 'master');
+          }
+        }
+      }
+    }
+
+    return true;
+  }
+
+  // ── 노 다시: 인접 마을주민 중독 계산 ──
+
+  /**
+   * 노 다시의 양쪽 가장 가까운 살아있는 마을주민을 찾습니다.
+   * playerOrder 기준으로 탐색합니다.
+   */
+  getNoDashiiPoisonedNeighbors(noDashiiPlayerId: string): string[] {
+    const order = this.state.playerOrder;
+    const idx = order.indexOf(noDashiiPlayerId);
+    if (idx === -1) return [];
+
+    const neighbors: string[] = [];
+
+    // 시계방향 탐색
+    for (let i = 1; i < order.length; i++) {
+      const checkIdx = (idx + i) % order.length;
+      const player = this.getPlayer(order[checkIdx]);
+      if (!player?.isAlive) continue;
+      if (player.role?.team === 'townsfolk') {
+        neighbors.push(player.id);
+        break;
+      }
+    }
+
+    // 반시계방향 탐색
+    for (let i = 1; i < order.length; i++) {
+      const checkIdx = (idx - i + order.length) % order.length;
+      const player = this.getPlayer(order[checkIdx]);
+      if (!player?.isAlive) continue;
+      if (player.role?.team === 'townsfolk') {
+        if (neighbors.includes(player.id)) break;
+        neighbors.push(player.id);
+        break;
+      }
+    }
+
+    return neighbors;
+  }
+
+  // ── 시계공: 악마와 가장 가까운 하수인 사이의 거리 ──
+
+  getClockmakerDistance(): number {
+    const order = this.state.playerOrder;
+    const demons = this.state.players.filter(
+      (p) => p.isAlive && p.role?.team === 'demon',
+    );
+    const minions = this.state.players.filter(
+      (p) => p.isAlive && p.role?.team === 'minion',
+    );
+
+    if (demons.length === 0 || minions.length === 0) return 0;
+
+    let minDist = order.length;
+    for (const demon of demons) {
+      const demonIdx = order.indexOf(demon.id);
+      if (demonIdx === -1) continue;
+      for (const minion of minions) {
+        const minionIdx = order.indexOf(minion.id);
+        if (minionIdx === -1) continue;
+        const cw = (minionIdx - demonIdx + order.length) % order.length;
+        const ccw = (demonIdx - minionIdx + order.length) % order.length;
+        const dist = Math.min(cw, ccw);
+        if (dist < minDist) minDist = dist;
+      }
+    }
+    return minDist;
+  }
+
+  // ── Vortox: 처형 없는 날 확인 ──
+
+  /** Vortox 확인: 보르톡스가 게임에 있는지 */
+  hasVortox(): boolean {
+    return this.state.players.some((p) => p.isAlive && p.role?.id === 'vortox');
+  }
+
+  /**
+   * 승리 조건에 S&V 추가 확인:
+   * - 사악한 쌍둥이의 선한 쌍둥이 처형 → 악 팀 승리
+   * - 보르톡스: 처형 없는 날 → 선 팀 승리
+   * - 악마 사망 시 사악한 쌍둥이가 둘 다 살아있으면 게임 계속
+   */
+  checkWinCondition(
+    executedRoleId?: string,
+    executedPlayerId?: string,
+  ): GameResult | null {
+    if (!this.state.started || this.state.phase === 'ended') return null;
+
+    const alivePlayers = this.state.players.filter((p) => p.isAlive);
+    // 여행자는 생존자 수 계산에서 제외 (승리 조건 판정용)
+    const aliveRegularPlayers = alivePlayers.filter((p) => !p.isTraveller);
+    const aliveCount = aliveRegularPlayers.length;
+
+    const buildResult = (
+      winningTeam: 'good' | 'evil',
+      reason: string,
+    ): GameResult => {
+      this.state.phase = 'ended';
+      return {
+        winningTeam,
+        reason,
+        players: this.state.players.map((p) => ({
+          id: p.id,
+          name: p.name,
+          role: p.role ?? {
+            id: 'unknown',
+            name: '???',
+            team: 'townsfolk',
+            ability: '',
+            edition: '',
+          },
+          isAlive: p.isAlive,
+          team: p.role?.team ?? 'townsfolk',
+        })),
+      };
+    };
+
+    // 성자(Saint) 처형 → 악한 팀 승리 (중독/취한 성자는 능력 무효화)
+    if (executedRoleId === 'saint') {
+      const saintPlayer = this.state.players.find(
+        (p) => p.role?.id === 'saint',
+      );
+      if (saintPlayer && !isPoisonedOrDrunk(saintPlayer)) {
+        return buildResult('evil', '성자가 처형되었습니다');
+      }
+    }
+
+    // S&V: 사악한 쌍둥이 - 선한 쌍둥이 처형 → 악 팀 승리
+    if (executedPlayerId && this.isGoodTwinExecution(executedPlayerId)) {
+      return buildResult('evil', '선한 쌍둥이가 처형되었습니다');
+    }
+
+    // 악마 사망 체크
+    const aliveDemon = alivePlayers.find((p) => p.role?.team === 'demon');
+    if (!aliveDemon) {
+      // 임프 자해 승계가 예약되어 있으면 게임 계속
+      if (this.pendingImpPromotion) {
+        return null;
+      }
+
+      // 사악한 쌍둥이: 둘 다 살아있으면 게임 계속 (악마 사망해도)
+      for (const [evilTwinId, goodTwinId] of this.evilTwinPairs) {
+        const evilTwin = this.getPlayer(evilTwinId);
+        const goodTwin = this.getPlayer(goodTwinId);
+        if (evilTwin?.isAlive && goodTwin?.isAlive) {
+          if (!isPoisonedOrDrunk(evilTwin)) {
+            return null; // 게임 계속
+          }
+        }
+      }
+
+      // 탕녀 승계: 생존자 5명 이상이고 살아있는 (중독되지 않은) 탕녀가 있으면 게임 계속
+      const aliveScarletWoman = alivePlayers.find(
+        (p) =>
+          p.role?.id === 'scarlet_woman' && !p.statuses.includes('poisoned'),
+      );
+      if (aliveScarletWoman && aliveCount >= 5) {
+        // 탕녀를 임프로 자동 승계
+        const impRole = getRoleById('imp');
+        if (impRole) {
+          aliveScarletWoman.role = impRole;
+          this.lastPromotedPlayer = aliveScarletWoman;
+        }
+        return null;
+      }
+      return buildResult('good', '악마가 사망했습니다');
+    }
+
+    // 생존자 2명 이하 → 악한 팀 승리
+    if (aliveCount <= 2) {
+      return buildResult('evil', '악마가 마을을 장악했습니다');
+    }
+
+    // 시장(Mayor): 생존자 3명 + 오늘 처형 없음 + 살아있는 (중독되지 않은) 시장
+    if (aliveCount === 3 && !this.executionToday) {
+      const aliveMayor = alivePlayers.find(
+        (p) => p.role?.id === 'mayor' && !isPoisonedOrDrunk(p),
+      );
+      if (aliveMayor) {
+        return buildResult('good', '시장이 마을을 이끌었습니다');
+      }
+    }
+
+    return null;
   }
 }

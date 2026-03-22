@@ -8,6 +8,7 @@ import type {
 
 // 밤 행동이 있는 전체 역할 (순서대로)
 export const ALL_NIGHT_ROLES: string[] = [
+  // Trouble Brewing
   'poisoner',
   'monk',
   'scarlet_woman',
@@ -22,6 +23,25 @@ export const ALL_NIGHT_ROLES: string[] = [
   'undertaker',
   'butler',
   'spy',
+  // Sects & Violets
+  'witch',
+  'cerenovus',
+  'pit_hag',
+  'fang_gu',
+  'vigormortis',
+  'no_dashii',
+  'vortox',
+  'snake_charmer',
+  'clockmaker',
+  'dreamer',
+  'mathematician',
+  'flowergirl',
+  'town_crier',
+  'oracle',
+  'seamstress',
+  'philosopher',
+  'juggler',
+  'sage',
 ];
 
 export const TROUBLE_BREWING_ROLES: Role[] = [
@@ -374,7 +394,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     edition: 'sects_and_violets',
   },
 
-  // 악마 (1)
+  // 악마 (4)
   {
     id: 'fang_gu',
     name: '팡 구',
@@ -573,28 +593,19 @@ export const EDITIONS: Edition[] = [
   {
     id: 'sects_and_violets',
     name: '화단에 꽃피운 이단',
-    description: '중급자용 에디션. 25개 역할. (능력 미구현)',
-    disabled: true,
+    description: '중급자용 에디션. 25개 역할.',
   },
 ];
 
-/** S&V 에디션에서 실제 능력이 구현된 역할 ID 목록 */
-const IMPLEMENTED_SV_ROLE_IDS = new Set(['sweetheart']);
-
-/** 구현된 S&V 역할만 필터링 */
-const IMPLEMENTED_SV_ROLES = SECTS_AND_VIOLETS_ROLES.filter((r) =>
-  IMPLEMENTED_SV_ROLE_IDS.has(r.id),
-);
-
 export const EDITION_ROLES: Record<string, Role[]> = {
   trouble_brewing: TROUBLE_BREWING_ROLES,
-  sects_and_violets: IMPLEMENTED_SV_ROLES,
+  sects_and_violets: SECTS_AND_VIOLETS_ROLES,
 };
 
-/** 모든 에디션의 역할을 합친 목록 (미구현 역할 제외) */
+/** 모든 에디션의 역할을 합친 목록 */
 export const ALL_ROLES: Role[] = [
   ...TROUBLE_BREWING_ROLES,
-  ...IMPLEMENTED_SV_ROLES,
+  ...SECTS_AND_VIOLETS_ROLES,
 ];
 
 export function getRolesForEdition(editionId: string): Role[] {
@@ -612,6 +623,8 @@ export const EDITION_COLORS: Record<string, string> = {
   trouble_brewing: '#5dade2',
   sects_and_violets: '#a569bd',
 };
+
+// ── Trouble Brewing 밤 진행 순서 ──
 
 // 첫째 밤 진행 순서
 export const FIRST_NIGHT_ORDER: string[] = [
@@ -638,6 +651,53 @@ export const OTHER_NIGHT_ORDER: string[] = [
   'butler',
   'spy',
 ];
+
+// ── Sects & Violets 밤 진행 순서 ──
+
+// S&V 첫째 밤 진행 순서
+export const SV_FIRST_NIGHT_ORDER: string[] = [
+  'philosopher',
+  'snake_charmer',
+  'evil_twin',
+  'witch',
+  'cerenovus',
+  'clockmaker',
+  'dreamer',
+  'seamstress',
+  'mathematician',
+];
+
+// S&V 이후 밤 진행 순서
+export const SV_OTHER_NIGHT_ORDER: string[] = [
+  'philosopher',
+  'snake_charmer',
+  'witch',
+  'cerenovus',
+  'pit_hag',
+  'fang_gu',
+  'vigormortis',
+  'no_dashii',
+  'vortox',
+  'sage',
+  'dreamer',
+  'seamstress',
+  'flowergirl',
+  'town_crier',
+  'oracle',
+  'mathematician',
+  'juggler',
+];
+
+/** 에디션별 밤 진행 순서를 반환합니다. */
+export function getNightOrderForEdition(
+  editionId: string,
+  day: number,
+): string[] {
+  if (editionId === 'sects_and_violets') {
+    return day <= 1 ? SV_FIRST_NIGHT_ORDER : SV_OTHER_NIGHT_ORDER;
+  }
+  return day <= 1 ? FIRST_NIGHT_ORDER : OTHER_NIGHT_ORDER;
+}
 
 export function getRoleById(roleId: string): Role | undefined {
   return ROLES_BY_ID.get(roleId) ?? TRAVELLER_ROLES_BY_ID.get(roleId);
@@ -760,7 +820,26 @@ export function distributeRoles(
     townsfolkCount = count - outsiderCount - minionCount - demonCount;
   }
 
+  // 악마 먼저 선택 (S&V 셋업 조정에 필요)
   const selectedDemons = shuffle(demons).slice(0, demonCount);
+
+  // S&V: 팡 구 → 외지인 +1, 마을주민 -1
+  const hasFangGu = selectedDemons.some((r) => r.id === 'fang_gu');
+  if (hasFangGu && outsiderCount < outsiders.length) {
+    outsiderCount++;
+    townsfolkCount = Math.max(
+      0,
+      count - outsiderCount - minionCount - demonCount,
+    );
+  }
+
+  // S&V: 비고르모르티스 → 외지인 -1, 마을주민 +1
+  const hasVigormortis = selectedDemons.some((r) => r.id === 'vigormortis');
+  if (hasVigormortis && outsiderCount > 0) {
+    outsiderCount--;
+    townsfolkCount = count - outsiderCount - minionCount - demonCount;
+  }
+
   const selectedOutsiders = shuffle(outsiders).slice(0, outsiderCount);
   const selectedTownsfolk = shuffle(townsfolk).slice(0, townsfolkCount);
 
@@ -801,6 +880,7 @@ export function distributeRoles(
 }
 
 export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
+  // ── Trouble Brewing ──
   poisoner: {
     type: 'select_one',
     instruction: '중독시킬 플레이어를 선택하세요',
@@ -867,9 +947,108 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     instruction: '진행자가 마법서 정보를 알려줍니다',
     excludeSelf: false,
   },
+
+  // ── Sects & Violets ──
+  clockmaker: {
+    type: 'passive',
+    instruction: '진행자가 악마와 가장 가까운 하수인 사이의 거리를 알려줍니다',
+    excludeSelf: false,
+  },
+  dreamer: {
+    type: 'select_one',
+    instruction: '확인할 플레이어를 선택하세요',
+    excludeSelf: true,
+  },
+  snake_charmer: {
+    type: 'select_one',
+    instruction: '플레이어를 선택하세요 (악마를 선택하면 역할이 교환됩니다)',
+    excludeSelf: true,
+  },
+  mathematician: {
+    type: 'passive',
+    instruction: '진행자가 능력이 잘못 작동한 플레이어 수를 알려줍니다',
+    excludeSelf: false,
+  },
+  flowergirl: {
+    type: 'passive',
+    instruction: '진행자가 악마가 오늘 투표했는지 알려줍니다',
+    excludeSelf: false,
+  },
+  town_crier: {
+    type: 'passive',
+    instruction: '진행자가 하수인이 오늘 지명했는지 알려줍니다',
+    excludeSelf: false,
+  },
+  oracle: {
+    type: 'passive',
+    instruction: '진행자가 죽은 플레이어 중 악한 수를 알려줍니다',
+    excludeSelf: false,
+  },
+  seamstress: {
+    type: 'select_two',
+    instruction: '같은 진영인지 확인할 플레이어 2명을 선택하세요 (1회 사용)',
+    excludeSelf: true,
+  },
+  philosopher: {
+    type: 'passive',
+    instruction: '진행자가 선택한 역할의 능력을 부여합니다 (1회 사용)',
+    excludeSelf: false,
+  },
+  juggler: {
+    type: 'passive',
+    instruction: '진행자가 정확한 추측 수를 알려줍니다',
+    excludeSelf: false,
+  },
+  sage: {
+    type: 'passive',
+    instruction: '진행자가 2명의 플레이어를 알려줍니다: 그중 하나가 악마입니다',
+    excludeSelf: false,
+    onlyWhenDead: true,
+  },
+  witch: {
+    type: 'select_one',
+    instruction: '저주할 플레이어를 선택하세요 (내일 지명하면 사망)',
+    excludeSelf: true,
+  },
+  cerenovus: {
+    type: 'select_one',
+    instruction: '광기를 부여할 플레이어를 선택하세요',
+    excludeSelf: true,
+  },
+  pit_hag: {
+    type: 'select_one',
+    instruction: '역할을 변경할 플레이어를 선택하세요',
+    excludeSelf: true,
+  },
+  fang_gu: {
+    type: 'select_one',
+    instruction: '죽일 플레이어를 선택하세요 (외지인 사망 시 역할 교환)',
+    excludeSelf: false,
+  },
+  vigormortis: {
+    type: 'select_one',
+    instruction: '죽일 플레이어를 선택하세요 (하수인 사망 시 능력 유지)',
+    excludeSelf: false,
+  },
+  no_dashii: {
+    type: 'select_one',
+    instruction: '죽일 플레이어를 선택하세요',
+    excludeSelf: false,
+  },
+  vortox: {
+    type: 'select_one',
+    instruction: '죽일 플레이어를 선택하세요',
+    excludeSelf: false,
+  },
+  evil_twin: {
+    type: 'passive',
+    instruction: '선한 쌍둥이와 서로를 확인합니다',
+    excludeSelf: false,
+  },
 };
 
 export const NIGHT_FEEDBACK: Record<string, NightFeedbackDef> = {
+  // ── Trouble Brewing ──
   washerwoman: { type: 'players_and_role', roleTeamFilter: 'townsfolk' },
   librarian: {
     type: 'players_and_role',
@@ -883,4 +1062,15 @@ export const NIGHT_FEEDBACK: Record<string, NightFeedbackDef> = {
   undertaker: { type: 'role' },
   ravenkeeper: { type: 'role' },
   spy: { type: 'grimoire' },
+
+  // ── Sects & Violets ──
+  clockmaker: { type: 'number' },
+  dreamer: { type: 'players_and_role' },
+  mathematician: { type: 'number' },
+  flowergirl: { type: 'yes_no' },
+  town_crier: { type: 'yes_no' },
+  oracle: { type: 'number' },
+  seamstress: { type: 'yes_no' },
+  juggler: { type: 'number' },
+  sage: { type: 'players_and_role' },
 };

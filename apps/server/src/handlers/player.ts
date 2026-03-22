@@ -216,6 +216,9 @@ export function registerPlayerHandlers(
         return;
       }
 
+      // S&V: 마녀 저주 확인 (지명 전에 체크)
+      const isWitchCursed = game.checkWitchCurse(playerId);
+
       const result = game.nominate(playerId, nomineeId);
       if (!result.success) {
         callback(result);
@@ -223,6 +226,15 @@ export function registerPlayerHandlers(
       }
 
       callback({ success: true });
+
+      // S&V: 마녀 저주 발동 → 이야기꾼에게 확인 요청
+      if (isWitchCursed) {
+        const nominator = game.getPlayer(playerId);
+        storytellerIo.emit('witch:curseDeath', {
+          nominatorId: playerId,
+          nominatorName: nominator?.name ?? playerId,
+        });
+      }
 
       // 성결자(Virgin) 트리거
       if (result.virginKill) {
@@ -329,6 +341,11 @@ export function registerPlayerHandlers(
           // 집사(Butler) 주인 선택 저장
           if (player.role.id === 'butler' && targets.length > 0) {
             game.setButlerMaster(playerId, targets[0]);
+          }
+
+          // 마녀(Witch) 저주 대상 저장
+          if (player.role.id === 'witch' && targets.length > 0) {
+            game.setWitchCursedTarget(targets[0]);
           }
 
           // 주정뱅이는 가짜 역할 ID로 행동을 보고

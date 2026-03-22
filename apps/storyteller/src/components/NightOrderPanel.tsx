@@ -1,5 +1,6 @@
 import {
   FIRST_NIGHT_ORDER,
+  getNightOrderForEdition,
   getRoleById,
   OTHER_NIGHT_ORDER,
 } from '@clocktower/shared';
@@ -36,6 +37,8 @@ interface NightOrderPanelProps {
   activeNightRoleId?: string | null;
   onActivateRole: (roleId: string | null) => void;
   onNightComplete?: () => void;
+  /** 에디션 ID (밤 순서 결정에 사용) */
+  editionId?: string;
 }
 
 export function NightOrderPanel({
@@ -46,6 +49,7 @@ export function NightOrderPanel({
   activeNightRoleId,
   onActivateRole,
   onNightComplete,
+  editionId,
 }: NightOrderPanelProps) {
   const { device, fontSize } = useResponsive();
   const scale = fontSize.md / 12;
@@ -54,7 +58,11 @@ export function NightOrderPanel({
     [scale, device],
   );
 
-  const order = day <= 1 ? FIRST_NIGHT_ORDER : OTHER_NIGHT_ORDER;
+  const order = editionId
+    ? getNightOrderForEdition(editionId, day)
+    : day <= 1
+      ? FIRST_NIGHT_ORDER
+      : OTHER_NIGHT_ORDER;
 
   const [activeIndex, setActiveIndex] = useState<number | null>(() => {
     if (activeNightRoleId) {
