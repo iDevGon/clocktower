@@ -87,9 +87,14 @@ describe('distributeRoles', () => {
       expect(result.assignments).toHaveLength(count);
 
       const dist = ROLE_DISTRIBUTION[count];
-      const teams = { townsfolk: 0, outsider: 0, minion: 0, demon: 0 };
+      const teams: Record<string, number> = {
+        townsfolk: 0,
+        outsider: 0,
+        minion: 0,
+        demon: 0,
+      };
       for (const a of result.assignments) {
-        teams[a.role.team]++;
+        teams[a.role.team] = (teams[a.role.team] ?? 0) + 1;
       }
 
       // 남작이 있으면 외지인+2, 마을주민-2

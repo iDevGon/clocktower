@@ -24,6 +24,7 @@ export const TEAM_LABELS: Record<Team, string> = {
   outsider: '외지인',
   minion: '하수인',
   demon: '악마',
+  traveller: '여행자',
 };
 
 export const TEAM_COLORS: Record<Team, string> = {
@@ -31,6 +32,7 @@ export const TEAM_COLORS: Record<Team, string> = {
   outsider: '#2ecc71',
   minion: '#e67e22',
   demon: '#e74c3c',
+  traveller: '#b07cc6',
 };
 
 export const STATUS_ENTRIES: StatusEntry[] = [
@@ -168,6 +170,11 @@ export const GAME_RULES: RuleSection[] = [
     title: '악 진영 정보',
     content:
       '첫째 밤에 악마는 자신의 하수인이 누구인지, 그리고 게임에 포함되지 않은 마을주민 역할 3개(블러프)를 알게 됩니다. 하수인은 자신의 악마가 누구인지 알게 됩니다. 이 정보를 활용하여 악한 팀은 전략을 세울 수 있습니다.',
+  },
+  {
+    title: '여행자 (Traveller)',
+    content:
+      '여행자는 게임 중간에 참가하거나 퇴장할 수 있는 특수한 역할입니다. 여행자는 일반 역할 배분에 포함되지 않으며, 이야기꾼이 별도로 역할과 진영(선/악)을 배정합니다. 악한 여행자는 악마가 누구인지 알게 됩니다. 여행자는 처형이 아닌 추방(Exile)으로 제거됩니다. 추방은 전체 플레이어(죽은 플레이어 포함)의 과반수 투표가 필요하며, 처형 관련 능력(성자, 성결자 등)이 발동하지 않습니다. 추방은 하루 처형 횟수에 포함되지 않으며, 여행자는 승리 조건의 생존자 수에 포함되지 않습니다.',
   },
 ];
 

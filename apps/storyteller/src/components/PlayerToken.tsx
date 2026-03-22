@@ -7,6 +7,7 @@ import {
   type PlayerStatus,
   TEAM_COLORS,
 } from '@clocktower/shared';
+import { colors } from '@clocktower/ui';
 import { useCallback, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
@@ -17,6 +18,7 @@ const TEAM_BORDER_COLORS = {
   outsider: '#3a8878',
   minion: '#b87838',
   demon: '#943c3c',
+  traveller: '#7a5a9a',
 } as const;
 
 const TEAM_BG_COLORS = {
@@ -24,6 +26,7 @@ const TEAM_BG_COLORS = {
   outsider: '#141a18',
   minion: '#1e1814',
   demon: '#1e1414',
+  traveller: '#1a141e',
 } as const;
 
 export type VoteIndicator = 'guilty' | 'preselected_guilty' | 'nominee';
@@ -174,10 +177,26 @@ export function PlayerToken({
             ]}
             numberOfLines={1}
           >
-            {player.role.name}
+            {player.isTraveller
+              ? `${player.role.name} (${player.travellerAlignment === 'evil' ? '악' : '선'})`
+              : player.role.name}
             {player.role.id === 'drunk' && player.drunkAs
               ? ` (${getRoleById(player.drunkAs)?.name ?? player.drunkAs})`
               : ''}
+          </Text>
+        )}
+        {player.isTraveller && !player.role && (
+          <Text
+            style={[
+              styles.role,
+              {
+                fontSize: scaledFont.sm,
+                color: colors.team.traveller,
+              },
+            ]}
+            numberOfLines={1}
+          >
+            여행자 (미배정)
           </Text>
         )}
         {!player.isAlive && (

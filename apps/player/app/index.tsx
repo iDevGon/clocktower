@@ -44,7 +44,7 @@ export default function JoinScreen() {
   const [showScanner, setShowScanner] = useState(false);
   const scannedRef = useRef(false);
   const router = useRouter();
-  const { connect, joinGame, rejoinGame } = useConnection();
+  const { connect, joinGame, joinAsTraveller, rejoinGame } = useConnection();
   const [permission, requestPermission] = useCameraPermissions();
 
   // Title glow pulse
@@ -94,32 +94,55 @@ export default function JoinScreen() {
     tryRejoin();
   }, [connect, rejoinGame, router.replace]);
 
-  const handleJoin = async () => {
+  const doConnect = async () => {
     const trimmedIp = serverIp.trim();
-    const trimmedName = playerName.trim();
-
     if (!trimmedIp) {
       setError('서버 IP를 입력하세요');
-      return;
+      return null;
     }
+    const trimmedName = playerName.trim();
     if (!trimmedName) {
       setError('이름을 입력하세요');
-      return;
+      return null;
     }
-
     setError('');
-    setIsJoining(true);
-
     const url = trimmedIp.startsWith('http')
       ? trimmedIp
       : `http://${trimmedIp}:3000`;
     useConnectionStore.getState().set({ serverUrl: url });
+    await connect();
+    return trimmedName;
+  };
 
+  const handleJoin = async () => {
+    setIsJoining(true);
     try {
-      await connect();
+      const trimmedName = await doConnect();
+      if (!trimmedName) return;
       const result = await joinGame(trimmedName);
       if (!result.success) {
         setError(result.error ?? '게임에 참가할 수 없습니다.');
+        return;
+      }
+      usePlayerStore.getState().set({ playerName: trimmedName });
+      router.replace('/game');
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : '서버에 연결할 수 없습니다.',
+      );
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  const handleJoinAsTraveller = async () => {
+    setIsJoining(true);
+    try {
+      const trimmedName = await doConnect();
+      if (!trimmedName) return;
+      const result = await joinAsTraveller(trimmedName);
+      if (!result.success) {
+        setError(result.error ?? '여행자로 참가할 수 없습니다.');
         return;
       }
       usePlayerStore.getState().set({ playerName: trimmedName });
@@ -284,6 +307,24 @@ export default function JoinScreen() {
             ) : (
               <Text style={styles.joinButtonText}>게임 참가</Text>
             )}
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.joinButton,
+              { marginTop: 8 },
+              pressed && styles.joinButtonPressed,
+            ]}
+            onPress={handleJoinAsTraveller}
+            disabled={isJoining}
+          >
+            <LinearGradient
+              colors={['#3a1a4a', '#5a2a6a', '#3a1a4a']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.joinButtonGradient}
+            />
+            <Text style={styles.joinButtonText}>여행자로 참가</Text>
           </Pressable>
         </View>
 

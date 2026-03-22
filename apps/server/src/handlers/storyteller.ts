@@ -519,13 +519,18 @@ export function registerStorytellerHandlers(
 
     socket.on('game:distributeRoles', (options, callback) => {
       const state = game.getState();
-      const playerIds = state.players.map((p) => p.id);
+      // 여행자는 역할 배분에서 제외
+      const regularPlayers = state.players.filter((p) => !p.isTraveller);
+      const playerIds = regularPlayers.map((p) => p.id);
       // 블러프 역할은 배분 대상에서 제외
       const excludedRoleIds = [
         ...(options.excludedRoleIds ?? []),
         ...(options.bluffRoleIds ?? []),
       ];
-      const result = distributeRoles(playerIds, { ...options, excludedRoleIds });
+      const result = distributeRoles(playerIds, {
+        ...options,
+        excludedRoleIds,
+      });
       if (!result) {
         const hasExcluded =
           options.excludedRoleIds && options.excludedRoleIds.length > 0;
@@ -780,6 +785,98 @@ export function registerStorytellerHandlers(
       // Echo back to storyteller
       storytellerIo.emit('chat:receiveFromPlayer', chatMsg);
       console.log(`ST Chat -> ${player.name}: ${message}`);
+    });
+
+    // ── 여행자(Traveller) 관리 ──
+
+    socket.on('traveller:add', ({ playerId, roleId, alignment }, callback) => {
+      const player = game.getPlayer(playerId);
+      if (!player) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      if (!player.isTraveller) {
+        callback({
+          success: false,
+          error: '해당 플레이어는 여행자가 아닙니다',
+        });
+        return;
+      }
+      const success = game.assignTravellerRole(playerId, roleId, alignment);
+      if (!success) {
+        callback({ success: false, error: '여행자 역할 배정에 실패했습니다' });
+        return;
+      }
+      const role = getRoleById(roleId);
+      // 여행자 본인에게 역할 알림
+      playerIo.to(playerId).emit('role:assign', {
+        roleId,
+        roleName: role?.name ?? roleId,
+      });
+      // 악한 여행자에게 악마 및 하수인 정보 전송
+      if (alignment === 'evil') {
+        const state = game.getState();
+        const demons = state.players.filter((p) => p.role?.team === 'demon');
+        const minions = state.players.filter((p) => p.role?.team === 'minion');
+        if (demons.length > 0) {
+          playerIo.to(playerId).emit('evil:info', {
+            demonName: demons[0].name,
+            otherMinionNames: minions.map((m) => m.name),
+          });
+        }
+      }
+      // 전체 알림
+      playerIo.emit('traveller:joined', {
+        playerId,
+        playerName: player.name,
+        roleId,
+        roleName: role?.name ?? roleId,
+      });
+      storytellerIo.emit('traveller:joined', {
+        playerId,
+        playerName: player.name,
+        roleId,
+        roleName: role?.name ?? roleId,
+      });
+      playerIo.emit('game:state', game.getState());
+      storytellerIo.emit('game:state', game.getStorytellerState());
+      callback({ success: true });
+      console.log(
+        `Traveller added: ${player.name} as ${role?.name ?? roleId} (${alignment})`,
+      );
+    });
+
+    socket.on('traveller:exile', (playerId, callback) => {
+      const player = game.getPlayer(playerId);
+      if (!player) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      if (!player.isTraveller) {
+        callback({ success: false, error: '여행자만 추방할 수 있습니다' });
+        return;
+      }
+      if (!player.isAlive) {
+        callback({ success: false, error: '이미 사망한 여행자입니다' });
+        return;
+      }
+      game.exileTraveller(playerId);
+      const roleName = player.role?.name ?? '???';
+      // 추방 알림 (처형이 아닌 추방)
+      playerIo.emit('traveller:exiled', {
+        playerId,
+        playerName: player.name,
+        roleName,
+      });
+      storytellerIo.emit('traveller:exiled', {
+        playerId,
+        playerName: player.name,
+        roleName,
+      });
+      playerIo.emit('game:playerUpdate', player);
+      storytellerIo.emit('game:state', game.getStorytellerState());
+      callback({ success: true });
+      console.log(`Traveller exiled: ${player.name} (${roleName})`);
     });
 
     socket.on('player:kick', (playerId, callback) => {
