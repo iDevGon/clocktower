@@ -107,6 +107,27 @@ export function useGameActions() {
     }
   }, []);
 
+  const proposeExile = useCallback(
+    (targetId: string): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        const socket = useConnectionStore.getState().socket;
+        if (!socket || !socket.connected) {
+          resolve({ success: false, error: '연결되어 있지 않습니다' });
+          return;
+        }
+        socket.emit('exile:propose', { targetId }, (res) => resolve(res));
+      });
+    },
+    [],
+  );
+
+  const castExileVote = useCallback((guilty: boolean) => {
+    const socket = useConnectionStore.getState().socket;
+    if (socket) {
+      socket.emit('exile:vote', { guilty });
+    }
+  }, []);
+
   const leaveGame = useCallback((): Promise<{
     success: boolean;
     error?: string;
@@ -132,6 +153,8 @@ export function useGameActions() {
     nominatePlayer,
     useSlayer,
     consentReady,
+    proposeExile,
+    castExileVote,
     leaveGame,
   };
 }

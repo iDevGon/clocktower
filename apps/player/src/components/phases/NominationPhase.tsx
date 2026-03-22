@@ -10,6 +10,8 @@ interface NominationPhaseProps {
   executionHappenedToday: boolean;
   votingMode?: 'online' | 'offline';
   onOpenNominate: () => void;
+  hasTravellers?: boolean;
+  onOpenExile?: () => void;
 }
 
 export function NominationPhase({
@@ -19,6 +21,8 @@ export function NominationPhase({
   executionHappenedToday,
   votingMode,
   onOpenNominate,
+  hasTravellers,
+  onOpenExile,
 }: NominationPhaseProps) {
   const isDead = !isAlive;
   const nominationClock = usePlayerStore((s) => s.nominationClock);
@@ -55,6 +59,23 @@ export function NominationPhase({
       {isAlive && canNominate && (
         <Pressable style={styles.nominateButton} onPress={onOpenNominate}>
           <Text style={styles.nominateButtonText}>지목하기</Text>
+        </Pressable>
+      )}
+      {hasTravellers && onOpenExile && (
+        <Pressable
+          style={[
+            styles.nominateButton,
+            {
+              backgroundColor: '#2a1e2e',
+              borderColor: '#4a2e5a',
+              marginTop: 8,
+            },
+          ]}
+          onPress={onOpenExile}
+        >
+          <Text style={[styles.nominateButtonText, { color: '#b07cc6' }]}>
+            여행자 추방 제안
+          </Text>
         </Pressable>
       )}
       {isAlive && executionHappenedToday && (

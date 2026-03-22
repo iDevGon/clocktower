@@ -211,8 +211,15 @@ describe('E2E: 여행자 역할 배정 및 알림', () => {
     expect(evilInfo.demonName).toBeDefined();
   }, 15000);
 
-  it('일반 플레이어에게 traveller:add를 호출하면 실패한다', async () => {
+  it('일반 플레이어에게 traveller:add를 호출하면 여행자로 전환된다', async () => {
     const { playerIds } = await setupFullGame(ctx);
+    const targetId = playerIds[0];
+
+    // 전환 전: 일반 플레이어이고 기존 역할이 있다
+    const beforePlayer = ctx.app.game.getPlayer(targetId);
+    expect(beforePlayer?.isTraveller).toBeFalsy();
+    const previousRoleId = beforePlayer?.role?.id;
+    expect(previousRoleId).toBeDefined();
 
     const addResult = await new Promise<{
       success: boolean;
@@ -220,12 +227,206 @@ describe('E2E: 여행자 역할 배정 및 알림', () => {
     }>((resolve) => {
       ctx.storyteller.emit(
         'traveller:add',
-        { playerId: playerIds[0], roleId: 'scapegoat', alignment: 'good' },
+        { playerId: targetId, roleId: 'scapegoat', alignment: 'good' },
         resolve,
       );
     });
 
-    expect(addResult.success).toBe(false);
+    expect(addResult.success).toBe(true);
+
+    // 전환 후: 여행자로 변경되고, 여행자 역할이 배정된다
+    const afterPlayer = ctx.app.game.getPlayer(targetId);
+    expect(afterPlayer?.isTraveller).toBe(true);
+    expect(afterPlayer?.role?.id).toBe('scapegoat');
+    expect(afterPlayer?.role?.team).toBe('traveller');
+    expect(afterPlayer?.travellerAlignment).toBe('good');
+    // 기존 일반 역할은 해제되어야 한다
+    expect(afterPlayer?.role?.id).not.toBe(previousRoleId);
+  }, 15000);
+});
+
+describe('E2E: 추방 투표', () => {
+  let ctx: TestContext;
+
+  beforeEach(async () => {
+    ctx = await setupTestServer();
+  }, 10000);
+
+  afterEach(async () => {
+    await ctx.cleanup();
+  });
+
+  it('플레이어가 추방을 제안하면 전체에게 exile:start가 전송된다', async () => {
+    await setupFullGame(ctx);
+
+    // 낮으로 전환
+    const phasePromise = waitForEvent(ctx.players[0] as Socket, 'game:phase');
+    ctx.storyteller.emit('game:setPhase', 'day');
+    await phasePromise;
+
+    // 여행자 추가
+    const { playerId: travellerId } = await addTravellerWithRole(
+      ctx,
+      'T1',
+      'scapegoat',
+      'good',
+    );
+
+    // exile:start 리스너
+    const startPromise = waitForEvent<{
+      proposerId: string;
+      targetId: string;
+      targetName: string;
+      totalPlayers: number;
+    }>(ctx.players[0] as Socket, 'exile:start');
+
+    const stStartPromise = waitForEvent<{
+      targetId: string;
+    }>(ctx.storyteller as Socket, 'exile:start');
+
+    // 플레이어가 추방 제안
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.players[0].emit(
+          'exile:propose',
+          { targetId: travellerId },
+          resolve,
+        );
+      },
+    );
+    expect(result.success).toBe(true);
+
+    const startData = await startPromise;
+    expect(startData.targetId).toBe(travellerId);
+    expect(startData.targetName).toBe('T1');
+    expect(startData.totalPlayers).toBe(6); // 5 + 1
+
+    const stData = await stStartPromise;
+    expect(stData.targetId).toBe(travellerId);
+  }, 15000);
+
+  it('전원 투표 시 자동으로 결과가 전송된다', async () => {
+    await setupFullGame(ctx);
+
+    const phasePromise = waitForEvent(ctx.players[0] as Socket, 'game:phase');
+    ctx.storyteller.emit('game:setPhase', 'day');
+    await phasePromise;
+
+    const { playerId: travellerId, socket: travellerSocket } =
+      await addTravellerWithRole(ctx, 'T1', 'scapegoat', 'good');
+
+    // 추방 제안
+    await new Promise<void>((resolve) => {
+      ctx.players[0].emit('exile:propose', { targetId: travellerId }, () =>
+        resolve(),
+      );
+    });
+
+    // exile:result 리스너
+    const resultPromise = waitForEvent<{
+      targetId: string;
+      exiled: boolean;
+      guiltyCount: number;
+      totalPlayers: number;
+    }>(ctx.players[0] as Socket, 'exile:result');
+
+    // 전원 투표 (5명 찬성, 여행자 반대)
+    for (const playerSocket of ctx.players.slice(0, 5)) {
+      playerSocket.emit('exile:vote', { guilty: true });
+    }
+    travellerSocket.emit('exile:vote', { guilty: false });
+
+    const resultData = await resultPromise;
+    expect(resultData.targetId).toBe(travellerId);
+    expect(resultData.exiled).toBe(true); // 5/6 > 3
+    expect(resultData.guiltyCount).toBe(5);
+  }, 15000);
+
+  it('과반수 미달 시 추방되지 않는다', async () => {
+    await setupFullGame(ctx);
+
+    const phasePromise = waitForEvent(ctx.players[0] as Socket, 'game:phase');
+    ctx.storyteller.emit('game:setPhase', 'day');
+    await phasePromise;
+
+    const { playerId: travellerId, socket: travellerSocket } =
+      await addTravellerWithRole(ctx, 'T1', 'scapegoat', 'good');
+
+    await new Promise<void>((resolve) => {
+      ctx.players[0].emit('exile:propose', { targetId: travellerId }, () =>
+        resolve(),
+      );
+    });
+
+    const resultPromise = waitForEvent<{
+      exiled: boolean;
+      guiltyCount: number;
+    }>(ctx.players[0] as Socket, 'exile:result');
+
+    // 2명만 찬성
+    ctx.players[0].emit('exile:vote', { guilty: true });
+    ctx.players[1].emit('exile:vote', { guilty: true });
+    ctx.players[2].emit('exile:vote', { guilty: false });
+    ctx.players[3].emit('exile:vote', { guilty: false });
+    ctx.players[4].emit('exile:vote', { guilty: false });
+    travellerSocket.emit('exile:vote', { guilty: false });
+
+    const resultData = await resultPromise;
+    expect(resultData.exiled).toBe(false);
+    expect(resultData.guiltyCount).toBe(2);
+    expect(ctx.app.game.getPlayer(travellerId)?.isAlive).toBe(true);
+  }, 15000);
+
+  it('이야기꾼이 exile:forceClose로 투표를 강제 종료할 수 있다', async () => {
+    await setupFullGame(ctx);
+
+    const phasePromise = waitForEvent(ctx.players[0] as Socket, 'game:phase');
+    ctx.storyteller.emit('game:setPhase', 'day');
+    await phasePromise;
+
+    const { playerId: travellerId } = await addTravellerWithRole(
+      ctx,
+      'T1',
+      'scapegoat',
+      'good',
+    );
+
+    await new Promise<void>((resolve) => {
+      ctx.players[0].emit('exile:propose', { targetId: travellerId }, () =>
+        resolve(),
+      );
+    });
+
+    const resultPromise = waitForEvent<{
+      exiled: boolean;
+    }>(ctx.players[0] as Socket, 'exile:result');
+
+    // 투표 없이 이야기꾼이 강제 추방
+    ctx.storyteller.emit('exile:forceClose', { exiled: true });
+
+    const resultData = await resultPromise;
+    expect(resultData.exiled).toBe(true);
+    expect(ctx.app.game.getPlayer(travellerId)?.isAlive).toBe(false);
+  }, 15000);
+
+  it('일반 플레이어에 대한 추방 제안은 실패한다', async () => {
+    const { playerIds } = await setupFullGame(ctx);
+
+    const phasePromise = waitForEvent(ctx.players[0] as Socket, 'game:phase');
+    ctx.storyteller.emit('game:setPhase', 'day');
+    await phasePromise;
+
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.players[0].emit(
+          'exile:propose',
+          { targetId: playerIds[1] },
+          resolve,
+        );
+      },
+    );
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('여행자');
   }, 15000);
 });
 

@@ -237,6 +237,35 @@ export function useSocketConnection() {
             .getState()
             .addLog(gs?.day ?? 0, gs?.phase ?? 'setup', msg);
         });
+        newSocket.on('exile:start', (data) => {
+          useGameStore.getState().setExileVote(data);
+          const gs = useGameStore.getState().gameState;
+          useLogStore
+            .getState()
+            .addLog(
+              gs?.day ?? 0,
+              'day',
+              `🗳️ ${data.proposerName}이(가) ${data.targetName} 추방을 제안`,
+            );
+        });
+        newSocket.on('exile:voteUpdate', (data) => {
+          useGameStore.getState().updateExileVote(data);
+        });
+        newSocket.on('exile:result', (data) => {
+          useGameStore.getState().clearExileVote();
+          const gs = useGameStore.getState().gameState;
+          const msg = data.exiled
+            ? `🚪 ${data.targetName} 추방됨 (${data.guiltyCount}/${data.totalPlayers})`
+            : `${data.targetName} 추방 부결 (${data.guiltyCount}/${data.totalPlayers})`;
+          useLogStore
+            .getState()
+            .addLog(
+              gs?.day ?? 0,
+              'day',
+              msg,
+              data.exiled ? 'death' : undefined,
+            );
+        });
         newSocket.on('traveller:exiled', (data) => {
           const gs = useGameStore.getState().gameState;
           const msg = `${data.playerName}(${data.roleName})이(가) 추방되었습니다`;

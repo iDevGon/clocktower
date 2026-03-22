@@ -1,0 +1,137 @@
+import { colors } from '@clocktower/ui';
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: colors.surface.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  panel: {
+    backgroundColor: colors.surface.elevated,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    padding: 24,
+    width: '100%',
+    maxWidth: 360,
+  },
+  title: {
+    color: colors.phase.vote,
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  subtitle: {
+    color: colors.text.secondary,
+    fontSize: 13,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  targetName: {
+    color: colors.team.traveller,
+    fontSize: 22,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  targetRole: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  voteCount: {
+    color: colors.text.primary,
+    fontSize: 15,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  threshold: {
+    color: colors.text.tertiary,
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  guiltyButton: {
+    flex: 1,
+    backgroundColor: '#4a2020',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#6a3030',
+  },
+  guiltyButtonText: {
+    color: '#e06060',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  innocentButton: {
+    flex: 1,
+    backgroundColor: '#1a2e1a',
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2e4a2e',
+  },
+  innocentButtonText: {
+    color: '#7dce82',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  votedText: {
+    color: colors.text.secondary,
+    fontSize: 15,
+    textAlign: 'center',
+    paddingVertical: 14,
+  },
+  resultPanel: {
+    backgroundColor: colors.surface.elevated,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    padding: 24,
+    width: '100%',
+    maxWidth: 360,
+    alignItems: 'center',
+  },
+  resultTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  resultExiled: {
+    color: colors.phase.vote,
+  },
+  resultSurvived: {
+    color: '#7dce82',
+  },
+  resultDetail: {
+    color: colors.text.secondary,
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  dismissButton: {
+    backgroundColor: colors.surface.base,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  dismissText: {
+    color: colors.text.primary,
+    fontSize: 14,
+  },
+});

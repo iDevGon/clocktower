@@ -133,6 +133,31 @@ export interface ServerToClientEvents {
     playerName: string;
     roleName: string;
   }) => void;
+  /** 추방 투표 시작 */
+  'exile:start': (data: {
+    proposerId: string;
+    proposerName: string;
+    targetId: string;
+    targetName: string;
+    targetRoleName: string;
+    totalPlayers: number;
+  }) => void;
+  /** 추방 투표 현황 업데이트 */
+  'exile:voteUpdate': (data: {
+    votes: Record<string, boolean>;
+    guiltyCount: number;
+    innocentCount: number;
+    totalPlayers: number;
+  }) => void;
+  /** 추방 투표 결과 */
+  'exile:result': (data: {
+    targetId: string;
+    targetName: string;
+    targetRoleName: string;
+    exiled: boolean;
+    guiltyCount: number;
+    totalPlayers: number;
+  }) => void;
 }
 
 /**
@@ -172,6 +197,9 @@ export interface ServerToStorytellerEvents {
   'player:left': ServerToClientEvents['player:left'];
   'traveller:joined': ServerToClientEvents['traveller:joined'];
   'traveller:exiled': ServerToClientEvents['traveller:exiled'];
+  'exile:start': ServerToClientEvents['exile:start'];
+  'exile:voteUpdate': ServerToClientEvents['exile:voteUpdate'];
+  'exile:result': ServerToClientEvents['exile:result'];
   /** 게임 중 참가 요청: 이야기꾼 승인 대기 */
   'traveller:pendingApproval': (data: {
     socketId: string;
@@ -261,6 +289,16 @@ export interface ClientToServerEvents {
   'player:leave': (
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
+  /** 여행자 추방 제안 (낮 페이즈 중 누구나 가능) */
+  'exile:propose': (
+    data: { targetId: string },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 추방 투표 (찬성/반대) */
+  'exile:vote': (
+    data: { guilty: boolean },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   /** 여행자로 게임에 참가 (게임 진행 중에도 가능) */
   'game:joinAsTraveller': (
     data: { playerName: string },
@@ -345,6 +383,11 @@ export interface StorytellerToServerEvents {
       alignment: 'good' | 'evil';
     },
     callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 이야기꾼이 추방 투표를 강제 종료 */
+  'exile:forceClose': (
+    data: { exiled: boolean },
+    callback?: (res: { success: boolean; error?: string }) => void,
   ) => void;
   /** 여행자 추방 (처형과 다름: 전체 플레이어 과반수, 처형 효과 미발동) */
   'traveller:exile': (

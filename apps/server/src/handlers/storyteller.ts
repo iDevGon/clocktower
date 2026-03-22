@@ -1033,6 +1033,55 @@ export function registerStorytellerHandlers(
       console.log(`Traveller exiled: ${player.name} (${roleName})`);
     });
 
+    // ── 추방 투표 강제 종료 ──
+
+    socket.on('exile:forceClose', ({ exiled }, callback) => {
+      if (!game.isExileVoteInProgress()) {
+        if (typeof callback === 'function')
+          callback({ success: false, error: '추방 투표가 진행 중이 아닙니다' });
+        return;
+      }
+
+      const closeResult = game.closeExileVote(exiled);
+      if (!closeResult) {
+        if (typeof callback === 'function')
+          callback({ success: false, error: '추방 투표 종료 실패' });
+        return;
+      }
+
+      const target = game.getPlayer(closeResult.targetId);
+      const resultData = {
+        targetId: closeResult.targetId,
+        targetName: target?.name ?? closeResult.targetId,
+        targetRoleName: target?.role?.name ?? '???',
+        exiled: closeResult.exiled,
+        guiltyCount: closeResult.guiltyCount,
+        totalPlayers: closeResult.totalPlayers,
+      };
+      playerIo.emit('exile:result', resultData);
+      storytellerIo.emit('exile:result', resultData);
+
+      if (closeResult.exiled) {
+        playerIo.emit('traveller:exiled', {
+          playerId: closeResult.targetId,
+          playerName: target?.name ?? closeResult.targetId,
+          roleName: target?.role?.name ?? '???',
+        });
+        storytellerIo.emit('traveller:exiled', {
+          playerId: closeResult.targetId,
+          playerName: target?.name ?? closeResult.targetId,
+          roleName: target?.role?.name ?? '???',
+        });
+        if (target) playerIo.emit('game:playerUpdate', target);
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      }
+
+      if (typeof callback === 'function') callback({ success: true });
+      console.log(
+        `Exile force-closed by storyteller: ${target?.name} - ${closeResult.exiled ? 'exiled' : 'survived'}`,
+      );
+    });
+
     // ── Sects & Violets 전용 핸들러 ──
 
     socket.on('witch:confirmCurseDeath', ({ nominatorId, kill }) => {

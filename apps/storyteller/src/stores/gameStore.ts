@@ -88,6 +88,32 @@ interface GameStore {
   dismissChatToast: () => void;
   voteConsentReadyIds: string[];
   setVoteConsentReadyIds: (ids: string[]) => void;
+  exileVote: {
+    proposerId: string;
+    proposerName: string;
+    targetId: string;
+    targetName: string;
+    targetRoleName: string;
+    totalPlayers: number;
+    votes: Record<string, boolean>;
+    guiltyCount: number;
+    innocentCount: number;
+  } | null;
+  setExileVote: (data: {
+    proposerId: string;
+    proposerName: string;
+    targetId: string;
+    targetName: string;
+    targetRoleName: string;
+    totalPlayers: number;
+  }) => void;
+  updateExileVote: (data: {
+    votes: Record<string, boolean>;
+    guiltyCount: number;
+    innocentCount: number;
+    totalPlayers: number;
+  }) => void;
+  clearExileVote: () => void;
   eventToast: { title: string; message: string } | null;
   showEventToast: (toast: { title: string; message: string }) => void;
   dismissEventToast: () => void;
@@ -221,6 +247,22 @@ export const useGameStore = create<GameStore>()(
       dismissChatToast: () => set({ chatToast: null }),
       voteConsentReadyIds: [],
       setVoteConsentReadyIds: (ids) => set({ voteConsentReadyIds: ids }),
+      exileVote: null,
+      setExileVote: (data) =>
+        set({
+          exileVote: {
+            ...data,
+            votes: {},
+            guiltyCount: 0,
+            innocentCount: 0,
+          },
+        }),
+      updateExileVote: (data) =>
+        set((s) => {
+          if (!s.exileVote) return s;
+          return { exileVote: { ...s.exileVote, ...data } };
+        }),
+      clearExileVote: () => set({ exileVote: null }),
       eventToast: null,
       showEventToast: (toast) => set({ eventToast: toast }),
       dismissEventToast: () => set({ eventToast: null }),
@@ -404,6 +446,7 @@ export const useGameStore = create<GameStore>()(
           chatUnreadCounts: {},
           activeChatPlayerId: null,
           chatToast: null,
+          exileVote: null,
           eventToast: null,
           playerMemos: {},
           generalMemo: '',

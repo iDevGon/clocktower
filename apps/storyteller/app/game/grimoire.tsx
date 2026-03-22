@@ -187,6 +187,7 @@ export default function GrimoireScreen() {
     kickPlayer,
     addTraveller,
     exileTraveller,
+    forceCloseExile,
     approveTraveller,
     rejectTraveller,
   } = useGameActions();
@@ -321,6 +322,7 @@ export default function GrimoireScreen() {
   const executionCandidateData = useGameStore((s) => s.executionCandidate);
   const votePreselections = useGameStore((s) => s.votePreselections);
   const voteConfirmed = useGameStore((s) => s.voteConfirmed);
+  const exileVote = useGameStore((s) => s.exileVote);
 
   // Modal state
   const [modal, setModal] = useState<{
@@ -346,7 +348,6 @@ export default function GrimoireScreen() {
   } | null>(null);
 
   useEffect(() => {
-    const socket = useConnectionStore.getState().socket;
     if (!socket) return;
     const handler = (data: { socketId: string; playerName: string }) => {
       setPendingApproval(data);
@@ -355,7 +356,7 @@ export default function GrimoireScreen() {
     return () => {
       socket.off('traveller:pendingApproval', handler);
     };
-  }, []);
+  }, [socket]);
 
   const handleApproveTraveller = useCallback(() => {
     if (!pendingApproval) return;
@@ -1507,6 +1508,77 @@ export default function GrimoireScreen() {
           setChatModalVisible(true);
         }}
       />
+      {/* 추방 투표 진행 패널 */}
+      {exileVote && (
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 80,
+            left: 16,
+            right: 16,
+            backgroundColor: '#1e1a2e',
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: '#3a2a4a',
+            padding: 14,
+            zIndex: 900,
+          }}
+        >
+          <Text
+            style={{
+              color: '#b07cc6',
+              fontSize: 14,
+              fontWeight: '700',
+              marginBottom: 4,
+            }}
+          >
+            추방 투표: {exileVote.targetName} ({exileVote.targetRoleName})
+          </Text>
+          <Text style={{ color: '#908e8a', fontSize: 12, marginBottom: 8 }}>
+            {exileVote.proposerName}의 제안 · 찬성 {exileVote.guiltyCount} /
+            반대 {exileVote.innocentCount} / 전체 {exileVote.totalPlayers}
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable
+              onPress={() => forceCloseExile(true)}
+              style={{
+                flex: 1,
+                backgroundColor: '#4a2020',
+                borderRadius: 8,
+                paddingVertical: 8,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: '#6a3030',
+              }}
+            >
+              <Text
+                style={{ color: '#e06060', fontSize: 13, fontWeight: '600' }}
+              >
+                추방 확정
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => forceCloseExile(false)}
+              style={{
+                flex: 1,
+                backgroundColor: '#1a2e1a',
+                borderRadius: 8,
+                paddingVertical: 8,
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: '#2e4a2e',
+              }}
+            >
+              <Text
+                style={{ color: '#7dce82', fontSize: 13, fontWeight: '600' }}
+              >
+                추방 부결
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
       <EventToast />
 
       <ActionModal

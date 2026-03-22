@@ -1,4 +1,4 @@
-import { DictionaryModal } from '@clocktower/ui';
+import { BaseToast, DictionaryModal } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DeadVignette } from '../src/components/DeadVignette';
+import { ExileVoteModal } from '../src/components/ExileVoteModal';
 import { FeedbackHistoryModal } from '../src/components/FeedbackHistoryModal';
 import { GameOverlays } from '../src/components/GameOverlays';
 import { NominateModal } from '../src/components/NominateModal';
@@ -82,12 +83,16 @@ export default function GameScreen() {
   const butlerMasterName = usePlayerStore((s) => s.butlerMasterName);
   const dismissDeath = usePlayerStore((s) => s.set);
   const kicked = usePlayerStore((s) => s.kicked);
+  const eventToast = usePlayerStore((s) => s.eventToast);
+  const dismissEventToast = usePlayerStore((s) => s.dismissEventToast);
   const {
     submitNightAction,
     sendWhisper,
     sendChatToStoryteller,
     nominatePlayer,
     useSlayer: activateSlayer,
+    proposeExile,
+    castExileVote,
     leaveGame,
   } = useGameActions();
 
@@ -211,6 +216,17 @@ export default function GameScreen() {
     }
   };
 
+  const handleProposeExile = async (targetId: string) => {
+    setExileModalVisible(false);
+    const result = await proposeExile(targetId);
+    if (!result.success) {
+      Alert.alert(
+        '추방 제안 실패',
+        result.error ?? '추방을 제안할 수 없습니다',
+      );
+    }
+  };
+
   const handleSlayer = async (targetId: string) => {
     setSlayerModalVisible(false);
     const result = await activateSlayer(targetId);
@@ -226,9 +242,19 @@ export default function GameScreen() {
     (currentPhase === 'day' || currentPhase === 'vote');
 
   const nominatablePlayers = useMemo(
-    () => gamePlayers.filter((p) => p.isAlive && p.id !== playerId),
+    () =>
+      gamePlayers.filter(
+        (p) => p.isAlive && p.id !== playerId && !p.isTraveller,
+      ),
     [gamePlayers, playerId],
   );
+
+  const exilableTravellers = useMemo(
+    () => gamePlayers.filter((p) => p.isAlive && p.isTraveller),
+    [gamePlayers],
+  );
+
+  const [exileModalVisible, setExileModalVisible] = useState(false);
 
   return (
     <SafeAreaView style={[styles.container, !isAlive && styles.containerDead]}>
@@ -357,6 +383,8 @@ export default function GameScreen() {
           executionHappenedToday={executionHappenedToday}
           votingMode={gameSettings?.votingMode}
           onOpenNominate={() => setNominateModalVisible(true)}
+          hasTravellers={exilableTravellers.length > 0}
+          onOpenExile={() => setExileModalVisible(true)}
         />
 
         {daySubPhase === 'defense' && nomination && (
@@ -551,6 +579,14 @@ export default function GameScreen() {
       />
 
       <NominateModal
+        visible={exileModalVisible}
+        players={exilableTravellers}
+        onNominate={handleProposeExile}
+        onClose={() => setExileModalVisible(false)}
+        title="추방할 여행자 선택"
+      />
+
+      <NominateModal
         visible={slayerModalVisible}
         players={gamePlayers.filter((p) => p.isAlive && p.id !== playerId)}
         onNominate={handleSlayer}
@@ -643,6 +679,16 @@ export default function GameScreen() {
       />
 
       <StorytellerChatToast onPress={() => setChatModalVisible(true)} />
+
+      <BaseToast
+        visible={!!eventToast}
+        onDismiss={dismissEventToast}
+        badgeLabel={eventToast?.title ?? ''}
+        message={eventToast?.message ?? ''}
+        zIndex={650}
+      />
+
+      <ExileVoteModal onVote={castExileVote} />
 
       <SeatingChart
         visible={seatingChartVisible}

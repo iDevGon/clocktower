@@ -143,6 +143,7 @@ export function registerPlayerHandlers(
         name: p.name,
         isAlive: p.isAlive,
         deadVoteUsed: p.deadVoteUsed,
+        isTraveller: p.isTraveller,
       }));
 
       // 집사의 주인 이름 조회
@@ -216,6 +217,27 @@ export function registerPlayerHandlers(
       // 설정 + 전체 상태 전송 (백그라운드 복귀 시 놓친 이벤트 보상)
       socket.emit('game:settings', state.settings);
       socket.emit('game:state', state);
+
+      // 추방 투표 진행 중이면 상태 복원
+      const exileVote = game.getExileVote();
+      if (exileVote) {
+        const proposer = game.getPlayer(exileVote.proposerId);
+        const target = game.getPlayer(exileVote.targetId);
+        socket.emit('exile:start', {
+          proposerId: exileVote.proposerId,
+          proposerName: proposer?.name ?? exileVote.proposerId,
+          targetId: exileVote.targetId,
+          targetName: target?.name ?? exileVote.targetId,
+          targetRoleName: target?.role?.name ?? '???',
+          totalPlayers: state.players.length,
+        });
+        socket.emit('exile:voteUpdate', {
+          votes: exileVote.votes,
+          guiltyCount: exileVote.guiltyCount,
+          innocentCount: exileVote.innocentCount,
+          totalPlayers: state.players.length,
+        });
+      }
       console.log(`Player rejoined: ${player.name}`);
     });
 
@@ -650,6 +672,102 @@ export function registerPlayerHandlers(
       storytellerIo.emit('player:left', { playerId, playerName });
       storytellerIo.emit('game:state', game.getStorytellerState());
       console.log(`Player left game: ${playerName}`);
+    });
+
+    // ── 추방 투표 ──
+
+    socket.on('exile:propose', ({ targetId }, callback) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+
+      const result = game.startExileVote(playerId, targetId);
+      if (!result.success) {
+        callback(result);
+        return;
+      }
+
+      const proposer = game.getPlayer(playerId);
+      const target = game.getPlayer(targetId);
+      callback({ success: true });
+
+      const startData = {
+        proposerId: playerId,
+        proposerName: proposer?.name ?? playerId,
+        targetId,
+        targetName: target?.name ?? targetId,
+        targetRoleName: target?.role?.name ?? '???',
+        totalPlayers: result.totalPlayers ?? 0,
+      };
+      playerIo.emit('exile:start', startData);
+      storytellerIo.emit('exile:start', startData);
+      console.log(`Exile proposed: ${proposer?.name} -> ${target?.name}`);
+    });
+
+    socket.on('exile:vote', ({ guilty }, callback) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) {
+        if (typeof callback === 'function')
+          callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+
+      const result = game.castExileVote(playerId, guilty);
+      if (!result.success) {
+        if (typeof callback === 'function') callback(result);
+        return;
+      }
+      if (typeof callback === 'function') callback({ success: true });
+
+      const exileVote = game.getExileVote();
+      if (exileVote) {
+        const updateData = {
+          votes: exileVote.votes,
+          guiltyCount: exileVote.guiltyCount,
+          innocentCount: exileVote.innocentCount,
+          totalPlayers: game.getState().players.length,
+        };
+        playerIo.emit('exile:voteUpdate', updateData);
+        storytellerIo.emit('exile:voteUpdate', updateData);
+      }
+
+      // 전원 투표 완료 시 자동 종료
+      if (result.allVoted) {
+        const closeResult = game.closeExileVote();
+        if (closeResult) {
+          const target = game.getPlayer(closeResult.targetId);
+          const resultData = {
+            targetId: closeResult.targetId,
+            targetName: target?.name ?? closeResult.targetId,
+            targetRoleName: target?.role?.name ?? '???',
+            exiled: closeResult.exiled,
+            guiltyCount: closeResult.guiltyCount,
+            totalPlayers: closeResult.totalPlayers,
+          };
+          playerIo.emit('exile:result', resultData);
+          storytellerIo.emit('exile:result', resultData);
+
+          if (closeResult.exiled) {
+            playerIo.emit('traveller:exiled', {
+              playerId: closeResult.targetId,
+              playerName: target?.name ?? closeResult.targetId,
+              roleName: target?.role?.name ?? '???',
+            });
+            storytellerIo.emit('traveller:exiled', {
+              playerId: closeResult.targetId,
+              playerName: target?.name ?? closeResult.targetId,
+              roleName: target?.role?.name ?? '???',
+            });
+            if (target) playerIo.emit('game:playerUpdate', target);
+            storytellerIo.emit('game:state', game.getStorytellerState());
+          }
+          console.log(
+            `Exile vote closed: ${target?.name} - ${closeResult.exiled ? 'exiled' : 'survived'} (${closeResult.guiltyCount}/${closeResult.totalPlayers})`,
+          );
+        }
+      }
     });
 
     socket.on('push:register', ({ token }) => {

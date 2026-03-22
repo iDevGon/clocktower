@@ -109,6 +109,13 @@ export class GameManager {
   // 이야기꾼이 사전 선택한 블러프 역할 ID (수동 배정 시 사용)
   private preselectedBluffIds: string[] = [];
 
+  // ── 추방 투표 상태 ──
+  private exileVote: {
+    proposerId: string;
+    targetId: string;
+    votes: Map<string, boolean>; // playerId → guilty
+  } | null = null;
+
   // ── Sects & Violets 전용 상태 ──
   // 마녀 저주 대상 (witchPlayerId → cursedPlayerId)
   private witchCursedTarget: string | null = null;
@@ -219,6 +226,7 @@ export class GameManager {
     this.nightWakeUpRoleId = null;
     this.voteConsentReady.clear();
     this.bluffRoles = [];
+    this.exileVote = null;
     this.witchCursedTarget = null;
     this.fangGuJumped = false;
     this.evilTwinPairs.clear();
@@ -358,6 +366,129 @@ export class GameManager {
     return true;
   }
 
+  // ── 추방 투표 ──
+
+  startExileVote(
+    proposerId: string,
+    targetId: string,
+  ): { success: boolean; error?: string; totalPlayers?: number } {
+    if (this.exileVote) {
+      return { success: false, error: '이미 추방 투표가 진행 중입니다' };
+    }
+    if (this.state.phase !== 'day') {
+      return { success: false, error: '낮에만 추방을 제안할 수 있습니다' };
+    }
+    const target = this.getPlayer(targetId);
+    if (!target) {
+      return { success: false, error: '플레이어를 찾을 수 없습니다' };
+    }
+    if (!target.isTraveller) {
+      return { success: false, error: '여행자만 추방할 수 있습니다' };
+    }
+    if (!target.isAlive) {
+      return { success: false, error: '이미 사망한 여행자입니다' };
+    }
+
+    this.exileVote = {
+      proposerId,
+      targetId,
+      votes: new Map(),
+    };
+
+    const totalPlayers = this.state.players.length;
+    return { success: true, totalPlayers };
+  }
+
+  castExileVote(
+    playerId: string,
+    guilty: boolean,
+  ): {
+    success: boolean;
+    error?: string;
+    allVoted?: boolean;
+    guiltyCount?: number;
+    innocentCount?: number;
+  } {
+    if (!this.exileVote) {
+      return { success: false, error: '추방 투표가 진행 중이 아닙니다' };
+    }
+    const player = this.getPlayer(playerId);
+    if (!player) {
+      return { success: false, error: '플레이어를 찾을 수 없습니다' };
+    }
+    if (this.exileVote.votes.has(playerId)) {
+      return { success: false, error: '이미 투표했습니다' };
+    }
+
+    this.exileVote.votes.set(playerId, guilty);
+
+    let guiltyCount = 0;
+    let innocentCount = 0;
+    for (const v of this.exileVote.votes.values()) {
+      if (v) guiltyCount++;
+      else innocentCount++;
+    }
+
+    const allVoted = this.exileVote.votes.size === this.state.players.length;
+    return { success: true, allVoted, guiltyCount, innocentCount };
+  }
+
+  closeExileVote(forceExiled?: boolean): {
+    exiled: boolean;
+    guiltyCount: number;
+    totalPlayers: number;
+    targetId: string;
+  } | null {
+    if (!this.exileVote) return null;
+
+    let guiltyCount = 0;
+    for (const v of this.exileVote.votes.values()) {
+      if (v) guiltyCount++;
+    }
+    const totalPlayers = this.state.players.length;
+    const exiled =
+      forceExiled !== undefined
+        ? forceExiled
+        : guiltyCount > Math.floor(totalPlayers / 2);
+
+    const targetId = this.exileVote.targetId;
+    if (exiled) {
+      this.exileTraveller(targetId);
+    }
+
+    this.exileVote = null;
+    return { exiled, guiltyCount, totalPlayers, targetId };
+  }
+
+  getExileVote(): {
+    proposerId: string;
+    targetId: string;
+    votes: Record<string, boolean>;
+    guiltyCount: number;
+    innocentCount: number;
+  } | null {
+    if (!this.exileVote) return null;
+    const votes: Record<string, boolean> = {};
+    let guiltyCount = 0;
+    let innocentCount = 0;
+    for (const [id, v] of this.exileVote.votes) {
+      votes[id] = v;
+      if (v) guiltyCount++;
+      else innocentCount++;
+    }
+    return {
+      proposerId: this.exileVote.proposerId,
+      targetId: this.exileVote.targetId,
+      votes,
+      guiltyCount,
+      innocentCount,
+    };
+  }
+
+  isExileVoteInProgress(): boolean {
+    return this.exileVote !== null;
+  }
+
   /** 여행자를 게임에서 완전히 제거합니다 */
   removeTraveller(playerId: string): boolean {
     const player = this.getPlayer(playerId);
@@ -406,6 +537,8 @@ export class GameManager {
       this.executionCandidate = null;
       this.executionCandidateThreshold = 0;
       this.pendingNightKills = [];
+      // 추방 투표 진행 중이면 취소
+      this.exileVote = null;
       // 마녀 저주 초기화 (밤 시작 시)
       this.clearWitchCurse();
       this.state.players.forEach((p) => {
@@ -698,6 +831,29 @@ export class GameManager {
     this.nightActionTargets.set(playerId, targets);
   }
 
+  // ── 도둑/관료 투표 가중치 ──
+
+  /** 도둑(-1)과 관료(3)의 밤 행동 타깃에 따른 투표 가중치 맵 반환 */
+  private getVoteMultipliers(): Map<string, number> {
+    const multipliers = new Map<string, number>();
+    for (const player of this.state.players) {
+      if (!player.isAlive || !player.isTraveller || !player.role) continue;
+      if (player.role.id !== 'thief' && player.role.id !== 'bureaucrat')
+        continue;
+      if (isPoisonedOrDrunk(player)) continue;
+      const targets = this.nightActionTargets.get(player.id);
+      if (!targets || targets.length === 0) continue;
+      const targetId = targets[0];
+      const current = multipliers.get(targetId) ?? 1;
+      if (player.role.id === 'thief') {
+        multipliers.set(targetId, -current);
+      } else {
+        multipliers.set(targetId, current * 3);
+      }
+    }
+    return multipliers;
+  }
+
   // ── 처단자 능력 ──
 
   isSlayerUsed(playerId: string): boolean {
@@ -898,7 +1054,13 @@ export class GameManager {
     }
 
     const alivePlayers = this.state.players.filter((p) => p.isAlive).length;
-    const guiltyVotes = Object.keys(current.votes).length;
+
+    // 도둑/관료 투표 가중치 계산
+    const voteMultipliers = this.getVoteMultipliers();
+    let guiltyVotes = 0;
+    for (const voterId of Object.keys(current.votes)) {
+      guiltyVotes += voteMultipliers.get(voterId) ?? 1;
+    }
     const reachedMajority = guiltyVotes >= Math.ceil(alivePlayers / 2);
 
     const nominee = this.getPlayer(current.nomineeId);

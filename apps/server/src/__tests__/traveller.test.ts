@@ -352,6 +352,237 @@ describe('GameManager - 여행자 시스템', () => {
     });
   });
 
+  describe('추방 투표', () => {
+    it('낮에 추방 투표를 시작할 수 있다', () => {
+      const { gm } = createStartedGame();
+      gm.setPhase('day');
+      const traveller = gm.addTraveller('T1');
+      gm.assignTravellerRole(traveller?.id ?? '', 'scapegoat', 'good');
+
+      const result = gm.startExileVote('proposer', traveller?.id ?? '');
+      expect(result.success).toBe(true);
+      expect(result.totalPlayers).toBe(6); // 5 + 1 traveller
+      expect(gm.isExileVoteInProgress()).toBe(true);
+    });
+
+    it('밤에는 추방 투표를 시작할 수 없다', () => {
+      const { gm } = createStartedGame();
+      const traveller = gm.addTraveller('T1');
+      gm.assignTravellerRole(traveller?.id ?? '', 'scapegoat', 'good');
+
+      const result = gm.startExileVote('proposer', traveller?.id ?? '');
+      expect(result.success).toBe(false);
+    });
+
+    it('일반 플레이어는 추방 투표 대상이 될 수 없다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+
+      const result = gm.startExileVote('proposer', players[0].id);
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('여행자');
+    });
+
+    it('이미 사망한 여행자는 추방 투표 대상이 될 수 없다', () => {
+      const { gm } = createStartedGame();
+      gm.setPhase('day');
+      const traveller = gm.addTraveller('T1');
+      gm.assignTravellerRole(traveller?.id ?? '', 'scapegoat', 'good');
+      gm.exileTraveller(traveller?.id ?? '');
+
+      const result = gm.startExileVote('proposer', traveller?.id ?? '');
+      expect(result.success).toBe(false);
+    });
+
+    it('중복 추방 투표를 시작할 수 없다', () => {
+      const { gm } = createStartedGame();
+      gm.setPhase('day');
+      const t1 = gm.addTraveller('T1');
+      gm.assignTravellerRole(t1?.id ?? '', 'scapegoat', 'good');
+      const t2 = gm.addTraveller('T2');
+      gm.assignTravellerRole(t2?.id ?? '', 'gunslinger', 'good');
+
+      gm.startExileVote('proposer', t1?.id ?? '');
+      const result = gm.startExileVote('proposer', t2?.id ?? '');
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('이미');
+    });
+
+    it('추방 투표에 모든 플레이어가 투표할 수 있다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+      const traveller = gm.addTraveller('T1');
+      gm.assignTravellerRole(traveller?.id ?? '', 'scapegoat', 'good');
+
+      gm.startExileVote(players[0].id, traveller?.id ?? '');
+
+      // 모든 플레이어(죽은 플레이어 포함)가 투표
+      for (const p of players) {
+        const result = gm.castExileVote(p.id, true);
+        expect(result.success).toBe(true);
+      }
+      // 여행자 본인도 투표
+      const tResult = gm.castExileVote(traveller?.id ?? '', false);
+      expect(tResult.success).toBe(true);
+      expect(tResult.allVoted).toBe(true);
+      expect(tResult.guiltyCount).toBe(5);
+      expect(tResult.innocentCount).toBe(1);
+    });
+
+    it('중복 투표는 할 수 없다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+      const traveller = gm.addTraveller('T1');
+      gm.assignTravellerRole(traveller?.id ?? '', 'scapegoat', 'good');
+
+      gm.startExileVote(players[0].id, traveller?.id ?? '');
+      gm.castExileVote(players[0].id, true);
+
+      const result = gm.castExileVote(players[0].id, false);
+      expect(result.success).toBe(false);
+    });
+
+    it('과반수 찬성 시 추방된다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+      const traveller = gm.addTraveller('T1');
+      gm.assignTravellerRole(traveller?.id ?? '', 'scapegoat', 'good');
+
+      gm.startExileVote(players[0].id, traveller?.id ?? '');
+      // 6명 중 4명 찬성 (> 3)
+      gm.castExileVote(players[0].id, true);
+      gm.castExileVote(players[1].id, true);
+      gm.castExileVote(players[2].id, true);
+      gm.castExileVote(players[3].id, true);
+      gm.castExileVote(players[4].id, false);
+      gm.castExileVote(traveller?.id ?? '', false);
+
+      const result = gm.closeExileVote();
+      expect(result).not.toBeNull();
+      expect(result?.exiled).toBe(true);
+      expect(result?.guiltyCount).toBe(4);
+      expect(gm.getPlayer(traveller?.id ?? '')?.isAlive).toBe(false);
+    });
+
+    it('과반수 미달 시 추방되지 않는다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+      const traveller = gm.addTraveller('T1');
+      gm.assignTravellerRole(traveller?.id ?? '', 'scapegoat', 'good');
+
+      gm.startExileVote(players[0].id, traveller?.id ?? '');
+      // 6명 중 3명 찬성 (= 3, not > 3)
+      gm.castExileVote(players[0].id, true);
+      gm.castExileVote(players[1].id, true);
+      gm.castExileVote(players[2].id, true);
+      gm.castExileVote(players[3].id, false);
+      gm.castExileVote(players[4].id, false);
+      gm.castExileVote(traveller?.id ?? '', false);
+
+      const result = gm.closeExileVote();
+      expect(result).not.toBeNull();
+      expect(result?.exiled).toBe(false);
+      expect(gm.getPlayer(traveller?.id ?? '')?.isAlive).toBe(true);
+    });
+
+    it('이야기꾼이 강제로 추방할 수 있다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+      const traveller = gm.addTraveller('T1');
+      gm.assignTravellerRole(traveller?.id ?? '', 'scapegoat', 'good');
+
+      gm.startExileVote(players[0].id, traveller?.id ?? '');
+      // 투표 완료 전이라도 강제 종료
+      const result = gm.closeExileVote(true);
+      expect(result).not.toBeNull();
+      expect(result?.exiled).toBe(true);
+      expect(gm.getPlayer(traveller?.id ?? '')?.isAlive).toBe(false);
+    });
+
+    it('이야기꾼이 강제 부결할 수 있다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+      const traveller = gm.addTraveller('T1');
+      gm.assignTravellerRole(traveller?.id ?? '', 'scapegoat', 'good');
+
+      gm.startExileVote(players[0].id, traveller?.id ?? '');
+      // 전원 찬성해도 강제 부결
+      for (const p of players) gm.castExileVote(p.id, true);
+      gm.castExileVote(traveller?.id ?? '', true);
+
+      const result = gm.closeExileVote(false);
+      expect(result).not.toBeNull();
+      expect(result?.exiled).toBe(false);
+      expect(gm.getPlayer(traveller?.id ?? '')?.isAlive).toBe(true);
+    });
+
+    it('추방 투표 종료 후 새 추방 투표가 가능하다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+      const t1 = gm.addTraveller('T1');
+      gm.assignTravellerRole(t1?.id ?? '', 'scapegoat', 'good');
+      const t2 = gm.addTraveller('T2');
+      gm.assignTravellerRole(t2?.id ?? '', 'gunslinger', 'good');
+
+      gm.startExileVote(players[0].id, t1?.id ?? '');
+      gm.closeExileVote(false);
+
+      const result = gm.startExileVote(players[0].id, t2?.id ?? '');
+      expect(result.success).toBe(true);
+    });
+
+    it('밤 전환 시 진행 중인 추방 투표가 정리된다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+      const traveller = gm.addTraveller('T1');
+      gm.assignTravellerRole(traveller?.id ?? '', 'scapegoat', 'good');
+
+      gm.startExileVote(players[0].id, traveller?.id ?? '');
+      expect(gm.isExileVoteInProgress()).toBe(true);
+
+      gm.setPhase('night');
+      expect(gm.isExileVoteInProgress()).toBe(false);
+    });
+
+    it('getExileVote가 올바른 투표 현황을 반환한다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+      const traveller = gm.addTraveller('T1');
+      gm.assignTravellerRole(traveller?.id ?? '', 'scapegoat', 'good');
+
+      gm.startExileVote(players[0].id, traveller?.id ?? '');
+      gm.castExileVote(players[0].id, true);
+      gm.castExileVote(players[1].id, false);
+
+      const vote = gm.getExileVote();
+      expect(vote).not.toBeNull();
+      expect(vote?.proposerId).toBe(players[0].id);
+      expect(vote?.targetId).toBe(traveller?.id);
+      expect(vote?.guiltyCount).toBe(1);
+      expect(vote?.innocentCount).toBe(1);
+      expect(vote?.votes[players[0].id]).toBe(true);
+      expect(vote?.votes[players[1].id]).toBe(false);
+    });
+
+    it('추방 투표가 없으면 getExileVote는 null을 반환한다', () => {
+      const { gm } = createStartedGame();
+      expect(gm.getExileVote()).toBeNull();
+    });
+
+    it('사망한 플레이어도 추방 투표에 참여할 수 있다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+      gm.kill(players[0].id); // 사망 처리
+
+      const traveller = gm.addTraveller('T1');
+      gm.assignTravellerRole(traveller?.id ?? '', 'scapegoat', 'good');
+
+      gm.startExileVote(players[1].id, traveller?.id ?? '');
+      const result = gm.castExileVote(players[0].id, true); // 사망 플레이어도 투표
+      expect(result.success).toBe(true);
+    });
+  });
+
   describe('restart와 여행자', () => {
     it('restart 후 여행자도 유지된다', () => {
       const { gm } = createStartedGame();
@@ -380,6 +611,138 @@ describe('GameManager - 여행자 시스템', () => {
       expect(result.assignments.every((a) => a.role.team !== 'traveller')).toBe(
         true,
       );
+    });
+  });
+
+  describe('여행자 밤 행동 정의', () => {
+    it('bureaucrat의 NIGHT_ACTIONS가 정의되어 있다', async () => {
+      const { NIGHT_ACTIONS } = await import('@clocktower/shared/logic');
+      expect(NIGHT_ACTIONS.bureaucrat).toBeDefined();
+      expect(NIGHT_ACTIONS.bureaucrat.type).toBe('select_one');
+      expect(NIGHT_ACTIONS.bureaucrat.excludeSelf).toBe(true);
+    });
+
+    it('thief의 NIGHT_ACTIONS가 정의되어 있다', async () => {
+      const { NIGHT_ACTIONS } = await import('@clocktower/shared/logic');
+      expect(NIGHT_ACTIONS.thief).toBeDefined();
+      expect(NIGHT_ACTIONS.thief.type).toBe('select_one');
+      expect(NIGHT_ACTIONS.thief.excludeSelf).toBe(true);
+    });
+
+    it('apprentice의 NIGHT_ACTIONS가 정의되어 있다', async () => {
+      const { NIGHT_ACTIONS } = await import('@clocktower/shared/logic');
+      expect(NIGHT_ACTIONS.apprentice).toBeDefined();
+      expect(NIGHT_ACTIONS.apprentice.type).toBe('passive');
+    });
+
+    it('bone_collector의 NIGHT_ACTIONS가 정의되어 있다', async () => {
+      const { NIGHT_ACTIONS } = await import('@clocktower/shared/logic');
+      expect(NIGHT_ACTIONS.bone_collector).toBeDefined();
+      expect(NIGHT_ACTIONS.bone_collector.type).toBe('select_one');
+    });
+
+    it('harlot의 NIGHT_ACTIONS가 정의되어 있다', async () => {
+      const { NIGHT_ACTIONS } = await import('@clocktower/shared/logic');
+      expect(NIGHT_ACTIONS.harlot).toBeDefined();
+      expect(NIGHT_ACTIONS.harlot.type).toBe('select_one');
+    });
+
+    it('barista는 NIGHT_ACTIONS가 정의되어 있다 (passive)', async () => {
+      // 바리스타는 이야기꾼이 직접 결정하므로 passive
+      const { NIGHT_ACTIONS } = await import('@clocktower/shared/logic');
+      expect(NIGHT_ACTIONS.barista).toBeDefined();
+      expect(NIGHT_ACTIONS.barista.type).toBe('passive');
+    });
+
+    it('apprentice의 NIGHT_FEEDBACK가 role 타입이다', async () => {
+      const { NIGHT_FEEDBACK } = await import('@clocktower/shared/logic');
+      expect(NIGHT_FEEDBACK.apprentice).toBeDefined();
+      expect(NIGHT_FEEDBACK.apprentice.type).toBe('role');
+    });
+
+    it('harlot의 NIGHT_FEEDBACK가 role 타입이다', async () => {
+      const { NIGHT_FEEDBACK } = await import('@clocktower/shared/logic');
+      expect(NIGHT_FEEDBACK.harlot).toBeDefined();
+      expect(NIGHT_FEEDBACK.harlot.type).toBe('role');
+    });
+
+    it('밤 행동이 없는 여행자는 NIGHT_ACTIONS에 정의되지 않는다', async () => {
+      const { NIGHT_ACTIONS } = await import('@clocktower/shared/logic');
+      expect(NIGHT_ACTIONS.scapegoat).toBeUndefined();
+      expect(NIGHT_ACTIONS.gunslinger).toBeUndefined();
+      expect(NIGHT_ACTIONS.beggar).toBeUndefined();
+      expect(NIGHT_ACTIONS.butcher_traveller).toBeUndefined();
+      expect(NIGHT_ACTIONS.deviant).toBeUndefined();
+      expect(NIGHT_ACTIONS.matron).toBeUndefined();
+      expect(NIGHT_ACTIONS.voudon).toBeUndefined();
+      expect(NIGHT_ACTIONS.judge).toBeUndefined();
+      expect(NIGHT_ACTIONS.bishop).toBeUndefined();
+    });
+  });
+
+  describe('여행자 밤 순서', () => {
+    it('bureaucrat과 thief가 TB 첫째 밤 순서에 포함된다', async () => {
+      const { FIRST_NIGHT_ORDER } = await import('@clocktower/shared/logic');
+      expect(FIRST_NIGHT_ORDER).toContain('bureaucrat');
+      expect(FIRST_NIGHT_ORDER).toContain('thief');
+    });
+
+    it('bureaucrat과 thief가 TB 이후 밤 순서에 포함된다', async () => {
+      const { OTHER_NIGHT_ORDER } = await import('@clocktower/shared/logic');
+      expect(OTHER_NIGHT_ORDER).toContain('bureaucrat');
+      expect(OTHER_NIGHT_ORDER).toContain('thief');
+    });
+
+    it('barista가 SV 첫째 밤 순서에 포함된다', async () => {
+      const { SV_FIRST_NIGHT_ORDER } = await import('@clocktower/shared/logic');
+      expect(SV_FIRST_NIGHT_ORDER).toContain('barista');
+    });
+
+    it('bone_collector와 harlot이 SV 이후 밤 순서에 포함된다', async () => {
+      const { SV_OTHER_NIGHT_ORDER } = await import('@clocktower/shared/logic');
+      expect(SV_OTHER_NIGHT_ORDER).toContain('bone_collector');
+      expect(SV_OTHER_NIGHT_ORDER).toContain('harlot');
+    });
+
+    it('barista가 SV 이후 밤 순서에 포함된다', async () => {
+      const { SV_OTHER_NIGHT_ORDER } = await import('@clocktower/shared/logic');
+      expect(SV_OTHER_NIGHT_ORDER).toContain('barista');
+    });
+  });
+
+  describe('여행자 CHARACTER_TIPS', () => {
+    it('모든 여행자 역할에 팁이 정의되어 있다', async () => {
+      const { getCharacterTips } = await import('@clocktower/shared/logic');
+      const travellerRoleIds = [
+        'scapegoat',
+        'gunslinger',
+        'beggar',
+        'bureaucrat',
+        'thief',
+        'butcher_traveller',
+        'bone_collector',
+        'harlot',
+        'barista',
+        'deviant',
+        'apprentice',
+        'matron',
+        'voudon',
+        'judge',
+        'bishop',
+      ];
+
+      for (const roleId of travellerRoleIds) {
+        const tips = getCharacterTips(roleId);
+        expect(tips, `${roleId}의 팁이 없습니다`).not.toBeNull();
+        expect(
+          tips?.playTips.length,
+          `${roleId}의 playTips가 비어있습니다`,
+        ).toBeGreaterThan(0);
+        expect(
+          tips?.counterTips.length,
+          `${roleId}의 counterTips가 비어있습니다`,
+        ).toBeGreaterThan(0);
+      }
     });
   });
 });

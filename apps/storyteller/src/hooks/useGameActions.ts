@@ -246,6 +246,11 @@ export function useGameActions() {
     [],
   );
 
+  const forceCloseExile = useCallback(
+    (exiled: boolean) => socket?.emit('exile:forceClose', { exiled }),
+    [socket],
+  );
+
   const approveTraveller = useCallback(
     (socketId: string, playerName: string) =>
       socket?.emit('traveller:approve', { socketId, playerName }),
@@ -286,6 +291,7 @@ export function useGameActions() {
     kickPlayer,
     addTraveller,
     exileTraveller,
+    forceCloseExile,
     unassignAllRoles,
     approveTraveller,
     rejectTraveller,

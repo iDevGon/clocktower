@@ -125,6 +125,30 @@ interface PlayerState {
   nominationPaused: boolean;
   nominationRemainingMs: number | null;
   defenseClock: VoteClock | null;
+  /** 추방 투표 진행 상태 */
+  exileVote: {
+    proposerId: string;
+    proposerName: string;
+    targetId: string;
+    targetName: string;
+    targetRoleName: string;
+    totalPlayers: number;
+    votes: Record<string, boolean>;
+    guiltyCount: number;
+    innocentCount: number;
+  } | null;
+  /** 추방 투표 결과 */
+  exileResult: {
+    targetName: string;
+    targetRoleName: string;
+    exiled: boolean;
+    guiltyCount: number;
+    totalPlayers: number;
+  } | null;
+  /** 이벤트 토스트 (여행자 참가 등) */
+  eventToast: { title: string; message: string } | null;
+  showEventToast: (toast: { title: string; message: string }) => void;
+  dismissEventToast: () => void;
   /** 이야기꾼에 의해 강퇴됨 */
   kicked: boolean;
   set: (partial: Partial<PlayerState>) => void;
@@ -187,6 +211,9 @@ const initialState = {
   nominationPaused: false,
   nominationRemainingMs: null as number | null,
   defenseClock: null as VoteClock | null,
+  exileVote: null as PlayerState['exileVote'],
+  exileResult: null as PlayerState['exileResult'],
+  eventToast: null as { title: string; message: string } | null,
   kicked: false,
 };
 
@@ -194,6 +221,8 @@ export const usePlayerStore = create<PlayerState>()(
   persist(
     (set) => ({
       ...initialState,
+      showEventToast: (toast) => set({ eventToast: toast }),
+      dismissEventToast: () => set({ eventToast: null }),
       set: (partial) => set(partial),
       addFeedback: (day, feedback) =>
         set((s) => ({

@@ -8,6 +8,7 @@ interface NominateModalProps {
   nominatedTodayIds?: string[];
   onNominate: (nomineeId: string) => void;
   onClose: () => void;
+  title?: string;
 }
 
 export function NominateModal({
@@ -16,6 +17,7 @@ export function NominateModal({
   nominatedTodayIds = [],
   onNominate,
   onClose,
+  title = '지목할 플레이어 선택',
 }: NominateModalProps) {
   const nominatedSet = new Set(nominatedTodayIds);
 
@@ -31,7 +33,7 @@ export function NominateModal({
           <Pressable onPress={onClose}>
             <Text style={styles.closeText}>닫기</Text>
           </Pressable>
-          <Text style={styles.title}>지목할 플레이어 선택</Text>
+          <Text style={styles.title}>{title}</Text>
           <View style={styles.headerSpacer} />
         </View>
         <FlatList

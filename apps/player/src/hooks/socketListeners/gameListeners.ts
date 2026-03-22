@@ -1,5 +1,5 @@
 import { getRoleById, NIGHT_ACTIONS } from '@clocktower/shared';
-import { Alert, AppState } from 'react-native';
+import { AppState } from 'react-native';
 import { useChatStore } from '../../stores/chatStore';
 import { usePlayerStore } from '../../stores/playerStore';
 import { useWhisperStore } from '../../stores/whisperStore';
@@ -120,7 +120,10 @@ export function attachGameListeners(socket: AppSocket) {
 
   socket.on('game:state', (state) => {
     const playerMap = new Map(
-      state.players.map(({ id, name, isAlive }) => [id, { id, name, isAlive }]),
+      state.players.map(({ id, name, isAlive, isTraveller }) => [
+        id,
+        { id, name, isAlive, isTraveller },
+      ]),
     );
 
     // playerOrder가 있으면 그 순서대로, 없으면 원래 순서 유지
@@ -129,7 +132,12 @@ export function attachGameListeners(socket: AppSocket) {
         ? state.playerOrder
             .map((id) => playerMap.get(id))
             .filter((p): p is NonNullable<typeof p> => p != null)
-        : state.players.map(({ id, name, isAlive }) => ({ id, name, isAlive }));
+        : state.players.map(({ id, name, isAlive, isTraveller }) => ({
+            id,
+            name,
+            isAlive,
+            isTraveller,
+          }));
 
     // Game was reset - player no longer exists in the game
     const { playerId, playerName } = usePlayerStore.getState();
@@ -190,10 +198,46 @@ export function attachGameListeners(socket: AppSocket) {
   // 여행자 참가/추방 이벤트
   socket.on('traveller:joined', (data) => {
     // 이야기꾼이 여행자 역할 배정 후 game:state로 상태가 갱신됨
-    Alert.alert(
-      '여행자 참가',
-      `${data.playerName}이(가) 여행자(${data.roleName})로 참가했습니다`,
-    );
+    usePlayerStore.getState().showEventToast({
+      title: '여행자 참가',
+      message: `${data.playerName}이(가) 여행자(${data.roleName})로 참가했습니다`,
+    });
+  });
+
+  // ── 추방 투표 이벤트 ──
+
+  socket.on('exile:start', (data) => {
+    usePlayerStore.getState().set({
+      exileVote: {
+        ...data,
+        votes: {},
+        guiltyCount: 0,
+        innocentCount: 0,
+      },
+      exileResult: null,
+    });
+  });
+
+  socket.on('exile:voteUpdate', (data) => {
+    const current = usePlayerStore.getState().exileVote;
+    if (current) {
+      usePlayerStore.getState().set({
+        exileVote: { ...current, ...data },
+      });
+    }
+  });
+
+  socket.on('exile:result', (data) => {
+    usePlayerStore.getState().set({
+      exileVote: null,
+      exileResult: {
+        targetName: data.targetName,
+        targetRoleName: data.targetRoleName,
+        exiled: data.exiled,
+        guiltyCount: data.guiltyCount,
+        totalPlayers: data.totalPlayers,
+      },
+    });
   });
 
   socket.on('traveller:exiled', (data) => {
