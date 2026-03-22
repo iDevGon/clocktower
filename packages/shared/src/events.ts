@@ -111,6 +111,19 @@ export interface ServerToClientEvents {
   'player:kicked': () => void;
   /** 플레이어가 퇴장하거나 강퇴되었을 때 전체 플레이어에게 전송 */
   'player:left': (data: { playerId: string; playerName: string }) => void;
+  /** 여행자가 게임에 참가했을 때 전체 플레이어에게 전송 */
+  'traveller:joined': (data: {
+    playerId: string;
+    playerName: string;
+    roleId: string;
+    roleName: string;
+  }) => void;
+  /** 여행자가 추방(exile)되었을 때 전체 플레이어에게 전송 */
+  'traveller:exiled': (data: {
+    playerId: string;
+    playerName: string;
+    roleName: string;
+  }) => void;
 }
 
 /**
@@ -147,6 +160,8 @@ export interface ServerToStorytellerEvents {
   'night:wakeUpTargets': (data: { candidateIds: string[] }) => void;
   'game:reset': () => void;
   'player:left': ServerToClientEvents['player:left'];
+  'traveller:joined': ServerToClientEvents['traveller:joined'];
+  'traveller:exiled': ServerToClientEvents['traveller:exiled'];
 }
 
 export interface ClientToServerEvents {
@@ -217,6 +232,15 @@ export interface ClientToServerEvents {
   'player:leave': (
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
+  /** 여행자로 게임에 참가 (게임 진행 중에도 가능) */
+  'game:joinAsTraveller': (
+    data: { playerName: string },
+    callback: (res: {
+      success: boolean;
+      playerId?: string;
+      error?: string;
+    }) => void,
+  ) => void;
 }
 
 export interface StorytellerToServerEvents {
@@ -280,6 +304,20 @@ export interface StorytellerToServerEvents {
   'slayer:forceAck': () => void;
   /** 이야기꾼이 플레이어를 강퇴 */
   'player:kick': (
+    playerId: string,
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 여행자를 게임에 추가 (게임 진행 중에도 가능) */
+  'traveller:add': (
+    data: {
+      playerId: string;
+      roleId: string;
+      alignment: 'good' | 'evil';
+    },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 여행자 추방 (처형과 다름: 전체 플레이어 과반수, 처형 효과 미발동) */
+  'traveller:exile': (
     playerId: string,
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;

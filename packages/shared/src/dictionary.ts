@@ -24,6 +24,7 @@ export const TEAM_LABELS: Record<Team, string> = {
   outsider: '외지인',
   minion: '하수인',
   demon: '악마',
+  traveller: '여행자',
 };
 
 export const TEAM_COLORS: Record<Team, string> = {
@@ -31,6 +32,7 @@ export const TEAM_COLORS: Record<Team, string> = {
   outsider: '#2ecc71',
   minion: '#e67e22',
   demon: '#e74c3c',
+  traveller: '#b07cc6',
 };
 
 export const STATUS_ENTRIES: StatusEntry[] = [

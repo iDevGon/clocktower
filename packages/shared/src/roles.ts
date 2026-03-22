@@ -3,6 +3,7 @@ import type {
   NightActionDef,
   NightFeedbackDef,
   Role,
+  TravellerRole,
 } from './types.js';
 
 // 밤 행동이 있는 전체 역할 (순서대로)
@@ -408,6 +409,162 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
   },
 ];
 
+// ── 여행자 (Traveller) 역할 정의 ──
+
+export const TROUBLE_BREWING_TRAVELLERS: TravellerRole[] = [
+  {
+    id: 'scapegoat',
+    name: '속죄양',
+    team: 'traveller',
+    ability:
+      '당신과 같은 진영의 플레이어가 처형되면, 대신 당신이 처형될 수 있습니다.',
+    edition: 'trouble_brewing',
+  },
+  {
+    id: 'gunslinger',
+    name: '총잡이',
+    team: 'traveller',
+    ability:
+      '매일, 첫 번째 투표가 집계된 후, 투표한 플레이어 1명을 선택할 수 있습니다: 그 플레이어가 사망합니다.',
+    edition: 'trouble_brewing',
+  },
+  {
+    id: 'beggar',
+    name: '거지',
+    team: 'traveller',
+    ability:
+      '투표하려면 투표 토큰을 사용해야 합니다. 죽은 플레이어가 당신에게 투표 토큰을 주면 그 플레이어의 진영을 알게 됩니다. 당신은 항상 맑은 정신입니다.',
+    edition: 'trouble_brewing',
+  },
+  {
+    id: 'bureaucrat',
+    name: '관료',
+    team: 'traveller',
+    ability:
+      '매일 밤, 플레이어 1명을 선택합니다 (본인 제외): 내일 그 플레이어의 투표는 3표로 계산됩니다.',
+    edition: 'trouble_brewing',
+  },
+  {
+    id: 'thief',
+    name: '도둑',
+    team: 'traveller',
+    ability:
+      '매일 밤, 플레이어 1명을 선택합니다 (본인 제외): 내일 그 플레이어의 투표는 음수로 계산됩니다.',
+    edition: 'trouble_brewing',
+  },
+];
+
+export const SECTS_AND_VIOLETS_TRAVELLERS: TravellerRole[] = [
+  {
+    id: 'butcher_traveller',
+    name: '백정',
+    team: 'traveller',
+    ability:
+      '매일, 첫 번째 처형 후, 다시 지목할 수 있습니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'bone_collector',
+    name: '뼈 수집가',
+    team: 'traveller',
+    ability:
+      '게임 중 1회, 밤에 죽은 플레이어 1명을 선택합니다: 그 플레이어는 황혼까지 능력을 되찾습니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'harlot',
+    name: '창녀',
+    team: 'traveller',
+    ability:
+      '매일 밤*, 살아있는 플레이어 1명을 선택합니다: 그 플레이어가 동의하면 그 플레이어의 캐릭터를 알게 되지만, 둘 다 사망할 수 있습니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'barista',
+    name: '바리스타',
+    team: 'traveller',
+    ability:
+      '매일 밤, 황혼까지, 1) 플레이어 1명이 맑은 정신이 되어 정확한 정보를 받거나, 2) 그 플레이어의 능력이 두 번 작동합니다. 그 플레이어는 어떤 효과인지 알게 됩니다.',
+    edition: 'sects_and_violets',
+  },
+  {
+    id: 'deviant',
+    name: '기인',
+    team: 'traveller',
+    ability: '오늘 웃겼다면, 추방으로 사망할 수 없습니다.',
+    edition: 'sects_and_violets',
+  },
+];
+
+export const BAD_MOON_RISING_TRAVELLERS: TravellerRole[] = [
+  {
+    id: 'apprentice',
+    name: '견습생',
+    team: 'traveller',
+    ability:
+      '첫째 밤, 마을주민 능력(선한 경우) 또는 하수인 능력(악한 경우)을 얻습니다.',
+    edition: 'bad_moon_rising',
+  },
+  {
+    id: 'matron',
+    name: '사감',
+    team: 'traveller',
+    ability:
+      '매일, 최대 3쌍의 플레이어 자리를 교환할 수 있습니다. 플레이어는 자리를 떠나 비밀 대화를 할 수 없습니다.',
+    edition: 'bad_moon_rising',
+  },
+  {
+    id: 'voudon',
+    name: '부두',
+    team: 'traveller',
+    ability:
+      '당신과 죽은 플레이어만 투표할 수 있습니다. 죽은 플레이어는 투표 토큰 없이 투표할 수 있습니다. 과반수가 필요하지 않습니다.',
+    edition: 'bad_moon_rising',
+  },
+  {
+    id: 'judge',
+    name: '판사',
+    team: 'traveller',
+    ability:
+      '게임 중 1회, 다른 플레이어가 지목했을 때, 현재 처형을 성공 또는 실패로 결정할 수 있습니다.',
+    edition: 'bad_moon_rising',
+  },
+  {
+    id: 'bishop',
+    name: '주교',
+    team: 'traveller',
+    ability:
+      '이야기꾼만 지목할 수 있습니다. 매일 상대 진영의 플레이어가 최소 1명은 지목되어야 합니다.',
+    edition: 'bad_moon_rising',
+  },
+];
+
+/** 모든 여행자 역할 */
+export const ALL_TRAVELLER_ROLES: TravellerRole[] = [
+  ...TROUBLE_BREWING_TRAVELLERS,
+  ...SECTS_AND_VIOLETS_TRAVELLERS,
+  ...BAD_MOON_RISING_TRAVELLERS,
+];
+
+/** 에디션별 여행자 역할 */
+export const EDITION_TRAVELLERS: Record<string, TravellerRole[]> = {
+  trouble_brewing: TROUBLE_BREWING_TRAVELLERS,
+  sects_and_violets: SECTS_AND_VIOLETS_TRAVELLERS,
+  bad_moon_rising: BAD_MOON_RISING_TRAVELLERS,
+};
+
+export function getTravellersForEdition(editionId: string): TravellerRole[] {
+  return EDITION_TRAVELLERS[editionId] ?? [];
+}
+
+export const TRAVELLER_ROLES_BY_ID = new Map(
+  ALL_TRAVELLER_ROLES.map((r) => [r.id, r]),
+);
+
+export function getTravellerById(roleId: string): TravellerRole | undefined {
+  return TRAVELLER_ROLES_BY_ID.get(roleId);
+}
+
 export const EDITIONS: Edition[] = [
   {
     id: 'trouble_brewing',
@@ -484,7 +641,7 @@ export const OTHER_NIGHT_ORDER: string[] = [
 ];
 
 export function getRoleById(roleId: string): Role | undefined {
-  return ROLES_BY_ID.get(roleId);
+  return ROLES_BY_ID.get(roleId) ?? TRAVELLER_ROLES_BY_ID.get(roleId);
 }
 
 // 플레이어 수별 팀 구성 [마을주민, 외지인, 하수인, 악마]

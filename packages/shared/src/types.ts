@@ -1,7 +1,7 @@
 export type Phase = 'setup' | 'night' | 'day' | 'vote' | 'ended';
 export type DaySubPhase = 'whisper' | 'discussion' | 'nomination' | 'defense';
 
-export type Team = 'townsfolk' | 'outsider' | 'minion' | 'demon';
+export type Team = 'townsfolk' | 'outsider' | 'minion' | 'demon' | 'traveller';
 
 export interface Role {
   id: string;
@@ -22,6 +22,16 @@ export interface Player {
   deadVoteUsed: boolean;
   statuses: PlayerStatus[];
   isDummy?: boolean;
+  /** 여행자(Traveller) 여부. 여행자는 게임 중간에 참가/퇴장 가능하며 추방(exile)으로만 제거 */
+  isTraveller?: boolean;
+  /** 여행자의 진영 (good/evil). 이야기꾼이 결정 */
+  travellerAlignment?: 'good' | 'evil';
+}
+
+/** 여행자 역할 정의. 일반 역할과 달리 team은 항상 'traveller' */
+export interface TravellerRole extends Role {
+  team: 'traveller';
+  edition: string;
 }
 
 export interface GameState {
@@ -208,13 +218,19 @@ export type ExecutionStatus =
   | 'candidate_cleared'
   | 'no_change';
 
-export type DeathReason = 'execution' | 'virgin' | 'slayer' | 'night_kill';
+export type DeathReason =
+  | 'execution'
+  | 'virgin'
+  | 'slayer'
+  | 'night_kill'
+  | 'exile';
 
 export const DEATH_REASON_LABELS: Record<DeathReason, string> = {
   execution: '투표로 처형됨',
   virgin: '성결자의 능력으로 처형됨',
   slayer: '처단자에게 처형됨',
   night_kill: '밤에 사망함',
+  exile: '추방됨',
 };
 
 export interface ExecutionAnnouncement {
