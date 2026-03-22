@@ -813,13 +813,15 @@ export function registerStorytellerHandlers(
         roleId,
         roleName: role?.name ?? roleId,
       });
-      // 악한 여행자에게 악마 정보 전송
+      // 악한 여행자에게 악마 및 하수인 정보 전송
       if (alignment === 'evil') {
         const state = game.getState();
         const demons = state.players.filter((p) => p.role?.team === 'demon');
+        const minions = state.players.filter((p) => p.role?.team === 'minion');
         if (demons.length > 0) {
           playerIo.to(playerId).emit('evil:info', {
             demonName: demons[0].name,
+            otherMinionNames: minions.map((m) => m.name),
           });
         }
       }

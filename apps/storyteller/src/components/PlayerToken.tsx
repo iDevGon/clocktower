@@ -7,6 +7,7 @@ import {
   type PlayerStatus,
   TEAM_COLORS,
 } from '@clocktower/shared';
+import { colors } from '@clocktower/ui';
 import { useCallback, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
@@ -190,7 +191,7 @@ export function PlayerToken({
               styles.role,
               {
                 fontSize: scaledFont.sm,
-                color: '#b07cc6',
+                color: colors.team.traveller,
               },
             ]}
             numberOfLines={1}

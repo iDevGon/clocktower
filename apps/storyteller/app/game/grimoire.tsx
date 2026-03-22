@@ -651,8 +651,8 @@ export default function GrimoireScreen() {
   const handleTravellerAssign = (playerId: string, playerName: string) => {
     // 에디션에 맞는 여행자 역할 또는 전체 여행자
     const editionId =
-      gameState?.players?.find((p) => p.role)?.role?.edition ??
-      'trouble_brewing';
+      gameState?.players?.find((p) => p.role && !p.isTraveller)?.role
+        ?.edition ?? 'trouble_brewing';
     const editionTravellers = getTravellersForEdition(editionId);
     const travellers =
       editionTravellers.length > 0 ? editionTravellers : ALL_TRAVELLER_ROLES;

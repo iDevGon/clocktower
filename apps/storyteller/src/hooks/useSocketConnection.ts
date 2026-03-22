@@ -246,7 +246,7 @@ export function useSocketConnection() {
           });
           useLogStore
             .getState()
-            .addLog(gs?.day ?? 0, gs?.phase ?? 'day', `🚪 ${msg}`, 'death');
+            .addLog(gs?.day ?? 0, gs?.phase ?? 'setup', `🚪 ${msg}`, 'death');
         });
         newSocket.on('chat:receiveFromPlayer', (message) => {
           const store = useGameStore.getState();

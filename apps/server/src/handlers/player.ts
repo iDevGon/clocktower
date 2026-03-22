@@ -62,7 +62,12 @@ export function registerPlayerHandlers(
         callback({ success: false, error: '게임이 생성되지 않았습니다' });
         return;
       }
-      const player = game.addTraveller(playerName);
+      const trimmedName = playerName?.trim();
+      if (!trimmedName || trimmedName.length > 20) {
+        callback({ success: false, error: '유효하지 않은 이름입니다' });
+        return;
+      }
+      const player = game.addTraveller(trimmedName);
       if (!player) {
         callback({ success: false, error: '참가할 수 없습니다' });
         return;

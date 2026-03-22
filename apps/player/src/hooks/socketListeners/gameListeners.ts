@@ -1,5 +1,5 @@
 import { getRoleById, NIGHT_ACTIONS } from '@clocktower/shared';
-import { AppState } from 'react-native';
+import { Alert, AppState } from 'react-native';
 import { useChatStore } from '../../stores/chatStore';
 import { usePlayerStore } from '../../stores/playerStore';
 import { useWhisperStore } from '../../stores/whisperStore';
@@ -188,8 +188,12 @@ export function attachGameListeners(socket: AppSocket) {
   });
 
   // 여행자 참가/추방 이벤트
-  socket.on('traveller:joined', (_data) => {
+  socket.on('traveller:joined', (data) => {
     // 이야기꾼이 여행자 역할 배정 후 game:state로 상태가 갱신됨
+    Alert.alert(
+      '여행자 참가',
+      `${data.playerName}이(가) 여행자(${data.roleName})로 참가했습니다`,
+    );
   });
 
   socket.on('traveller:exiled', (data) => {

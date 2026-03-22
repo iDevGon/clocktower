@@ -235,7 +235,7 @@ describe('GameManager - 여행자 시스템', () => {
       expect(result.error).toContain('5명');
     });
 
-    it('여행자에게 역할이 배정되지 않으면 시작할 수 없다', () => {
+    it('여행자에게 역할이 배정되지 않아도 시작할 수 있다', () => {
       const { gm, players } = createTestGame(5);
       gm.assignRole(players[0].id, 'washerwoman');
       gm.assignRole(players[1].id, 'empath');
@@ -246,8 +246,7 @@ describe('GameManager - 여행자 시스템', () => {
       gm.addTraveller('UnassignedTraveller');
 
       const result = gm.start();
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('여행자');
+      expect(result.success).toBe(true);
     });
 
     it('여행자에게 역할이 배정되면 시작할 수 있다', () => {

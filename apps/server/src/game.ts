@@ -370,13 +370,6 @@ export class GameManager {
       return { success: false, error: '최소 5명의 플레이어가 필요합니다' };
     if (!regularPlayers.every((p) => p.role))
       return { success: false, error: '모든 플레이어에게 역할을 배정해주세요' };
-    // 여행자가 있다면 여행자도 역할이 있어야 함
-    const travellers = this.state.players.filter((p) => p.isTraveller);
-    if (travellers.length > 0 && !travellers.every((p) => p.role))
-      return {
-        success: false,
-        error: '모든 여행자에게 역할을 배정해주세요',
-      };
 
     this.state.started = true;
     this.state.phase = 'night';

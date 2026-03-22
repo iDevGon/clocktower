@@ -32,6 +32,9 @@ export const colors = {
     role: { bg: '#1a1e2e', text: '#82a8ce', border: '#2e3a4e' },
     status: { bg: '#2e1a1e', text: '#ce8282', border: '#4e2e2e' },
   },
+  team: {
+    traveller: '#b07cc6',
+  },
   chat: {
     storyteller: {
       accent: '#8a6a8a',
