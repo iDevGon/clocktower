@@ -67,6 +67,11 @@ export interface ServerToClientEvents {
     nominatorName: string;
     nominatorId: string;
   }) => void;
+  /** 마녀 저주로 플레이어가 사망 */
+  'witch:curseDeath': (data: {
+    nominatorId: string;
+    nominatorName: string;
+  }) => void;
   'evil:info': (data: {
     /** 악마에게: 하수인 이름 목록 */
     minionNames?: string[];
@@ -154,6 +159,7 @@ export interface ServerToStorytellerEvents {
   'vote:consentStatus': ServerToClientEvents['vote:consentStatus'];
   'chat:receiveFromPlayer': ServerToClientEvents['chat:receiveFromPlayer'];
   'virgin:triggered': ServerToClientEvents['virgin:triggered'];
+  'witch:curseDeath': ServerToClientEvents['witch:curseDeath'];
   'execution:announced': ServerToClientEvents['execution:announced'];
   'sweetheart:died': (data: { sweetheartName: string }) => void;
   'mayor:nightDeath': (data: { mayorId: string; mayorName: string }) => void;
@@ -162,6 +168,25 @@ export interface ServerToStorytellerEvents {
   'player:left': ServerToClientEvents['player:left'];
   'traveller:joined': ServerToClientEvents['traveller:joined'];
   'traveller:exiled': ServerToClientEvents['traveller:exiled'];
+  /** 마녀 저주: 지명자가 마녀의 저주로 사망할 때 이야기꾼에게 확인 */
+  'witch:curseDeath': (data: {
+    nominatorId: string;
+    nominatorName: string;
+  }) => void;
+  /** 이발사 사망: 악마가 역할 교환할 2명 선택 요청 */
+  'barber:died': (data: { barberName: string }) => void;
+  /** 얼뜨기 사망: 선한 플레이어 선택 요청 */
+  'klutz:died': (data: {
+    klutzId: string;
+    klutzName: string;
+  }) => void;
+  /** 팡 구 외지인 교환: 외지인이 새 악마가 됨 알림 */
+  'fangGu:jumped': (data: {
+    oldDemonId: string;
+    oldDemonName: string;
+    newDemonId: string;
+    newDemonName: string;
+  }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -321,4 +346,36 @@ export interface StorytellerToServerEvents {
     playerId: string,
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
+
+  // ── Sects & Violets ──
+  /** 마녀 저주 사망 확인 (이야기꾼이 판단) */
+  'witch:confirmCurseDeath': (data: {
+    nominatorId: string;
+    kill: boolean;
+  }) => void;
+  /** 이발사 사망 시 악마의 역할 교환 대상 지정 */
+  'barber:swapRoles': (data: {
+    playerId1: string;
+    playerId2: string;
+  }) => void;
+  /** 얼뜨기 사망 시 선택한 플레이어 지정 */
+  'klutz:choose': (data: {
+    klutzId: string;
+    chosenPlayerId: string;
+  }) => void;
+  /** 팡 구 외지인 교환 실행 */
+  'fangGu:confirmJump': (data: {
+    oldDemonId: string;
+    newDemonId: string;
+  }) => void;
+  /** 마귀할멈 역할 변경 실행 */
+  'pitHag:changeRole': (data: {
+    targetPlayerId: string;
+    newRoleId: string;
+  }) => void;
+  /** 사악한 쌍둥이 선한 쌍둥이 지정 */
+  'evilTwin:assignGoodTwin': (data: {
+    evilTwinPlayerId: string;
+    goodTwinPlayerId: string;
+  }) => void;
 }

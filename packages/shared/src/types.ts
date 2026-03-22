@@ -118,7 +118,12 @@ export type PlayerStatus =
   | 'protected'
   | 'cursed'
   | 'master'
-  | 'misregistered';
+  | 'misregistered'
+  | 'witch_cursed'
+  | 'cerenovus_mad'
+  | 'good_twin'
+  | 'evil_twin'
+  | 'no_ability';
 
 export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
   poisoned: '중독',
@@ -127,6 +132,11 @@ export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
   cursed: '저주',
   master: '주인',
   misregistered: '위장',
+  witch_cursed: '마녀 저주',
+  cerenovus_mad: '광기',
+  good_twin: '선한 쌍둥이',
+  evil_twin: '악한 쌍둥이',
+  no_ability: '능력 소진',
 };
 
 export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
@@ -136,6 +146,11 @@ export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
   cursed: '#8e44ad',
   master: '#3a7ca5',
   misregistered: '#e74c3c',
+  witch_cursed: '#c0392b',
+  cerenovus_mad: '#d35400',
+  good_twin: '#27ae60',
+  evil_twin: '#c0392b',
+  no_ability: '#7f8c8d',
 };
 
 export const PLAYER_STATUS_DESCRIPTIONS: Record<PlayerStatus, string> = {
@@ -148,6 +163,15 @@ export const PLAYER_STATUS_DESCRIPTIONS: Record<PlayerStatus, string> = {
   master: '집사의 주인. 이 주인이 투표해야만 집사도 투표할 수 있습니다.',
   misregistered:
     '진영 위장. 은둔자는 악으로, 첩자는 선으로 정보 능력에 감지됩니다.',
+  witch_cursed:
+    '마녀에 의해 저주됨. 이 플레이어가 내일 지명하면 즉시 사망합니다.',
+  cerenovus_mad:
+    '세레노버스에 의한 광기. 지정된 역할이라고 주장하지 않으면 처형될 수 있습니다.',
+  good_twin:
+    '사악한 쌍둥이의 선한 쌍둥이. 이 플레이어가 처형되면 악 팀이 승리합니다.',
+  evil_twin:
+    '사악한 쌍둥이. 선한 쌍둥이가 살아 있는 동안 처형으로 사망하지 않습니다.',
+  no_ability: '1회성 능력을 이미 사용했습니다.',
 };
 
 export type WinningTeam = 'good' | 'evil';
@@ -156,7 +180,7 @@ export interface GameResult {
   winningTeam: WinningTeam;
   reason: string;
   /** 승리 원인 (특수 연출용) */
-  cause?: 'slayer' | 'execution' | 'virgin';
+  cause?: 'slayer' | 'execution' | 'virgin' | 'witch_curse' | 'klutz' | 'evil_twin' | 'vortox_no_execution';
   players: {
     id: string;
     name: string;
@@ -223,7 +247,9 @@ export type DeathReason =
   | 'virgin'
   | 'slayer'
   | 'night_kill'
-  | 'exile';
+  | 'exile'
+  | 'witch_curse'
+  | 'klutz';
 
 export const DEATH_REASON_LABELS: Record<DeathReason, string> = {
   execution: '투표로 처형됨',
@@ -231,6 +257,8 @@ export const DEATH_REASON_LABELS: Record<DeathReason, string> = {
   slayer: '처단자에게 처형됨',
   night_kill: '밤에 사망함',
   exile: '추방됨',
+  witch_curse: '마녀의 저주로 사망함',
+  klutz: '얼뜨기의 선택으로 패배함',
 };
 
 export interface ExecutionAnnouncement {

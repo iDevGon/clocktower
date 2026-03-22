@@ -71,6 +71,41 @@ export const STATUS_ENTRIES: StatusEntry[] = [
     description:
       '집사가 선택한 주인입니다. 집사는 이 플레이어가 투표할 때만 함께 투표할 수 있습니다. 주인은 매 밤 집사가 새로 선택하며, 집사가 중독되거나 취한 상태이면 이 제약이 무효화됩니다.',
   },
+  {
+    id: 'witch_cursed',
+    label: '마녀 저주',
+    color: '#c0392b',
+    description:
+      '마녀에 의해 저주된 상태입니다. 이 플레이어가 내일 지명하면 즉시 사망합니다. 저주는 하루만 지속됩니다.',
+  },
+  {
+    id: 'cerenovus_mad',
+    label: '광기',
+    color: '#d35400',
+    description:
+      '세레노버스에 의한 광기 상태입니다. 지정된 선한 역할이라고 주장하지 않으면 이야기꾼에 의해 처형될 수 있습니다.',
+  },
+  {
+    id: 'good_twin',
+    label: '선한 쌍둥이',
+    color: '#27ae60',
+    description:
+      '사악한 쌍둥이의 선한 쌍둥이입니다. 이 플레이어가 처형되면 악 팀이 승리합니다.',
+  },
+  {
+    id: 'evil_twin',
+    label: '악한 쌍둥이',
+    color: '#c0392b',
+    description:
+      '사악한 쌍둥이입니다. 선한 쌍둥이가 살아 있는 동안 처형으로 사망하지 않습니다.',
+  },
+  {
+    id: 'no_ability',
+    label: '능력 소진',
+    color: '#7f8c8d',
+    description:
+      '1회성 능력을 이미 사용했습니다. 더 이상 밤에 깨어나지 않습니다.',
+  },
 ];
 
 export const PHASE_ENTRIES: PhaseEntry[] = [
