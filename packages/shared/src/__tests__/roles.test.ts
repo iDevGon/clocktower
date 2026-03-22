@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ALL_ROLES,
+  ALL_TRAVELLER_ROLES,
   distributeRoles,
   FIRST_NIGHT_ORDER,
   getNightOrderForEdition,
@@ -63,15 +64,21 @@ describe('상수 정합성', () => {
     expect(new Set(OTHER_NIGHT_ORDER).size).toBe(OTHER_NIGHT_ORDER.length);
   });
 
-  it('NIGHT_ORDER의 모든 역할이 ALL_ROLES에 존재한다', () => {
-    const allIds = new Set(ALL_ROLES.map((r) => r.id));
+  it('NIGHT_ORDER의 모든 역할이 ALL_ROLES 또는 ALL_TRAVELLER_ROLES에 존재한다', () => {
+    const allIds = new Set([
+      ...ALL_ROLES.map((r) => r.id),
+      ...ALL_TRAVELLER_ROLES.map((r) => r.id),
+    ]);
     for (const id of [...FIRST_NIGHT_ORDER, ...OTHER_NIGHT_ORDER]) {
       expect(allIds.has(id)).toBe(true);
     }
   });
 
-  it('NIGHT_ACTIONS의 모든 역할이 ALL_ROLES에 존재한다', () => {
-    const allIds = new Set(ALL_ROLES.map((r) => r.id));
+  it('NIGHT_ACTIONS의 모든 역할이 ALL_ROLES 또는 ALL_TRAVELLER_ROLES에 존재한다', () => {
+    const allIds = new Set([
+      ...ALL_ROLES.map((r) => r.id),
+      ...ALL_TRAVELLER_ROLES.map((r) => r.id),
+    ]);
     for (const id of Object.keys(NIGHT_ACTIONS)) {
       expect(allIds.has(id)).toBe(true);
     }
@@ -341,8 +348,11 @@ describe('S&V 밤 진행 순서', () => {
     );
   });
 
-  it('S&V 밤 순서의 모든 역할이 ALL_ROLES에 존재한다', () => {
-    const allIds = new Set(ALL_ROLES.map((r) => r.id));
+  it('S&V 밤 순서의 모든 역할이 ALL_ROLES 또는 ALL_TRAVELLER_ROLES에 존재한다', () => {
+    const allIds = new Set([
+      ...ALL_ROLES.map((r) => r.id),
+      ...ALL_TRAVELLER_ROLES.map((r) => r.id),
+    ]);
     for (const id of [...SV_FIRST_NIGHT_ORDER, ...SV_OTHER_NIGHT_ORDER]) {
       expect(allIds.has(id)).toBe(true);
     }

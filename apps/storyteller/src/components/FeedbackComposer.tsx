@@ -41,6 +41,7 @@ export function FeedbackComposer({
     case 'role':
       return (
         <RoleFeedback
+          players={players}
           onSend={onSend}
           highlightedRoleName={highlightedRoleName}
         />

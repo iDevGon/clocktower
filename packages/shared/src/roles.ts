@@ -636,6 +636,8 @@ export const FIRST_NIGHT_ORDER: string[] = [
   'empath',
   'fortune_teller',
   'butler',
+  'bureaucrat',
+  'thief',
   'spy',
 ];
 
@@ -649,6 +651,8 @@ export const OTHER_NIGHT_ORDER: string[] = [
   'empath',
   'fortune_teller',
   'butler',
+  'bureaucrat',
+  'thief',
   'spy',
 ];
 
@@ -656,6 +660,7 @@ export const OTHER_NIGHT_ORDER: string[] = [
 
 // S&V 첫째 밤 진행 순서
 export const SV_FIRST_NIGHT_ORDER: string[] = [
+  'barista',
   'philosopher',
   'snake_charmer',
   'evil_twin',
@@ -669,6 +674,7 @@ export const SV_FIRST_NIGHT_ORDER: string[] = [
 
 // S&V 이후 밤 진행 순서
 export const SV_OTHER_NIGHT_ORDER: string[] = [
+  'barista',
   'philosopher',
   'snake_charmer',
   'witch',
@@ -686,6 +692,8 @@ export const SV_OTHER_NIGHT_ORDER: string[] = [
   'oracle',
   'mathematician',
   'juggler',
+  'bone_collector',
+  'harlot',
 ];
 
 /** 에디션별 밤 진행 순서를 반환합니다. */
@@ -1045,6 +1053,39 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     instruction: '선한 쌍둥이와 서로를 확인합니다',
     excludeSelf: false,
   },
+
+  // ── 여행자 (Traveller) ──
+  bureaucrat: {
+    type: 'select_one',
+    instruction: '내일 투표가 3표로 계산될 플레이어를 선택하세요',
+    excludeSelf: true,
+  },
+  thief: {
+    type: 'select_one',
+    instruction: '내일 투표가 음수로 계산될 플레이어를 선택하세요',
+    excludeSelf: true,
+  },
+  apprentice: {
+    type: 'passive',
+    instruction: '진행자가 마을주민 또는 하수인 능력을 부여합니다',
+    excludeSelf: false,
+  },
+  bone_collector: {
+    type: 'select_one',
+    instruction: '능력을 되찾을 죽은 플레이어를 선택하세요 (1회 사용)',
+    excludeSelf: true,
+  },
+  harlot: {
+    type: 'select_one',
+    instruction: '방문할 플레이어를 선택하세요 (동의 시 캐릭터를 알게 됩니다)',
+    excludeSelf: true,
+  },
+  barista: {
+    type: 'passive',
+    instruction:
+      '진행자가 플레이어 1명에게 맑은 정신 또는 능력 2회 작동을 부여합니다',
+    excludeSelf: false,
+  },
 };
 
 export const NIGHT_FEEDBACK: Record<string, NightFeedbackDef> = {
@@ -1073,4 +1114,8 @@ export const NIGHT_FEEDBACK: Record<string, NightFeedbackDef> = {
   seamstress: { type: 'yes_no' },
   juggler: { type: 'number' },
   sage: { type: 'players_and_role' },
+
+  // ── 여행자 (Traveller) ──
+  apprentice: { type: 'role' },
+  harlot: { type: 'role' },
 };

@@ -197,6 +197,20 @@ export function createNightActionLogStyles(scale: number) {
       fontSize: s(14),
       fontWeight: 'bold',
     },
+    // Search
+    searchInput: {
+      backgroundColor: '#1a1a1e',
+      borderWidth: 1,
+      borderColor: '#2e2e34',
+      borderRadius: 6,
+      paddingHorizontal: s(8),
+      paddingVertical: s(4),
+      color: '#e0ddd8',
+      fontSize: s(11),
+    },
+    searchInputFocused: {
+      borderColor: '#8090c0',
+    },
     // Chips
     chip: {
       backgroundColor: '#1a1a1e',

@@ -1,9 +1,10 @@
 import type { NightFeedbackPayload, Player, Team } from '@clocktower/shared';
-import { ALL_ROLES } from '@clocktower/shared';
+import { matchQuery } from '@clocktower/ui';
 import { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Modal, Pressable, Text, TextInput, View } from 'react-native';
 import { useResponsive } from '../../hooks/useResponsive';
 import { createNightActionLogStyles } from '../NightActionLog.styles';
+import { useGameEditionRoles } from './useGameEditionRoles';
 
 function useNightActionLogStyles() {
   const { fontSize } = useResponsive();
@@ -32,8 +33,19 @@ export function PlayersAndRoleFeedback({
   const [noneSelected, setNoneSelected] = useState(false);
   const [warningVisible, setWarningVisible] = useState(false);
   const [pendingRoleName, setPendingRoleName] = useState<string | null>(null);
+  const [playerQuery, setPlayerQuery] = useState('');
+  const [roleQuery, setRoleQuery] = useState('');
 
-  const roles = ALL_ROLES.filter((r) => r.team === teamFilter);
+  const gameRoles = useGameEditionRoles(players);
+  const roles = useMemo(
+    () => gameRoles.filter((r) => r.team === teamFilter),
+    [gameRoles, teamFilter],
+  );
+
+  const filteredPlayers = useMemo(() => {
+    if (!playerQuery.trim()) return players;
+    return players.filter((p) => matchQuery(p.name, playerQuery.trim()));
+  }, [players, playerQuery]);
 
   const togglePlayer = (name: string) => {
     setNoneSelected(false);
@@ -93,6 +105,11 @@ export function PlayersAndRoleFeedback({
     hasTeamMatchPlayer,
   ]);
 
+  const filteredRoles = useMemo(() => {
+    if (!roleQuery.trim()) return displayedRoles;
+    return displayedRoles.filter((r) => matchQuery(r.name, roleQuery.trim()));
+  }, [displayedRoles, roleQuery]);
+
   // 정상 피드백에서 역할이 하나뿐이면 자동 선택
   useEffect(() => {
     if (
@@ -110,8 +127,16 @@ export function PlayersAndRoleFeedback({
   return (
     <View style={styles.composerVertical}>
       <Text style={styles.composerLabel}>플레이어 2명</Text>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="플레이어 검색 (초성 가능)"
+        placeholderTextColor="#5c5a58"
+        value={playerQuery}
+        onChangeText={setPlayerQuery}
+        autoCorrect={false}
+      />
       <View style={styles.composerChips}>
-        {players.map((p) => (
+        {filteredPlayers.map((p) => (
           <Pressable
             key={p.id}
             onPress={() => togglePlayer(p.name)}
@@ -135,6 +160,14 @@ export function PlayersAndRoleFeedback({
       <Text style={styles.composerLabel}>
         역할{shouldGiveFalseInfo ? ' (거짓 정보 제공 필요)' : ''}
       </Text>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="역할 검색 (초성 가능)"
+        placeholderTextColor="#5c5a58"
+        value={roleQuery}
+        onChangeText={setRoleQuery}
+        autoCorrect={false}
+      />
       <View style={styles.composerChips}>
         {allowNone && (
           <Pressable
@@ -152,7 +185,7 @@ export function PlayersAndRoleFeedback({
             </Text>
           </Pressable>
         )}
-        {displayedRoles.map((r) => (
+        {filteredRoles.map((r) => (
           <Pressable
             key={r.id}
             onPress={() => {
