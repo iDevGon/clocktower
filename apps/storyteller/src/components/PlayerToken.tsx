@@ -63,6 +63,8 @@ interface PlayerTokenProps {
   bluffRoles?: BluffRole[];
   showBluffs?: boolean;
   onToggleBluffs?: () => void;
+  /** 토큰이 화면 하반부에 위치하면 블러프를 위쪽에 표시 */
+  isBottomHalf?: boolean;
   onPress?: () => void;
 }
 
@@ -81,6 +83,7 @@ export function PlayerToken({
   bluffRoles,
   showBluffs,
   onToggleBluffs,
+  isBottomHalf,
   onPress,
 }: PlayerTokenProps) {
   const [tooltipStatus, setTooltipStatus] = useState<PlayerStatus | null>(null);
@@ -274,7 +277,7 @@ export function PlayerToken({
         <View
           style={{
             position: 'absolute',
-            top: s + 2,
+            ...(isBottomHalf ? { bottom: s + 2 } : { top: s + 2 }),
             left: (s - s * 0.9) / 2,
             width: s * 0.9,
             alignItems: 'center',

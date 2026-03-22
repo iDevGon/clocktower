@@ -1,5 +1,7 @@
 import { ReducedMotionProvider } from '@clocktower/ui';
+import * as NavigationBar from 'expo-navigation-bar';
 import { Stack } from 'expo-router';
+import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
 import { DevSettings, Platform } from 'react-native';
 
@@ -7,6 +9,13 @@ const IS_DEV = process.env.EXPO_PUBLIC_DEV_MODE === 'true';
 if (__DEV__ && !IS_DEV && Platform.OS !== 'web') {
   DevSettings.setIsShakeToShowDevMenuEnabled?.(false);
 }
+
+// 시스템 네비게이션 바 & 배경을 앱 테마에 맞춤
+if (Platform.OS === 'android') {
+  NavigationBar.setBackgroundColorAsync('#121214');
+  NavigationBar.setButtonStyleAsync('light');
+}
+SystemUI.setBackgroundColorAsync('#121214');
 
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSocketConnection } from '../src/hooks/useSocketConnection';

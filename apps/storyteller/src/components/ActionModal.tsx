@@ -114,7 +114,8 @@ export function ActionModal({
                   ]}
                   onPress={() => {
                     onClose();
-                    option.onPress?.();
+                    // Alert가 모달 닫힘 애니메이션과 겹치지 않도록 딜레이
+                    setTimeout(() => option.onPress?.(), 300);
                   }}
                 >
                   <Text

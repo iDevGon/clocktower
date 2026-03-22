@@ -14,7 +14,7 @@ export function createBluffSelectModalStyles(s: (v: number) => number) {
       width: '90%',
       maxHeight: '80%',
       borderWidth: 2,
-      borderColor: '#8a6a9a',
+      borderColor: '#e67e22',
     },
     header: {
       paddingHorizontal: s(16),
@@ -24,7 +24,7 @@ export function createBluffSelectModalStyles(s: (v: number) => number) {
       borderBottomColor: '#3a3a42',
     },
     headerTitle: {
-      color: '#8a6a9a',
+      color: '#e67e22',
       fontSize: s(18),
       fontWeight: '700',
       textAlign: 'center',
@@ -68,7 +68,7 @@ export function createBluffSelectModalStyles(s: (v: number) => number) {
       fontWeight: '600',
     },
     selectedBadge: {
-      color: '#8a6a9a',
+      color: '#e67e22',
       fontSize: s(11),
       fontWeight: '600',
     },
@@ -103,7 +103,7 @@ export function createBluffSelectModalStyles(s: (v: number) => number) {
       textAlign: 'center',
     },
     footerConfirmText: {
-      color: '#8a6a9a',
+      color: '#e67e22',
       fontSize: s(15),
       fontWeight: '600',
       textAlign: 'center',
@@ -133,10 +133,10 @@ export function roleItemStyle(
     paddingVertical: s(12),
     paddingHorizontal: s(12),
     marginBottom: s(4),
-    backgroundColor: isSelected ? '#2a1e2e' : '#252528',
+    backgroundColor: isSelected ? '#3a2a18' : '#252528',
     borderRadius: 8,
     borderLeftWidth: 3,
-    borderLeftColor: isSelected ? '#8a6a9a' : '#555',
+    borderLeftColor: isSelected ? '#e67e22' : '#555',
     opacity: isDisabled ? 0.4 : 1,
     ...(pressed && !isDisabled ? { backgroundColor: '#353538' } : {}),
   };

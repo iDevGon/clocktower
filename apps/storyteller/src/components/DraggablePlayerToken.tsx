@@ -170,6 +170,7 @@ export function DraggablePlayerToken({
           bluffRoles={bluffRoles}
           showBluffs={showBluffs}
           onToggleBluffs={onToggleBluffs}
+          isBottomHalf={initialY > responsive.height * 0.45}
           size={tokenSize}
         />
       </Animated.View>
