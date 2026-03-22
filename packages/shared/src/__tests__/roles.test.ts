@@ -3,11 +3,16 @@ import {
   ALL_ROLES,
   distributeRoles,
   FIRST_NIGHT_ORDER,
+  getNightOrderForEdition,
   getRoleById,
   getRolesForEdition,
   NIGHT_ACTIONS,
+  NIGHT_FEEDBACK,
   OTHER_NIGHT_ORDER,
   ROLE_DISTRIBUTION,
+  SECTS_AND_VIOLETS_ROLES,
+  SV_FIRST_NIGHT_ORDER,
+  SV_OTHER_NIGHT_ORDER,
   TROUBLE_BREWING_ROLES,
 } from '../roles.js';
 
@@ -22,9 +27,9 @@ describe('getRolesForEdition', () => {
     expect(roles).toEqual(TROUBLE_BREWING_ROLES);
   });
 
-  it('sects_and_violets 에디션은 구현된 역할만 반환한다', () => {
+  it('sects_and_violets 에디션은 25개 역할을 반환한다', () => {
     const roles = getRolesForEdition('sects_and_violets');
-    expect(roles.length).toBeGreaterThan(0);
+    expect(roles).toHaveLength(25);
     expect(roles.every((r) => r.edition === 'sects_and_violets')).toBe(true);
   });
 });
@@ -184,5 +189,177 @@ describe('distributeRoles', () => {
       const roleIds = result.assignments.map((a) => a.role.id);
       expect(new Set(roleIds).size).toBe(roleIds.length);
     }
+  });
+
+  it('S&V 에디션으로 배분하면 S&V 역할이 배정된다', () => {
+    const result = distributeRoles(makePlayerIds(7), {
+      editionId: 'sects_and_violets',
+    });
+    expect(result).not.toBeNull();
+    if (!result) return;
+    expect(
+      result.assignments.every((a) => a.role.edition === 'sects_and_violets'),
+    ).toBe(true);
+  });
+
+  it('팡 구가 포함되면 외지인 +1', () => {
+    let found = false;
+    for (let i = 0; i < 100; i++) {
+      const result = distributeRoles(makePlayerIds(7), {
+        editionId: 'sects_and_violets',
+      });
+      if (!result) continue;
+      const hasFangGu = result.assignments.some((a) => a.role.id === 'fang_gu');
+      if (!hasFangGu) continue;
+      // 7인 기본: 외지인 0명, 팡 구 → 외지인 1명
+      const outsiderCount = result.assignments.filter(
+        (a) => a.role.team === 'outsider',
+      ).length;
+      expect(outsiderCount).toBe(1);
+      found = true;
+      break;
+    }
+    // 4개 악마 중 팡 구가 나올 확률이 있음
+    expect(found).toBe(true);
+  });
+
+  it('비고르모르티스가 포함되면 외지인 -1', () => {
+    let found = false;
+    for (let i = 0; i < 100; i++) {
+      const result = distributeRoles(makePlayerIds(9), {
+        editionId: 'sects_and_violets',
+      });
+      if (!result) continue;
+      const hasVigormortis = result.assignments.some(
+        (a) => a.role.id === 'vigormortis',
+      );
+      if (!hasVigormortis) continue;
+      // 9인 기본: 외지인 2명, 비고르모르티스 → 외지인 1명
+      const outsiderCount = result.assignments.filter(
+        (a) => a.role.team === 'outsider',
+      ).length;
+      expect(outsiderCount).toBe(1);
+      found = true;
+      break;
+    }
+    expect(found).toBe(true);
+  });
+});
+
+describe('Sects & Violets 역할 정의', () => {
+  it('S&V 역할은 마을주민 13, 외지인 4, 하수인 4, 악마 4로 구성된다', () => {
+    const townsfolk = SECTS_AND_VIOLETS_ROLES.filter(
+      (r) => r.team === 'townsfolk',
+    );
+    const outsiders = SECTS_AND_VIOLETS_ROLES.filter(
+      (r) => r.team === 'outsider',
+    );
+    const minions = SECTS_AND_VIOLETS_ROLES.filter((r) => r.team === 'minion');
+    const demons = SECTS_AND_VIOLETS_ROLES.filter((r) => r.team === 'demon');
+    expect(townsfolk).toHaveLength(13);
+    expect(outsiders).toHaveLength(4);
+    expect(minions).toHaveLength(4);
+    expect(demons).toHaveLength(4);
+  });
+
+  it('모든 S&V 역할이 한국어 이름과 능력을 가진다', () => {
+    for (const role of SECTS_AND_VIOLETS_ROLES) {
+      expect(role.name.length).toBeGreaterThan(0);
+      expect(role.ability.length).toBeGreaterThan(0);
+      // 한국어 포함 확인 (한글 유니코드 범위)
+      expect(/[\uac00-\ud7af]/.test(role.name)).toBe(true);
+      expect(/[\uac00-\ud7af]/.test(role.ability)).toBe(true);
+    }
+  });
+
+  it('S&V 역할 ID에 중복이 없다', () => {
+    const ids = SECTS_AND_VIOLETS_ROLES.map((r) => r.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('ALL_ROLES에 TB + S&V 역할이 모두 포함된다', () => {
+    expect(ALL_ROLES.length).toBe(
+      TROUBLE_BREWING_ROLES.length + SECTS_AND_VIOLETS_ROLES.length,
+    );
+  });
+
+  it('S&V 밤 행동 역할이 NIGHT_ACTIONS에 정의되어 있다', () => {
+    const svRolesWithActions = [
+      'clockmaker',
+      'dreamer',
+      'snake_charmer',
+      'mathematician',
+      'flowergirl',
+      'town_crier',
+      'oracle',
+      'seamstress',
+      'philosopher',
+      'juggler',
+      'sage',
+      'witch',
+      'cerenovus',
+      'pit_hag',
+      'fang_gu',
+      'vigormortis',
+      'no_dashii',
+      'vortox',
+      'evil_twin',
+    ];
+    for (const id of svRolesWithActions) {
+      expect(NIGHT_ACTIONS[id]).toBeDefined();
+    }
+  });
+
+  it('S&V 정보 역할이 NIGHT_FEEDBACK에 정의되어 있다', () => {
+    const svFeedbackRoles = [
+      'clockmaker',
+      'dreamer',
+      'mathematician',
+      'flowergirl',
+      'town_crier',
+      'oracle',
+      'seamstress',
+      'juggler',
+      'sage',
+    ];
+    for (const id of svFeedbackRoles) {
+      expect(NIGHT_FEEDBACK[id]).toBeDefined();
+    }
+  });
+});
+
+describe('S&V 밤 진행 순서', () => {
+  it('SV_FIRST_NIGHT_ORDER에 중복이 없다', () => {
+    expect(new Set(SV_FIRST_NIGHT_ORDER).size).toBe(
+      SV_FIRST_NIGHT_ORDER.length,
+    );
+  });
+
+  it('SV_OTHER_NIGHT_ORDER에 중복이 없다', () => {
+    expect(new Set(SV_OTHER_NIGHT_ORDER).size).toBe(
+      SV_OTHER_NIGHT_ORDER.length,
+    );
+  });
+
+  it('S&V 밤 순서의 모든 역할이 ALL_ROLES에 존재한다', () => {
+    const allIds = new Set(ALL_ROLES.map((r) => r.id));
+    for (const id of [...SV_FIRST_NIGHT_ORDER, ...SV_OTHER_NIGHT_ORDER]) {
+      expect(allIds.has(id)).toBe(true);
+    }
+  });
+
+  it('getNightOrderForEdition이 에디션에 맞는 순서를 반환한다', () => {
+    expect(getNightOrderForEdition('trouble_brewing', 1)).toEqual(
+      FIRST_NIGHT_ORDER,
+    );
+    expect(getNightOrderForEdition('trouble_brewing', 2)).toEqual(
+      OTHER_NIGHT_ORDER,
+    );
+    expect(getNightOrderForEdition('sects_and_violets', 1)).toEqual(
+      SV_FIRST_NIGHT_ORDER,
+    );
+    expect(getNightOrderForEdition('sects_and_violets', 2)).toEqual(
+      SV_OTHER_NIGHT_ORDER,
+    );
   });
 });
