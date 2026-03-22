@@ -1470,7 +1470,7 @@ export class GameManager {
     }
 
     // 집사 주인 매핑 갱신: 교환된 플레이어 중 집사가 있으면
-    if (role1?.id === 'butler' && p2.role?.id !== 'butler') {
+    if (role1?.id === 'butler' && role2?.id !== 'butler') {
       const masterId = this.butlerMasters.get(playerId1);
       this.butlerMasters.delete(playerId1);
       if (masterId) {
@@ -1483,7 +1483,7 @@ export class GameManager {
         }
       }
     }
-    if (role2?.id === 'butler' && p1.role?.id !== 'butler') {
+    if (role2?.id === 'butler' && role1?.id !== 'butler') {
       const masterId = this.butlerMasters.get(playerId2);
       this.butlerMasters.delete(playerId2);
       if (masterId) {
