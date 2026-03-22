@@ -11,7 +11,11 @@ import type {
   PlayerStatus,
   Role,
 } from '@clocktower/shared/logic';
-import { DEFAULT_GAME_SETTINGS, getRoleById } from '@clocktower/shared/logic';
+import {
+  DEFAULT_GAME_SETTINGS,
+  getRoleById,
+  getTravellerById,
+} from '@clocktower/shared/logic';
 
 /** 플레이어가 중독 또는 취함 상태인지 확인 (능력 무효화 판정용) */
 function isPoisonedOrDrunk(player: Player): boolean {
@@ -278,6 +282,76 @@ export class GameManager {
     return true;
   }
 
+  /**
+   * 여행자로 게임에 참가합니다. 게임 진행 중에도 참가 가능합니다.
+   * 역할 배정은 이야기꾼이 별도로 수행합니다.
+   */
+  addTraveller(name: string): Player | null {
+    const state = this.state;
+    if (!state.id) return null;
+
+    const player: Player = {
+      id: randomUUID().slice(0, 8),
+      name,
+      isAlive: true,
+      hasNominatedToday: false,
+      hasBeenNominatedToday: false,
+      deadVoteUsed: false,
+      statuses: [],
+      isTraveller: true,
+    };
+    state.players.push(player);
+    state.playerOrder.push(player.id);
+    return player;
+  }
+
+  /**
+   * 여행자에게 역할과 진영을 배정합니다.
+   */
+  assignTravellerRole(
+    playerId: string,
+    roleId: string,
+    alignment: 'good' | 'evil',
+  ): boolean {
+    const player = this.getPlayer(playerId);
+    if (!player || !player.isTraveller) return false;
+
+    const travellerRole = getTravellerById(roleId);
+    if (!travellerRole) return false;
+
+    player.role = travellerRole;
+    player.travellerAlignment = alignment;
+    return true;
+  }
+
+  /**
+   * 여행자를 추방(exile)합니다.
+   * 추방은 처형과 다릅니다:
+   * - 전체 플레이어(죽은 플레이어 포함)의 과반수 투표가 필요
+   * - 처형 횟수에 포함되지 않음
+   * - 처형 관련 능력(성자, 성결자 등)이 발동하지 않음
+   */
+  exileTraveller(playerId: string): boolean {
+    const player = this.getPlayer(playerId);
+    if (!player || !player.isTraveller) return false;
+
+    player.isAlive = false;
+    return true;
+  }
+
+  /** 여행자를 게임에서 완전히 제거합니다 */
+  removeTraveller(playerId: string): boolean {
+    const player = this.getPlayer(playerId);
+    if (!player || !player.isTraveller) return false;
+
+    return this.removePlayer(playerId);
+  }
+
+  /** 게임의 모든 여행자 목록 반환 */
+  getTravellers(): Player[] {
+    return this.state.players.filter((p) => p.isTraveller);
+  }
+
   removeDummyPlayers(): void {
     const dummyIds = new Set(
       this.state.players.filter((p) => p.isDummy).map((p) => p.id),
@@ -291,10 +365,18 @@ export class GameManager {
   start(): { success: boolean; error?: string } {
     if (this.state.started)
       return { success: false, error: '이미 게임이 시작되었습니다' };
-    if (this.state.players.length < 5)
+    const regularPlayers = this.state.players.filter((p) => !p.isTraveller);
+    if (regularPlayers.length < 5)
       return { success: false, error: '최소 5명의 플레이어가 필요합니다' };
-    if (!this.state.players.every((p) => p.role))
+    if (!regularPlayers.every((p) => p.role))
       return { success: false, error: '모든 플레이어에게 역할을 배정해주세요' };
+    // 여행자가 있다면 여행자도 역할이 있어야 함
+    const travellers = this.state.players.filter((p) => p.isTraveller);
+    if (travellers.length > 0 && !travellers.every((p) => p.role))
+      return {
+        success: false,
+        error: '모든 여행자에게 역할을 배정해주세요',
+      };
 
     this.state.started = true;
     this.state.phase = 'night';
@@ -757,7 +839,9 @@ export class GameManager {
     if (!this.state.started || this.state.phase === 'ended') return null;
 
     const alivePlayers = this.state.players.filter((p) => p.isAlive);
-    const aliveCount = alivePlayers.length;
+    // 여행자는 생존자 수 계산에서 제외 (승리 조건 판정용)
+    const aliveRegularPlayers = alivePlayers.filter((p) => !p.isTraveller);
+    const aliveCount = aliveRegularPlayers.length;
 
     const buildResult = (
       winningTeam: 'good' | 'evil',

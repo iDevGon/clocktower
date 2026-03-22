@@ -55,6 +55,27 @@ export function registerPlayerHandlers(
       console.log(`Player joined: ${playerName}`);
     });
 
+    // 여행자로 게임 참가 (게임 진행 중에도 가능)
+    socket.on('game:joinAsTraveller', ({ playerName }, callback) => {
+      const state = game.getState();
+      if (!state.id) {
+        callback({ success: false, error: '게임이 생성되지 않았습니다' });
+        return;
+      }
+      const player = game.addTraveller(playerName);
+      if (!player) {
+        callback({ success: false, error: '참가할 수 없습니다' });
+        return;
+      }
+      socket.join(player.id);
+      callback({ success: true, playerId: player.id });
+      socket.emit('game:settings', game.getSettings());
+      // 이야기꾼에게 알림 (역할 배정을 위해)
+      storytellerIo.emit('game:state', game.getStorytellerState());
+      playerIo.emit('game:state', game.getState());
+      console.log(`Traveller joined lobby: ${playerName}`);
+    });
+
     socket.on('game:rejoin', ({ playerId }, callback) => {
       const state = game.getState();
       if (!state.id) {
