@@ -148,6 +148,10 @@ export class GameManager {
     this.nightWakeUpQueue = [];
     this.nightWakeUpRoleId = null;
     this.bluffRoles = [];
+    this.witchCursedTarget = null;
+    this.fangGuJumped = false;
+    this.evilTwinPairs.clear();
+    this.editionId = 'trouble_brewing';
     this.clearVoteTimer();
     this.clearNominationTimer();
     return id;
@@ -510,7 +514,23 @@ export class GameManager {
 
   setPlayerStatuses(playerId: string, statuses: PlayerStatus[]): void {
     const player = this.getPlayer(playerId);
-    if (player) player.statuses = statuses;
+    if (!player) return;
+
+    const hadWitchCursed = player.statuses.includes('witch_cursed');
+    const hasWitchCursed = statuses.includes('witch_cursed');
+    player.statuses = statuses;
+
+    // witch_cursed 상태 추가/제거 시 내부 상태 동기화
+    if (!hadWitchCursed && hasWitchCursed) {
+      this.witchCursedTarget = playerId;
+    }
+    if (
+      hadWitchCursed &&
+      !hasWitchCursed &&
+      this.witchCursedTarget === playerId
+    ) {
+      this.witchCursedTarget = null;
+    }
   }
 
   // ── 밤 진행 상태 (재접속 복원용) ──
@@ -1256,6 +1276,10 @@ export class GameManager {
 
   // ── Sects & Violets 전용 메서드 ──
 
+  endGame(): void {
+    this.state.phase = 'ended';
+  }
+
   setEditionId(editionId: string): void {
     this.editionId = editionId;
   }
@@ -1381,6 +1405,7 @@ export class GameManager {
     const target = this.getPlayer(targetId);
     if (!target) return null;
     if (target.role?.team !== 'outsider') return null;
+    if (!target.isAlive) return null;
 
     const oldDemon = this.getPlayer(oldDemonId);
     if (!oldDemon) return null;
@@ -1438,6 +1463,39 @@ export class GameManager {
     const drunkAs1 = p1.drunkAs;
     p1.drunkAs = p2.drunkAs;
     p2.drunkAs = drunkAs1;
+
+    // 점쟁이 Red Herring 재배정: 교환된 플레이어 중 점쟁이가 있으면
+    if (p1.role?.id === 'fortune_teller' || p2.role?.id === 'fortune_teller') {
+      this.assignFortuneTellerRedHerring();
+    }
+
+    // 집사 주인 매핑 갱신: 교환된 플레이어 중 집사가 있으면
+    if (role1?.id === 'butler' && p2.role?.id !== 'butler') {
+      const masterId = this.butlerMasters.get(playerId1);
+      this.butlerMasters.delete(playerId1);
+      if (masterId) {
+        const stillMaster = [...this.butlerMasters.values()].includes(masterId);
+        if (!stillMaster) {
+          const master = this.getPlayer(masterId);
+          if (master) {
+            master.statuses = master.statuses.filter((s) => s !== 'master');
+          }
+        }
+      }
+    }
+    if (role2?.id === 'butler' && p1.role?.id !== 'butler') {
+      const masterId = this.butlerMasters.get(playerId2);
+      this.butlerMasters.delete(playerId2);
+      if (masterId) {
+        const stillMaster = [...this.butlerMasters.values()].includes(masterId);
+        if (!stillMaster) {
+          const master = this.getPlayer(masterId);
+          if (master) {
+            master.statuses = master.statuses.filter((s) => s !== 'master');
+          }
+        }
+      }
+    }
 
     return true;
   }

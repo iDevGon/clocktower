@@ -343,6 +343,11 @@ export function registerPlayerHandlers(
             game.setButlerMaster(playerId, targets[0]);
           }
 
+          // 마녀(Witch) 저주 대상 저장
+          if (player.role.id === 'witch' && targets.length > 0) {
+            game.setWitchCursedTarget(targets[0]);
+          }
+
           // 주정뱅이는 가짜 역할 ID로 행동을 보고
           const reportRoleId =
             player.role.id === 'drunk' && player.drunkAs

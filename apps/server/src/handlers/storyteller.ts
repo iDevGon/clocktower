@@ -231,40 +231,58 @@ export function registerStorytellerHandlers(
       if (phase === 'night') {
         const candidate = game.getExecutionCandidate();
         if (candidate) {
-          game.kill(candidate.playerId);
-          game.markExecution();
-          const killedPlayer = game.getPlayer(candidate.playerId);
-          if (killedPlayer) {
-            // 처형 알림을 먼저 전송 (사망 알림보다 먼저)
-            playerIo.emit('execution:announced', {
-              executedId: candidate.playerId,
-              executedName: killedPlayer.name,
-              reason: 'execution',
-              detail: `${killedPlayer.name}이(가) 투표로 처형되었습니다`,
-            });
-            storytellerIo.emit('execution:announced', {
-              executedId: candidate.playerId,
-              executedName: killedPlayer.name,
-              reason: 'execution',
-              detail: `${killedPlayer.name}이(가) 투표로 처형되었습니다`,
-            });
-            playerIo.emit('game:playerUpdate', killedPlayer);
+          // S&V: 사악한 쌍둥이 처형 면역
+          const candidatePlayer = game.getPlayer(candidate.playerId);
+          const isEvilTwin =
+            candidatePlayer?.statuses.includes('evil_twin') ?? false;
+          const goodTwinId = isEvilTwin
+            ? game.getGoodTwinId(candidate.playerId)
+            : undefined;
+          const goodTwinAlive = goodTwinId
+            ? (game.getPlayer(goodTwinId)?.isAlive ?? false)
+            : false;
+
+          if (isEvilTwin && goodTwinAlive) {
+            // 사악한 쌍둥이 처형 면역 → 처형 건너뜀
+            console.log(
+              `Evil twin execution immunity: ${candidatePlayer?.name}`,
+            );
+          } else {
+            game.kill(candidate.playerId);
+            game.markExecution();
+            const killedPlayer = game.getPlayer(candidate.playerId);
+            if (killedPlayer) {
+              // 처형 알림을 먼저 전송 (사망 알림보다 먼저)
+              playerIo.emit('execution:announced', {
+                executedId: candidate.playerId,
+                executedName: killedPlayer.name,
+                reason: 'execution',
+                detail: `${killedPlayer.name}이(가) 투표로 처형되었습니다`,
+              });
+              storytellerIo.emit('execution:announced', {
+                executedId: candidate.playerId,
+                executedName: killedPlayer.name,
+                reason: 'execution',
+                detail: `${killedPlayer.name}이(가) 투표로 처형되었습니다`,
+              });
+              playerIo.emit('game:playerUpdate', killedPlayer);
+            }
+            // 처형 후 승리 조건 체크
+            const executedRoleId = killedPlayer?.role?.id;
+            const winResult = game.checkWinCondition(
+              executedRoleId,
+              candidate.playerId,
+            );
+            if (winResult) {
+              winResult.cause = 'execution';
+              playerIo.emit('game:end', winResult);
+              playerIo.emit('game:phase', 'ended');
+              storytellerIo.emit('game:end', winResult);
+              storytellerIo.emit('game:state', game.getStorytellerState());
+              return;
+            }
+            emitPromotionIfAny(game, playerIo, storytellerIo);
           }
-          // 처형 후 승리 조건 체크
-          const executedRoleId = killedPlayer?.role?.id;
-          const winResult = game.checkWinCondition(
-            executedRoleId,
-            candidate.playerId,
-          );
-          if (winResult) {
-            winResult.cause = 'execution';
-            playerIo.emit('game:end', winResult);
-            playerIo.emit('game:phase', 'ended');
-            storytellerIo.emit('game:end', winResult);
-            storytellerIo.emit('game:state', game.getStorytellerState());
-            return;
-          }
-          emitPromotionIfAny(game, playerIo, storytellerIo);
         }
 
         // S&V: 보르톡스 - 처형 없는 날 → 선 팀 승리
@@ -272,8 +290,8 @@ export function registerStorytellerHandlers(
           const vortoxWin = game.checkWinCondition();
           if (!vortoxWin) {
             // 강제로 보르톡스 승리 조건 실행
+            game.endGame();
             const state = game.getState();
-            state.phase = 'ended' as const;
             const result = {
               winningTeam: 'good' as const,
               reason: '보르톡스 게임에서 처형이 없었습니다',
@@ -707,6 +725,9 @@ export function registerStorytellerHandlers(
           }
         }
 
+        // 에디션 자동 감지 (역할 기반)
+        game.detectEdition();
+
         // 모든 플레이어에게 역할이 배정되면 점쟁이 Red Herring 자동 지정
         const updatedState = game.getState();
         if (updatedState.players.every((p) => p.role)) {
@@ -1016,6 +1037,7 @@ export function registerStorytellerHandlers(
         const winResult = game.checkWinCondition();
         if (!winResult) {
           // 강제 종료
+          game.endGame();
           const state = game.getState();
           const result = {
             winningTeam: 'evil' as const,

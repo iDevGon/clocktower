@@ -312,4 +312,116 @@ describe('S&V GameManager', () => {
       expect(result?.reason).toContain('쌍둥이');
     });
   });
+
+  describe('create() S&V 상태 초기화', () => {
+    it('create() 호출 시 S&V 전용 상태가 초기화된다', () => {
+      const gm = new GameManager();
+      gm.create();
+      const players: Player[] = [];
+      for (let i = 0; i < 7; i++) {
+        const p = gm.addPlayer(`P${i}`);
+        if (p) players.push(p);
+      }
+      gm.assignRole(players[0].id, 'clockmaker');
+      gm.assignRole(players[1].id, 'dreamer');
+      gm.assignRole(players[2].id, 'flowergirl');
+      gm.assignRole(players[3].id, 'oracle');
+      gm.assignRole(players[4].id, 'seamstress');
+      gm.assignRole(players[5].id, 'witch');
+      gm.assignRole(players[6].id, 'fang_gu');
+      gm.start();
+      gm.detectEdition();
+      gm.setWitchCursedTarget(players[0].id);
+      gm.setEvilTwinPair(players[5].id, players[0].id);
+
+      gm.create();
+      expect(gm.getWitchCursedTarget()).toBeNull();
+      expect(gm.isFangGuJumped()).toBe(false);
+      expect(gm.getEditionId()).toBe('trouble_brewing');
+    });
+  });
+
+  describe('마녀 저주 setPlayerStatuses 동기화', () => {
+    it('witch_cursed 상태 추가 시 witchCursedTarget이 동기화된다', () => {
+      const { gm, players } = createStartedSVGame();
+      gm.setPlayerStatuses(players[0].id, ['witch_cursed']);
+      expect(gm.getWitchCursedTarget()).toBe(players[0].id);
+    });
+
+    it('witch_cursed 상태 제거 시 witchCursedTarget이 null이 된다', () => {
+      const { gm, players } = createStartedSVGame();
+      gm.setWitchCursedTarget(players[0].id);
+      expect(gm.getWitchCursedTarget()).toBe(players[0].id);
+      gm.setPlayerStatuses(players[0].id, []);
+      expect(gm.getWitchCursedTarget()).toBeNull();
+    });
+  });
+
+  describe('endGame 메서드', () => {
+    it('endGame() 호출 시 phase가 ended로 변경된다', () => {
+      const { gm } = createStartedSVGame();
+      gm.endGame();
+      expect(gm.getState().phase).toBe('ended');
+    });
+  });
+
+  describe('사악한 쌍둥이 처형 면역', () => {
+    it('사악한 쌍둥이는 선한 쌍둥이가 살아있으면 처형 면역 대상이다', () => {
+      const { gm, players } = createSVGame(7);
+      gm.assignRole(players[0].id, 'clockmaker');
+      gm.assignRole(players[1].id, 'dreamer');
+      gm.assignRole(players[2].id, 'flowergirl');
+      gm.assignRole(players[3].id, 'oracle');
+      gm.assignRole(players[4].id, 'seamstress');
+      gm.assignRole(players[5].id, 'evil_twin');
+      gm.assignRole(players[6].id, 'fang_gu');
+      gm.start();
+      gm.setEvilTwinPair(players[5].id, players[0].id);
+
+      const evilTwin = gm.getPlayer(players[5].id);
+      expect(evilTwin?.statuses).toContain('evil_twin');
+      expect(gm.getGoodTwinId(players[5].id)).toBe(players[0].id);
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(true);
+    });
+  });
+
+  describe('팡 구 사망한 외지인 대상 교환 거부', () => {
+    it('사망한 외지인에 대한 팡 구 점프가 거부된다', () => {
+      const { gm, players } = createSVGame(8);
+      gm.assignRole(players[0].id, 'clockmaker');
+      gm.assignRole(players[1].id, 'dreamer');
+      gm.assignRole(players[2].id, 'flowergirl');
+      gm.assignRole(players[3].id, 'oracle');
+      gm.assignRole(players[4].id, 'seamstress');
+      gm.assignRole(players[5].id, 'sweetheart');
+      gm.assignRole(players[6].id, 'witch');
+      gm.assignRole(players[7].id, 'fang_gu');
+      gm.start();
+
+      gm.kill(players[5].id);
+      const result = gm.handleFangGuJump(players[7].id, players[5].id);
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('이발사 역할 교환 시 부가 상태 동기화', () => {
+    it('점쟁이가 교환되면 Red Herring이 재배정된다', () => {
+      const { gm, players } = createSVGame(7);
+      gm.assignRole(players[0].id, 'fortune_teller');
+      gm.assignRole(players[1].id, 'dreamer');
+      gm.assignRole(players[2].id, 'flowergirl');
+      gm.assignRole(players[3].id, 'oracle');
+      gm.assignRole(players[4].id, 'seamstress');
+      gm.assignRole(players[5].id, 'witch');
+      gm.assignRole(players[6].id, 'fang_gu');
+      gm.start();
+      gm.assignFortuneTellerRedHerring();
+      const oldRedHerring = gm.getRedHerringId();
+      expect(oldRedHerring).not.toBeNull();
+
+      gm.swapPlayerRoles(players[0].id, players[1].id);
+      const newRedHerring = gm.getRedHerringId();
+      expect(newRedHerring).not.toBeNull();
+    });
+  });
 });
