@@ -168,11 +168,6 @@ export interface ServerToStorytellerEvents {
   'player:left': ServerToClientEvents['player:left'];
   'traveller:joined': ServerToClientEvents['traveller:joined'];
   'traveller:exiled': ServerToClientEvents['traveller:exiled'];
-  /** 마녀 저주: 지명자가 마녀의 저주로 사망할 때 이야기꾼에게 확인 */
-  'witch:curseDeath': (data: {
-    nominatorId: string;
-    nominatorName: string;
-  }) => void;
   /** 이발사 사망: 악마가 역할 교환할 2명 선택 요청 */
   'barber:died': (data: { barberName: string }) => void;
   /** 얼뜨기 사망: 선한 플레이어 선택 요청 */
