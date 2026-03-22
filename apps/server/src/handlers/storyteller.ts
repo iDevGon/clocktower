@@ -520,7 +520,12 @@ export function registerStorytellerHandlers(
     socket.on('game:distributeRoles', (options, callback) => {
       const state = game.getState();
       const playerIds = state.players.map((p) => p.id);
-      const result = distributeRoles(playerIds, options);
+      // 블러프 역할은 배분 대상에서 제외
+      const excludedRoleIds = [
+        ...(options.excludedRoleIds ?? []),
+        ...(options.bluffRoleIds ?? []),
+      ];
+      const result = distributeRoles(playerIds, { ...options, excludedRoleIds });
       if (!result) {
         const hasExcluded =
           options.excludedRoleIds && options.excludedRoleIds.length > 0;

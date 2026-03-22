@@ -63,8 +63,8 @@ describe('E2E: 악 진영 정보', () => {
       await joinStatePromise;
     }
 
-    // 역할 배정 (마지막 배정 시 evil:info 자동 전송됨)
-    for (let i = 0; i < 4; i++) {
+    // 모든 역할 배정
+    for (let i = 0; i < 5; i++) {
       const sp = waitForEvent(ctx.storyteller as Socket, 'game:state');
       ctx.storyteller.emit('game:assignRole', {
         playerId: playerIds[i],
@@ -73,7 +73,7 @@ describe('E2E: 악 진영 정보', () => {
       await sp;
     }
 
-    // evil:info 리스너를 마지막 역할 배정 전에 등록
+    // evil:info 리스너를 게임 시작 전에 등록 (evil:info는 game:start 시 전송됨)
     const demonInfoPromise = waitForEvent<{
       minionNames?: string[];
       bluffRoles?: { id: string; name: string }[];
@@ -84,13 +84,13 @@ describe('E2E: 악 진영 정보', () => {
       otherMinionNames?: string[];
     }>(ctx.players[1] as Socket, 'evil:info');
 
-    // 마지막 역할 배정 → evil:info 전송 트리거
-    const lastSp = waitForEvent(ctx.storyteller as Socket, 'game:state');
-    ctx.storyteller.emit('game:assignRole', {
-      playerId: playerIds[4],
-      roleId: roles[4].roleId,
+    // 게임 시작 → evil:info 전송 트리거
+    await new Promise<void>((resolve, reject) => {
+      ctx.storyteller.emit('game:start', (res) => {
+        if (res.success) resolve();
+        else reject(new Error(res.error));
+      });
     });
-    await lastSp;
 
     const demonInfo = await demonInfoPromise;
     expect(demonInfo.minionNames).toContain('Player2');
