@@ -46,6 +46,12 @@ const TEAM_ACCENT: Record<
     text: '#e0b880',
   },
   demon: { glow: '#943c3c', border: '#b85c5c', label: '악마', text: '#e09090' },
+  traveller: {
+    glow: '#8a5ca0',
+    border: '#b07cc6',
+    label: '여행자',
+    text: '#d0a8e8',
+  },
 };
 
 // Timing

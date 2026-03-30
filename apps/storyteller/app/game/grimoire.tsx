@@ -738,9 +738,7 @@ export default function GrimoireScreen() {
                   }
                 },
               }))
-              .concat([
-                { text: '취소', style: 'cancel' as const, onPress: () => {} },
-              ]),
+              .concat([{ text: '취소', onPress: async () => {} }]),
           );
         },
       },
@@ -763,9 +761,7 @@ export default function GrimoireScreen() {
                   }
                 },
               }))
-              .concat([
-                { text: '취소', style: 'cancel' as const, onPress: () => {} },
-              ]),
+              .concat([{ text: '취소', onPress: async () => {} }]),
           );
         },
       },
@@ -791,9 +787,7 @@ export default function GrimoireScreen() {
                 text: p.name,
                 onPress: () => handleTravellerAssign(p.id, p.name),
               }))
-              .concat([
-                { text: '닫기', style: 'cancel' as const, onPress: () => {} },
-              ]),
+              .concat([{ text: '닫기', onPress: () => {} }]),
           );
         },
       });
