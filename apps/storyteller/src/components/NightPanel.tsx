@@ -1,4 +1,9 @@
-import type { Player, PlayerStatus } from '@clocktower/shared';
+import type {
+  NightAction,
+  NightFeedbackPayload,
+  Player,
+  PlayerStatus,
+} from '@clocktower/shared';
 import { getRoleById, NIGHT_ACTIONS, NIGHT_FEEDBACK } from '@clocktower/shared';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -9,11 +14,7 @@ import { NightOrderPanel } from './NightOrderPanel';
 interface NightPanelProps {
   day: number;
   players: Player[];
-  nightActions: Array<{
-    roleId: string;
-    playerId: string;
-    action: { type: string; targetIds: string[] };
-  }>;
+  nightActions: NightAction[];
   playerStatuses: Record<string, PlayerStatus[]>;
   activeNightRoleId: string | null;
   activeRoleIds: string[];
@@ -26,7 +27,7 @@ interface NightPanelProps {
   playerOrder: string[];
   onActivateRole: (roleId: string | null) => void;
   onNightComplete: () => void;
-  onSendFeedback: (playerId: string, feedback: unknown) => void;
+  onSendFeedback: (playerId: string, feedback: NightFeedbackPayload) => void;
   onKill: (playerId: string) => void;
   onSetStatus: (playerId: string, status: PlayerStatus) => void;
   nightWakeUpTargets: string[];

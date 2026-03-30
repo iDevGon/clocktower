@@ -15,6 +15,7 @@ const TEAM_COLORS: Record<Team, string> = {
   outsider: '#50a090',
   minion: '#c48850',
   demon: '#b85c5c',
+  traveller: '#b07cc6',
 };
 
 interface FeedbackDisplayProps {

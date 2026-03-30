@@ -60,7 +60,7 @@ export function BaseOverlay({
   const [dismissReady, setDismissReady] = useState(
     dismissDelayMs == null || dismissDelayMs <= 0,
   );
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     if (dismissDelayMs != null && dismissDelayMs > 0) {

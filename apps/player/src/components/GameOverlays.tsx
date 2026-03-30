@@ -1,4 +1,9 @@
-import type { GameResult, Role } from '@clocktower/shared';
+import type {
+  DeathReason,
+  ExecutionAnnouncement,
+  GameResult,
+  Role,
+} from '@clocktower/shared';
 import type { EvilInfo } from '../stores/playerStore';
 import { DeathOverlay } from './DeathOverlay';
 import { ExecutionOverlay } from './ExecutionOverlay';
@@ -23,15 +28,11 @@ interface GameOverlaysProps {
 
   // Death
   justDied: boolean;
-  deathReason: string | null;
+  deathReason: DeathReason | null;
   onDismissDeath: () => void;
 
   // Execution
-  executionAnnouncement: {
-    playerName: string;
-    roleName: string;
-    isSaintTriggered?: boolean;
-  } | null;
+  executionAnnouncement: ExecutionAnnouncement | null;
   currentPhase: string | null;
   gameResult: GameResult | null;
   onDismissExecution: () => void;
@@ -45,10 +46,7 @@ interface GameOverlaysProps {
   onDismissRavenkeeper: () => void;
 
   // Night death announcement
-  nightDeathAnnouncement: Array<{
-    playerName: string;
-    roleName?: string;
-  }> | null;
+  nightDeathAnnouncement: Array<{ id: string; name: string }> | null;
   onDismissNightDeath: () => void;
 
   // Slayer fizzle
