@@ -92,12 +92,9 @@ export function FeedbackHistoryModal({
     ? reversedHistory.findIndex((e) => e.timestamp === highlightTimestamp)
     : -1;
 
-  const handleEntryLayout = useCallback(
-    (index: number, y: number) => {
-      setEntryLayouts((prev) => ({ ...prev, [index]: y }));
-    },
-    [],
-  );
+  const handleEntryLayout = useCallback((index: number, y: number) => {
+    setEntryLayouts((prev) => ({ ...prev, [index]: y }));
+  }, []);
 
   // Auto-scroll to highlighted entry when modal opens
   useEffect(() => {
