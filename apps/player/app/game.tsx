@@ -85,6 +85,8 @@ export default function GameScreen() {
   const kicked = usePlayerStore((s) => s.kicked);
   const eventToast = usePlayerStore((s) => s.eventToast);
   const dismissEventToast = usePlayerStore((s) => s.dismissEventToast);
+  const feedbackToast = usePlayerStore((s) => s.feedbackToast);
+  const dismissFeedbackToast = usePlayerStore((s) => s.dismissFeedbackToast);
   const {
     submitNightAction,
     sendWhisper,
@@ -165,6 +167,9 @@ export default function GameScreen() {
   const [nominateModalVisible, setNominateModalVisible] = useState(false);
   const [slayerModalVisible, setSlayerModalVisible] = useState(false);
   const [feedbackHistoryVisible, setFeedbackHistoryVisible] = useState(false);
+  const [feedbackHighlightTs, setFeedbackHighlightTs] = useState<number | null>(
+    null,
+  );
   const [dictionaryVisible, setDictionaryVisible] = useState(false);
   const [chatModalVisible, setChatModalVisible] = useState(false);
   const [seatingChartVisible, setSeatingChartVisible] = useState(false);
@@ -596,7 +601,11 @@ export default function GameScreen() {
       <FeedbackHistoryModal
         visible={feedbackHistoryVisible}
         history={feedbackHistory}
-        onClose={() => setFeedbackHistoryVisible(false)}
+        onClose={() => {
+          setFeedbackHistoryVisible(false);
+          setFeedbackHighlightTs(null);
+        }}
+        highlightTimestamp={feedbackHighlightTs}
       />
 
       <DictionaryModal
@@ -686,6 +695,20 @@ export default function GameScreen() {
         badgeLabel={eventToast?.title ?? ''}
         message={eventToast?.message ?? ''}
         zIndex={650}
+      />
+
+      <BaseToast
+        visible={!!feedbackToast}
+        onDismiss={dismissFeedbackToast}
+        badgeLabel="단서 발견"
+        message="새로운 정보가 도착했습니다. 탭하여 확인하세요."
+        zIndex={660}
+        onPress={() => {
+          if (feedbackToast) {
+            setFeedbackHighlightTs(feedbackToast.timestamp);
+          }
+          setFeedbackHistoryVisible(true);
+        }}
       />
 
       <ExileVoteModal onVote={castExileVote} />

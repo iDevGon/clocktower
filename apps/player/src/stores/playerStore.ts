@@ -149,6 +149,9 @@ interface PlayerState {
   eventToast: { title: string; message: string } | null;
   showEventToast: (toast: { title: string; message: string }) => void;
   dismissEventToast: () => void;
+  /** 단서 발견 토스트 (밤 피드백 수신 시) */
+  feedbackToast: FeedbackHistoryEntry | null;
+  dismissFeedbackToast: () => void;
   /** 이야기꾼에 의해 강퇴됨 */
   kicked: boolean;
   set: (partial: Partial<PlayerState>) => void;
@@ -214,6 +217,7 @@ const initialState = {
   exileVote: null as PlayerState['exileVote'],
   exileResult: null as PlayerState['exileResult'],
   eventToast: null as { title: string; message: string } | null,
+  feedbackToast: null as FeedbackHistoryEntry | null,
   kicked: false,
 };
 
@@ -223,14 +227,20 @@ export const usePlayerStore = create<PlayerState>()(
       ...initialState,
       showEventToast: (toast) => set({ eventToast: toast }),
       dismissEventToast: () => set({ eventToast: null }),
+      dismissFeedbackToast: () => set({ feedbackToast: null }),
       set: (partial) => set(partial),
-      addFeedback: (day, feedback) =>
+      addFeedback: (day, feedback) => {
+        const entry: FeedbackHistoryEntry = {
+          day,
+          phase: 'night' as const,
+          feedback,
+          timestamp: Date.now(),
+        };
         set((s) => ({
-          feedbackHistory: [
-            ...s.feedbackHistory,
-            { day, phase: 'night' as const, feedback, timestamp: Date.now() },
-          ],
-        })),
+          feedbackHistory: [...s.feedbackHistory, entry],
+          feedbackToast: entry,
+        }));
+      },
       reset: () => set(initialState),
     }),
     {

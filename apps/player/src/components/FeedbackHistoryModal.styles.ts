@@ -75,4 +75,12 @@ export const styles = StyleSheet.create({
   feedbackWrapper: {
     marginLeft: 16,
   },
+  entryHighlight: {
+    backgroundColor: 'rgba(128, 144, 192, 0.15)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(128, 144, 192, 0.4)',
+    padding: 8,
+    marginHorizontal: -8,
+  },
 });
