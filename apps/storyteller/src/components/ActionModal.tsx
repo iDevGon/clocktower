@@ -1,3 +1,4 @@
+import { colors, typography } from '@clocktower/ui';
 import { useMemo } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
@@ -31,28 +32,31 @@ export function ActionModal({
     return StyleSheet.create({
       overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        backgroundColor: 'rgba(5,3,1,0.78)',
         justifyContent: 'center',
         alignItems: 'center',
       },
       container: {
-        backgroundColor: '#1e1e22',
-        borderRadius: 12,
+        backgroundColor: colors.ink.mid,
+        borderRadius: 14,
         width: Math.min(s(280), screenWidth * 0.85),
         maxHeight: '80%',
         borderWidth: 1,
-        borderColor: '#3a3a42',
+        borderColor: colors.edge.gilt,
       },
       title: {
-        color: '#e0ddd8',
-        fontSize: s(16),
-        fontWeight: '700',
+        fontFamily: typography.family.display,
+        color: colors.parchment.high,
+        fontSize: s(18),
+        fontWeight: typography.weight.bold,
         textAlign: 'center',
         paddingTop: s(16),
         paddingHorizontal: s(16),
+        letterSpacing: typography.tracking.tight,
       },
       message: {
-        color: '#908e8a',
+        fontFamily: typography.family.body,
+        color: colors.parchment.mid,
         fontSize: s(13),
         textAlign: 'center',
         paddingHorizontal: s(16),
@@ -65,27 +69,29 @@ export function ActionModal({
       option: {
         paddingVertical: s(12),
         paddingHorizontal: s(16),
-        borderTopWidth: 1,
-        borderColor: '#2a2a30',
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderColor: colors.edge.default,
       },
       optionDestructive: {},
       optionText: {
-        color: '#c0bdb8',
+        fontFamily: typography.family.body,
+        color: colors.parchment.high,
         fontSize: s(15),
         textAlign: 'center',
       },
       optionTextDestructive: {
-        color: '#e05050',
+        color: colors.crimson.glow,
       },
       cancelButton: {
         paddingVertical: s(14),
-        borderTopWidth: 1,
-        borderColor: '#3a3a42',
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderColor: colors.edge.default,
       },
       cancelText: {
-        color: '#7070c4',
+        fontFamily: typography.family.body,
+        color: colors.parchment.mid,
         fontSize: s(15),
-        fontWeight: '600',
+        fontWeight: typography.weight.semibold,
         textAlign: 'center',
       },
     });

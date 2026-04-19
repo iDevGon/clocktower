@@ -1,58 +1,63 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 export function createRoleExcludeModalStyles(s: (v: number) => number) {
   return StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      backgroundColor: 'rgba(5,3,1,0.78)',
       justifyContent: 'center',
       alignItems: 'center',
     },
     modal: {
-      backgroundColor: '#1e1e22',
-      borderRadius: 12,
+      backgroundColor: colors.ink.mid,
+      borderRadius: 14,
       width: '90%',
       maxHeight: '80%',
-      borderWidth: 2,
-      borderColor: '#4a4a5a',
+      borderWidth: 1,
+      borderColor: colors.edge.gilt,
     },
     header: {
       paddingHorizontal: s(16),
       paddingTop: s(16),
       paddingBottom: s(12),
-      borderBottomWidth: 1,
-      borderBottomColor: '#3a3a42',
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.edge.gilt,
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
     },
     headerTitle: {
-      color: '#e0ddd8',
-      fontSize: s(18),
-      fontWeight: '700',
+      fontFamily: typography.family.display,
+      color: colors.parchment.high,
+      fontSize: s(20),
+      fontWeight: typography.weight.bold,
+      letterSpacing: typography.tracking.tight,
     },
     resetButton: {
       paddingVertical: s(4),
       paddingHorizontal: s(10),
       borderRadius: 4,
-      backgroundColor: '#3a2020',
+      backgroundColor: colors.crimson.deep,
     },
     resetText: {
-      color: '#c47070',
+      fontFamily: typography.family.body,
+      color: colors.crimson.glow,
       fontSize: s(12),
-      fontWeight: '600',
+      fontWeight: typography.weight.semibold,
     },
     searchInput: {
+      fontFamily: typography.family.body,
       marginHorizontal: s(12),
       marginTop: s(8),
       marginBottom: s(4),
       paddingVertical: s(8),
       paddingHorizontal: s(12),
-      backgroundColor: '#252528',
+      backgroundColor: colors.ink.rise,
       borderRadius: 8,
       borderWidth: 1,
-      borderColor: '#3a3a3e',
-      color: '#e0ddd8',
+      borderColor: colors.edge.default,
+      color: colors.parchment.high,
       fontSize: s(14),
     },
     scrollContent: {
@@ -63,14 +68,18 @@ export function createRoleExcludeModalStyles(s: (v: number) => number) {
       marginBottom: s(12),
     },
     teamLabel: {
+      fontFamily: typography.family.body,
       fontSize: s(14),
-      fontWeight: '700',
+      fontWeight: typography.weight.bold,
+      letterSpacing: typography.tracking.wide,
       marginBottom: s(6),
+      textTransform: 'uppercase',
     },
     checkmark: {
-      color: '#1e1e22',
+      fontFamily: typography.family.body,
+      color: colors.ink.deep,
       fontSize: s(12),
-      fontWeight: '900',
+      fontWeight: typography.weight.black,
       lineHeight: s(14),
     },
     roleContent: {
@@ -83,13 +92,14 @@ export function createRoleExcludeModalStyles(s: (v: number) => number) {
     },
     footer: {
       paddingVertical: s(14),
-      borderTopWidth: 1,
-      borderTopColor: '#3a3a42',
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.edge.default,
     },
     footerText: {
-      color: '#7070c4',
+      fontFamily: typography.family.body,
+      color: colors.parchment.mid,
       fontSize: s(15),
-      fontWeight: '600',
+      fontWeight: typography.weight.semibold,
       textAlign: 'center',
     },
   });
@@ -107,7 +117,11 @@ export function roleItemStyle(
     paddingHorizontal: s(10),
     marginBottom: s(2),
     borderRadius: 6,
-    backgroundColor: isExcluded ? '#2a1a1a' : pressed ? '#2a2a30' : '#252528',
+    backgroundColor: isExcluded
+      ? `${colors.crimson.core}22`
+      : pressed
+        ? colors.ink.rise
+        : colors.ink.mid,
   };
 }
 
@@ -117,8 +131,8 @@ export function checkboxStyle(s: (v: number) => number, isExcluded: boolean) {
     height: s(18),
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: isExcluded ? '#c47070' : '#5a5a5e',
-    backgroundColor: isExcluded ? '#c47070' : 'transparent',
+    borderColor: isExcluded ? colors.crimson.glow : colors.edge.default,
+    backgroundColor: isExcluded ? colors.crimson.glow : 'transparent',
     marginRight: s(10),
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
@@ -127,9 +141,10 @@ export function checkboxStyle(s: (v: number) => number, isExcluded: boolean) {
 
 export function roleNameStyle(s: (v: number) => number, isExcluded: boolean) {
   return {
-    color: isExcluded ? '#706060' : '#e0ddd8',
+    fontFamily: typography.family.display,
+    color: isExcluded ? colors.parchment.low : colors.parchment.high,
     fontSize: s(14),
-    fontWeight: '600' as const,
+    fontWeight: typography.weight.semibold,
     textDecorationLine: isExcluded
       ? ('line-through' as const)
       : ('none' as const),
@@ -141,7 +156,8 @@ export function roleAbilityStyle(
   isExcluded: boolean,
 ) {
   return {
-    color: isExcluded ? '#504848' : '#787674',
+    fontFamily: typography.family.body,
+    color: isExcluded ? colors.parchment.ghost : colors.parchment.low,
     fontSize: s(11),
     lineHeight: s(15),
   };

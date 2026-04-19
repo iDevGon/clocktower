@@ -1,51 +1,56 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 export function createDrunkFakeRoleModalStyles(s: (v: number) => number) {
   return StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      backgroundColor: 'rgba(5,3,1,0.78)',
       justifyContent: 'center',
       alignItems: 'center',
     },
     modal: {
-      backgroundColor: '#1e1e22',
-      borderRadius: 12,
+      backgroundColor: colors.ink.mid,
+      borderRadius: 14,
       width: '90%',
       maxHeight: '80%',
-      borderWidth: 2,
-      borderColor: '#e67e22',
+      borderWidth: 1,
+      borderColor: colors.ember.core,
     },
     header: {
       paddingHorizontal: s(16),
       paddingTop: s(16),
       paddingBottom: s(12),
-      borderBottomWidth: 1,
-      borderBottomColor: '#3a3a42',
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.edge.gilt,
     },
     headerTitle: {
-      color: '#e67e22',
-      fontSize: s(18),
-      fontWeight: '700',
+      fontFamily: typography.family.display,
+      color: colors.ember.glow,
+      fontSize: s(20),
+      fontWeight: typography.weight.bold,
       textAlign: 'center',
       marginBottom: s(4),
+      letterSpacing: typography.tracking.tight,
     },
     headerDesc: {
-      color: '#908e8a',
+      fontFamily: typography.family.body,
+      color: colors.parchment.mid,
       fontSize: s(13),
       textAlign: 'center',
     },
     searchInput: {
+      fontFamily: typography.family.body,
       marginHorizontal: s(12),
       marginTop: s(8),
       marginBottom: s(4),
       paddingHorizontal: s(12),
       paddingVertical: s(10),
-      backgroundColor: '#28282e',
+      backgroundColor: colors.ink.rise,
       borderRadius: 8,
       borderWidth: 1,
-      borderColor: '#3a3a42',
-      color: '#e0ddd8',
+      borderColor: colors.edge.default,
+      color: colors.parchment.high,
       fontSize: s(14),
     },
     listContent: {
@@ -53,9 +58,10 @@ export function createDrunkFakeRoleModalStyles(s: (v: number) => number) {
       paddingVertical: s(8),
     },
     randomButtonText: {
-      color: '#a0a0c0',
+      fontFamily: typography.family.body,
+      color: colors.parchment.mid,
       fontSize: s(14),
-      fontWeight: '600',
+      fontWeight: typography.weight.semibold,
     },
     itemRow: {
       flexDirection: 'row',
@@ -63,35 +69,41 @@ export function createDrunkFakeRoleModalStyles(s: (v: number) => number) {
       justifyContent: 'space-between',
     },
     itemName: {
-      color: '#e0ddd8',
+      fontFamily: typography.family.display,
+      color: colors.parchment.high,
       fontSize: s(15),
-      fontWeight: '600',
+      fontWeight: typography.weight.semibold,
     },
     currentBadge: {
-      color: '#e67e22',
+      fontFamily: typography.family.body,
+      color: colors.ember.glow,
       fontSize: s(11),
-      fontWeight: '600',
+      fontWeight: typography.weight.semibold,
+      letterSpacing: typography.tracking.wide,
     },
     abilityText: {
-      color: '#787674',
+      fontFamily: typography.family.body,
+      color: colors.parchment.low,
       fontSize: s(12),
       lineHeight: s(17),
     },
     emptyText: {
-      color: '#908e8a',
+      fontFamily: typography.family.body,
+      color: colors.parchment.mid,
       fontSize: s(14),
       textAlign: 'center',
       paddingVertical: s(20),
     },
     footer: {
       paddingVertical: s(14),
-      borderTopWidth: 1,
-      borderTopColor: '#3a3a42',
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.edge.default,
     },
     footerText: {
-      color: '#7070c4',
+      fontFamily: typography.family.body,
+      color: colors.parchment.mid,
       fontSize: s(15),
-      fontWeight: '600',
+      fontWeight: typography.weight.semibold,
       textAlign: 'center',
     },
   });
@@ -101,10 +113,10 @@ export function randomButtonStyle(s: (v: number) => number, pressed: boolean) {
   return {
     marginBottom: s(8),
     padding: s(12),
-    backgroundColor: pressed ? '#303040' : '#252530',
+    backgroundColor: pressed ? colors.ink.rise : colors.ink.mid,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#4a4a5a',
+    borderColor: colors.edge.default,
     alignItems: 'center' as const,
   };
 }
@@ -118,10 +130,13 @@ export function roleItemStyle(
     paddingVertical: s(12),
     paddingHorizontal: s(12),
     marginBottom: s(4),
-    backgroundColor: isCurrentFake ? '#3a2a18' : '#252528',
+    backgroundColor: isCurrentFake
+      ? `${colors.ember.core}1a`
+      : pressed
+        ? colors.ink.rise
+        : colors.ink.mid,
     borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: isCurrentFake ? '#e67e22' : '#555',
-    ...(pressed ? { backgroundColor: '#353538' } : {}),
+    borderWidth: 1,
+    borderColor: isCurrentFake ? colors.ember.core : colors.edge.default,
   };
 }

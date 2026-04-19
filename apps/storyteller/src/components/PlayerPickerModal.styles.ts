@@ -1,29 +1,32 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 export function createPlayerPickerModalStyles(s: (v: number) => number) {
   return StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      backgroundColor: 'rgba(5,3,1,0.78)',
       justifyContent: 'center',
       alignItems: 'center',
     },
     modal: {
-      backgroundColor: '#1e1e22',
-      borderRadius: 12,
+      backgroundColor: colors.ink.mid,
+      borderRadius: 14,
       width: '90%',
       maxHeight: '80%',
-      borderWidth: 2,
+      borderWidth: 1,
+      borderColor: colors.edge.gilt,
     },
     header: {
       paddingHorizontal: s(16),
       paddingTop: s(16),
       paddingBottom: s(12),
-      borderBottomWidth: 1,
-      borderBottomColor: '#3a3a42',
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.edge.gilt,
     },
     description: {
-      color: '#908e8a',
+      fontFamily: typography.family.body,
+      color: colors.parchment.mid,
       fontSize: s(13),
       textAlign: 'center',
     },
@@ -32,8 +35,9 @@ export function createPlayerPickerModalStyles(s: (v: number) => number) {
       paddingTop: s(8),
     },
     autoButtonText: {
+      fontFamily: typography.family.body,
       fontSize: s(14),
-      fontWeight: '600',
+      fontWeight: typography.weight.semibold,
       opacity: 0.9,
     },
     dividerRow: {
@@ -44,13 +48,15 @@ export function createPlayerPickerModalStyles(s: (v: number) => number) {
     },
     dividerLine: {
       flex: 1,
-      height: 1,
-      backgroundColor: '#3a3a42',
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.edge.default,
     },
     dividerText: {
-      color: '#606060',
+      fontFamily: typography.family.body,
+      color: colors.parchment.low,
       fontSize: s(12),
       marginHorizontal: s(10),
+      letterSpacing: typography.tracking.wide,
     },
     playerItemRow: {
       flexDirection: 'row',
@@ -62,19 +68,21 @@ export function createPlayerPickerModalStyles(s: (v: number) => number) {
       alignItems: 'center',
     },
     playerName: {
-      color: '#e0ddd8',
+      fontFamily: typography.family.display,
+      color: colors.parchment.high,
       fontSize: s(15),
-      fontWeight: '600',
+      fontWeight: typography.weight.semibold,
     },
     footer: {
       paddingVertical: s(14),
-      borderTopWidth: 1,
-      borderTopColor: '#3a3a42',
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.edge.default,
     },
     footerText: {
-      color: '#7070c4',
+      fontFamily: typography.family.body,
+      color: colors.parchment.mid,
       fontSize: s(15),
-      fontWeight: '600',
+      fontWeight: typography.weight.semibold,
       textAlign: 'center',
     },
   });
@@ -82,11 +90,13 @@ export function createPlayerPickerModalStyles(s: (v: number) => number) {
 
 export function titleStyle(s: (v: number) => number, themeColor: string) {
   return {
+    fontFamily: typography.family.display,
     color: themeColor,
-    fontSize: s(18),
-    fontWeight: '700' as const,
+    fontSize: s(20),
+    fontWeight: typography.weight.bold,
     textAlign: 'center' as const,
     marginBottom: s(4),
+    letterSpacing: typography.tracking.tight,
   };
 }
 
@@ -95,8 +105,8 @@ export function autoButtonStyle(
   themeColor: string,
   pressed: boolean,
 ) {
-  const autoBg = `${themeColor}15`;
-  const autoBgPressed = `${themeColor}30`;
+  const autoBg = `${themeColor}12`;
+  const autoBgPressed = `${themeColor}24`;
   return {
     padding: s(12),
     backgroundColor: pressed ? autoBgPressed : autoBg,
@@ -123,21 +133,23 @@ export function playerItemStyle(
   isCurrent: boolean,
   themeColor: string,
 ) {
-  const highlightBg = `${themeColor}20`;
+  const highlightBg = `${themeColor}1a`;
+  // border-left 스트라이프 폐기 — 대신 전체 보더로 강조
   return {
     paddingVertical: s(12),
     paddingHorizontal: s(12),
     marginBottom: s(4),
-    backgroundColor: isCurrent ? highlightBg : '#252528',
+    backgroundColor: isCurrent ? highlightBg : colors.ink.rise,
     borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: isCurrent ? themeColor : '#555',
+    borderWidth: 1,
+    borderColor: isCurrent ? themeColor : colors.edge.default,
   };
 }
 
 export function roleText(s: (v: number) => number) {
   return {
-    color: '#787674',
+    fontFamily: typography.family.body,
+    color: colors.parchment.low,
     fontSize: s(13),
     marginLeft: s(8),
   };
@@ -148,8 +160,10 @@ export function currentBadgeStyle(
   themeColor: string,
 ) {
   return {
+    fontFamily: typography.family.body,
     color: themeColor,
     fontSize: s(11),
-    fontWeight: '600' as const,
+    fontWeight: typography.weight.semibold,
+    letterSpacing: typography.tracking.wide,
   };
 }

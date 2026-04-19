@@ -1,3 +1,4 @@
+import { colors, typography } from '@clocktower/ui';
 import { useMemo } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
@@ -31,16 +32,16 @@ export function ConfirmModal({
     return StyleSheet.create({
       overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        backgroundColor: 'rgba(5,3,1,0.78)',
         justifyContent: 'center',
         alignItems: 'center',
       },
       container: {
-        backgroundColor: '#1e1e22',
-        borderRadius: 12,
+        backgroundColor: colors.ink.mid,
+        borderRadius: 14,
         width: Math.min(s(300), screenWidth * 0.85),
         borderWidth: 1,
-        borderColor: '#3a3a42',
+        borderColor: colors.edge.gilt,
       },
       body: {
         paddingHorizontal: s(20),
@@ -48,13 +49,16 @@ export function ConfirmModal({
         paddingBottom: s(16),
       },
       title: {
-        color: '#e0ddd8',
-        fontSize: s(16),
-        fontWeight: '700',
+        fontFamily: typography.family.display,
+        color: colors.parchment.high,
+        fontSize: s(18),
+        fontWeight: typography.weight.bold,
         textAlign: 'center',
+        letterSpacing: typography.tracking.tight,
       },
       message: {
-        color: '#908e8a',
+        fontFamily: typography.family.body,
+        color: colors.parchment.mid,
         fontSize: s(13),
         textAlign: 'center',
         marginTop: s(8),
@@ -62,8 +66,8 @@ export function ConfirmModal({
       },
       buttonRow: {
         flexDirection: 'row',
-        borderTopWidth: 1,
-        borderTopColor: '#3a3a42',
+        borderTopWidth: StyleSheet.hairlineWidth,
+        borderTopColor: colors.edge.default,
       },
       button: {
         flex: 1,
@@ -71,21 +75,23 @@ export function ConfirmModal({
         alignItems: 'center',
       },
       buttonDivider: {
-        width: 1,
-        backgroundColor: '#3a3a42',
+        width: StyleSheet.hairlineWidth,
+        backgroundColor: colors.edge.default,
       },
       cancelText: {
-        color: '#908e8a',
+        fontFamily: typography.family.body,
+        color: colors.parchment.mid,
         fontSize: s(15),
-        fontWeight: '600',
+        fontWeight: typography.weight.semibold,
       },
       confirmText: {
-        color: '#7090c4',
+        fontFamily: typography.family.body,
+        color: colors.ember.glow,
         fontSize: s(15),
-        fontWeight: '600',
+        fontWeight: typography.weight.semibold,
       },
       confirmTextDestructive: {
-        color: '#e05050',
+        color: colors.crimson.glow,
       },
     });
   }, [scale, screenWidth]);
