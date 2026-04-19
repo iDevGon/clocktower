@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors } from './tokens';
+import { colors, typography } from './tokens';
 
 type ChatAccent = keyof typeof colors.chat;
 
@@ -29,14 +29,17 @@ export function createChatStyles(accent: ChatAccent) {
       paddingRight: 12,
     },
     closeText: {
+      fontFamily: typography.family.body,
       color: theme.accent,
       fontSize: 14,
-      fontWeight: '600',
+      fontWeight: typography.weight.semibold,
     },
     headerTitle: {
+      fontFamily: typography.family.display,
       color: colors.text.primary,
       fontSize: 16,
-      fontWeight: 'bold',
+      fontWeight: typography.weight.bold,
+      letterSpacing: typography.tracking.tight,
     },
     headerSpacer: {
       width: 60,
@@ -80,12 +83,15 @@ export function createChatStyles(accent: ChatAccent) {
       borderColor: theme.otherBorderColor,
     },
     senderLabel: {
+      fontFamily: typography.family.body,
       color: theme.senderLabel,
       fontSize: 11,
-      fontWeight: '700',
+      fontWeight: typography.weight.semibold,
+      letterSpacing: typography.tracking.wide,
       marginBottom: 2,
     },
     messageText: {
+      fontFamily: typography.family.body,
       color: colors.text.primary,
       fontSize: 14,
       lineHeight: 20,
@@ -110,6 +116,7 @@ export function createChatStyles(accent: ChatAccent) {
     },
     input: {
       flex: 1,
+      fontFamily: typography.family.body,
       backgroundColor: colors.surface.elevated,
       borderWidth: 1,
       borderColor: colors.border.default,
@@ -129,9 +136,10 @@ export function createChatStyles(accent: ChatAccent) {
       backgroundColor: colors.border.default,
     },
     sendText: {
+      fontFamily: typography.family.body,
       color: colors.surface.base,
       fontSize: 14,
-      fontWeight: 'bold',
+      fontWeight: typography.weight.bold,
     },
     sendTextDisabled: {
       color: colors.text.tertiary,

@@ -1,3 +1,4 @@
+import { typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
@@ -18,9 +19,10 @@ export const styles = StyleSheet.create({
     marginBottom: 48,
   },
   titleSubtext: {
+    fontFamily: typography.family.body,
     color: '#a04040',
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: typography.weight.semibold,
     letterSpacing: 8,
     textTransform: 'uppercase',
     marginBottom: 6,
@@ -29,9 +31,10 @@ export const styles = StyleSheet.create({
     textShadowRadius: 12,
   },
   titleText: {
+    fontFamily: typography.family.display,
     color: '#e8d8d0',
     fontSize: 52,
-    fontWeight: '900',
+    fontWeight: typography.weight.black,
     letterSpacing: 4,
     textShadowColor: 'rgba(180, 40, 40, 0.5)',
     textShadowOffset: { width: 0, height: 2 },
@@ -68,9 +71,10 @@ export const styles = StyleSheet.create({
     gap: 18,
   },
   label: {
+    fontFamily: typography.family.body,
     color: '#786058',
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 3,
     marginBottom: 8,
@@ -81,6 +85,7 @@ export const styles = StyleSheet.create({
     gap: 8,
   },
   input: {
+    fontFamily: typography.family.body,
     backgroundColor: 'rgba(20, 10, 10, 0.8)',
     borderWidth: 1,
     borderColor: 'rgba(120, 40, 40, 0.25)',
@@ -134,8 +139,9 @@ export const styles = StyleSheet.create({
     opacity: 0.8,
   },
   joinButtonText: {
+    fontFamily: typography.family.display,
     color: '#f0e0d8',
-    fontWeight: '900',
+    fontWeight: typography.weight.black,
     fontSize: 16,
     letterSpacing: 4,
     textTransform: 'uppercase',

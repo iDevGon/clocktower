@@ -1,3 +1,4 @@
+import { colors } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 export function createLobbyStyles(scale: number) {
@@ -5,7 +6,7 @@ export function createLobbyStyles(scale: number) {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#121214',
+      backgroundColor: colors.ink.deep,
       maxWidth: 600,
       alignSelf: 'center' as const,
       width: '100%' as const,
@@ -14,7 +15,7 @@ export function createLobbyStyles(scale: number) {
       alignItems: 'center',
       paddingVertical: s(24),
       borderBottomWidth: 1,
-      borderColor: '#2e2e34',
+      borderColor: colors.edge.default,
     },
     participantHeader: {
       flexDirection: 'row',
@@ -29,7 +30,7 @@ export function createLobbyStyles(scale: number) {
       gap: s(8),
     },
     participantLabel: {
-      color: '#b8b6b2',
+      color: colors.parchment.mid,
       fontSize: s(18),
       fontWeight: '600',
     },
@@ -40,11 +41,11 @@ export function createLobbyStyles(scale: number) {
       borderRadius: 4,
     },
     devButtonText: {
-      color: '#908e8a',
+      color: colors.parchment.mid,
       fontSize: s(11),
     },
     compositionHint: {
-      color: '#706e6a',
+      color: colors.parchment.low,
       fontSize: s(12),
     },
     distributeContainer: {
@@ -64,7 +65,7 @@ export function createLobbyStyles(scale: number) {
       backgroundColor: '#242428',
     },
     distributeButtonText: {
-      color: '#e0ddd8',
+      color: colors.parchment.high,
       fontSize: s(15),
       fontWeight: '600',
     },
@@ -74,7 +75,7 @@ export function createLobbyStyles(scale: number) {
     footer: {
       padding: s(16),
       borderTopWidth: 1,
-      borderColor: '#2e2e34',
+      borderColor: colors.edge.default,
     },
     startButton: {
       paddingVertical: s(16),
@@ -82,7 +83,7 @@ export function createLobbyStyles(scale: number) {
       alignItems: 'center',
     },
     startButtonActive: {
-      backgroundColor: '#943c3c',
+      backgroundColor: colors.crimson.core,
     },
     startButtonPressed: {
       backgroundColor: '#7a3030',
@@ -91,7 +92,7 @@ export function createLobbyStyles(scale: number) {
       backgroundColor: '#242428',
     },
     startButtonText: {
-      color: '#e0ddd8',
+      color: colors.parchment.high,
       fontSize: s(18),
       fontWeight: 'bold',
     },
@@ -104,7 +105,7 @@ export function createLobbyStyles(scale: number) {
       gap: s(8),
     },
     editionLabel: {
-      color: '#908e8a',
+      color: colors.parchment.mid,
       fontSize: s(13),
     },
 
@@ -134,14 +135,14 @@ export function createLobbyStyles(scale: number) {
       paddingVertical: s(12),
       paddingHorizontal: s(12),
       borderBottomWidth: 1,
-      borderBottomColor: '#2a2a2e',
+      borderBottomColor: colors.edge.hairline,
     },
     playerNameRow: {
       flexDirection: 'row',
       alignItems: 'center',
     },
     playerName: {
-      color: '#e0ddd8',
+      color: colors.parchment.high,
       fontSize: s(15),
     },
     travellerBadge: {
@@ -192,12 +193,12 @@ export function createLobbyStyles(scale: number) {
       marginBottom: s(8),
     },
     settingsToggleLabel: {
-      color: '#908e8a',
+      color: colors.parchment.mid,
       fontSize: s(13),
       fontWeight: '600',
     },
     settingsToggleChevron: {
-      color: '#706e6a',
+      color: colors.parchment.low,
       fontSize: s(10),
     },
 
@@ -208,24 +209,24 @@ export function createLobbyStyles(scale: number) {
     settingsToggleRow: {
       flexDirection: 'row',
       justifyContent: 'space-around',
-      backgroundColor: '#1a1a1e',
+      backgroundColor: colors.ink.mid,
       borderRadius: 8,
       paddingVertical: s(10),
       paddingHorizontal: s(12),
       borderWidth: 1,
-      borderColor: '#2a2a2e',
+      borderColor: colors.edge.hairline,
     },
     settingsDivider: {
       width: 1,
-      backgroundColor: '#2e2e34',
+      backgroundColor: colors.edge.default,
     },
     clockSettingContainer: {
-      backgroundColor: '#1a1a1e',
+      backgroundColor: colors.ink.mid,
       borderRadius: 8,
       paddingVertical: s(10),
       paddingHorizontal: s(12),
       borderWidth: 1,
-      borderColor: '#2a2a2e',
+      borderColor: colors.edge.hairline,
     },
   });
 }
@@ -242,14 +243,18 @@ export const lobbyDynamic = {
     paddingHorizontal: s(12),
     borderRadius: 6,
     backgroundColor: disabled
-      ? '#1a1a1e'
+      ? colors.ink.mid
       : selected
         ? '#2a3a5c'
         : pressed
-          ? '#2a2a30'
+          ? colors.ink.rise
           : '#242428',
     borderWidth: 1,
-    borderColor: disabled ? '#2a2a2e' : selected ? '#4a6a9c' : '#3a3a3e',
+    borderColor: disabled
+      ? colors.edge.hairline
+      : selected
+        ? '#4a6a9c'
+        : colors.edge.default,
     opacity: disabled ? 0.5 : 1,
   }),
   editionButtonText: (
@@ -257,7 +262,7 @@ export const lobbyDynamic = {
     disabled: boolean,
     s: (v: number) => number,
   ) => ({
-    color: disabled ? '#4a4a4e' : selected ? '#8ab4f8' : '#706e6a',
+    color: disabled ? '#4a4a4e' : selected ? '#8ab4f8' : colors.parchment.low,
     fontSize: s(13),
     fontWeight: '600' as const,
   }),
@@ -265,7 +270,7 @@ export const lobbyDynamic = {
     width: s(8),
     height: s(8),
     borderRadius: s(4),
-    backgroundColor: isAlive ? '#5a8068' : '#943c3c',
+    backgroundColor: isAlive ? '#5a8068' : colors.crimson.core,
     marginRight: s(10),
   }),
   playerRoleText: (
@@ -273,7 +278,7 @@ export const lobbyDynamic = {
     s: (v: number) => number,
     teamColor?: string,
   ) => ({
-    color: veiled ? '#4a4a4e' : (teamColor ?? '#908e8a'),
+    color: veiled ? '#4a4a4e' : (teamColor ?? colors.parchment.mid),
     fontSize: s(14),
   }),
   veilToggleButton: (veiled: boolean, s: (v: number) => number) => ({
@@ -282,22 +287,22 @@ export const lobbyDynamic = {
     gap: s(6),
     paddingVertical: s(12),
     paddingHorizontal: s(10),
-    backgroundColor: veiled ? '#3a2a5c' : '#1e1e22',
+    backgroundColor: veiled ? '#3a2a5c' : colors.ink.mid,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: veiled ? '#7c6caa' : '#3a3a3e',
+    borderColor: veiled ? '#7c6caa' : colors.edge.default,
   }),
   veilToggleEmoji: (veiled: boolean, s: (v: number) => number) => ({
-    color: veiled ? '#c4b0ee' : '#706e6a',
+    color: veiled ? '#c4b0ee' : colors.parchment.low,
     fontSize: s(13),
   }),
   veilToggleLabel: (veiled: boolean, s: (v: number) => number) => ({
-    color: veiled ? '#c4b0ee' : '#706e6a',
+    color: veiled ? '#c4b0ee' : colors.parchment.low,
     fontSize: s(12),
     fontWeight: '600' as const,
   }),
   roleSettingButtonTextColor: (hasItems: boolean, defaultColor: string) => ({
-    color: hasItems ? defaultColor : '#908e8a',
+    color: hasItems ? defaultColor : colors.parchment.mid,
   }),
 };
 
