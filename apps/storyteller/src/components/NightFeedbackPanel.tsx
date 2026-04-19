@@ -4,7 +4,7 @@ import type {
   Player,
 } from '@clocktower/shared';
 import { getRoleById, NIGHT_ACTIONS, NIGHT_FEEDBACK } from '@clocktower/shared';
-import { AbilityText } from '@clocktower/ui';
+import { AbilityText, colors as ui } from '@clocktower/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
@@ -24,28 +24,28 @@ const TEAM_CARD_COLORS: Record<
   { color: string; bgStart: string; bgMid: string; bgEnd: string }
 > = {
   townsfolk: {
-    color: '#5a8ec8',
-    bgStart: '#161e34',
-    bgMid: '#121828',
-    bgEnd: '#0e1220',
+    color: ui.twilight.core,
+    bgStart: '#161e28',
+    bgMid: '#121822',
+    bgEnd: '#0e121c',
   },
   outsider: {
-    color: '#4aa890',
-    bgStart: '#142222',
-    bgMid: '#0e1c1a',
-    bgEnd: '#0a1414',
+    color: ui.verdure.core,
+    bgStart: '#141e1c',
+    bgMid: '#0e1816',
+    bgEnd: '#0a1210',
   },
   minion: {
-    color: '#c07040',
-    bgStart: '#221812',
-    bgMid: '#1a120e',
-    bgEnd: '#140e0a',
+    color: ui.ember.core,
+    bgStart: '#221a12',
+    bgMid: '#1a140e',
+    bgEnd: '#14100a',
   },
   demon: {
-    color: '#c03848',
-    bgStart: '#221014',
-    bgMid: '#1a0c10',
-    bgEnd: '#14080c',
+    color: ui.crimson.core,
+    bgStart: '#221214',
+    bgMid: '#1a0e10',
+    bgEnd: '#140a0c',
   },
 };
 

@@ -1,3 +1,4 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 export const panelStyles = StyleSheet.create({
@@ -11,9 +12,10 @@ export const getContentPadding = (scale: number) => ({
 });
 
 export const getAbilityTextStyle = (scale: number) => ({
+  fontFamily: typography.family.body,
   fontSize: scale * 11,
   lineHeight: scale * 17,
-  color: '#a0a0a8',
+  color: colors.parchment.mid,
   marginTop: scale * 4,
   marginBottom: scale * 4,
 });

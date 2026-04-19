@@ -1,5 +1,10 @@
-import { StyleSheet } from 'react-native';
-
+/**
+ * 페이즈별 색상 토큰 — DaySubPhaseBar 및 log 화면에서 공유.
+ *
+ * PhaseBar 본체 스타일은 이제 tokens 기반으로 PhaseBar.tsx 안에서
+ * 생성하지만, 하위 페이즈 색상 매핑은 다른 컴포넌트가 계속 참조하므로
+ * 여기에서 export 한다.
+ */
 export const PHASE_COLORS = {
   night: {
     bg: '#1e2038',
@@ -26,82 +31,3 @@ export const PHASE_COLORS = {
     dot: '#707078',
   },
 } as const;
-
-export function createPhaseBarStyles(
-  scale: number,
-  device: 'phone' | 'tablet' | 'desktop',
-) {
-  const s = (v: number) => Math.round(v * scale);
-  const isDesktop = device === 'desktop';
-  const isTablet = device === 'tablet';
-
-  return StyleSheet.create({
-    container: {
-      borderTopWidth: 1,
-      borderColor: '#1e1e24',
-      backgroundColor: '#101014',
-    },
-
-    /* ---- progress bar ---- */
-    progressBar: {
-      flexDirection: 'row',
-      height: s(3),
-      backgroundColor: '#1a1a20',
-    },
-    progressSegment: {
-      flex: 1,
-      marginHorizontal: 0.5,
-    },
-
-    /* ---- stepper ---- */
-    stepper: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: s(isDesktop ? 24 : isTablet ? 20 : 12),
-      paddingVertical: s(isDesktop ? 12 : isTablet ? 10 : 8),
-      gap: s(isDesktop ? 16 : isTablet ? 14 : 10),
-    },
-    navButton: {
-      width: s(isDesktop ? 44 : isTablet ? 44 : 44),
-      height: s(isDesktop ? 44 : isTablet ? 44 : 44),
-      borderRadius: s(22),
-      backgroundColor: '#1a1a22',
-      borderWidth: 1,
-      borderColor: '#2a2a34',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    navButtonDisabled: {
-      opacity: 0.3,
-    },
-    navButtonText: {
-      fontSize: s(isDesktop ? 18 : isTablet ? 16 : 14),
-      fontWeight: '600',
-    },
-
-    /* ---- active phase card ---- */
-    activeCard: {
-      flex: 1,
-      borderRadius: s(10),
-      borderWidth: 1,
-      paddingHorizontal: s(isDesktop ? 20 : isTablet ? 16 : 14),
-      paddingVertical: s(isDesktop ? 12 : isTablet ? 10 : 8),
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: s(8),
-      minHeight: s(isDesktop ? 48 : isTablet ? 44 : 40),
-    },
-    phaseDot: {
-      width: s(8),
-      height: s(8),
-      borderRadius: s(4),
-    },
-    phaseLabel: {
-      fontSize: s(isDesktop ? 16 : isTablet ? 15 : 14),
-      fontWeight: '700',
-    },
-  });
-}
-
-export const styles = createPhaseBarStyles(1, 'phone');

@@ -1,3 +1,4 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
@@ -5,29 +6,28 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 9999,
-    borderWidth: 2,
+    borderWidth: 1,
+    // 토큰 내부 미세 질감 — 그라디언트 대신 안쪽 ring 처럼 2차 보더 느낌
   },
   name: {
-    color: '#e0ddd8',
+    fontFamily: typography.family.display,
+    color: colors.parchment.high,
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: typography.weight.semibold,
+    letterSpacing: typography.tracking.tight,
     textAlign: 'center',
   },
   role: {
-    color: '#908e8a',
+    fontFamily: typography.family.body,
     fontSize: 10,
     textAlign: 'center',
     marginTop: 2,
+    color: colors.parchment.mid,
   },
-  deadRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  dead: {
-    color: '#b85c5c',
-    fontSize: 10,
-    fontWeight: 'bold',
+  deadStroke: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
   },
   statusRow: {
     flexDirection: 'row',
@@ -44,9 +44,10 @@ export const styles = StyleSheet.create({
     borderRadius: 4,
   },
   statusText: {
+    fontFamily: typography.family.body,
     color: '#ffffff',
     fontSize: 8,
-    fontWeight: '700',
+    fontWeight: typography.weight.bold,
   },
   voteBadgeText: {
     position: 'absolute',
@@ -75,7 +76,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
   },
   tooltipBox: {
-    backgroundColor: '#1e1e24',
+    backgroundColor: colors.ink.mid,
     borderWidth: 1.5,
     borderRadius: 10,
     paddingHorizontal: 20,
@@ -83,12 +84,14 @@ export const styles = StyleSheet.create({
     maxWidth: 280,
   },
   tooltipTitle: {
+    fontFamily: typography.family.display,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: typography.weight.bold,
     marginBottom: 6,
   },
   tooltipDesc: {
-    color: '#c0c0c8',
+    fontFamily: typography.family.body,
+    color: colors.parchment.mid,
     fontSize: 13,
     lineHeight: 19,
   },

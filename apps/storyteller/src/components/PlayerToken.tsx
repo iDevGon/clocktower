@@ -10,37 +10,31 @@ import {
 import { colors } from '@clocktower/ui';
 import { useCallback, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { useResponsive } from '../hooks/useResponsive';
 import { styles } from './PlayerToken.styles';
 
-const TEAM_BORDER_COLORS = {
-  townsfolk: '#506aaa',
-  outsider: '#3a8878',
-  minion: '#b87838',
-  demon: '#943c3c',
-  traveller: '#7a5a9a',
-} as const;
-
-const TEAM_BG_COLORS = {
-  townsfolk: '#14161e',
-  outsider: '#141a18',
-  minion: '#1e1814',
-  demon: '#1e1414',
-  traveller: '#1a141e',
+// 팀별 미묘한 배경 — 금박 보더 안쪽에 깔리는 잉크 계열 톤
+const TEAM_INK_BG = {
+  townsfolk: '#181a22',
+  outsider: '#181c1b',
+  minion: '#1e1a15',
+  demon: '#1e1515',
+  traveller: '#1b141e',
 } as const;
 
 export type VoteIndicator = 'guilty' | 'preselected_guilty' | 'nominee';
 
 const VOTE_BORDER_COLORS: Record<VoteIndicator, string> = {
-  guilty: '#e05050',
-  preselected_guilty: '#e0505080',
-  nominee: '#c43c3c',
+  guilty: colors.crimson.glow,
+  preselected_guilty: `${colors.crimson.glow}80`,
+  nominee: colors.crimson.core,
 };
 
 const VOTE_GLOW_COLORS: Record<VoteIndicator, string> = {
-  guilty: '#e05050',
-  preselected_guilty: '#e0505060',
-  nominee: '#c43c3c',
+  guilty: colors.crimson.glow,
+  preselected_guilty: `${colors.crimson.glow}60`,
+  nominee: colors.crimson.core,
 };
 
 export interface BluffRole {
@@ -103,41 +97,41 @@ export function PlayerToken({
     xl: Math.round(fontSize.xl * sizeRatio),
   };
   const team = player.role?.team;
-  const baseBorderColor = team ? TEAM_BORDER_COLORS[team] : '#3a3a42';
-  const bgColor = team ? TEAM_BG_COLORS[team] : '#1a1a1e';
+  const bgColor = team ? TEAM_INK_BG[team] : colors.ink.mid;
 
-  // Vote state overrides border when active
+  // 투표 상태 활성 시 보더 오버라이드
   const hasVoteState = !!voteIndicator;
   const voteBorder = voteIndicator
     ? VOTE_BORDER_COLORS[voteIndicator]
     : undefined;
   const voteGlow = voteIndicator ? VOTE_GLOW_COLORS[voteIndicator] : undefined;
 
-  // 사망자 중 투표권이 남아있으면 푸른 글로우
+  // 사망자 중 투표권이 남아있으면 twilight 글로우
   const hasGhostVote = !player.isAlive && !player.deadVoteUsed;
 
+  // 기본 보더 = 금박, 하이라이트/이웃/투표 상태에서만 색상 변경
   const borderColor = highlighted
-    ? '#f5c542'
+    ? colors.ember.glow
     : empathNeighbor
-      ? '#2ecc71'
+      ? colors.verdure.glow
       : hasVoteState
-        ? (voteBorder ?? baseBorderColor)
+        ? (voteBorder ?? colors.edge.gilt)
         : hasGhostVote
-          ? '#5aa0d0'
-          : baseBorderColor;
+          ? colors.twilight.glow
+          : colors.edge.gilt;
 
   const glowColor = highlighted
-    ? '#f5c542'
+    ? colors.ember.glow
     : empathNeighbor
-      ? '#2ecc71'
+      ? colors.verdure.glow
       : hasVoteState
         ? (voteGlow ?? 'transparent')
         : hasGhostVote
-          ? '#5aa0d0'
+          ? colors.twilight.glow
           : 'transparent';
 
   const hasGlow = highlighted || empathNeighbor || hasVoteState || hasGhostVote;
-  const bw = highlighted || empathNeighbor || hasVoteState ? 3 : 2;
+  const bw = highlighted || empathNeighbor || hasVoteState ? 2 : 1;
 
   return (
     <Pressable
@@ -154,10 +148,10 @@ export function PlayerToken({
             borderColor,
             borderWidth: bw,
             backgroundColor: bgColor,
-            opacity: player.isAlive ? 1 : 0.4,
+            opacity: player.isAlive ? 1 : 0.55,
             shadowColor: glowColor,
             shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: hasGlow ? 0.8 : 0,
+            shadowOpacity: hasGlow ? 0.7 : 0,
             shadowRadius: hasGlow ? 10 : 0,
             elevation: hasGlow ? 10 : 0,
           },
@@ -175,7 +169,7 @@ export function PlayerToken({
               styles.role,
               {
                 fontSize: scaledFont.sm,
-                color: team ? TEAM_COLORS[team] : '#908e8a',
+                color: team ? TEAM_COLORS[team] : colors.parchment.mid,
               },
             ]}
             numberOfLines={1}
@@ -202,11 +196,25 @@ export function PlayerToken({
             여행자 (미배정)
           </Text>
         )}
-        {!player.isAlive && (
-          <View style={styles.deadRow}>
-            <Text style={[styles.dead, { fontSize: scaledFont.sm }]}>사망</Text>
+
+        {/* 사망 = 잉크 X 스트로크 */}
+        {!player.isAlive ? (
+          <View
+            style={[styles.deadStroke, { width: s, height: s }]}
+            pointerEvents="none"
+          >
+            <Svg width={s} height={s} viewBox={`0 0 ${s} ${s}`}>
+              <Path
+                d={`M${s * 0.2},${s * 0.2} L${s * 0.8},${s * 0.8} M${s * 0.8},${s * 0.2} L${s * 0.2},${s * 0.8}`}
+                stroke={colors.crimson.glow}
+                strokeWidth={Math.max(2, s * 0.04)}
+                strokeLinecap="round"
+                opacity={0.85}
+              />
+            </Svg>
           </View>
-        )}
+        ) : null}
+
         {statuses && statuses.length > 0 && (
           <View style={styles.statusRow}>
             {statuses.map((status) => (
@@ -247,7 +255,12 @@ export function PlayerToken({
           )}
         {isExecutionCandidate && (
           <View style={[styles.statusRow, { marginTop: 1 }]}>
-            <View style={[styles.statusBadge, { backgroundColor: '#c43c3c' }]}>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: colors.crimson.core },
+              ]}
+            >
               <Text style={[styles.statusText, { fontSize: scaledFont.xs }]}>
                 처형 예정
               </Text>
@@ -290,9 +303,9 @@ export function PlayerToken({
                 <View
                   key={r.id}
                   style={{
-                    backgroundColor: '#1a1420',
+                    backgroundColor: colors.ink.rise,
                     borderWidth: 1,
-                    borderColor: '#3a2a4a',
+                    borderColor: colors.bruise.core,
                     borderRadius: 3,
                     paddingHorizontal: 4,
                     paddingVertical: 1,
@@ -300,7 +313,7 @@ export function PlayerToken({
                 >
                   <Text
                     style={{
-                      color: '#b090c0',
+                      color: colors.bruise.glow,
                       fontSize: Math.max(scaledFont.xs, 8),
                       fontWeight: '600',
                       textAlign: 'center',
@@ -320,7 +333,7 @@ export function PlayerToken({
               >
                 <Text
                   style={{
-                    color: '#6a5a7a',
+                    color: colors.parchment.low,
                     fontSize: Math.max(scaledFont.xs, 8),
                   }}
                 >
@@ -332,9 +345,9 @@ export function PlayerToken({
             <Pressable
               onPress={onToggleBluffs}
               style={{
-                backgroundColor: '#1a1420',
+                backgroundColor: colors.ink.rise,
                 borderWidth: 1,
-                borderColor: '#3a2a4a',
+                borderColor: colors.bruise.core,
                 borderRadius: 3,
                 paddingHorizontal: 6,
                 paddingVertical: 2,
@@ -342,7 +355,7 @@ export function PlayerToken({
             >
               <Text
                 style={{
-                  color: '#b090c0',
+                  color: colors.bruise.glow,
                   fontSize: Math.max(scaledFont.xs, 8),
                   fontWeight: '600',
                 }}

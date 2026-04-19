@@ -45,6 +45,7 @@ import { GrimoireBottomBar } from '../../src/components/GrimoireBottomBar';
 import { GrimoireTopBar } from '../../src/components/GrimoireTopBar';
 import { NightPanel } from '../../src/components/NightPanel';
 import { PhaseBar } from '../../src/components/PhaseBar';
+import { PhaseSeal } from '../../src/components/PhaseSeal';
 import { PhaseTipToast } from '../../src/components/PhaseTipToast';
 import { PlayerPickerModal } from '../../src/components/PlayerPickerModal';
 import { ChefHintBar, EmpathHintBar } from '../../src/components/RoleHintBars';
@@ -1237,6 +1238,16 @@ export default function GrimoireScreen() {
           setAreaSize({ width, height });
         }}
       >
+        {/* 중앙 페이즈 실링 — 투표 중 아니고 면적이 잡혔을 때만 */}
+        {areaSize.width > 0 && !hasActiveVote && gameState?.phase ? (
+          <PhaseSeal
+            phase={gameState.phase}
+            centerX={areaSize.width / 2}
+            centerY={areaSize.height / 2}
+            size={Math.min(areaSize.width, areaSize.height) * 0.28}
+          />
+        ) : null}
+
         {areaSize.width > 0 &&
           gameState.players.map((player, index) => {
             const orderIndex = playerOrder.indexOf(player.id);
