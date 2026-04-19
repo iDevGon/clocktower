@@ -1,10 +1,11 @@
 import { colors, space, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
-const PAPER = '#f3ecd8';
-const PAPER_EDGE = '#bba87e';
-const INK_BODY = '#2a231a';
-const INK_SOFT = '#5a4c38';
+// 오래된 양피지 — 어두운 앰버-탄 톤
+const PAPER = '#c9b687';
+const PAPER_EDGE = '#8a7540';
+const INK_BODY = '#201810';
+const INK_SOFT = '#4a3d25';
 
 export const styles = StyleSheet.create({
   root: {

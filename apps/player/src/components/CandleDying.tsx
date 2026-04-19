@@ -35,8 +35,9 @@ export function CandleDying({
   const reduced = useReducedMotion();
   const uid = useId().replace(/:/g, '');
 
-  const flicker = useSharedValue(0);
-  const alive = useSharedValue(0);
+  // 초기값을 보이는 상태로 두어 첫 수백 ms의 깜빡임을 방지
+  const flicker = useSharedValue(0.5);
+  const alive = useSharedValue(1);
   const smoke1 = useSharedValue(0);
   const smoke2 = useSharedValue(0);
 
@@ -48,12 +49,6 @@ export function CandleDying({
       smoke2.value = 1;
       return;
     }
-
-    // 처음엔 살아 있음
-    alive.value = withTiming(1, {
-      duration: 200,
-      easing: Easing.out(Easing.quad),
-    });
 
     // 깜빡임 — dieDelay까지만 활발하게, 이후 점점 축 쳐짐
     flicker.value = withRepeat(

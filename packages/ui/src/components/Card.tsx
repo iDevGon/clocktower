@@ -29,8 +29,8 @@ const VARIANT: Record<CardVariant, ViewStyle> = {
     ...elevation.card,
   },
   chit: {
-    backgroundColor: '#f3ecd8',
-    borderColor: '#d1c7a7',
+    backgroundColor: '#c9b687',
+    borderColor: '#8a7540',
     borderWidth: 1,
     borderRadius: radii.card,
     padding: space.base,

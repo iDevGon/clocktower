@@ -49,8 +49,8 @@ export default function RootLayout() {
   const serverUrl = useConnectionStore((s) => s.serverUrl);
   const isConnected = useConnectionStore((s) => s.isConnected);
   const lowPowerMode = useSettingsStore((s) => s.lowPowerMode);
-  // 폰트 로딩 실패 시에도 시스템 폰트로 fallback — 스플래시 가리지 않음
-  useFonts(fontAssets);
+  // 폰트 로드가 완료될 때까지 대기 — 로드 실패 시에도 fallback 되도록 error 는 무시
+  const [fontsLoaded, fontError] = useFonts(fontAssets);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -69,6 +69,11 @@ export default function RootLayout() {
       useGameStore.getState().reset();
     });
   }, [gameId, serverUrl, isConnected, connect]);
+
+  if (!fontsLoaded && !fontError) {
+    // 로딩 중에는 빈 화면 — 스플래시 유지
+    return null;
+  }
 
   return (
     <ReducedMotionProvider value={lowPowerMode}>

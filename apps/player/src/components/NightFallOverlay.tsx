@@ -29,15 +29,10 @@ import { styles as s } from './NightFallOverlay.styles';
 
 function CandleFlame() {
   const uid = useId().replace(/:/g, '');
-  const flicker = useSharedValue(0);
-  const descent = useSharedValue(0);
+  const flicker = useSharedValue(0.5);
+  const descent = useSharedValue(1); // 시작부터 보이게
 
   useEffect(() => {
-    // 초반 0.8s: 등장
-    descent.value = withTiming(1, {
-      duration: 800,
-      easing: Easing.out(Easing.cubic),
-    });
     // 이후 계속 깜빡임
     flicker.value = withDelay(
       300,
@@ -54,9 +49,8 @@ function CandleFlame() {
     );
     return () => {
       cancelAnimation(flicker);
-      cancelAnimation(descent);
     };
-  }, [flicker, descent]);
+  }, [flicker]);
 
   const flameStyle = useAnimatedStyle(() => ({
     opacity: descent.value * interpolate(flicker.value, [0, 1], [0.65, 1]),
