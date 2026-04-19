@@ -1,530 +1,262 @@
 import { getRandomGameTip, type Role, type Team } from '@clocktower/shared';
-import { AbilityText, GameTip, useReducedMotion } from '@clocktower/ui';
-import { LinearGradient } from 'expo-linear-gradient';
+import {
+  AbilityText,
+  colors,
+  GameTip,
+  InkBlot,
+  Ornament,
+  useReducedMotion,
+  WaxSeal,
+} from '@clocktower/ui';
 import { useEffect, useMemo } from 'react';
-import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
-  FadeIn,
-  interpolate,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
   withRepeat,
   withSequence,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import type { EvilInfo } from '../stores/playerStore';
 import { styles as s } from './GameStartReveal.styles';
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+// ── 팀별 편지 세팅 ──────────────────────────────────────────────────────────
 
-// ── Team colors ──
+type TeamTheme = {
+  label: string;
+  sealTone: 'crimson' | 'amber' | 'twilight' | 'verdure' | 'bruise';
+  sealGlyph: 'star' | 'moon' | 'clock' | 'lily' | 'bat';
+  eyebrowColor: string;
+  accentInk: string;
+};
 
-const TEAM_ACCENT: Record<
-  Team,
-  { glow: string; border: string; label: string; text: string }
-> = {
+const TEAM_THEMES: Record<Team, TeamTheme> = {
   townsfolk: {
-    glow: '#506aaa',
-    border: '#7090c4',
-    label: '마을주민',
-    text: '#a0b8e0',
+    label: '마을 주민',
+    sealTone: 'twilight',
+    sealGlyph: 'lily',
+    eyebrowColor: colors.twilight.deep,
+    accentInk: colors.twilight.deep,
   },
   outsider: {
-    glow: '#3a8878',
-    border: '#50a090',
     label: '외지인',
-    text: '#80c8b8',
+    sealTone: 'verdure',
+    sealGlyph: 'lily',
+    eyebrowColor: colors.verdure.deep,
+    accentInk: colors.verdure.deep,
   },
   minion: {
-    glow: '#b87838',
-    border: '#c48850',
     label: '하수인',
-    text: '#e0b880',
+    sealTone: 'amber',
+    sealGlyph: 'bat',
+    eyebrowColor: colors.ember.deep,
+    accentInk: colors.ember.deep,
   },
-  demon: { glow: '#943c3c', border: '#b85c5c', label: '악마', text: '#e09090' },
+  demon: {
+    label: '악마',
+    sealTone: 'crimson',
+    sealGlyph: 'bat',
+    eyebrowColor: colors.crimson.deep,
+    accentInk: colors.crimson.deep,
+  },
   traveller: {
-    glow: '#8a5ca0',
-    border: '#b07cc6',
     label: '여행자',
-    text: '#d0a8e8',
+    sealTone: 'bruise',
+    sealGlyph: 'star',
+    eyebrowColor: colors.bruise.deep,
+    accentInk: colors.bruise.deep,
   },
 };
 
-// ── Drift Particle (mystical embers rising) ──
+// ── 타이밍 ─────────────────────────────────────────────────────────────────
+// 한 번에 한 순간. 서두르지 않고, 과하지 않게.
 
-function DriftParticle({ index }: { index: number }) {
-  const progress = useSharedValue(0);
-  const x = ((index * 47 + 11) % 100) * (SCREEN_W / 100);
-  const startY = SCREEN_H * 0.85 + (index % 6) * 30;
-  const driftX = (index % 2 === 0 ? 1 : -1) * (6 + (index % 5) * 5);
-  const size = 2 + (index % 3) * 1.5;
-  const delay = (index * 200) % 3000;
-  const duration = 4000 + (index % 5) * 800;
+const T_VIGNETTE_IN = 0;
+const T_ENVELOPE_IN = 700;
+const T_SEAL_ANTICIPATE = 2100;
+const T_SEAL_BREAK = 2600;
+const T_LETTER_REVEAL = 3200;
+const T_CONTENT_CASCADE = 3700;
+const T_SUBTITLE = 4800;
+const T_AUTO_DISMISS = 10000;
 
+// ── 편지지 색상 ────────────────────────────────────────────────────────────
+const PAPER = '#f3ecd8';
+const PAPER_FOLD = '#d9cfae';
+const PAPER_EDGE = '#bba87e';
+
+// ── 배경 촛불 앰버 글로우 ──────────────────────────────────────────────────
+
+function CandleAura() {
+  const pulse = useSharedValue(0.5);
   useEffect(() => {
-    progress.value = withDelay(
-      delay,
-      withRepeat(
-        withTiming(1, { duration, easing: Easing.out(Easing.quad) }),
-        -1,
-        false,
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(0.9, { duration: 2400, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.5, { duration: 2400, easing: Easing.inOut(Easing.sin) }),
       ),
+      -1,
+      false,
     );
-    return () => cancelAnimation(progress);
-  }, [progress, delay, duration]);
+    return () => cancelAnimation(pulse);
+  }, [pulse]);
 
   const style = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: interpolate(progress.value, [0, 1], [0, -startY * 0.7]) },
-      {
-        translateX: interpolate(
-          progress.value,
-          [0, 0.5, 1],
-          [0, driftX, driftX * 0.8],
-        ),
-      },
-      { scale: interpolate(progress.value, [0, 0.2, 0.6, 1], [0, 1, 0.8, 0]) },
-    ],
-    opacity: interpolate(progress.value, [0, 0.1, 0.5, 1], [0, 0.9, 0.6, 0]),
-  }));
-
-  const colors = ['#6878a8', '#8090c0', '#a0b0d0', '#5060a0', '#c0d0e8'];
-
-  return (
-    <Animated.View
-      style={[
-        {
-          position: 'absolute',
-          left: x,
-          top: startY,
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: colors[index % colors.length],
-        },
-        style,
-      ]}
-    />
-  );
-}
-
-// ── Burst Particle (radial burst on reveal) ──
-
-function BurstParticle({ index, color }: { index: number; color: string }) {
-  const progress = useSharedValue(0);
-  const angle = (index / 20) * 2 * Math.PI + (index * 137.5 * Math.PI) / 180;
-  const distance = 60 + (index % 5) * 40;
-  const size = 2 + (index % 4) * 2;
-
-  useEffect(() => {
-    // Burst triggers at flip time (CARD_FLIP_DELAY)
-    progress.value = withDelay(
-      CARD_FLIP_DELAY + ((index * 40) % 400),
-      withTiming(1, {
-        duration: 1200 + (index % 3) * 300,
-        easing: Easing.out(Easing.cubic),
-      }),
-    );
-    return () => cancelAnimation(progress);
-  }, [progress, index]);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [
-      {
-        translateX: interpolate(
-          progress.value,
-          [0, 1],
-          [0, Math.cos(angle) * distance],
-        ),
-      },
-      {
-        translateY: interpolate(
-          progress.value,
-          [0, 1],
-          [0, Math.sin(angle) * distance],
-        ),
-      },
-      { scale: interpolate(progress.value, [0, 0.2, 0.6, 1], [0, 1.5, 1, 0]) },
-    ],
-    opacity: interpolate(progress.value, [0, 0.15, 0.5, 1], [0, 1, 0.7, 0]),
+    opacity: pulse.value * 0.55,
   }));
 
   return (
-    <Animated.View
-      style={[
-        {
-          position: 'absolute',
-          left: SCREEN_W / 2,
-          top: SCREEN_H * 0.38,
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: color,
-        },
-        style,
-      ]}
-    />
-  );
-}
-
-// ── Card Glow (pulsing radial behind card) ──
-
-function CardGlow({ color }: { color: string }) {
-  const pulse = useSharedValue(0);
-  const appear = useSharedValue(0);
-
-  useEffect(() => {
-    appear.value = withDelay(
-      CARD_APPEAR_DELAY,
-      withTiming(1, { duration: 800, easing: Easing.out(Easing.quad) }),
-    );
-    pulse.value = withDelay(
-      CARD_FLIP_DELAY,
-      withRepeat(
-        withSequence(
-          withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0, { duration: 1600, easing: Easing.inOut(Easing.sin) }),
-        ),
-        -1,
-        false,
-      ),
-    );
-    return () => {
-      cancelAnimation(pulse);
-      cancelAnimation(appear);
-    };
-  }, [pulse, appear]);
-
-  const glowSize = SCREEN_W * 0.9;
-
-  const style = useAnimatedStyle(() => ({
-    opacity: appear.value * interpolate(pulse.value, [0, 1], [0.15, 0.35]),
-    transform: [{ scale: interpolate(pulse.value, [0, 1], [0.85, 1.1]) }],
-  }));
-
-  return (
-    <Animated.View
-      style={[
-        {
-          position: 'absolute',
-          width: glowSize,
-          height: glowSize,
-          borderRadius: glowSize / 2,
-          backgroundColor: color,
-          top: SCREEN_H * 0.38 - glowSize / 2,
-          left: SCREEN_W / 2 - glowSize / 2,
-        },
-        style,
-      ]}
-    />
-  );
-}
-
-// ── Night Transition Vignette ──
-
-function NightVignette() {
-  const progress = useSharedValue(0);
-
-  useEffect(() => {
-    progress.value = withDelay(
-      CARD_FLIP_DELAY + 800,
-      withRepeat(
-        withSequence(
-          withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0.4, { duration: 2000, easing: Easing.inOut(Easing.sin) }),
-        ),
-        -1,
-        false,
-      ),
-    );
-    return () => cancelAnimation(progress);
-  }, [progress]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 1], [0.2, 0.5]),
-  }));
-
-  return (
-    <Animated.View
-      style={[StyleSheet.absoluteFill, style]}
-      pointerEvents="none"
-    >
-      <LinearGradient
-        colors={['#0a0e1a', '#0a0e1acc', '#0a0e1a40', 'transparent']}
-        locations={[0, 0.2, 0.45, 0.7]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <LinearGradient
-        colors={['#0a0e1a', '#0a0e1acc', '#0a0e1a40', 'transparent']}
-        locations={[0, 0.2, 0.45, 0.7]}
-        start={{ x: 0.5, y: 1 }}
-        end={{ x: 0.5, y: 0 }}
-        style={StyleSheet.absoluteFill}
-      />
+    <Animated.View style={[s.candleAura, style]} pointerEvents="none">
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 400 700"
+        preserveAspectRatio="xMidYMid slice"
+      >
+        <Defs>
+          <LinearGradient id="aura" x1="50%" y1="50%" x2="50%" y2="0%">
+            <Stop
+              offset="0%"
+              stopColor={colors.ember.core}
+              stopOpacity="0.45"
+            />
+            <Stop
+              offset="60%"
+              stopColor={colors.ember.deep}
+              stopOpacity="0.12"
+            />
+            <Stop offset="100%" stopColor={colors.ink.void} stopOpacity="0" />
+          </LinearGradient>
+        </Defs>
+        <Path d="M0,0 L400,0 L400,700 L0,700 Z" fill="url(#aura)" />
+      </Svg>
     </Animated.View>
   );
 }
 
-// ── Flip Reveal Card (back → front 3D flip) ──
+// ── 편지 봉투 (열리기 전) ──────────────────────────────────────────────────
 
-const VEIL_PHRASES = [
-  '운명이 결정되었습니다',
-  '당신의 역할이 기다리고 있습니다',
-  '어둠 속에 답이 숨어 있습니다',
-  '곧 베일이 벗겨집니다',
-  '당신은 누구인가요?',
-];
+interface EnvelopeProps {
+  theme: TeamTheme;
+  /** 0 = 닫힘, 1 = 봉인 깨짐 */
+  breakProgress: number;
+}
 
-// Timing: card appears at 1.4s (back face), flips at 2.6s over 1.5s
-const CARD_APPEAR_DELAY = 1400;
-const CARD_FLIP_DELAY = 2600;
-const CARD_FLIP_DURATION = 1500;
-const AUTO_DISMISS_DELAY = 10000;
+function EnvelopeShape({ theme }: EnvelopeProps) {
+  // 봉투는 가로 240, 세로 160 (편지 비율)
+  const W = 240;
+  const H = 160;
+  const flapH = H * 0.58;
 
-function RevealCard({
-  role,
-  evilInfo,
-}: {
+  return (
+    <View style={{ width: W, height: H }}>
+      <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+        {/* 봉투 뒷면 */}
+        <Path
+          d={`M4,4 L${W - 4},4 L${W - 4},${H - 4} L4,${H - 4} Z`}
+          fill={PAPER}
+          stroke={PAPER_EDGE}
+          strokeWidth={1.2}
+        />
+        {/* 봉투 플랩 (삼각형 — 실링 아래) */}
+        <Path
+          d={`M4,4 L${W / 2},${flapH} L${W - 4},4 L${W - 4},${flapH - 4} L${W / 2},${flapH + 4} L4,${flapH - 4} Z`}
+          fill={PAPER_FOLD}
+          stroke={PAPER_EDGE}
+          strokeWidth={1}
+        />
+        {/* 접힘 선 */}
+        <Path
+          d={`M4,${flapH - 4} L${W / 2},${flapH + 6} L${W - 4},${flapH - 4}`}
+          fill="none"
+          stroke={PAPER_EDGE}
+          strokeWidth={0.8}
+          opacity={0.55}
+        />
+      </Svg>
+
+      {/* 중앙 밀랍 봉인 */}
+      <View style={s.envelopeSeal}>
+        <WaxSeal size={58} tone={theme.sealTone} glyph={theme.sealGlyph} />
+      </View>
+    </View>
+  );
+}
+
+// ── 편지 (열린 후) ─────────────────────────────────────────────────────────
+
+interface LetterProps {
   role: Role;
   evilInfo?: EvilInfo | null;
-}) {
-  const team = TEAM_ACCENT[role.team];
-
-  // 0 = front visible, 1 = back visible (start at back)
-  const flip = useSharedValue(1);
-  const cardScale = useSharedValue(0);
-  const cardOpacity = useSharedValue(0);
-
-  useEffect(() => {
-    // Phase 1: Card appears (back face visible, scale up)
-    cardOpacity.value = withDelay(
-      CARD_APPEAR_DELAY,
-      withTiming(1, { duration: 500, easing: Easing.out(Easing.quad) }),
-    );
-    cardScale.value = withDelay(
-      CARD_APPEAR_DELAY,
-      withSpring(1, { damping: 14, stiffness: 80, mass: 1 }),
-    );
-
-    // Phase 2: Flip to front (slow, dramatic timing)
-    flip.value = withDelay(
-      CARD_FLIP_DELAY,
-      withTiming(0, {
-        duration: CARD_FLIP_DURATION,
-        easing: Easing.inOut(Easing.cubic),
-      }),
-    );
-
-    return () => {
-      cancelAnimation(flip);
-      cancelAnimation(cardScale);
-      cancelAnimation(cardOpacity);
-    };
-  }, [flip, cardScale, cardOpacity]);
-
-  const containerStyle = useAnimatedStyle(() => ({
-    opacity: cardOpacity.value,
-    transform: [{ scale: interpolate(cardScale.value, [0, 1], [0.4, 1]) }],
-  }));
-
-  const frontStyle = useAnimatedStyle(() => {
-    const rotateY = interpolate(flip.value, [0, 1], [0, 180]);
-    return {
-      transform: [{ perspective: 1200 }, { rotateY: `${rotateY}deg` }],
-      backfaceVisibility: 'hidden' as const,
-      opacity: flip.value < 0.5 ? 1 : 0,
-    };
-  });
-
-  const backStyle = useAnimatedStyle(() => {
-    const rotateY = interpolate(flip.value, [0, 1], [180, 360]);
-    return {
-      transform: [{ perspective: 1200 }, { rotateY: `${rotateY}deg` }],
-      backfaceVisibility: 'hidden' as const,
-      opacity: flip.value >= 0.5 ? 1 : 0,
-    };
-  });
-
-  const phraseIndex = useMemo(
-    () => Math.floor(Math.random() * VEIL_PHRASES.length),
-    [],
-  );
-
-  return (
-    <Animated.View style={[s.flipContainer, containerStyle]}>
-      {/* Front face — role info */}
-      <Animated.View style={[s.flipFace, frontStyle]}>
-        <View style={[s.revealCard, { borderColor: team.border }]}>
-          <ShimmerSweep color={team.glow} delay={CARD_FLIP_DELAY + 400} />
-
-          <Text style={[s.revealTeamLabel, { color: team.text }]}>
-            {team.label}
-          </Text>
-
-          <Text style={s.revealRoleName}>{role.name}</Text>
-
-          <View style={s.revealDivider} />
-
-          <AbilityText text={role.ability} style={s.revealAbility} />
-
-          {evilInfo && role.team === 'demon' && (
-            <View style={s.evilInfoSection}>
-              <View style={s.revealDivider} />
-              {evilInfo.minionNames && evilInfo.minionNames.length > 0 && (
-                <View style={s.infoRow}>
-                  <Text style={s.infoLabel}>하수인</Text>
-                  <Text style={s.infoValue}>
-                    {evilInfo.minionNames.join(', ')}
-                  </Text>
-                </View>
-              )}
-              {evilInfo.bluffRoles && evilInfo.bluffRoles.length > 0 && (
-                <View style={s.infoRow}>
-                  <Text style={s.infoLabel}>블러프</Text>
-                  <Text style={s.infoValue}>
-                    {evilInfo.bluffRoles.map((r) => r.name).join(', ')}
-                  </Text>
-                </View>
-              )}
-            </View>
-          )}
-
-          {evilInfo && role.team === 'minion' && (
-            <View style={s.evilInfoSection}>
-              <View style={s.revealDivider} />
-              {evilInfo.demonName && (
-                <View style={s.infoRow}>
-                  <Text style={s.infoLabel}>악마</Text>
-                  <Text style={s.infoValue}>{evilInfo.demonName}</Text>
-                </View>
-              )}
-              {evilInfo.otherMinionNames &&
-                evilInfo.otherMinionNames.length > 0 && (
-                  <View style={s.infoRow}>
-                    <Text style={s.infoLabel}>다른 하수인</Text>
-                    <Text style={s.infoValue}>
-                      {evilInfo.otherMinionNames.join(', ')}
-                    </Text>
-                  </View>
-                )}
-            </View>
-          )}
-        </View>
-      </Animated.View>
-
-      {/* Back face — veiled mystery */}
-      <Animated.View style={[s.flipFace, s.flipFaceBack, backStyle]}>
-        <View
-          style={[s.revealCard, s.revealCardBack, { borderColor: '#2a3050' }]}
-        >
-          <ShimmerSweep color="#5a6898" delay={CARD_APPEAR_DELAY + 200} />
-
-          {/* Ornate diamond pattern */}
-          <View style={s.backPatternContainer}>
-            {Array.from({ length: 3 }).map((_, row) => (
-              <View key={`brow-${row}`} style={s.backPatternRow}>
-                {Array.from({ length: 5 }).map((_, col) => (
-                  <View
-                    key={`bd-${row}-${col}`}
-                    style={[
-                      s.backDiamond,
-                      {
-                        opacity: 0.06 + ((row + col) % 3) * 0.04,
-                        marginLeft: row % 2 === 1 && col === 0 ? 14 : 0,
-                      },
-                    ]}
-                  />
-                ))}
-              </View>
-            ))}
-          </View>
-
-          <View style={s.backContent}>
-            <Text style={s.backTeamLabel}>???</Text>
-            <View style={s.backMysteryRow}>
-              <View style={s.backMysteryLine} />
-              <Text style={s.backQuestionMark}>?</Text>
-              <View style={s.backMysteryLine} />
-            </View>
-            <View style={s.backDividerLine} />
-            <Text style={s.backPhrase}>{VEIL_PHRASES[phraseIndex]}</Text>
-
-            {/* Seal */}
-            <View style={s.backSealContainer}>
-              <View style={s.backSeal}>
-                <Text style={s.backSealIcon}>&#x2726;</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      </Animated.View>
-    </Animated.View>
-  );
+  theme: TeamTheme;
 }
 
-// ── Shimmer sweep across the card ──
-
-function ShimmerSweep({
-  color,
-  delay = 2200,
-}: {
-  color: string;
-  delay?: number;
-}) {
-  const sweep = useSharedValue(0);
-
-  useEffect(() => {
-    sweep.value = withDelay(
-      delay,
-      withRepeat(
-        withSequence(
-          withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-          withTiming(0, { duration: 0 }),
-          withDelay(1500, withTiming(0, { duration: 0 })),
-        ),
-        -1,
-        false,
-      ),
-    );
-    return () => cancelAnimation(sweep);
-  }, [sweep, delay]);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ translateX: interpolate(sweep.value, [0, 1], [-200, 200]) }],
-    opacity: interpolate(
-      sweep.value,
-      [0, 0.2, 0.5, 0.8, 1],
-      [0, 0.6, 1, 0.6, 0],
-    ),
-  }));
-
+function Letter({ role, evilInfo, theme }: LetterProps) {
   return (
-    <Animated.View style={[s.shimmerContainer, style]}>
-      <LinearGradient
-        colors={[
-          'transparent',
-          `${color}15`,
-          `${color}30`,
-          `${color}15`,
-          'transparent',
-        ]}
-        locations={[0, 0.2, 0.5, 0.8, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={s.shimmerGradient}
+    <View style={s.letterPaper}>
+      {/* 상단 작은 실링 + 팀 라벨 */}
+      <View style={s.letterHeader}>
+        <WaxSeal size={32} tone={theme.sealTone} glyph={theme.sealGlyph} />
+        <Text style={[s.letterEyebrow, { color: theme.eyebrowColor }]}>
+          {theme.label.toUpperCase()}
+        </Text>
+      </View>
+
+      {/* 역할명 — 대형 세리프 */}
+      <Text style={s.letterRoleName}>{role.name}</Text>
+
+      <Ornament
+        kind="divider"
+        width={140}
+        style={s.letterOrnament}
+        color={PAPER_EDGE}
       />
-    </Animated.View>
+
+      {/* 능력 설명 */}
+      <AbilityText text={role.ability} style={s.letterAbility} />
+
+      {/* 악 팀 정보 — 데몬/미니언에게만 */}
+      {evilInfo && (role.team === 'demon' || role.team === 'minion') ? (
+        <>
+          <Ornament
+            kind="divider"
+            width={90}
+            style={s.letterOrnamentMid}
+            color={PAPER_EDGE}
+          />
+          <Text style={[s.letterAsideLabel, { color: theme.accentInk }]}>
+            그대의 동지
+          </Text>
+          {role.team === 'demon' && evilInfo.minionNames?.length ? (
+            <Text style={s.letterAsideBody}>
+              하수인: {evilInfo.minionNames.join(' · ')}
+            </Text>
+          ) : null}
+          {role.team === 'demon' && evilInfo.bluffRoles?.length ? (
+            <Text style={s.letterAsideBody}>
+              블러프: {evilInfo.bluffRoles.map((r) => r.name).join(' · ')}
+            </Text>
+          ) : null}
+          {role.team === 'minion' && evilInfo.demonName ? (
+            <Text style={s.letterAsideBody}>악마: {evilInfo.demonName}</Text>
+          ) : null}
+          {role.team === 'minion' && evilInfo.otherMinionNames?.length ? (
+            <Text style={s.letterAsideBody}>
+              다른 하수인: {evilInfo.otherMinionNames.join(' · ')}
+            </Text>
+          ) : null}
+        </>
+      ) : null}
+    </View>
   );
 }
 
-// ── Main Overlay ──
+// ── 메인 오버레이 ──────────────────────────────────────────────────────────
 
 interface GameStartRevealProps {
   role: Role;
@@ -538,133 +270,222 @@ export function GameStartReveal({
   onDismiss,
 }: GameStartRevealProps) {
   const reduced = useReducedMotion();
-  const team = TEAM_ACCENT[role.team];
+  const theme = TEAM_THEMES[role.team];
   const tip = useMemo(
     () => getRandomGameTip('firstNight', role.id, role.team),
     [role.id, role.team],
   );
+
+  // 페이즈 공유 값들
+  const vignette = useSharedValue(0);
+  const envelopeScale = useSharedValue(0.4);
+  const envelopeOpacity = useSharedValue(0);
+  const sealPulse = useSharedValue(0);
+  const sealBreak = useSharedValue(0);
+  const letterOpacity = useSharedValue(0);
+  const letterScale = useSharedValue(0.96);
+  const contentCascade = useSharedValue(0);
+  const subtitleOpacity = useSharedValue(0);
   const fadeOut = useSharedValue(1);
   const dismissed = useSharedValue(false);
 
-  const burstColors = useMemo(() => {
-    const base = team.glow;
-    return [base, team.border, team.text, `${base}cc`, `${team.text}cc`];
-  }, [team]);
-
-  const startFadeOut = () => {
+  const startDismiss = () => {
     'worklet';
     if (dismissed.value) return;
     dismissed.value = true;
     fadeOut.value = withTiming(
       0,
-      { duration: 800, easing: Easing.in(Easing.quad) },
+      { duration: 600, easing: Easing.in(Easing.quad) },
       (finished) => {
         if (finished) runOnJS(onDismiss)();
       },
     );
   };
 
-  const handleDismiss = () => {
-    startFadeOut();
+  const handlePress = () => {
+    startDismiss();
   };
 
-  // Auto-dismiss after delay
   useEffect(() => {
-    fadeOut.value = withDelay(
-      AUTO_DISMISS_DELAY,
-      withTiming(
-        0,
-        { duration: 800, easing: Easing.in(Easing.quad) },
-        (finished) => {
-          if (finished) runOnJS(onDismiss)();
-        },
-      ),
-    );
-    return () => cancelAnimation(fadeOut);
-  }, [fadeOut, onDismiss]);
+    const easeOut = Easing.bezier(0.16, 1, 0.3, 1);
+    const easeIn = Easing.in(Easing.quad);
 
-  const containerStyle = useAnimatedStyle(() => ({
-    opacity: fadeOut.value,
+    if (reduced) {
+      vignette.value = 1;
+      envelopeScale.value = 1;
+      envelopeOpacity.value = 0;
+      sealBreak.value = 1;
+      letterOpacity.value = 1;
+      letterScale.value = 1;
+      contentCascade.value = 1;
+      subtitleOpacity.value = 1;
+    } else {
+      // 1. Vignette fade-in
+      vignette.value = withDelay(
+        T_VIGNETTE_IN,
+        withTiming(1, { duration: 600, easing: easeOut }),
+      );
+
+      // 2. Envelope materialize
+      envelopeOpacity.value = withDelay(
+        T_ENVELOPE_IN,
+        withTiming(1, { duration: 800, easing: easeOut }),
+      );
+      envelopeScale.value = withDelay(
+        T_ENVELOPE_IN,
+        withTiming(1, { duration: 900, easing: easeOut }),
+      );
+
+      // 3. Seal anticipate (pulse)
+      sealPulse.value = withDelay(
+        T_SEAL_ANTICIPATE,
+        withSequence(
+          withTiming(1, { duration: 260, easing: Easing.out(Easing.quad) }),
+          withTiming(0, { duration: 240, easing: easeIn }),
+        ),
+      );
+
+      // 4. Seal breaks + envelope fade
+      sealBreak.value = withDelay(
+        T_SEAL_BREAK,
+        withTiming(1, { duration: 480, easing: easeOut }),
+      );
+      envelopeOpacity.value = withDelay(
+        T_SEAL_BREAK + 260,
+        withTiming(0, { duration: 420, easing: easeIn }),
+      );
+
+      // 5. Letter reveal
+      letterOpacity.value = withDelay(
+        T_LETTER_REVEAL,
+        withTiming(1, { duration: 520, easing: easeOut }),
+      );
+      letterScale.value = withDelay(
+        T_LETTER_REVEAL,
+        withTiming(1, { duration: 720, easing: easeOut }),
+      );
+
+      // 6. Content cascade (team label + role + ability sequential via one progress)
+      contentCascade.value = withDelay(
+        T_CONTENT_CASCADE,
+        withTiming(1, { duration: 900, easing: easeOut }),
+      );
+
+      // 7. Subtitle
+      subtitleOpacity.value = withDelay(
+        T_SUBTITLE,
+        withTiming(1, { duration: 700, easing: easeOut }),
+      );
+    }
+
+    // Auto-dismiss
+    const dismissTimer = setTimeout(() => {
+      startDismiss();
+    }, T_AUTO_DISMISS);
+
+    return () => {
+      clearTimeout(dismissTimer);
+      cancelAnimation(vignette);
+      cancelAnimation(envelopeScale);
+      cancelAnimation(envelopeOpacity);
+      cancelAnimation(sealPulse);
+      cancelAnimation(sealBreak);
+      cancelAnimation(letterOpacity);
+      cancelAnimation(letterScale);
+      cancelAnimation(contentCascade);
+      cancelAnimation(subtitleOpacity);
+    };
+    // startDismiss은 worklet. dismissed/fadeOut 공유 값은 참조만.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reduced]);
+
+  // ── 애니메이션 스타일 ──────────────────────────────────────────────────
+  const rootStyle = useAnimatedStyle(() => ({ opacity: fadeOut.value }));
+  const vignetteStyle = useAnimatedStyle(() => ({ opacity: vignette.value }));
+
+  const envelopeWrapStyle = useAnimatedStyle(() => {
+    const pulse = sealPulse.value;
+    const shake = sealBreak.value > 0 && sealBreak.value < 0.5 ? 2 : 0;
+    return {
+      opacity: envelopeOpacity.value,
+      transform: [
+        { scale: envelopeScale.value + pulse * 0.03 },
+        { translateX: shake * Math.sin(sealBreak.value * 40) },
+      ],
+    };
+  });
+
+  const letterWrapStyle = useAnimatedStyle(() => ({
+    opacity: letterOpacity.value,
+    transform: [{ scale: letterScale.value }],
+  }));
+
+  const contentStyle = useAnimatedStyle(() => ({
+    opacity: contentCascade.value,
+    transform: [{ translateY: (1 - contentCascade.value) * 8 }],
+  }));
+
+  const subtitleStyle = useAnimatedStyle(() => ({
+    opacity: subtitleOpacity.value,
   }));
 
   return (
-    <Animated.View
-      style={[StyleSheet.absoluteFill, { zIndex: 95 }, containerStyle]}
-    >
+    <Animated.View style={[StyleSheet.absoluteFill, s.root, rootStyle]}>
       <Pressable
         style={StyleSheet.absoluteFill}
-        onPress={handleDismiss}
+        onPress={handlePress}
         accessibilityLabel="역할 공개 닫기"
         accessibilityRole="button"
       >
-        {/* Background */}
+        {/* 배경 */}
         <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: '#06080e' }]}
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: colors.ink.void },
+          ]}
         />
 
-        {/* Night vignette atmosphere */}
-        <NightVignette />
+        {/* 촛불 아우라 */}
+        <Animated.View style={[StyleSheet.absoluteFill, vignetteStyle]}>
+          <CandleAura />
+        </Animated.View>
 
-        {/* Drift particles — skip when reduced motion */}
-        {!reduced &&
-          Array.from({ length: 20 }).map((_, i) => (
-            <DriftParticle key={`dp-${i}`} index={i} />
-          ))}
-
-        {/* Card glow */}
-        <CardGlow color={team.glow} />
-
-        {/* Burst particles — skip when reduced motion */}
-        {!reduced &&
-          Array.from({ length: 20 }).map((_, i) => (
-            <BurstParticle
-              key={`bp-${i}`}
-              index={i}
-              color={burstColors[i % burstColors.length]}
-            />
-          ))}
-
-        {/* Content */}
+        {/* 본체 */}
         <View style={s.content}>
-          {/* Opening text */}
-          <Animated.Text
-            entering={FadeIn.delay(200).duration(1000)}
-            style={s.openingLabel}
-          >
-            FATE UNVEILED
-          </Animated.Text>
+          {/* 편지 / 봉투 영역 */}
+          <View style={s.stage}>
+            {/* 봉투 (봉인 깨지기 전에만) */}
+            <Animated.View style={[s.stageLayer, envelopeWrapStyle]}>
+              <EnvelopeShape theme={theme} breakProgress={0} />
+              {/* 잉크 번짐 — 봉인 깨질 때 */}
+              <View style={s.inkLayer} pointerEvents="none">
+                <InkBlot
+                  active={!reduced}
+                  color={
+                    theme.sealTone === 'crimson'
+                      ? colors.crimson.deep
+                      : colors.ink.deep
+                  }
+                  size={80}
+                  speed={0.4}
+                />
+              </View>
+            </Animated.View>
 
-          <Animated.Text
-            entering={FadeIn.delay(600).duration(800)}
-            style={s.openingTitle}
-          >
-            당신의 운명이 결정되었습니다
-          </Animated.Text>
+            {/* 편지 */}
+            <Animated.View style={[s.stageLayer, letterWrapStyle]}>
+              <Animated.View style={contentStyle}>
+                <Letter role={role} evilInfo={evilInfo} theme={theme} />
+              </Animated.View>
+            </Animated.View>
+          </View>
 
-          <Animated.View
-            entering={FadeIn.delay(1000).duration(600)}
-            style={s.openingDivider}
-          />
-
-          {/* Role card */}
-          <RevealCard role={role} evilInfo={evilInfo} />
-
-          {/* Night transition text (after flip settles) */}
-          <GameTip tip={tip} color="#5a6898" delay={3600} />
-
-          <Animated.Text
-            entering={FadeIn.delay(3800).duration(1000)}
-            style={s.nightText}
-          >
-            첫 번째 밤이 찾아옵니다
-          </Animated.Text>
-
-          <Animated.Text
-            entering={FadeIn.delay(4400).duration(800)}
-            style={s.dismissHint}
-          >
-            터치하여 계속
-          </Animated.Text>
+          {/* 부제 + 팁 + 힌트 */}
+          <Animated.View style={[s.subtitleBlock, subtitleStyle]}>
+            <Text style={s.subtitleText}>첫 번째 밤이 찾아옵니다</Text>
+            <GameTip tip={tip} color={colors.parchment.mid} delay={0} />
+            <Text style={s.dismissHint}>터치하여 계속</Text>
+          </Animated.View>
         </View>
       </Pressable>
     </Animated.View>

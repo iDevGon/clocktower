@@ -9,7 +9,7 @@ import Svg, {
 } from 'react-native-svg';
 import { colors } from '../tokens';
 
-export type SealTone = 'crimson' | 'amber' | 'twilight' | 'verdure';
+export type SealTone = 'crimson' | 'amber' | 'twilight' | 'verdure' | 'bruise';
 export type SealGlyph = 'star' | 'moon' | 'clock' | 'lily' | 'bat' | 'blank';
 
 interface WaxSealProps {
@@ -45,6 +45,12 @@ const TONE_MAP = {
     mid: colors.verdure.core,
     shadow: colors.verdure.deep,
     glyph: '#d8e8dd',
+  },
+  bruise: {
+    highlight: colors.bruise.glow,
+    mid: colors.bruise.core,
+    shadow: colors.bruise.deep,
+    glyph: '#ede0f0',
   },
 } as const;
 

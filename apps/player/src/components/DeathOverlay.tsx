@@ -3,163 +3,47 @@ import {
   type DeathReason,
   getRandomGameTip,
 } from '@clocktower/shared';
-import { GameTip, useReducedMotion } from '@clocktower/ui';
+import { colors, FullScreenVignette, GameTip, Ornament } from '@clocktower/ui';
 import { useEffect, useMemo } from 'react';
-import {
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  Vibration,
-  View,
-} from 'react-native';
-import Animated, {
-  cancelAnimation,
-  Easing,
-  FadeIn,
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+import { Text, Vibration, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { usePlayerStore } from '../stores/playerStore';
 import { BaseOverlay } from './BaseOverlay';
+import { CandleDying } from './CandleDying';
 import { styles as s } from './DeathOverlay.styles';
 
-// ── Skull icon (text-based) ──
-
-function SkullIcon() {
-  const scale = useSharedValue(0);
-
-  useEffect(() => {
-    scale.value = withDelay(
-      300,
-      withSequence(
-        withTiming(1.2, { duration: 600, easing: Easing.out(Easing.back(2)) }),
-        withTiming(1, { duration: 300, easing: Easing.inOut(Easing.quad) }),
-      ),
-    );
-    return () => cancelAnimation(scale);
-  }, [scale]);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: interpolate(scale.value, [0, 0.3, 1], [0, 0.6, 1]),
-  }));
-
-  return <Animated.Text style={[s.skullText, style]}>💀</Animated.Text>;
-}
-
-// ── Blood drip ──
-
-function BloodDrip({ index }: { index: number }) {
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  const progress = useSharedValue(0);
-  const x = ((index * 37 + 13) % 100) * (screenWidth / 100);
-  const dripWidth = 3 + (index % 4) * 2;
-  const dripHeight = screenHeight * (0.4 + (index % 5) * 0.12);
-  const delay = (index * 150) % 2000;
-
-  useEffect(() => {
-    progress.value = withDelay(
-      delay,
-      withTiming(1, {
-        duration: 2400 + (index % 3) * 500,
-        easing: Easing.in(Easing.quad),
-      }),
-    );
-    return () => cancelAnimation(progress);
-  }, [progress, delay, index]);
-
-  const style = useAnimatedStyle(() => ({
-    height: interpolate(progress.value, [0, 1], [0, dripHeight]),
-    opacity: interpolate(progress.value, [0, 0.1, 0.8, 1], [0, 0.9, 0.7, 0.5]),
-  }));
-
-  return (
-    <Animated.View
-      style={[
-        {
-          position: 'absolute',
-          top: 0,
-          left: x,
-          width: dripWidth,
-          borderBottomLeftRadius: dripWidth,
-          borderBottomRightRadius: dripWidth,
-          backgroundColor: '#8b0000',
-        },
-        style,
-      ]}
-    />
-  );
-}
-
-// ── Vignette pulse ──
-
-function VignettePulse() {
-  const opacity = useSharedValue(0);
-
-  useEffect(() => {
-    opacity.value = withSequence(
-      withTiming(0.7, { duration: 800, easing: Easing.out(Easing.quad) }),
-      withTiming(0.4, { duration: 1200, easing: Easing.inOut(Easing.sin) }),
-    );
-    return () => cancelAnimation(opacity);
-  }, [opacity]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.View
-      style={[StyleSheet.absoluteFill, { backgroundColor: '#1a0000' }, style]}
-    />
-  );
-}
-
-// ── Auto-dismiss timer ──
-
-const AUTO_DISMISS_MS = 4500;
+const AUTO_DISMISS_MS = 4800;
 const FADE_OUT_MS = 800;
-
-// ── Main Overlay ──
 
 interface DeathOverlayProps {
   onDismiss: () => void;
   reason?: DeathReason | null;
 }
 
-const DRIP_COUNT = 14;
-
 function DeathEffects() {
-  const reduced = useReducedMotion();
-  if (reduced) return <VignettePulse />;
   return (
-    <>
-      <VignettePulse />
-      {Array.from({ length: DRIP_COUNT }).map((_, i) => (
-        <BloodDrip key={`d-${i}`} index={i} />
-      ))}
-    </>
+    <FullScreenVignette
+      color={colors.crimson.deep}
+      opacityRange={[0.25, 0.5]}
+      duration={2600}
+    />
   );
 }
 
 export function DeathOverlay({ onDismiss, reason }: DeathOverlayProps) {
-  const role = usePlayerStore((s) => s.role);
+  const role = usePlayerStore((st) => st.role);
   const tip = useMemo(
     () => getRandomGameTip('death', role?.id, role?.team),
     [role?.id, role?.team],
   );
 
   useEffect(() => {
-    Vibration.vibrate([0, 300, 150, 500]);
+    Vibration.vibrate([0, 240, 120, 360]);
   }, []);
 
   return (
     <BaseOverlay
-      backgroundColor="#0a0000"
+      backgroundColor={colors.ink.void}
       zIndex={90}
       effectsLayer={<DeathEffects />}
       onDismiss={onDismiss}
@@ -167,45 +51,49 @@ export function DeathOverlay({ onDismiss, reason }: DeathOverlayProps) {
       fadeOutDurationMs={FADE_OUT_MS}
     >
       <View style={s.content}>
-        <SkullIcon />
-
-        <Animated.Text
-          entering={FadeIn.delay(600).duration(600)}
-          style={s.label}
-        >
-          DEAD
-        </Animated.Text>
+        <CandleDying size={90} dieDelay={400} dieDuration={1600} />
 
         <Animated.Text
           entering={FadeIn.delay(900).duration(600)}
-          style={s.title}
+          style={s.eyebrow}
         >
-          당신은 사망했습니다
+          불꽃이 꺼지다
         </Animated.Text>
 
-        {reason && (
+        <Animated.Text
+          entering={FadeIn.delay(1200).duration(700)}
+          style={s.title}
+        >
+          그대의 이야기가 끝났습니다
+        </Animated.Text>
+
+        <Animated.View entering={FadeIn.delay(1500).duration(500)}>
+          <Ornament kind="divider" width={160} color={colors.crimson.deep} />
+        </Animated.View>
+
+        {reason ? (
           <Animated.View
-            entering={FadeIn.delay(1100).duration(500)}
+            entering={FadeIn.delay(1700).duration(500)}
             style={s.reasonBadge}
           >
             <Text style={s.reasonText}>{DEATH_REASON_LABELS[reason]}</Text>
           </Animated.View>
-        )}
+        ) : null}
 
         <Animated.Text
-          entering={FadeIn.delay(1400).duration(600)}
+          entering={FadeIn.delay(2100).duration(600)}
           style={s.subtitle}
         >
-          투표권이 <Text style={s.subtitleEmphasis}>단 1회</Text> 남아있습니다
+          한 표가 <Text style={s.subtitleEmphasis}>남아 있습니다</Text>
         </Animated.Text>
         <Animated.Text
-          entering={FadeIn.delay(1700).duration(600)}
+          entering={FadeIn.delay(2400).duration(600)}
           style={s.subtitleHint}
         >
           신중하게 사용하세요
         </Animated.Text>
 
-        <GameTip tip={tip} color="#5a2020" delay={2200} />
+        <GameTip tip={tip} color={colors.crimson.glow} delay={2800} />
       </View>
     </BaseOverlay>
   );

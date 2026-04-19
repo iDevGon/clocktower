@@ -1,183 +1,180 @@
+import { colors, space, typography } from '@clocktower/ui';
 import { Dimensions, StyleSheet } from 'react-native';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+const PAPER = '#f3ecd8';
+const PAPER_EDGE = '#bba87e';
+const PAPER_FOLD = '#d9cfae';
+const INK_BODY = '#2a231a';
+const INK_SOFT = '#5a4c38';
+
 export const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
-    paddingTop: SCREEN_HEIGHT * 0.15,
-    paddingHorizontal: 28,
-    paddingBottom: 40,
+    paddingTop: SCREEN_HEIGHT * 0.08,
+    paddingHorizontal: space.base,
+    paddingBottom: space['3xl'],
+    gap: space.base,
   },
 
-  // Slayer Easter Egg styles (golden/amber)
-  slayerIcon: {
-    fontSize: 48,
-    marginBottom: 8,
+  // ── 두루마리 ────────────────────────────────────────────────────────
+  scroll: {
+    backgroundColor: PAPER,
+    width: '100%',
+    maxWidth: 520,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.lg,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.55,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+    // 두루마리 몸체 — 위아래에 롤링 에지
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: PAPER_EDGE,
   },
-  slayerLabel: {
-    fontSize: 16,
-    letterSpacing: 16,
-    color: '#ffd700',
-    fontWeight: '300',
-    textTransform: 'uppercase',
-    marginBottom: 8,
+  scrollEdgeTop: {
+    position: 'absolute',
+    top: -10,
+    left: -8,
+    right: -8,
+    height: 20,
+    backgroundColor: PAPER_FOLD,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: PAPER_EDGE,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
-  slayerTitle: {
-    fontSize: 30,
-    fontWeight: '900',
-    color: '#ffe066',
-    textAlign: 'center',
-    marginBottom: 8,
-    textShadowColor: 'rgba(255, 215, 0, 0.4)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 16,
-  },
-  slayerSubtitle: {
-    fontSize: 15,
-    color: '#c0a030',
-    fontWeight: '400',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  slayerDefeatTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#b8860b',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  slayerDefeatSubtitle: {
-    fontSize: 15,
-    color: '#8a6a20',
-    fontWeight: '400',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  reasonSlayer: {
-    fontSize: 13,
-    color: '#a08030',
-    textAlign: 'center',
-    fontWeight: '500',
-    marginBottom: 24,
+  scrollEdgeBottom: {
+    position: 'absolute',
+    bottom: -10,
+    left: -8,
+    right: -8,
+    height: 20,
+    backgroundColor: PAPER_FOLD,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: PAPER_EDGE,
   },
 
-  // Victory styles (blue)
-  victoryLabel: {
-    fontSize: 14,
-    letterSpacing: 12,
-    color: '#4da6ff',
-    fontWeight: '300',
-    textTransform: 'uppercase',
-    marginBottom: 8,
-  },
-  victoryTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#e0eeff',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  victorySubtitle: {
-    fontSize: 15,
-    color: '#6aa0d0',
-    fontWeight: '400',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  reasonVictory: {
-    fontSize: 13,
-    color: '#5080a0',
-    textAlign: 'center',
-    fontWeight: '500',
-    marginBottom: 24,
+  // ── 봉인 ────────────────────────────────────────────────────────────
+  sealHolder: {
+    marginTop: space.sm,
+    marginBottom: space.sm,
   },
 
-  // Defeat styles
-  defeatLabel: {
-    fontSize: 14,
-    letterSpacing: 12,
-    color: '#8b0000',
-    fontWeight: '300',
+  // ── 헤드라인 ────────────────────────────────────────────────────────
+  eyebrow: {
+    fontFamily: typography.family.body,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
+    letterSpacing: typography.tracking.widest,
     textTransform: 'uppercase',
-    marginBottom: 8,
+    marginBottom: space.xs,
   },
-  defeatTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#cc2020',
+  verdict: {
+    fontFamily: typography.family.display,
+    fontSize: typography.size.xl,
+    fontWeight: typography.weight.bold,
+    color: INK_BODY,
     textAlign: 'center',
-    marginBottom: 8,
+    letterSpacing: typography.tracking.tight,
+    lineHeight: typography.size.xl * typography.leading.tight,
   },
-  defeatSubtitle: {
-    fontSize: 15,
-    color: '#7a2020',
-    fontWeight: '400',
+  subtitle: {
+    fontFamily: typography.family.display,
+    fontSize: typography.size.base,
+    color: INK_SOFT,
     textAlign: 'center',
-    marginBottom: 24,
+    marginTop: space.xs,
+    lineHeight: typography.size.base * typography.leading.normal,
+    fontStyle: 'italic',
   },
-  reasonDefeat: {
-    fontSize: 13,
-    color: '#6a3030',
+  ornament: {
+    marginVertical: space.sm,
+  },
+  ornamentColor: {
+    color: PAPER_EDGE,
+  },
+  reason: {
+    fontFamily: typography.family.body,
+    fontSize: typography.size.sm,
+    color: INK_SOFT,
     textAlign: 'center',
-    fontWeight: '500',
-    marginBottom: 24,
+    fontStyle: 'italic',
+    lineHeight: typography.size.sm * typography.leading.normal,
+    paddingHorizontal: space.sm,
   },
 
-  // Common
-  divider: {
-    width: 60,
-    height: 1,
-    marginBottom: 24,
-  },
-  playerListHeader: {
-    marginBottom: 12,
-  },
-  playerListTitle: {
-    fontSize: 12,
-    letterSpacing: 4,
-    fontWeight: '600',
+  // ── 로스터 ──────────────────────────────────────────────────────────
+  rosterEyebrow: {
+    fontFamily: typography.family.body,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
+    letterSpacing: typography.tracking.widest,
     textTransform: 'uppercase',
+    color: INK_SOFT,
+    marginVertical: space.xs,
+  },
+  rosterList: {
+    width: '100%',
+    gap: space.xs,
+    marginTop: space.sm,
   },
   playerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
+    gap: space.sm,
+    paddingVertical: space.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: PAPER_EDGE,
+  },
+  playerRowDead: {
+    opacity: 0.55,
   },
   playerNameCol: {
     flex: 1,
+    gap: 2,
   },
   playerName: {
-    color: '#d0ccc6',
-    fontSize: 14,
-    fontWeight: '500',
+    fontFamily: typography.family.display,
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.semibold,
+    color: INK_BODY,
   },
-  playerRoleCol: {
-    alignItems: 'flex-end',
-  },
-  playerRole: {
-    fontSize: 14,
-    fontWeight: '700',
+  playerNameDead: {
+    textDecorationLine: 'line-through',
+    color: INK_SOFT,
   },
   playerTeam: {
+    fontFamily: typography.family.body,
     fontSize: 10,
-    fontWeight: '500',
-    letterSpacing: 1,
-    marginTop: 2,
+    fontWeight: typography.weight.medium,
+    letterSpacing: typography.tracking.wide,
     textTransform: 'uppercase',
+    color: INK_SOFT,
   },
+  playerRole: {
+    fontFamily: typography.family.display,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.bold,
+    color: INK_BODY,
+  },
+
   dismissHint: {
-    marginTop: 28,
-    fontSize: 12,
-    letterSpacing: 1,
-    opacity: 0.6,
+    marginTop: space.lg,
+    fontFamily: typography.family.body,
+    fontSize: typography.size.xs,
+    color: colors.parchment.mid,
+    letterSpacing: typography.tracking.wide,
   },
   bottomSpacer: {
-    height: 60,
+    height: space['2xl'],
   },
 });

@@ -1,210 +1,143 @@
+import { colors, space, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
+const PAPER = '#f3ecd8';
+const PAPER_EDGE = '#bba87e';
+const INK_BODY = '#2a231a';
+const INK_SOFT = '#5a4c38';
+
 export const styles = StyleSheet.create({
+  root: {
+    zIndex: 95,
+  },
+  candleAura: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 28,
-    zIndex: 10,
+    paddingHorizontal: space.lg,
+    gap: space['2xl'],
   },
-  openingLabel: {
-    color: '#4a5a80',
-    fontSize: 13,
-    letterSpacing: 6,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-  },
-  openingTitle: {
-    color: '#8090c0',
-    fontSize: 20,
-    fontWeight: '300',
-    letterSpacing: 2,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  openingDivider: {
-    width: 60,
-    height: 1,
-    backgroundColor: '#2a3860',
-    marginBottom: 28,
-  },
-  flipContainer: {
-    width: '100%',
-    maxWidth: 340,
+  stage: {
+    width: 320,
+    minHeight: 360,
+    alignItems: 'center',
+    justifyContent: 'center',
     position: 'relative',
   },
-  flipFace: {
-    width: '100%',
-  },
-  flipFaceBack: {
+  stageLayer: {
     position: 'absolute',
-    top: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inkLayer: {
+    position: 'absolute',
+    top: 60,
     left: 0,
     right: 0,
+    alignItems: 'center',
   },
-  revealCard: {
-    backgroundColor: '#14141a',
-    borderRadius: 14,
-    borderWidth: 1.5,
-    padding: 22,
-    width: '100%',
-    overflow: 'hidden',
-  },
-  revealCardBack: {
-    backgroundColor: '#12121a',
-  },
-  shimmerContainer: {
+
+  // ── 봉투 ────────────────────────────────────────────────────────────
+  envelopeSeal: {
     position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 160,
-    left: '50%',
-    marginLeft: -80,
-    zIndex: 1,
+    top: 60,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  shimmerGradient: {
-    flex: 1,
-    transform: [{ skewX: '-15deg' }],
+
+  // ── 편지 ────────────────────────────────────────────────────────────
+  letterPaper: {
+    backgroundColor: PAPER,
+    borderColor: PAPER_EDGE,
+    borderWidth: 1,
+    borderRadius: 2,
+    paddingVertical: space.lg,
+    paddingHorizontal: space.lg,
+    width: 320,
+    alignItems: 'center',
+    // 미묘한 엘레베이션 — 종이가 어둠 속에 떠 있는 느낌
+    shadowColor: '#000',
+    shadowOpacity: 0.55,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 10,
   },
-  revealTeamLabel: {
-    fontSize: 12,
+  letterHeader: {
+    alignItems: 'center',
+    gap: space.xs,
+    marginBottom: space.sm,
+  },
+  letterEyebrow: {
+    fontFamily: typography.family.body,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
+    letterSpacing: typography.tracking.widest,
+  },
+  letterRoleName: {
+    fontFamily: typography.family.display,
+    fontWeight: typography.weight.bold,
+    fontSize: typography.size.xxl,
+    color: INK_BODY,
+    textAlign: 'center',
+    lineHeight: typography.size.xxl * typography.leading.tight,
+    letterSpacing: typography.tracking.tight,
+  },
+  letterOrnament: {
+    marginVertical: space.md,
+  },
+  letterOrnamentMid: {
+    marginVertical: space.md,
+  },
+  letterAbility: {
+    fontFamily: typography.family.body,
+    fontSize: typography.size.base,
+    color: INK_SOFT,
+    textAlign: 'center',
+    lineHeight: typography.size.base * typography.leading.loose,
+  },
+  letterAsideLabel: {
+    fontFamily: typography.family.body,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
+    letterSpacing: typography.tracking.wide,
     textTransform: 'uppercase',
-    letterSpacing: 3,
-    marginBottom: 6,
+    marginBottom: space.xs,
   },
-  revealRoleName: {
-    color: '#eae8e4',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 14,
-    letterSpacing: 1,
+  letterAsideBody: {
+    fontFamily: typography.family.body,
+    fontSize: typography.size.sm,
+    color: INK_BODY,
+    textAlign: 'center',
+    marginBottom: space['2xs'],
   },
-  revealDivider: {
-    width: '100%',
-    height: 1,
-    backgroundColor: '#2a2a34',
-    marginBottom: 14,
+
+  // ── 부제 ────────────────────────────────────────────────────────────
+  subtitleBlock: {
+    alignItems: 'center',
+    gap: space.md,
   },
-  revealAbility: {
-    color: '#b8b6b2',
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  evilInfoSection: {
-    marginTop: 14,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    marginBottom: 6,
-  },
-  infoLabel: {
-    color: '#b85c5c',
-    fontSize: 13,
-    fontWeight: '600',
-    width: 80,
-  },
-  infoValue: {
-    color: '#d0ccc8',
-    fontSize: 13,
-    flex: 1,
-  },
-  nightText: {
-    color: '#6878a8',
-    fontSize: 16,
-    fontWeight: '300',
-    letterSpacing: 1,
-    marginTop: 32,
+  subtitleText: {
+    fontFamily: typography.family.display,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.semibold,
+    color: colors.parchment.mid,
+    letterSpacing: typography.tracking.wide,
     textAlign: 'center',
   },
   dismissHint: {
-    color: '#3a4060',
-    fontSize: 12,
-    letterSpacing: 1,
-    marginTop: 16,
-  },
-
-  // ── Back face styles ──
-  backPatternContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'space-evenly',
-    paddingVertical: 16,
-    paddingHorizontal: 10,
-  },
-  backPatternRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    marginVertical: 4,
-  },
-  backDiamond: {
-    width: 14,
-    height: 14,
-    borderWidth: 1,
-    borderColor: '#5a6898',
-    transform: [{ rotate: '45deg' }],
-  },
-  backContent: {
-    alignItems: 'center',
-    paddingVertical: 20,
-    zIndex: 2,
-  },
-  backTeamLabel: {
-    fontSize: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 4,
-    color: '#4a5070',
-    marginBottom: 12,
-  },
-  backMysteryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
-  },
-  backMysteryLine: {
-    width: 40,
-    height: 1,
-    backgroundColor: '#3a4060',
-  },
-  backQuestionMark: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#5a6898',
-  },
-  backDividerLine: {
-    width: '60%',
-    height: 1,
-    backgroundColor: '#242838',
-    marginBottom: 16,
-  },
-  backPhrase: {
-    color: '#7080b0',
-    fontSize: 14,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-  backSealContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backSeal: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#3a406060',
-    backgroundColor: '#1c1e28',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backSealIcon: {
-    color: '#5a6898',
-    fontSize: 14,
+    fontFamily: typography.family.body,
+    fontSize: typography.size.xs,
+    color: colors.parchment.low,
+    letterSpacing: typography.tracking.wide,
+    marginTop: space.sm,
   },
 });

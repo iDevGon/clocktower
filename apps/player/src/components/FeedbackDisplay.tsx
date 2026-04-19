@@ -3,131 +3,163 @@ import {
   PLAYER_STATUS_LABELS,
   type Team,
 } from '@clocktower/shared';
+import { colors, Ornament, WaxSeal } from '@clocktower/ui';
 import { Text, View } from 'react-native';
+import Animated, { Easing, FadeIn, ZoomIn } from 'react-native-reanimated';
 import {
   compactStyles,
   inlineStyles,
   sharedStyles,
 } from './FeedbackDisplay.styles';
 
-const TEAM_COLORS: Record<Team, string> = {
-  townsfolk: '#7090c4',
-  outsider: '#50a090',
-  minion: '#c48850',
-  demon: '#b85c5c',
-  traveller: '#b07cc6',
+const TEAM_INK: Record<Team, string> = {
+  townsfolk: colors.twilight.deep,
+  outsider: colors.verdure.deep,
+  minion: colors.ember.deep,
+  demon: colors.crimson.deep,
+  traveller: colors.bruise.deep,
 };
 
 interface FeedbackDisplayProps {
   feedback: NightFeedbackPayload;
-  /** When true, uses compact layout without "진행자 안내" label */
+  /** compact = 히스토리 모달용 작은 버전 */
   compact?: boolean;
 }
 
+/**
+ * 밤 피드백 = "답장이 도착했다" — 양피지 조각 메타포.
+ * 배경 다크 테마 위에 크림 종이로 나타나 한 조각의 진실을 전달.
+ */
 export function FeedbackDisplay({ feedback, compact }: FeedbackDisplayProps) {
-  const bannerStyle = compact ? compactStyles.banner : inlineStyles.banner;
-  const labelStyle = compact ? compactStyles.label : inlineStyles.label;
+  const S = compact ? compactStyles : inlineStyles;
 
   switch (feedback.type) {
     case 'number':
       return (
-        <View style={bannerStyle}>
-          {!compact && <Text style={labelStyle}>진행자 안내</Text>}
-          <Text style={compact ? compactStyles.number : inlineStyles.number}>
-            {feedback.value}
-          </Text>
-        </View>
+        <Animated.View
+          entering={ZoomIn.duration(420).easing(Easing.out(Easing.cubic))}
+          style={S.paper}
+        >
+          {compact ? null : <Text style={S.eyebrow}>답장</Text>}
+          <Text style={S.number}>{feedback.value}</Text>
+          <Ornament
+            kind="rule"
+            width={compact ? 60 : 100}
+            color={sharedStyles.papyrusEdge.color}
+            style={sharedStyles.rule}
+          />
+        </Animated.View>
       );
     case 'yes_no':
       return (
-        <View
-          style={[
-            bannerStyle,
-            feedback.value ? sharedStyles.yesVariant : sharedStyles.noVariant,
-          ]}
+        <Animated.View
+          entering={ZoomIn.duration(420).easing(Easing.out(Easing.cubic))}
+          style={S.paper}
         >
-          {!compact && <Text style={labelStyle}>진행자 안내</Text>}
-          {feedback.targetNames && feedback.targetNames.length > 0 && (
-            <Text style={sharedStyles.targetNamesText}>
-              {feedback.targetNames.join(', ')}
+          {compact ? null : <Text style={S.eyebrow}>답장</Text>}
+          {feedback.targetNames?.length ? (
+            <Text style={sharedStyles.targetNames}>
+              {feedback.targetNames.join(' · ')}
             </Text>
-          )}
+          ) : null}
+          {/* 도장: yes=verdure lily, no=crimson bat */}
+          <Animated.View
+            entering={ZoomIn.delay(200)
+              .duration(340)
+              .easing(Easing.out(Easing.cubic))}
+            style={sharedStyles.stampWrap}
+          >
+            <WaxSeal
+              size={compact ? 40 : 56}
+              tone={feedback.value ? 'verdure' : 'crimson'}
+              glyph={feedback.value ? 'lily' : 'bat'}
+            />
+          </Animated.View>
           <Text
             style={[
-              compact ? compactStyles.big : inlineStyles.big,
-              { color: feedback.value ? '#6ab04c' : '#b85c5c' },
+              S.verdict,
+              {
+                color: feedback.value
+                  ? colors.verdure.deep
+                  : colors.crimson.deep,
+              },
             ]}
           >
-            {feedback.value ? '예' : '아니오'}
+            {feedback.value ? '그렇다' : '아니다'}
           </Text>
-        </View>
+        </Animated.View>
       );
     case 'players_and_role':
       return (
-        <View style={bannerStyle}>
-          {!compact && <Text style={labelStyle}>진행자 안내</Text>}
-          <Text style={sharedStyles.playersText}>
+        <Animated.View
+          entering={ZoomIn.duration(420).easing(Easing.out(Easing.cubic))}
+          style={S.paper}
+        >
+          {compact ? null : <Text style={S.eyebrow}>답장</Text>}
+          <Text style={sharedStyles.bodyText}>
             {feedback.playerNames.map((name, i) => (
               <Text key={name}>
-                {i > 0 && '과(와) '}
-                <Text style={sharedStyles.highlight}>{name}</Text>
+                {i > 0 ? ' 과(와) ' : ''}
+                <Text style={sharedStyles.bodyHighlight}>{name}</Text>
               </Text>
             ))}
           </Text>
-          <Text style={sharedStyles.roleText}>
+          <Text style={sharedStyles.bodyText}>
             중 한 명이{' '}
-            <Text style={sharedStyles.highlight}>{feedback.roleName}</Text>
+            <Text style={sharedStyles.bodyHighlight}>{feedback.roleName}</Text>
             입니다
           </Text>
-        </View>
+        </Animated.View>
       );
     case 'role':
       return (
-        <View style={bannerStyle}>
-          {!compact && <Text style={labelStyle}>진행자 안내</Text>}
-          <Text style={compact ? compactStyles.big : inlineStyles.big}>
-            {feedback.roleName}
-          </Text>
-        </View>
+        <Animated.View
+          entering={ZoomIn.duration(420).easing(Easing.out(Easing.cubic))}
+          style={S.paper}
+        >
+          {compact ? null : <Text style={S.eyebrow}>답장</Text>}
+          <Text style={S.roleName}>{feedback.roleName}</Text>
+          <Ornament
+            kind="rule"
+            width={compact ? 60 : 100}
+            color={sharedStyles.papyrusEdge.color}
+            style={sharedStyles.rule}
+          />
+        </Animated.View>
       );
     case 'no_match':
       return (
-        <View style={bannerStyle}>
-          {!compact && <Text style={labelStyle}>진행자 안내</Text>}
-          <Text style={compact ? compactStyles.big : inlineStyles.big}>
-            {feedback.message}
-          </Text>
-        </View>
+        <Animated.View
+          entering={FadeIn.duration(500)}
+          style={[S.paper, sharedStyles.paperMuted]}
+        >
+          {compact ? null : <Text style={S.eyebrow}>답장</Text>}
+          <Text style={S.quiet}>{feedback.message}</Text>
+        </Animated.View>
       );
     case 'grimoire':
       return (
-        <View style={bannerStyle}>
-          {!compact && <Text style={labelStyle}>마법서</Text>}
-          {compact && <Text style={compactStyles.grimoireTitle}>마법서</Text>}
+        <Animated.View entering={FadeIn.duration(520)} style={S.paper}>
+          <Text style={S.eyebrow}>마법서</Text>
           <View style={sharedStyles.grimoireList}>
             {feedback.entries.map((entry) => (
               <View
                 key={entry.name}
                 style={[
                   sharedStyles.grimoireRow,
-                  !entry.isAlive && sharedStyles.grimoireRowDead,
+                  entry.isAlive ? null : sharedStyles.grimoireRowDead,
                 ]}
               >
                 <View style={sharedStyles.grimoireNameCol}>
-                  <View style={sharedStyles.grimoireNameRow}>
-                    {!entry.isAlive && (
-                      <Text style={sharedStyles.grimoireDeadIcon}>💀</Text>
-                    )}
-                    <Text
-                      style={[
-                        sharedStyles.grimoireName,
-                        !entry.isAlive && sharedStyles.grimoireNameDead,
-                      ]}
-                    >
-                      {entry.name}
-                    </Text>
-                  </View>
-                  {entry.statuses.length > 0 && (
+                  <Text
+                    style={[
+                      sharedStyles.grimoireName,
+                      entry.isAlive ? null : sharedStyles.grimoireNameDead,
+                    ]}
+                  >
+                    {entry.name}
+                  </Text>
+                  {entry.statuses.length > 0 ? (
                     <View style={sharedStyles.grimoireStatusRow}>
                       {entry.statuses.map((status) => (
                         <Text key={status} style={sharedStyles.grimoireStatus}>
@@ -135,13 +167,13 @@ export function FeedbackDisplay({ feedback, compact }: FeedbackDisplayProps) {
                         </Text>
                       ))}
                     </View>
-                  )}
+                  ) : null}
                 </View>
                 <Text
                   style={[
                     sharedStyles.grimoireRole,
-                    { color: TEAM_COLORS[entry.team] },
-                    !entry.isAlive && { opacity: 0.5 },
+                    { color: TEAM_INK[entry.team] },
+                    entry.isAlive ? null : { opacity: 0.45 },
                   ]}
                 >
                   {entry.roleName}
@@ -149,7 +181,7 @@ export function FeedbackDisplay({ feedback, compact }: FeedbackDisplayProps) {
               </View>
             ))}
           </View>
-        </View>
+        </Animated.View>
       );
   }
 }

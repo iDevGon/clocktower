@@ -1,151 +1,22 @@
 import { getRandomGameTip } from '@clocktower/shared';
-import { FullScreenVignette, GameTip, useReducedMotion } from '@clocktower/ui';
+import { colors, FullScreenVignette, GameTip, Ornament } from '@clocktower/ui';
 import { useEffect, useMemo } from 'react';
 import { Text, Vibration, View } from 'react-native';
-import Animated, {
-  cancelAnimation,
-  Easing,
-  FadeIn,
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { usePlayerStore } from '../stores/playerStore';
 import { BaseOverlay } from './BaseOverlay';
+import { CandleDying } from './CandleDying';
 import { styles as s } from './NightDeathOverlay.styles';
 
-// ── Moon icon animation ──
-
-function MoonIcon() {
-  const scale = useSharedValue(0);
-
-  useEffect(() => {
-    scale.value = withDelay(
-      200,
-      withSequence(
-        withTiming(1.15, { duration: 600, easing: Easing.out(Easing.back(2)) }),
-        withTiming(1, { duration: 300, easing: Easing.inOut(Easing.quad) }),
-      ),
-    );
-    return () => cancelAnimation(scale);
-  }, [scale]);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: interpolate(scale.value, [0, 0.3, 1], [0, 0.6, 1]),
-  }));
-
-  return <Animated.Text style={[s.moonText, style]}>🌙</Animated.Text>;
-}
-
-// ── Fog particle ──
-
-function FogParticle({ index }: { index: number }) {
-  const progress = useSharedValue(0);
-  const startX = ((index * 53 + 17) % 100) / 100;
-  const startY = 0.3 + (index % 7) * 0.08;
-  const drift = (index % 2 === 0 ? 1 : -1) * (10 + (index % 4) * 8);
-  const size = 40 + (index % 5) * 20;
-  const delay = (index * 300) % 3000;
-  const duration = 3000 + (index % 3) * 1000;
-
-  useEffect(() => {
-    progress.value = withDelay(
-      delay,
-      withRepeat(
-        withSequence(
-          withTiming(1, { duration, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0, { duration, easing: Easing.inOut(Easing.sin) }),
-        ),
-        -1,
-      ),
-    );
-    return () => cancelAnimation(progress);
-  }, [progress, delay, duration]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 0.5, 1], [0, 0.06, 0]),
-    transform: [
-      { translateX: interpolate(progress.value, [0, 1], [0, drift]) },
-      { scale: interpolate(progress.value, [0, 0.5, 1], [0.8, 1.2, 0.8]) },
-    ],
-  }));
-
-  return (
-    <Animated.View
-      style={[
-        {
-          position: 'absolute',
-          left: `${startX * 100}%` as unknown as number,
-          top: `${startY * 100}%` as unknown as number,
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: '#4a5a8a',
-        },
-        style,
-      ]}
-    />
-  );
-}
-
-const FOG_COUNT = 8;
-
 function NightDeathEffects() {
-  const reduced = useReducedMotion();
   return (
-    <>
-      <FullScreenVignette
-        color="#080818"
-        opacityRange={[0.6, 0.8]}
-        duration={3000}
-      />
-      {!reduced &&
-        Array.from({ length: FOG_COUNT }).map((_, i) => (
-          <FogParticle key={`f-${i}`} index={i} />
-        ))}
-    </>
-  );
-}
-
-// ── Divider line ──
-
-function DividerLine() {
-  const width = useSharedValue(0);
-
-  useEffect(() => {
-    width.value = withDelay(
-      500,
-      withTiming(1, { duration: 400, easing: Easing.out(Easing.quad) }),
-    );
-    return () => cancelAnimation(width);
-  }, [width]);
-
-  const style = useAnimatedStyle(() => ({
-    width: interpolate(width.value, [0, 1], [0, 200]),
-    opacity: interpolate(width.value, [0, 0.3, 1], [0, 0.8, 0.5]),
-  }));
-
-  return (
-    <Animated.View
-      style={[
-        {
-          height: 1,
-          backgroundColor: '#4a5a8a',
-          alignSelf: 'center',
-          marginVertical: 16,
-        },
-        style,
-      ]}
+    <FullScreenVignette
+      color={colors.ink.void}
+      opacityRange={[0.55, 0.8]}
+      duration={2600}
     />
   );
 }
-
-// ── Main Overlay ──
 
 interface NightDeathOverlayProps {
   deaths: Array<{ id: string; name: string }>;
@@ -156,23 +27,23 @@ export function NightDeathOverlay({
   deaths,
   onDismiss,
 }: NightDeathOverlayProps) {
-  const role = usePlayerStore((s) => s.role);
+  const role = usePlayerStore((st) => st.role);
   const tip = useMemo(
     () => getRandomGameTip('day', role?.id, role?.team),
     [role?.id, role?.team],
   );
 
   useEffect(() => {
-    Vibration.vibrate([0, 200, 100, 300]);
+    Vibration.vibrate([0, 180, 100, 280]);
   }, []);
 
   const noDeaths = deaths.length === 0;
-  const autoDismissMs = noDeaths ? 4000 : 3000 + deaths.length * 800;
-  const dismissDelayMs = noDeaths ? 1200 : 700 + deaths.length * 300 + 400;
+  const autoDismissMs = noDeaths ? 4200 : 3200 + deaths.length * 700;
+  const dismissDelayMs = noDeaths ? 1200 : 900 + deaths.length * 300;
 
   return (
     <BaseOverlay
-      backgroundColor="#06060e"
+      backgroundColor={colors.ink.void}
       zIndex={88}
       effectsLayer={<NightDeathEffects />}
       onDismiss={onDismiss}
@@ -182,46 +53,58 @@ export function NightDeathOverlay({
       fadeOutDurationMs={800}
     >
       <View style={s.content}>
-        <MoonIcon />
+        {/* 조각 촛불 — 여러 명 사망 시 촛불 하나, 그 아래 이름들 */}
+        <CandleDying
+          size={70}
+          dieDelay={300}
+          dieDuration={noDeaths ? 2000 : 1400}
+        />
 
         <Animated.Text
-          entering={FadeIn.delay(400).duration(500)}
-          style={s.label}
+          entering={FadeIn.delay(800).duration(600)}
+          style={s.eyebrow}
         >
           간밤의 소식
         </Animated.Text>
 
-        <DividerLine />
+        <Animated.View entering={FadeIn.delay(1000).duration(500)}>
+          <Ornament kind="divider" width={180} color={colors.edge.strong} />
+        </Animated.View>
 
         {noDeaths ? (
           <Animated.Text
-            entering={FadeIn.delay(700).duration(600)}
+            entering={FadeIn.delay(1200).duration(700)}
             style={s.noDeathText}
           >
-            아무도 사망하지 않았습니다
+            밤은 고요히 지났습니다
           </Animated.Text>
         ) : (
-          deaths.map((death, i) => (
-            <Animated.View
-              key={death.id}
-              entering={FadeIn.delay(700 + i * 300).duration(600)}
-              style={s.deathRow}
-            >
-              <Text style={s.skullSmall}>💀</Text>
-              <View style={s.deathInfo}>
+          <View style={s.deathList}>
+            {deaths.map((death, i) => (
+              <Animated.View
+                key={death.id}
+                entering={FadeIn.delay(1200 + i * 280).duration(600)}
+                style={s.deathRow}
+              >
                 <Text style={s.deathName}>{death.name}</Text>
-                <Text style={s.deathSuffix}>사망</Text>
-              </View>
-            </Animated.View>
-          ))
+                <Text style={s.deathSuffix}>— 잠들었다</Text>
+              </Animated.View>
+            ))}
+          </View>
         )}
 
-        <DividerLine />
+        <Animated.View entering={FadeIn.delay(1500).duration(500)}>
+          <Ornament kind="divider" width={180} color={colors.edge.strong} />
+        </Animated.View>
 
-        <GameTip tip={tip} color="#5a6a90" delay={dismissDelayMs - 200} />
+        <GameTip
+          tip={tip}
+          color={colors.parchment.low}
+          delay={dismissDelayMs}
+        />
 
         <Animated.Text
-          entering={FadeIn.delay(dismissDelayMs).duration(500)}
+          entering={FadeIn.delay(dismissDelayMs + 200).duration(500)}
           style={s.dismissHint}
         >
           터치하여 닫기

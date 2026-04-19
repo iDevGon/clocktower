@@ -1,68 +1,103 @@
-import { colors } from '@clocktower/ui';
+import { colors, space, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
+
+const PAPER = '#f3ecd8';
+const PAPER_EDGE = '#bba87e';
+const INK_BODY = '#2a231a';
+const INK_SOFT = '#5a4c38';
 
 export const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.surface.elevated,
-    borderRadius: 12,
+    backgroundColor: PAPER,
+    borderRadius: 3,
     borderWidth: 1,
-    borderColor: '#3a3a42',
-    padding: 20,
+    borderColor: PAPER_EDGE,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.base,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
-  label: {
-    color: colors.text.secondary,
-    fontSize: 12,
+  eyebrow: {
+    fontFamily: typography.family.body,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
+    letterSpacing: typography.tracking.widest,
     textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: 12,
+    color: INK_SOFT,
+    marginBottom: space['2xs'],
+  },
+  nomineeName: {
+    fontFamily: typography.family.display,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.semibold,
+    color: INK_SOFT,
+    marginBottom: space.xs,
+  },
+  sealWrap: {
+    marginVertical: space['2xs'],
   },
   verdict: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 8,
+    fontFamily: typography.family.display,
+    fontSize: typography.size.xxl,
+    fontWeight: typography.weight.bold,
+    letterSpacing: typography.tracking.wide,
+    marginTop: space.xs,
   },
   verdictGuilty: {
-    color: colors.phase.vote,
+    color: colors.crimson.deep,
   },
   verdictInnocent: {
-    color: '#6a9a6a',
+    color: colors.verdure.deep,
+  },
+  rule: {
+    marginVertical: space.xs,
+  },
+  ruleColor: {
+    color: PAPER_EDGE,
   },
   count: {
-    color: colors.text.secondary,
-    fontSize: 14,
+    fontFamily: typography.family.mono,
+    fontSize: typography.size.sm,
+    color: INK_BODY,
+    marginTop: space['2xs'],
   },
   threshold: {
-    color: '#706e6a',
-    fontSize: 12,
-    marginTop: 4,
+    fontFamily: typography.family.body,
+    fontSize: typography.size.xs,
+    color: INK_SOFT,
+    textAlign: 'center',
+    marginTop: space['2xs'],
   },
   thresholdHighlight: {
-    color: '#a0967a',
-    fontWeight: '600',
+    fontFamily: typography.family.body,
+    color: INK_BODY,
+    fontWeight: typography.weight.semibold,
   },
   sentenceDivider: {
     width: '60%',
     height: 1,
-    backgroundColor: '#2a2a32',
-    marginVertical: 12,
+    backgroundColor: PAPER_EDGE,
+    opacity: 0.5,
+    marginVertical: space.sm,
   },
   sentence: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontFamily: typography.family.display,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.semibold,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: typography.size.md * typography.leading.normal,
   },
   sentenceGuilty: {
-    color: colors.phase.vote,
-    textShadowColor: '#c4707040',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 6,
+    color: colors.crimson.deep,
   },
   sentenceInnocent: {
-    color: '#6a9a6a',
+    color: colors.verdure.deep,
   },
   sentenceCleared: {
-    color: '#c4a050',
+    color: colors.ember.deep,
   },
 });

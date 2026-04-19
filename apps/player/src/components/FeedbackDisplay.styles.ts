@@ -1,162 +1,193 @@
+import { colors, space, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
-/** Inline styles (used inside NightActionPrompt -- full-size display) */
+const PAPER = '#f3ecd8';
+const PAPER_EDGE = '#bba87e';
+const INK_BODY = '#2a231a';
+const INK_SOFT = '#5a4c38';
+
+/** Inline = NightActionPrompt 안에서 사용하는 풀사이즈 양피지 */
 export const inlineStyles = StyleSheet.create({
-  banner: {
-    backgroundColor: '#1e1a30',
+  paper: {
+    backgroundColor: PAPER,
+    borderColor: PAPER_EDGE,
     borderWidth: 1,
-    borderColor: '#6a50b0',
-    borderRadius: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    borderRadius: 3,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.base,
     alignItems: 'center',
     width: '100%',
+    gap: space.xs,
+    shadowColor: '#000',
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
-  label: {
-    color: '#8070b0',
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 8,
+  eyebrow: {
+    fontFamily: typography.family.body,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
+    letterSpacing: typography.tracking.widest,
+    color: INK_SOFT,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    marginBottom: space['2xs'],
   },
   number: {
-    color: '#d0c8f0',
-    fontSize: 48,
-    fontWeight: 'bold',
+    fontFamily: typography.family.display,
+    fontSize: typography.size.xxxl,
+    fontWeight: typography.weight.bold,
+    color: INK_BODY,
+    lineHeight: typography.size.xxxl * 1.05,
   },
-  big: {
-    color: '#d0c8f0',
-    fontSize: 28,
-    fontWeight: 'bold',
+  verdict: {
+    fontFamily: typography.family.display,
+    fontSize: typography.size.xl,
+    fontWeight: typography.weight.bold,
+    letterSpacing: typography.tracking.tight,
+  },
+  roleName: {
+    fontFamily: typography.family.display,
+    fontSize: typography.size.xl,
+    fontWeight: typography.weight.bold,
+    color: INK_BODY,
+    textAlign: 'center',
+  },
+  quiet: {
+    fontFamily: typography.family.display,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.semibold,
+    color: INK_SOFT,
+    textAlign: 'center',
+    paddingVertical: space.sm,
   },
 });
 
-/** Compact styles (used inside FeedbackHistoryModal) */
+/** Compact = 히스토리 모달에서 쓰는 작은 버전 */
 export const compactStyles = StyleSheet.create({
-  banner: {
-    backgroundColor: '#1e1a30',
+  paper: {
+    backgroundColor: PAPER,
+    borderColor: PAPER_EDGE,
     borderWidth: 1,
-    borderColor: '#3a3452',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: 3,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
     alignItems: 'center',
+    gap: space['2xs'],
   },
-  label: {
-    color: '#8070b0',
-    fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 6,
+  eyebrow: {
+    fontFamily: typography.family.body,
+    fontSize: 10,
+    fontWeight: typography.weight.semibold,
+    letterSpacing: typography.tracking.wide,
+    color: INK_SOFT,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    marginBottom: space['2xs'],
   },
   number: {
-    color: '#d0c8f0',
+    fontFamily: typography.family.display,
     fontSize: 36,
-    fontWeight: 'bold',
+    fontWeight: typography.weight.bold,
+    color: INK_BODY,
   },
-  big: {
-    color: '#d0c8f0',
-    fontSize: 20,
-    fontWeight: 'bold',
+  verdict: {
+    fontFamily: typography.family.display,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.bold,
   },
-  grimoireTitle: {
-    color: '#8070b0',
-    fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+  roleName: {
+    fontFamily: typography.family.display,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.bold,
+    color: INK_BODY,
+    textAlign: 'center',
+  },
+  quiet: {
+    fontFamily: typography.family.display,
+    fontSize: typography.size.sm,
+    color: INK_SOFT,
+    textAlign: 'center',
   },
 });
 
-/** Styles shared between both modes */
 export const sharedStyles = StyleSheet.create({
-  yesVariant: {
-    borderColor: '#4a7a3a',
-    backgroundColor: '#1a2618',
+  paperMuted: {
+    backgroundColor: '#ebe3c8',
   },
-  noVariant: {
-    borderColor: '#943c3c',
-    backgroundColor: '#261a1a',
+  rule: {
+    marginTop: space['2xs'],
   },
-  playersText: {
-    color: '#b8b6b2',
-    fontSize: 16,
+  papyrusEdge: {
+    color: PAPER_EDGE,
+  },
+  stampWrap: {
+    marginVertical: space.xs,
+  },
+  targetNames: {
+    fontFamily: typography.family.display,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.semibold,
+    color: INK_BODY,
     textAlign: 'center',
-    marginBottom: 4,
   },
-  roleText: {
-    color: '#b8b6b2',
-    fontSize: 16,
+  bodyText: {
+    fontFamily: typography.family.body,
+    fontSize: typography.size.base,
+    color: INK_BODY,
     textAlign: 'center',
+    lineHeight: typography.size.base * typography.leading.normal,
   },
-  highlight: {
-    color: '#d0c8f0',
-    fontWeight: 'bold',
+  bodyHighlight: {
+    fontFamily: typography.family.display,
+    fontWeight: typography.weight.bold,
+    color: INK_BODY,
   },
+
   grimoireList: {
     width: '100%',
-    gap: 6,
+    gap: space.xs,
+    marginTop: space.xs,
   },
   grimoireRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#16141e',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 6,
+    justifyContent: 'space-between',
+    paddingHorizontal: space.sm,
+    paddingVertical: space.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: PAPER_EDGE,
   },
   grimoireRowDead: {
-    backgroundColor: '#1a1218',
-    opacity: 0.7,
+    opacity: 0.55,
   },
   grimoireNameCol: {
     flex: 1,
-    marginRight: 8,
-  },
-  grimoireNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  grimoireDeadIcon: {
-    fontSize: 12,
+    gap: 2,
   },
   grimoireName: {
-    color: '#e0ddd8',
-    fontSize: 14,
+    fontFamily: typography.family.display,
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.semibold,
+    color: INK_BODY,
   },
   grimoireNameDead: {
-    color: '#8a7070',
     textDecorationLine: 'line-through',
+    color: INK_SOFT,
   },
   grimoireStatusRow: {
     flexDirection: 'row',
-    gap: 6,
-    marginTop: 3,
+    gap: space['2xs'],
+    marginTop: 2,
   },
   grimoireStatus: {
+    fontFamily: typography.family.body,
     fontSize: 10,
-    color: '#c48850',
-    fontWeight: '600',
-    backgroundColor: 'rgba(196,136,80,0.15)',
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 4,
-    overflow: 'hidden',
+    fontWeight: typography.weight.semibold,
+    color: colors.ember.deep,
   },
   grimoireRole: {
-    fontSize: 13,
-    fontWeight: 'bold',
-  },
-  targetNamesText: {
-    color: '#d0c8f0',
-    fontSize: 15,
-    textAlign: 'center',
-    fontWeight: '600',
-    marginBottom: 4,
+    fontFamily: typography.family.display,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.bold,
   },
 });
