@@ -19,6 +19,7 @@ export const inlineStyles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     gap: space.xs,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOpacity: 0.45,
     shadowRadius: 16,
@@ -75,6 +76,7 @@ export const compactStyles = StyleSheet.create({
     paddingVertical: space.sm,
     alignItems: 'center',
     gap: space['2xs'],
+    overflow: 'hidden',
   },
   eyebrow: {
     fontFamily: typography.family.body,

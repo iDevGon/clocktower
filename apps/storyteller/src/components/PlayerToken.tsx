@@ -103,15 +103,20 @@ export function PlayerToken({
   const hasGhostVote = !player.isAlive && !player.deadVoteUsed;
 
   // 기본 보더 = 금박, 하이라이트/이웃/투표 상태에서만 색상 변경
+  // 투표 시작 전 준비 완료 (isPreselected alone) 도 verdure 로 부각
+  const showPreselectRing = isPreselected && !hasVoteState;
+
   const borderColor = highlighted
     ? colors.ember.glow
     : empathNeighbor
       ? colors.verdure.glow
       : hasVoteState
         ? (voteBorder ?? colors.edge.gilt)
-        : hasGhostVote
-          ? colors.twilight.glow
-          : colors.edge.gilt;
+        : showPreselectRing
+          ? colors.verdure.core
+          : hasGhostVote
+            ? colors.twilight.glow
+            : colors.edge.gilt;
 
   const glowColor = highlighted
     ? colors.ember.glow
@@ -119,12 +124,20 @@ export function PlayerToken({
       ? colors.verdure.glow
       : hasVoteState
         ? (voteGlow ?? 'transparent')
-        : hasGhostVote
-          ? colors.twilight.glow
-          : 'transparent';
+        : showPreselectRing
+          ? colors.verdure.glow
+          : hasGhostVote
+            ? colors.twilight.glow
+            : 'transparent';
 
-  const hasGlow = highlighted || empathNeighbor || hasVoteState || hasGhostVote;
-  const bw = highlighted || empathNeighbor || hasVoteState ? 2 : 1;
+  const hasGlow =
+    highlighted ||
+    empathNeighbor ||
+    hasVoteState ||
+    showPreselectRing ||
+    hasGhostVote;
+  const bw =
+    highlighted || empathNeighbor || hasVoteState || showPreselectRing ? 2 : 1;
 
   return (
     <Pressable
@@ -237,14 +250,32 @@ export function PlayerToken({
         )}
         {voteIndicator !== 'guilty' &&
           (voteIndicator === 'preselected_guilty' || isPreselected) && (
-            <Text
-              style={[
-                styles.voteBadgeText,
-                { fontSize: scaledFont.md, opacity: 0.5 },
-              ]}
-            >
-              ✋🏻?
-            </Text>
+            <>
+              {/* 우측 상단 체크 스탬프 */}
+              <View
+                style={[
+                  styles.voteReadyStamp,
+                  { width: scaledFont.lg + 4, height: scaledFont.lg + 4 },
+                ]}
+              >
+                <Text
+                  style={[styles.voteReadyCheck, { fontSize: scaledFont.md }]}
+                >
+                  ✓
+                </Text>
+              </View>
+              {/* 하단 "준비 완료" 뱃지 */}
+              <View style={styles.voteReadyBadge}>
+                <Text
+                  style={[
+                    styles.voteReadyBadgeText,
+                    { fontSize: scaledFont.xs },
+                  ]}
+                >
+                  투표 준비
+                </Text>
+              </View>
+            </>
           )}
         {isExecutionCandidate && (
           <View style={[styles.statusRow, { marginTop: 1 }]}>

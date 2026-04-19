@@ -1,5 +1,5 @@
 import type { ExecutionStatus } from '@clocktower/shared';
-import { Ornament, WaxSeal } from '@clocktower/ui';
+import { Ornament, PaperTexture, WaxSeal } from '@clocktower/ui';
 import { Text, View } from 'react-native';
 import Animated, { Easing, FadeIn, ZoomIn } from 'react-native-reanimated';
 import { styles } from './VoteResult.styles';
@@ -45,6 +45,7 @@ export function VoteResult({
 
   return (
     <Animated.View entering={FadeIn.duration(420)} style={styles.card}>
+      <PaperTexture />
       <Text style={styles.eyebrow}>투표 판결</Text>
 
       <Text style={styles.nomineeName}>{nomineeName}</Text>

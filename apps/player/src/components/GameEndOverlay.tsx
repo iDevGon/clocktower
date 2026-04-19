@@ -2,6 +2,7 @@ import type { GameResult, Team } from '@clocktower/shared';
 import {
   colors,
   Ornament,
+  PaperTexture,
   Sigil,
   type SigilTeam,
   WaxSeal,
@@ -186,6 +187,7 @@ export function GameEndOverlay({
       <View style={s.content}>
         {/* 두루마리 — 큰 양피지 박스 */}
         <View style={s.scroll}>
+          <PaperTexture />
           <View style={s.scrollEdgeTop} />
 
           {/* 봉인 + 헤드라인 */}

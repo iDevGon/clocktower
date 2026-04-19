@@ -1,4 +1,8 @@
-import { fontAssets, ReducedMotionProvider } from '@clocktower/ui';
+import {
+  applyDefaultFonts,
+  fontAssets,
+  ReducedMotionProvider,
+} from '@clocktower/ui';
 import { useFonts } from 'expo-font';
 import * as NavigationBar from 'expo-navigation-bar';
 import { Stack } from 'expo-router';
@@ -18,6 +22,9 @@ if (Platform.OS === 'android') {
   NavigationBar.setButtonStyleAsync('light');
 }
 SystemUI.setBackgroundColorAsync('#121214');
+
+// 앱 전역 기본 폰트를 Pretendard 로
+applyDefaultFonts();
 
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSocketConnection } from '../src/hooks/useSocketConnection';

@@ -65,6 +65,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     width: 320,
     alignItems: 'center',
+    overflow: 'hidden', // PaperTexture 가 카드 밖으로 삐져나오지 않도록
     // 미묘한 엘레베이션 — 종이가 어둠 속에 떠 있는 느낌
     shadowColor: '#000',
     shadowOpacity: 0.55,

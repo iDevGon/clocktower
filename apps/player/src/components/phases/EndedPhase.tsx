@@ -8,6 +8,7 @@ const TEAM_LABELS: Record<string, string> = {
   outsider: '외지인',
   minion: '하수인',
   demon: '악마',
+  traveller: '여행자',
 };
 
 const TEAM_COLORS: Record<string, string> = {
@@ -15,6 +16,7 @@ const TEAM_COLORS: Record<string, string> = {
   outsider: '#5dade2',
   minion: '#e74c3c',
   demon: '#e74c3c',
+  traveller: '#b07cc6',
 };
 
 interface EndedPhaseProps {

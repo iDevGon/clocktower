@@ -3,7 +3,7 @@ import {
   PLAYER_STATUS_LABELS,
   type Team,
 } from '@clocktower/shared';
-import { colors, Ornament, WaxSeal } from '@clocktower/ui';
+import { colors, Ornament, PaperTexture, WaxSeal } from '@clocktower/ui';
 import { Text, View } from 'react-native';
 import Animated, { Easing, FadeIn, ZoomIn } from 'react-native-reanimated';
 import {
@@ -40,6 +40,7 @@ export function FeedbackDisplay({ feedback, compact }: FeedbackDisplayProps) {
           entering={ZoomIn.duration(420).easing(Easing.out(Easing.cubic))}
           style={S.paper}
         >
+          <PaperTexture />
           {compact ? null : <Text style={S.eyebrow}>답장</Text>}
           <Text style={S.number}>{feedback.value}</Text>
           <Ornament
@@ -56,6 +57,7 @@ export function FeedbackDisplay({ feedback, compact }: FeedbackDisplayProps) {
           entering={ZoomIn.duration(420).easing(Easing.out(Easing.cubic))}
           style={S.paper}
         >
+          <PaperTexture />
           {compact ? null : <Text style={S.eyebrow}>답장</Text>}
           {feedback.targetNames?.length ? (
             <Text style={sharedStyles.targetNames}>
@@ -95,6 +97,7 @@ export function FeedbackDisplay({ feedback, compact }: FeedbackDisplayProps) {
           entering={ZoomIn.duration(420).easing(Easing.out(Easing.cubic))}
           style={S.paper}
         >
+          <PaperTexture />
           {compact ? null : <Text style={S.eyebrow}>답장</Text>}
           <Text style={sharedStyles.bodyText}>
             {feedback.playerNames.map((name, i) => (
@@ -117,6 +120,7 @@ export function FeedbackDisplay({ feedback, compact }: FeedbackDisplayProps) {
           entering={ZoomIn.duration(420).easing(Easing.out(Easing.cubic))}
           style={S.paper}
         >
+          <PaperTexture />
           {compact ? null : <Text style={S.eyebrow}>답장</Text>}
           <Text style={S.roleName}>{feedback.roleName}</Text>
           <Ornament
@@ -133,6 +137,7 @@ export function FeedbackDisplay({ feedback, compact }: FeedbackDisplayProps) {
           entering={FadeIn.duration(500)}
           style={[S.paper, sharedStyles.paperMuted]}
         >
+          <PaperTexture />
           {compact ? null : <Text style={S.eyebrow}>답장</Text>}
           <Text style={S.quiet}>{feedback.message}</Text>
         </Animated.View>
@@ -140,6 +145,7 @@ export function FeedbackDisplay({ feedback, compact }: FeedbackDisplayProps) {
     case 'grimoire':
       return (
         <Animated.View entering={FadeIn.duration(520)} style={S.paper}>
+          <PaperTexture />
           <Text style={S.eyebrow}>마법서</Text>
           <View style={sharedStyles.grimoireList}>
             {feedback.entries.map((entry) => (

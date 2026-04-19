@@ -5,6 +5,7 @@ import {
   GameTip,
   InkBlot,
   Ornament,
+  PaperTexture,
   useReducedMotion,
   WaxSeal,
 } from '@clocktower/ui';
@@ -199,6 +200,7 @@ interface LetterProps {
 function Letter({ role, evilInfo, theme }: LetterProps) {
   return (
     <View style={s.letterPaper}>
+      <PaperTexture />
       {/* 상단 작은 실링 + 팀 라벨 */}
       <View style={s.letterHeader}>
         <WaxSeal size={32} tone={theme.sealTone} glyph={theme.sealGlyph} />

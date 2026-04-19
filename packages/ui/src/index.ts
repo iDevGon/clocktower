@@ -1,5 +1,6 @@
 // Reduced motion
 
+export { applyDefaultFonts } from './applyDefaultFonts';
 export type { FontFamilyName } from './fonts';
 
 // Font assets — for useFonts in each app's root _layout.tsx
@@ -32,6 +33,7 @@ export type { ModalKind } from './components/Modal';
 export { Modal } from './components/Modal';
 export type { OrnamentKind } from './components/Ornament';
 export { Ornament } from './components/Ornament';
+export { PaperTexture } from './components/PaperTexture';
 export type { ParchmentTone } from './components/ParchmentSurface';
 export { ParchmentSurface } from './components/ParchmentSurface';
 export type {

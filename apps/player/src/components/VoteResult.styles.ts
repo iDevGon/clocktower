@@ -16,6 +16,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: space.base,
     alignItems: 'center',
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOpacity: 0.4,
     shadowRadius: 18,
