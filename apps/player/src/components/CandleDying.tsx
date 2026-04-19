@@ -33,7 +33,7 @@ export function CandleDying({
   size = 100,
 }: CandleDyingProps) {
   const reduced = useReducedMotion();
-  const uid = useId().replace(/:/g, '');
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
 
   // 초기값을 보이는 상태로 두어 첫 수백 ms의 깜빡임을 방지
   const flicker = useSharedValue(0.5);

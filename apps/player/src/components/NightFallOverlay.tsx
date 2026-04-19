@@ -28,7 +28,7 @@ import { styles as s } from './NightFallOverlay.styles';
 // ── 촛불 불꽃 — 중심 시각적 앵커 ──────────────────────────────────────────
 
 function CandleFlame() {
-  const uid = useId().replace(/:/g, '');
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const flicker = useSharedValue(0.5);
   const descent = useSharedValue(1); // 시작부터 보이게
 

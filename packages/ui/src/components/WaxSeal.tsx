@@ -71,7 +71,8 @@ export function WaxSeal({
   const innerR = r - size * 0.08;
 
   // 웹 호환: SVG id 는 document-global이므로 인스턴스별 고유 id 필요
-  const uid = useId().replace(/:/g, '');
+  // 영숫자만 남기기 (React 19 useId 는 `:r0:` · `«r0»` 등 특수문자 포함)
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const gradId = `wax-${uid}`;
   const highId = `wax-hi-${uid}`;
 

@@ -92,7 +92,7 @@ const PAPER_EDGE = colors.parchment.letterEdge;
 // ── 배경 촛불 앰버 글로우 ──────────────────────────────────────────────────
 
 function CandleAura() {
-  const uid = useId().replace(/:/g, '');
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const pulse = useSharedValue(0.5);
   useEffect(() => {
     pulse.value = withRepeat(
