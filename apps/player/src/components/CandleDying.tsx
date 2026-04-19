@@ -144,7 +144,13 @@ export function CandleDying({
       <Animated.View style={[styles.flame, flameStyle]}>
         <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
           <Defs>
-            <LinearGradient id={`cdFlame-${uid}`} x1="50%" y1="0%" x2="50%" y2="100%">
+            <LinearGradient
+              id={`cdFlame-${uid}`}
+              x1="50%"
+              y1="0%"
+              x2="50%"
+              y2="100%"
+            >
               <Stop offset="0%" stopColor="#fff0c8" stopOpacity="0.95" />
               <Stop
                 offset="40%"
