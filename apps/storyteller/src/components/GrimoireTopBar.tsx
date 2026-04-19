@@ -1,16 +1,17 @@
+import type { Phase } from '@clocktower/shared';
 import { colors, Ornament, space, typography } from '@clocktower/ui';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { createGrimoireStyles } from '../styles/grimoire.styles';
 
 interface GrimoireTopBarProps {
   day: number;
-  phase: string;
+  phase: Phase;
   daySubPhase?: string;
   onMenuPress?: () => void;
   styles: ReturnType<typeof createGrimoireStyles>;
 }
 
-function getPhaseNarrative(phase: string, daySubPhase?: string) {
+function getPhaseNarrative(phase: Phase, daySubPhase?: string) {
   if (phase === 'setup') return { main: '준비', sub: '' };
   if (phase === 'night') return { main: '밤', sub: '' };
   if (phase === 'vote') return { main: '투표', sub: '' };

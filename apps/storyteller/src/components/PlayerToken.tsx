@@ -14,14 +14,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useResponsive } from '../hooks/useResponsive';
 import { styles } from './PlayerToken.styles';
 
-// 팀별 미묘한 배경 — 금박 보더 안쪽에 깔리는 잉크 계열 톤
-const TEAM_INK_BG = {
-  townsfolk: '#181a22',
-  outsider: '#181c1b',
-  minion: '#1e1a15',
-  demon: '#1e1515',
-  traveller: '#1b141e',
-} as const;
+const TEAM_INK_BG = colors.teamInk;
 
 export type VoteIndicator = 'guilty' | 'preselected_guilty' | 'nominee';
 

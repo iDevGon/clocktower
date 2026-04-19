@@ -21,6 +21,9 @@ const palette = {
     mid: '#b8ae97',
     low: '#7a7161',
     ghost: '#4a4339',
+    letter: '#c9b687',
+    letterEdge: '#8a7540',
+    letterFold: '#a89560',
   },
   edge: {
     hairline: '#2a241a',
@@ -195,6 +198,23 @@ export const colors = {
   crimson: palette.crimson,
   verdure: palette.verdure,
   bruise: palette.bruise,
+
+  // 팀별 미묘한 잉크 배경 — 금박 보더 안쪽에 깔리는 톤
+  teamInk: {
+    townsfolk: '#181a22',
+    outsider: '#181c1b',
+    minion: '#1e1a15',
+    demon: '#1e1515',
+    traveller: '#1b141e',
+  },
+
+  // 팀별 애니메이션 보더카드 그라데이션 배경
+  teamGradient: {
+    townsfolk: { start: '#161e28', mid: '#121822', end: '#0e121c' },
+    outsider: { start: '#141e1c', mid: '#0e1816', end: '#0a1210' },
+    minion: { start: '#221a12', mid: '#1a140e', end: '#14100a' },
+    demon: { start: '#221214', mid: '#1a0e10', end: '#140a0c' },
+  },
 
   // ── 하위호환 shim (기존 코드가 깨지지 않도록 유지) ──
   surface: {

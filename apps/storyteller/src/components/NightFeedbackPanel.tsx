@@ -25,27 +25,27 @@ const TEAM_CARD_COLORS: Record<
 > = {
   townsfolk: {
     color: ui.twilight.core,
-    bgStart: '#161e28',
-    bgMid: '#121822',
-    bgEnd: '#0e121c',
+    bgStart: ui.teamGradient.townsfolk.start,
+    bgMid: ui.teamGradient.townsfolk.mid,
+    bgEnd: ui.teamGradient.townsfolk.end,
   },
   outsider: {
     color: ui.verdure.core,
-    bgStart: '#141e1c',
-    bgMid: '#0e1816',
-    bgEnd: '#0a1210',
+    bgStart: ui.teamGradient.outsider.start,
+    bgMid: ui.teamGradient.outsider.mid,
+    bgEnd: ui.teamGradient.outsider.end,
   },
   minion: {
     color: ui.ember.core,
-    bgStart: '#221a12',
-    bgMid: '#1a140e',
-    bgEnd: '#14100a',
+    bgStart: ui.teamGradient.minion.start,
+    bgMid: ui.teamGradient.minion.mid,
+    bgEnd: ui.teamGradient.minion.end,
   },
   demon: {
     color: ui.crimson.core,
-    bgStart: '#221214',
-    bgMid: '#1a0e10',
-    bgEnd: '#140a0c',
+    bgStart: ui.teamGradient.demon.start,
+    bgMid: ui.teamGradient.demon.mid,
+    bgEnd: ui.teamGradient.demon.end,
   },
 };
 

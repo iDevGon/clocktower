@@ -85,11 +85,9 @@ const T_CONTENT_CASCADE = 3700;
 const T_SUBTITLE = 4800;
 const T_AUTO_DISMISS = 10000;
 
-// ── 편지지 색상 ────────────────────────────────────────────────────────────
-// 오래된 양피지 — 어둡고 따뜻한 톤 (앱 dark 배경과 대비 완화)
-const PAPER = '#c9b687';
-const PAPER_FOLD = '#a89560';
-const PAPER_EDGE = '#8a7540';
+const PAPER = colors.parchment.letter;
+const PAPER_FOLD = colors.parchment.letterFold;
+const PAPER_EDGE = colors.parchment.letterEdge;
 
 // ── 배경 촛불 앰버 글로우 ──────────────────────────────────────────────────
 
@@ -396,8 +394,8 @@ export function GameStartReveal({
       cancelAnimation(letterScale);
       cancelAnimation(contentCascade);
       cancelAnimation(subtitleOpacity);
+      cancelAnimation(fadeOut);
     };
-    // startDismiss은 worklet. dismissed/fadeOut 공유 값은 참조만.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduced]);
 
