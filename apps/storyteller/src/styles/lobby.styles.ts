@@ -35,7 +35,7 @@ export function createLobbyStyles(scale: number) {
       fontWeight: '600',
     },
     devButton: {
-      backgroundColor: '#3a3a40',
+      backgroundColor: colors.ink.rise,
       paddingHorizontal: s(8),
       paddingVertical: s(4),
       borderRadius: 4,
@@ -56,13 +56,13 @@ export function createLobbyStyles(scale: number) {
       paddingVertical: s(12),
       borderRadius: 8,
       alignItems: 'center',
-      backgroundColor: '#2a3a5c',
+      backgroundColor: colors.twilight.deep,
     },
     distributeButtonPressed: {
-      backgroundColor: '#1e2e4a',
+      backgroundColor: colors.ink.void,
     },
     distributeButtonDisabled: {
-      backgroundColor: '#242428',
+      backgroundColor: colors.ink.mid,
     },
     distributeButtonText: {
       color: colors.parchment.high,
@@ -86,10 +86,10 @@ export function createLobbyStyles(scale: number) {
       backgroundColor: colors.crimson.core,
     },
     startButtonPressed: {
-      backgroundColor: '#7a3030',
+      backgroundColor: colors.crimson.deep,
     },
     startButtonDisabled: {
-      backgroundColor: '#242428',
+      backgroundColor: colors.ink.mid,
     },
     startButtonText: {
       color: colors.parchment.high,
@@ -148,8 +148,8 @@ export function createLobbyStyles(scale: number) {
     travellerBadge: {
       marginLeft: s(6),
       fontSize: s(11),
-      color: '#a090c0',
-      backgroundColor: '#2a2a3a',
+      color: colors.bruise.core,
+      backgroundColor: colors.bruise.deep,
       paddingHorizontal: s(5),
       paddingVertical: s(1),
       borderRadius: s(4),
@@ -164,13 +164,13 @@ export function createLobbyStyles(scale: number) {
       marginTop: s(4),
       paddingVertical: s(3),
       paddingHorizontal: s(8),
-      backgroundColor: '#3a2a18',
+      backgroundColor: colors.ember.deep,
       borderRadius: 4,
       borderWidth: 1,
-      borderColor: '#b87838',
+      borderColor: colors.ember.core,
     },
     drunkChangeText: {
-      color: '#e67e22',
+      color: colors.ember.glow,
       fontSize: s(11),
       fontWeight: '600',
     },
@@ -245,15 +245,15 @@ export const lobbyDynamic = {
     backgroundColor: disabled
       ? colors.ink.mid
       : selected
-        ? '#2a3a5c'
+        ? colors.twilight.deep
         : pressed
           ? colors.ink.rise
-          : '#242428',
+          : colors.ink.mid,
     borderWidth: 1,
     borderColor: disabled
       ? colors.edge.hairline
       : selected
-        ? '#4a6a9c'
+        ? colors.twilight.core
         : colors.edge.default,
     opacity: disabled ? 0.5 : 1,
   }),
@@ -262,7 +262,11 @@ export const lobbyDynamic = {
     disabled: boolean,
     s: (v: number) => number,
   ) => ({
-    color: disabled ? '#4a4a4e' : selected ? '#8ab4f8' : colors.parchment.low,
+    color: disabled
+      ? colors.parchment.ghost
+      : selected
+        ? colors.twilight.glow
+        : colors.parchment.low,
     fontSize: s(13),
     fontWeight: '600' as const,
   }),
@@ -270,7 +274,7 @@ export const lobbyDynamic = {
     width: s(8),
     height: s(8),
     borderRadius: s(4),
-    backgroundColor: isAlive ? '#5a8068' : colors.crimson.core,
+    backgroundColor: isAlive ? colors.verdure.core : colors.crimson.core,
     marginRight: s(10),
   }),
   playerRoleText: (
@@ -278,7 +282,9 @@ export const lobbyDynamic = {
     s: (v: number) => number,
     teamColor?: string,
   ) => ({
-    color: veiled ? '#4a4a4e' : (teamColor ?? colors.parchment.mid),
+    color: veiled
+      ? colors.parchment.ghost
+      : (teamColor ?? colors.parchment.mid),
     fontSize: s(14),
   }),
   veilToggleButton: (veiled: boolean, s: (v: number) => number) => ({
@@ -287,17 +293,17 @@ export const lobbyDynamic = {
     gap: s(6),
     paddingVertical: s(12),
     paddingHorizontal: s(10),
-    backgroundColor: veiled ? '#3a2a5c' : colors.ink.mid,
+    backgroundColor: veiled ? colors.bruise.deep : colors.ink.mid,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: veiled ? '#7c6caa' : colors.edge.default,
+    borderColor: veiled ? colors.bruise.core : colors.edge.default,
   }),
   veilToggleEmoji: (veiled: boolean, s: (v: number) => number) => ({
-    color: veiled ? '#c4b0ee' : colors.parchment.low,
+    color: veiled ? colors.bruise.glow : colors.parchment.low,
     fontSize: s(13),
   }),
   veilToggleLabel: (veiled: boolean, s: (v: number) => number) => ({
-    color: veiled ? '#c4b0ee' : colors.parchment.low,
+    color: veiled ? colors.bruise.glow : colors.parchment.low,
     fontSize: s(12),
     fontWeight: '600' as const,
   }),

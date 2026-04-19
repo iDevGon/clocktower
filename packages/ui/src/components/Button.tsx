@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   Pressable,
   type PressableProps,
@@ -56,21 +57,24 @@ export function Button({
   onPress,
   ...rest
 }: ButtonProps) {
-  const base: ViewStyle = {
-    height: HEIGHTS[size],
-    paddingHorizontal: HPAD[size],
-    borderRadius: tone === 'seal' ? radii.pill : radii.soft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: space.sm,
-    alignSelf: fullWidth ? 'stretch' : 'flex-start',
-  };
-  if (tone === 'seal') {
-    base.width = HEIGHTS[size];
-    base.height = HEIGHTS[size];
-    base.paddingHorizontal = 0;
-  }
+  const base = useMemo<ViewStyle>(() => {
+    const s: ViewStyle = {
+      height: HEIGHTS[size],
+      paddingHorizontal: HPAD[size],
+      borderRadius: tone === 'seal' ? radii.pill : radii.soft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'row',
+      gap: space.sm,
+      alignSelf: fullWidth ? 'stretch' : 'flex-start',
+    };
+    if (tone === 'seal') {
+      s.width = HEIGHTS[size];
+      s.height = HEIGHTS[size];
+      s.paddingHorizontal = 0;
+    }
+    return s;
+  }, [size, tone, fullWidth]);
 
   const toned = TONE_STYLES[tone];
   const disabledOverlay: ViewStyle = disabled ? { opacity: 0.45 } : {};

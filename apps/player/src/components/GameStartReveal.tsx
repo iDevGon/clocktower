@@ -290,7 +290,6 @@ export function GameStartReveal({
   const dismissed = useSharedValue(false);
 
   const startDismiss = () => {
-    'worklet';
     if (dismissed.value) return;
     dismissed.value = true;
     fadeOut.value = withTiming(
@@ -300,10 +299,6 @@ export function GameStartReveal({
         if (finished) runOnJS(onDismiss)();
       },
     );
-  };
-
-  const handlePress = () => {
-    startDismiss();
   };
 
   useEffect(() => {
@@ -433,7 +428,7 @@ export function GameStartReveal({
     <Animated.View style={[StyleSheet.absoluteFill, s.root, rootStyle]}>
       <Pressable
         style={StyleSheet.absoluteFill}
-        onPress={handlePress}
+        onPress={startDismiss}
         accessibilityLabel="역할 공개 닫기"
         accessibilityRole="button"
       >

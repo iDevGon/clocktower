@@ -1,5 +1,11 @@
 import type { GameResult, Team } from '@clocktower/shared';
-import { colors, Ornament, Sigil, WaxSeal } from '@clocktower/ui';
+import {
+  colors,
+  Ornament,
+  Sigil,
+  type SigilTeam,
+  WaxSeal,
+} from '@clocktower/ui';
 import { useEffect, useMemo } from 'react';
 import { Text, Vibration, View } from 'react-native';
 import Animated, { Easing, FadeIn, ZoomIn } from 'react-native-reanimated';
@@ -17,16 +23,17 @@ const TEAM_LABELS: Record<string, string> = {
   traveller: '여행자',
 };
 
-const TEAM_SIGIL: Record<
-  string,
-  'townsfolk' | 'outsider' | 'minion' | 'demon' | 'traveller'
-> = {
-  townsfolk: 'townsfolk',
-  outsider: 'outsider',
-  minion: 'minion',
-  demon: 'demon',
-  traveller: 'traveller',
-};
+const VALID_SIGIL_TEAMS = new Set<string>([
+  'townsfolk',
+  'outsider',
+  'minion',
+  'demon',
+  'traveller',
+]);
+
+function teamToSigil(team: string): SigilTeam {
+  return VALID_SIGIL_TEAMS.has(team) ? (team as SigilTeam) : 'unknown';
+}
 
 function isGoodTeam(team: Team): boolean {
   return team === 'townsfolk' || team === 'outsider';
@@ -85,7 +92,7 @@ function PlayerRow({
   player: GameResult['players'][number];
   index: number;
 }) {
-  const sigilTeam = TEAM_SIGIL[player.team] ?? 'unknown';
+  const sigilTeam = teamToSigil(player.team);
   const teamLabel = TEAM_LABELS[player.team] ?? player.team;
 
   return (

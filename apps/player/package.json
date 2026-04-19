@@ -5,6 +5,7 @@
   "scripts": {
     "start": "expo start --port 8081",
     "dev": "EXPO_PUBLIC_DEV_MODE=true expo start --port 8081",
+    "dev:clear": "EXPO_PUBLIC_DEV_MODE=true expo start --port 8081 --clear",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",

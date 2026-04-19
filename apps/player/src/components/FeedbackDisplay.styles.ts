@@ -1,9 +1,9 @@
 import { colors, space, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
-// 오래된 양피지 — 어두운 앰버-탄 톤
-const PAPER = '#c9b687';
-const PAPER_EDGE = '#8a7540';
+// 오래된 양피지 — 토큰 별칭
+const PAPER = colors.parchment.letter;
+const PAPER_EDGE = colors.parchment.letterEdge;
 const INK_BODY = '#201810';
 const INK_SOFT = '#4a3d25';
 

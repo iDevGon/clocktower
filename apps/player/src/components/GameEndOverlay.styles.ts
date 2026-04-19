@@ -3,10 +3,10 @@ import { Dimensions, StyleSheet } from 'react-native';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// 오래된 양피지 두루마리 — 어두운 앰버-탄 톤
-const PAPER = '#c9b687';
-const PAPER_EDGE = '#8a7540';
-const PAPER_FOLD = '#a89560';
+// 오래된 양피지 두루마리 — 토큰 별칭
+const PAPER = colors.parchment.letter;
+const PAPER_EDGE = colors.parchment.letterEdge;
+const PAPER_FOLD = colors.parchment.letterFold;
 const INK_BODY = '#201810';
 const INK_SOFT = '#4a3d25';
 
