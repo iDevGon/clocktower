@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { View, type ViewStyle } from 'react-native';
 import Svg, {
   Circle,
@@ -69,8 +70,10 @@ export function WaxSeal({
   const r = size / 2;
   const innerR = r - size * 0.08;
 
-  const gradId = `wax-${tone}`;
-  const highId = `wax-hi-${tone}`;
+  // 웹 호환: SVG id 는 document-global이므로 인스턴스별 고유 id 필요
+  const uid = useId().replace(/:/g, '');
+  const gradId = `wax-${uid}`;
+  const highId = `wax-hi-${uid}`;
 
   return (
     <View style={style}>

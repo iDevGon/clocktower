@@ -6,7 +6,7 @@ import {
   Ornament,
   useReducedMotion,
 } from '@clocktower/ui';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useId, useMemo } from 'react';
 import { View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -28,6 +28,7 @@ import { styles as s } from './NightFallOverlay.styles';
 // ── 촛불 불꽃 — 중심 시각적 앵커 ──────────────────────────────────────────
 
 function CandleFlame() {
+  const uid = useId().replace(/:/g, '');
   const flicker = useSharedValue(0);
   const descent = useSharedValue(0);
 
@@ -82,7 +83,7 @@ function CandleFlame() {
       <Animated.View style={flameStyle}>
         <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
           <Defs>
-            <LinearGradient id="flame" x1="50%" y1="0%" x2="50%" y2="100%">
+            <LinearGradient id={`flame-${uid}`} x1="50%" y1="0%" x2="50%" y2="100%">
               <Stop offset="0%" stopColor="#fff0c8" stopOpacity="0.95" />
               <Stop
                 offset="35%"
@@ -106,7 +107,7 @@ function CandleFlame() {
             d={`M${W / 2},${H * 0.95}
                 C${W * 0.15},${H * 0.75} ${W * 0.25},${H * 0.4} ${W / 2},${H * 0.05}
                 C${W * 0.75},${H * 0.4} ${W * 0.85},${H * 0.75} ${W / 2},${H * 0.95} Z`}
-            fill="url(#flame)"
+            fill={`url(#flame-${uid})`}
           />
         </Svg>
       </Animated.View>

@@ -8,7 +8,7 @@ import {
   useReducedMotion,
   WaxSeal,
 } from '@clocktower/ui';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useId, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -93,6 +93,7 @@ const PAPER_EDGE = '#bba87e';
 // ── 배경 촛불 앰버 글로우 ──────────────────────────────────────────────────
 
 function CandleAura() {
+  const uid = useId().replace(/:/g, '');
   const pulse = useSharedValue(0.5);
   useEffect(() => {
     pulse.value = withRepeat(
@@ -119,7 +120,7 @@ function CandleAura() {
         preserveAspectRatio="xMidYMid slice"
       >
         <Defs>
-          <LinearGradient id="aura" x1="50%" y1="50%" x2="50%" y2="0%">
+          <LinearGradient id={`aura-${uid}`} x1="50%" y1="50%" x2="50%" y2="0%">
             <Stop
               offset="0%"
               stopColor={colors.ember.core}
@@ -133,7 +134,7 @@ function CandleAura() {
             <Stop offset="100%" stopColor={colors.ink.void} stopOpacity="0" />
           </LinearGradient>
         </Defs>
-        <Path d="M0,0 L400,0 L400,700 L0,700 Z" fill="url(#aura)" />
+        <Path d="M0,0 L400,0 L400,700 L0,700 Z" fill={`url(#aura-${uid})`} />
       </Svg>
     </Animated.View>
   );

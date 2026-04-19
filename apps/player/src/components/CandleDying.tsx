@@ -1,5 +1,5 @@
 import { colors, useReducedMotion } from '@clocktower/ui';
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -33,6 +33,7 @@ export function CandleDying({
   size = 100,
 }: CandleDyingProps) {
   const reduced = useReducedMotion();
+  const uid = useId().replace(/:/g, '');
 
   const flicker = useSharedValue(0);
   const alive = useSharedValue(0);
@@ -143,7 +144,7 @@ export function CandleDying({
       <Animated.View style={[styles.flame, flameStyle]}>
         <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
           <Defs>
-            <LinearGradient id="cdFlame" x1="50%" y1="0%" x2="50%" y2="100%">
+            <LinearGradient id={`cdFlame-${uid}`} x1="50%" y1="0%" x2="50%" y2="100%">
               <Stop offset="0%" stopColor="#fff0c8" stopOpacity="0.95" />
               <Stop
                 offset="40%"
@@ -166,7 +167,7 @@ export function CandleDying({
             d={`M${W / 2},${H * 0.95}
                 C${W * 0.15},${H * 0.75} ${W * 0.25},${H * 0.4} ${W / 2},${H * 0.05}
                 C${W * 0.75},${H * 0.4} ${W * 0.85},${H * 0.75} ${W / 2},${H * 0.95} Z`}
-            fill="url(#cdFlame)"
+            fill={`url(#cdFlame-${uid})`}
           />
         </Svg>
       </Animated.View>
