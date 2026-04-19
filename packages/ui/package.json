@@ -17,17 +17,21 @@
     "@clocktower/shared": "workspace:*"
   },
   "peerDependencies": {
+    "@shopify/react-native-skia": "*",
     "expo-linear-gradient": "*",
     "react": "*",
     "react-native": "*",
-    "react-native-reanimated": "*"
+    "react-native-reanimated": "*",
+    "react-native-svg": "*"
   },
   "devDependencies": {
+    "@shopify/react-native-skia": "*",
     "@types/react": "*",
     "expo-linear-gradient": "*",
     "react": "*",
     "react-native": "*",
     "react-native-reanimated": "*",
+    "react-native-svg": "*",
     "typescript": "^5.4.0",
     "vitest": "^2.1.9"
   }

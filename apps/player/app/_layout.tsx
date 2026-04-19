@@ -1,4 +1,5 @@
-import { ReducedMotionProvider } from '@clocktower/ui';
+import { fontAssets, ReducedMotionProvider } from '@clocktower/ui';
+import { useFonts } from 'expo-font';
 import * as NavigationBar from 'expo-navigation-bar';
 import { Stack } from 'expo-router';
 import * as SystemUI from 'expo-system-ui';
@@ -25,6 +26,8 @@ const rootStyle = {
 
 export default function RootLayout() {
   const lowPowerMode = useSettingsStore((s) => s.lowPowerMode);
+  // 폰트 로딩 실패 시에도 시스템 폰트로 fallback — 스플래시 가리지 않음
+  useFonts(fontAssets);
 
   return (
     <ReducedMotionProvider value={lowPowerMode}>
