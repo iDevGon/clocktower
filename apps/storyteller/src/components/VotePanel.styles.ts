@@ -167,6 +167,14 @@ export function createVotePanelStyles(scale: number) {
       fontSize: s(12),
       fontWeight: '600',
     },
+    consentBadgeReady: {
+      backgroundColor: '#1a2e1a',
+      borderWidth: 1,
+      borderColor: '#2e4a2e',
+    },
+    consentBadgeTextReady: {
+      color: '#7dce82',
+    },
     countdownText: {
       color: '#c4a050',
       fontSize: s(14),
