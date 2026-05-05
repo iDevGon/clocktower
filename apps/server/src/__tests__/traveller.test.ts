@@ -620,6 +620,7 @@ describe('GameManager - 여행자 시스템', () => {
       expect(NIGHT_ACTIONS.bureaucrat).toBeDefined();
       expect(NIGHT_ACTIONS.bureaucrat.type).toBe('select_one');
       expect(NIGHT_ACTIONS.bureaucrat.excludeSelf).toBe(true);
+      expect(NIGHT_ACTIONS.bureaucrat.includeDeadTargets).toBe(true);
     });
 
     it('thief의 NIGHT_ACTIONS가 정의되어 있다', async () => {
@@ -627,6 +628,7 @@ describe('GameManager - 여행자 시스템', () => {
       expect(NIGHT_ACTIONS.thief).toBeDefined();
       expect(NIGHT_ACTIONS.thief.type).toBe('select_one');
       expect(NIGHT_ACTIONS.thief.excludeSelf).toBe(true);
+      expect(NIGHT_ACTIONS.thief.includeDeadTargets).toBe(true);
     });
 
     it('apprentice의 NIGHT_ACTIONS가 정의되어 있다', async () => {
@@ -639,6 +641,7 @@ describe('GameManager - 여행자 시스템', () => {
       const { NIGHT_ACTIONS } = await import('@clocktower/shared/logic');
       expect(NIGHT_ACTIONS.bone_collector).toBeDefined();
       expect(NIGHT_ACTIONS.bone_collector.type).toBe('select_one');
+      expect(NIGHT_ACTIONS.bone_collector.includeDeadTargets).toBe(true);
     });
 
     it('harlot의 NIGHT_ACTIONS가 정의되어 있다', async () => {
@@ -707,6 +710,137 @@ describe('GameManager - 여행자 시스템', () => {
     it('barista가 SV 이후 밤 순서에 포함된다', async () => {
       const { SV_OTHER_NIGHT_ORDER } = await import('@clocktower/shared/logic');
       expect(SV_OTHER_NIGHT_ORDER).toContain('barista');
+    });
+  });
+
+  describe('여행자 역할 규칙 구현', () => {
+    it('거지는 항상 맑은 정신/건강 상태이며 사망하면 토큰을 잃는다', () => {
+      const { gm } = createStartedGame();
+      const beggar = gm.addTraveller('Beggar');
+      expect(beggar).not.toBeNull();
+      gm.assignTravellerRole(beggar?.id ?? '', 'beggar', 'good');
+
+      gm.setPlayerStatuses(beggar?.id ?? '', ['poisoned', 'drunk']);
+      expect(gm.getPlayer(beggar?.id ?? '')?.statuses).not.toContain(
+        'poisoned',
+      );
+      expect(gm.getPlayer(beggar?.id ?? '')?.statuses).not.toContain('drunk');
+
+      gm.addBeggarToken(beggar?.id ?? '');
+      expect(gm.getBeggarTokens(beggar?.id ?? '')).toBe(1);
+
+      gm.kill(beggar?.id ?? '');
+      expect(gm.getBeggarTokens(beggar?.id ?? '')).toBe(0);
+    });
+
+    it('도살자는 첫 처형 후 살아있는 도살자가 추가 지명을 한 번 할 수 있다', () => {
+      const { gm, players } = createStartedGame();
+      const butcher = gm.addTraveller('Butcher');
+      expect(butcher).not.toBeNull();
+      gm.assignTravellerRole(butcher?.id ?? '', 'butcher_traveller', 'good');
+      gm.setPhase('day');
+      gm.setDaySubPhase('nomination');
+
+      const first = gm.nominate(players[0].id, players[1].id);
+      expect(first.success).toBe(true);
+      gm.markExecution();
+
+      expect(gm.isButcherExtraNominationAvailable()).toBe(true);
+      const extra = gm.nominate(butcher?.id ?? '', players[2].id);
+      expect(extra.success).toBe(true);
+      expect(gm.isButcherExtraNominationAvailable()).toBe(false);
+
+      const blocked = gm.nominate(players[3].id, players[4].id);
+      expect(blocked.success).toBe(false);
+    });
+
+    it('유골 수집가는 죽은 플레이어 1명에게 오늘 능력을 되돌려준다', () => {
+      const { gm, players } = createStartedGame();
+      const collector = gm.addTraveller('Bone Collector');
+      expect(collector).not.toBeNull();
+      gm.assignTravellerRole(collector?.id ?? '', 'bone_collector', 'good');
+      gm.kill(players[0].id);
+
+      const restored = gm.restoreBoneCollectorAbility(
+        collector?.id ?? '',
+        players[0].id,
+      );
+      expect(restored).toBe(true);
+      expect(gm.getPlayer(players[0].id)?.statuses).toContain(
+        'bone_collector_ability',
+      );
+      expect(gm.getPlayer(collector?.id ?? '')?.statuses).toContain(
+        'no_ability',
+      );
+
+      const second = gm.restoreBoneCollectorAbility(
+        collector?.id ?? '',
+        players[1].id,
+      );
+      expect(second).toBe(false);
+
+      gm.setPhase('night');
+      expect(gm.getPlayer(players[0].id)?.statuses).not.toContain(
+        'bone_collector_ability',
+      );
+      expect(gm.getPlayer(collector?.id ?? '')?.statuses).toContain(
+        'no_ability',
+      );
+    });
+
+    it('바리스타는 대상에게 맑은 정신/건강 또는 능력 2회 발동 상태를 부여한다', () => {
+      const { gm, players } = createStartedGame();
+      const targetId = players[0].id;
+
+      gm.setPlayerStatuses(targetId, ['poisoned', 'drunk']);
+      expect(gm.getPlayer(targetId)?.statuses).toEqual(['poisoned', 'drunk']);
+
+      expect(gm.applyBaristaEffect(targetId, 'sober_healthy')).toBe(true);
+      expect(gm.getPlayer(targetId)?.statuses).toContain(
+        'barista_sober_healthy',
+      );
+      expect(gm.getPlayer(targetId)?.statuses).not.toContain('poisoned');
+      expect(gm.getPlayer(targetId)?.statuses).not.toContain('drunk');
+
+      gm.setPlayerStatuses(targetId, [
+        ...(gm.getPlayer(targetId)?.statuses ?? []),
+        'poisoned',
+      ]);
+      expect(gm.getPlayer(targetId)?.statuses).not.toContain('poisoned');
+
+      gm.setPhase('day');
+      expect(gm.getPlayer(targetId)?.statuses).toContain(
+        'barista_sober_healthy',
+      );
+      gm.setPhase('night');
+      expect(gm.getPlayer(targetId)?.statuses).not.toContain(
+        'barista_sober_healthy',
+      );
+
+      expect(gm.applyBaristaEffect(targetId, 'acts_twice')).toBe(true);
+      expect(gm.getPlayer(targetId)?.statuses).toContain('barista_acts_twice');
+    });
+
+    it('익살꾼 추방 투표가 통과하면 이야기꾼 판정이 필요하다', () => {
+      const { gm, players } = createStartedGame();
+      const deviant = gm.addTraveller('Deviant');
+      expect(deviant).not.toBeNull();
+      gm.assignTravellerRole(deviant?.id ?? '', 'deviant', 'good');
+      gm.setPhase('day');
+
+      const started = gm.startExileVote(players[0].id, deviant?.id ?? '');
+      expect(started.success).toBe(true);
+      for (const player of gm.getState().players) {
+        const result = gm.castExileVote(player.id, true);
+        expect(result.success).toBe(true);
+      }
+
+      expect(gm.shouldRequestDeviantExileJudgement()).toBe(true);
+      expect(gm.getPlayer(deviant?.id ?? '')?.isAlive).toBe(true);
+
+      const closeResult = gm.closeExileVote(true);
+      expect(closeResult?.exiled).toBe(true);
+      expect(gm.getPlayer(deviant?.id ?? '')?.isAlive).toBe(false);
     });
   });
 

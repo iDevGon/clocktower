@@ -1,7 +1,9 @@
 import type { Socket } from 'socket.io-client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  advanceToDay,
   setupFullGame,
+  setupGameWithRoles,
   setupTestServer,
   type TestContext,
   waitForEvent,
@@ -174,8 +176,14 @@ describe('E2E: 여행자 역할 배정 및 알림', () => {
     expect(joinedData.roleId).toBe('scapegoat');
   }, 15000);
 
-  it('악한 여행자에게 evil:info가 전송된다', async () => {
-    await setupFullGame(ctx);
+  it('악한 여행자는 악마만 알며 하수인 정보는 받지 않는다', async () => {
+    await setupGameWithRoles(ctx, [
+      { roleId: 'washerwoman' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
 
     const travellerSocket = await ctx.connectPlayer();
     ctx.players.push(travellerSocket);
@@ -197,6 +205,7 @@ describe('E2E: 여행자 역할 배정 및 알림', () => {
     // evil:info 리스너를 먼저 등록
     const evilInfoPromise = waitForEvent<{
       demonName?: string;
+      otherMinionNames?: string[];
     }>(travellerSocket as Socket, 'evil:info');
 
     await new Promise<void>((resolve) => {
@@ -209,6 +218,7 @@ describe('E2E: 여행자 역할 배정 및 알림', () => {
 
     const evilInfo = await evilInfoPromise;
     expect(evilInfo.demonName).toBeDefined();
+    expect(evilInfo.otherMinionNames).toBeUndefined();
   }, 15000);
 
   it('일반 플레이어에게 traveller:add를 호출하면 여행자로 전환된다', async () => {
@@ -243,6 +253,101 @@ describe('E2E: 여행자 역할 배정 및 알림', () => {
     // 기존 일반 역할은 해제되어야 한다
     expect(afterPlayer?.role?.id).not.toBe(previousRoleId);
   }, 15000);
+});
+
+describe('E2E: S&V 여행자 진행 이벤트', () => {
+  let ctx: TestContext;
+
+  beforeEach(async () => {
+    ctx = await setupTestServer();
+  }, 10000);
+
+  afterEach(async () => {
+    await ctx.cleanup();
+  });
+
+  it('익살꾼 추방 투표 통과 시 자동 추방 대신 이야기꾼 판정을 요청한다', async () => {
+    const { playerIds } = await setupFullGame(ctx);
+    await advanceToDay(ctx, 'nomination');
+    const deviant = await addTravellerWithRole(
+      ctx,
+      'Deviant',
+      'deviant',
+      'good',
+    );
+
+    const judgementPromise = waitForEvent<{
+      targetId: string;
+      targetName: string;
+      guiltyCount: number;
+      totalPlayers: number;
+    }>(ctx.storyteller as Socket, 'deviant:exileJudgement');
+
+    const proposeResult = await new Promise<{
+      success: boolean;
+      error?: string;
+    }>((resolve) => {
+      ctx.players[0].emit(
+        'exile:propose',
+        { targetId: deviant.playerId },
+        resolve,
+      );
+    });
+    expect(proposeResult.success).toBe(true);
+
+    for (const socket of [...ctx.players]) {
+      await new Promise<void>((resolve) => {
+        socket.emit('exile:vote', { guilty: true }, () => resolve());
+      });
+    }
+
+    const judgement = await judgementPromise;
+    expect(judgement.targetId).toBe(deviant.playerId);
+    expect(judgement.guiltyCount).toBe(playerIds.length + 1);
+    expect(ctx.app.game.getPlayer(deviant.playerId)?.isAlive).toBe(true);
+
+    const exileResultPromise = waitForEvent<{
+      targetId: string;
+      exiled: boolean;
+    }>(ctx.players[0] as Socket, 'exile:result');
+    ctx.storyteller.emit('exile:forceClose', { exiled: true });
+    const exileResult = await exileResultPromise;
+    expect(exileResult.targetId).toBe(deviant.playerId);
+    expect(exileResult.exiled).toBe(true);
+    expect(ctx.app.game.getPlayer(deviant.playerId)?.isAlive).toBe(false);
+  }, 20000);
+
+  it('탕녀는 방문 대상에게 동의를 요청하고 이야기꾼에게 결과를 보낸다', async () => {
+    const { playerIds } = await setupFullGame(ctx);
+    const harlot = await addTravellerWithRole(ctx, 'Harlot', 'harlot', 'good');
+
+    const targetSocket = ctx.players[0] as Socket;
+    const requestPromise = waitForEvent<{
+      harlotId: string;
+      harlotName: string;
+    }>(targetSocket, 'harlot:consentRequested');
+    const resultPromise = waitForEvent<{
+      harlotId: string;
+      targetId: string;
+      accepted: boolean;
+      targetRoleName?: string;
+    }>(ctx.storyteller as Socket, 'harlot:consentResult');
+
+    harlot.socket.emit('night:action', { targets: [playerIds[0]] });
+    const request = await requestPromise;
+    expect(request.harlotId).toBe(harlot.playerId);
+
+    targetSocket.emit('harlot:respond', {
+      harlotId: harlot.playerId,
+      accepted: true,
+    });
+
+    const result = await resultPromise;
+    expect(result.harlotId).toBe(harlot.playerId);
+    expect(result.targetId).toBe(playerIds[0]);
+    expect(result.accepted).toBe(true);
+    expect(result.targetRoleName).toBeDefined();
+  }, 20000);
 });
 
 describe('E2E: 추방 투표', () => {

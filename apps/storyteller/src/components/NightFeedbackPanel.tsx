@@ -129,7 +129,9 @@ export function NightFeedbackPanel({
           (p.role?.id === 'drunk' && p.drunkAs === activeRoleId)) &&
         (isOnlyWhenDead
           ? !p.isAlive
-          : p.isAlive || p.statuses.includes('vigormortis_retained')),
+          : p.isAlive ||
+            p.statuses.includes('vigormortis_retained') ||
+            p.statuses.includes('bone_collector_ability')),
     );
     return shuffle(matched);
   }, [activeRoleId, players, wakeUpTargetIds]);
@@ -177,8 +179,11 @@ export function NightFeedbackPanel({
 
   const targetPlayer = currentTarget;
   const isDrunk = targetPlayer.role?.id === 'drunk';
-  const isPoisoned = hasPoisonStatus(targetPlayer.statuses);
-  const isMalfunctioning = isDrunk || isPoisoned;
+  const isSoberHealthy =
+    targetPlayer.role?.id === 'beggar' ||
+    targetPlayer.statuses.includes('barista_sober_healthy');
+  const isPoisoned = !isSoberHealthy && hasPoisonStatus(targetPlayer.statuses);
+  const isMalfunctioning = !isSoberHealthy && (isDrunk || isPoisoned);
   const role = getRoleById(activeRoleId);
   const team = role?.team ?? 'townsfolk';
   const cardColors = TEAM_CARD_COLORS[team] ?? FALLBACK_CARD_COLORS;

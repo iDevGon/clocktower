@@ -16,12 +16,42 @@ import {
   getRoleById,
   getTravellerById,
   hasPoisonStatus,
+  POISON_STATUSES,
   SECTS_AND_VIOLETS_ROLES,
 } from '@clocktower/shared/logic';
 
+type BaristaEffect = 'sober_healthy' | 'acts_twice';
+
+const TEMPORARY_TRAVELLER_STATUSES: PlayerStatus[] = [
+  'bone_collector_ability',
+  'barista_sober_healthy',
+  'barista_acts_twice',
+];
+
+function isSoberHealthy(player: Player): boolean {
+  return (
+    player.role?.id === 'beggar' ||
+    player.statuses.includes('barista_sober_healthy')
+  );
+}
+
 /** 플레이어가 중독 또는 취함 상태인지 확인 (능력 무효화 판정용) */
 function isPoisonedOrDrunk(player: Player): boolean {
+  if (isSoberHealthy(player)) return false;
   return hasPoisonStatus(player.statuses) || player.statuses.includes('drunk');
+}
+
+function filterSoberHealthyBlockedStatuses(
+  player: Player,
+  statuses: PlayerStatus[],
+): PlayerStatus[] {
+  const unique = [...new Set(statuses)];
+  const soberHealthy =
+    player.role?.id === 'beggar' || unique.includes('barista_sober_healthy');
+  if (!soberHealthy) return unique;
+  return unique.filter(
+    (status) => status !== 'drunk' && !POISON_STATUSES.includes(status),
+  );
 }
 
 /**
@@ -144,6 +174,14 @@ export class GameManager {
   private vigormortisPoisonTargets = new Map<string, string>();
   // 사악한 쌍둥이 매핑 (evilTwinId → goodTwinId)
   private evilTwinPairs = new Map<string, string>();
+  // 백정: 첫 처형 후 추가 지명 1회
+  private butcherExtraNominationAvailable = false;
+  private butcherExtraNominationUsed = false;
+  private butcherExtraNominatorId: string | null = null;
+  // 뼈 수집가: 게임 중 1회 복구 대상 추적
+  private boneCollectorUsed = new Set<string>();
+  private boneCollectorRestoredTargets = new Map<string, string>();
+  private pendingHarlotConsents = new Map<string, { harlotId: string }>();
   // 현재 에디션 ID (밤 순서 결정에 사용)
   private editionId = 'trouble_brewing';
 
@@ -164,11 +202,39 @@ export class GameManager {
   }
 
   private addStatus(player: Player, status: PlayerStatus): void {
+    if (
+      isSoberHealthy(player) &&
+      (status === 'drunk' || POISON_STATUSES.includes(status))
+    ) {
+      return;
+    }
     if (!player.statuses.includes(status)) player.statuses.push(status);
+    player.statuses = filterSoberHealthyBlockedStatuses(
+      player,
+      player.statuses,
+    );
   }
 
   private removeStatus(player: Player, status: PlayerStatus): void {
     player.statuses = player.statuses.filter((s) => s !== status);
+  }
+
+  private cleanupOnPlayerDeath(player: Player): void {
+    if (player.role?.id === 'beggar') {
+      this.beggarTokens.delete(player.id);
+    }
+    if (player.role?.id === 'bone_collector') {
+      this.clearBoneCollectorRestoredTarget(player.id);
+    }
+  }
+
+  private clearBoneCollectorRestoredTarget(boneCollectorId: string): void {
+    const targetId = this.boneCollectorRestoredTargets.get(boneCollectorId);
+    if (targetId) {
+      const target = this.getPlayer(targetId);
+      if (target) this.removeStatus(target, 'bone_collector_ability');
+    }
+    this.boneCollectorRestoredTargets.delete(boneCollectorId);
   }
 
   private getTownsfolkNeighborIds(sourcePlayerId: string): string[] {
@@ -317,6 +383,12 @@ export class GameManager {
     this.vigormortisRetainedMinions.clear();
     this.vigormortisPoisonTargets.clear();
     this.evilTwinPairs.clear();
+    this.butcherExtraNominationAvailable = false;
+    this.butcherExtraNominationUsed = false;
+    this.butcherExtraNominatorId = null;
+    this.boneCollectorUsed.clear();
+    this.boneCollectorRestoredTargets.clear();
+    this.pendingHarlotConsents.clear();
     this.editionId = 'trouble_brewing';
     this.clearVoteTimer();
     this.clearNominationTimer();
@@ -400,6 +472,12 @@ export class GameManager {
     this.vigormortisRetainedMinions.clear();
     this.vigormortisPoisonTargets.clear();
     this.evilTwinPairs.clear();
+    this.butcherExtraNominationAvailable = false;
+    this.butcherExtraNominationUsed = false;
+    this.butcherExtraNominatorId = null;
+    this.boneCollectorUsed.clear();
+    this.boneCollectorRestoredTargets.clear();
+    this.pendingHarlotConsents.clear();
     this.editionId = 'trouble_brewing';
     this.clearVoteTimer();
     this.clearNominationTimer();
@@ -472,6 +550,7 @@ export class GameManager {
   removePlayer(playerId: string): boolean {
     const index = this.state.players.findIndex((p) => p.id === playerId);
     if (index === -1) return false;
+    this.cleanupOnPlayerDeath(this.state.players[index]);
     this.state.players.splice(index, 1);
     this.state.playerOrder = this.state.playerOrder.filter(
       (id) => id !== playerId,
@@ -519,6 +598,10 @@ export class GameManager {
 
     player.role = travellerRole;
     player.travellerAlignment = alignment;
+    player.statuses = filterSoberHealthyBlockedStatuses(
+      player,
+      player.statuses,
+    );
     return true;
   }
 
@@ -534,6 +617,8 @@ export class GameManager {
     if (!player || !player.isTraveller) return false;
 
     player.isAlive = false;
+    this.cleanupOnPlayerDeath(player);
+    this.syncContinuousPoisoning();
     return true;
   }
 
@@ -708,6 +793,11 @@ export class GameManager {
       this.executionToday = false;
       this.executionCandidate = null;
       this.executionCandidateThreshold = 0;
+      this.butcherExtraNominationAvailable = false;
+      this.butcherExtraNominationUsed = false;
+      this.butcherExtraNominatorId = null;
+      this.boneCollectorRestoredTargets.clear();
+      this.pendingHarlotConsents.clear();
       this.pendingNightKills = [];
       // 추방 투표 진행 중이면 취소
       this.exileVote = null;
@@ -722,8 +812,13 @@ export class GameManager {
         p.hasBeenNominatedToday = false;
         // 밤 시작 시 중독/보호/세레노버스 광기 상태 자동 제거
         p.statuses = p.statuses.filter(
-          (s) => s !== 'poisoned' && s !== 'protected' && s !== 'cerenovus_mad',
+          (s) =>
+            s !== 'poisoned' &&
+            s !== 'protected' &&
+            s !== 'cerenovus_mad' &&
+            !TEMPORARY_TRAVELLER_STATUSES.includes(s),
         );
+        p.statuses = filterSoberHealthyBlockedStatuses(p, p.statuses);
       });
       this.syncContinuousPoisoning();
     }
@@ -793,6 +888,7 @@ export class GameManager {
     const player = this.getPlayer(playerId);
     if (player) {
       player.isAlive = false;
+      this.cleanupOnPlayerDeath(player);
       this.syncContinuousPoisoning();
     }
   }
@@ -852,16 +948,16 @@ export class GameManager {
     if (!player) return;
 
     const hadWitchCursed = player.statuses.includes('witch_cursed');
-    const hasWitchCursed = statuses.includes('witch_cursed');
-    player.statuses = statuses;
+    player.statuses = filterSoberHealthyBlockedStatuses(player, statuses);
 
     // witch_cursed 상태 추가/제거 시 내부 상태 동기화
-    if (!hadWitchCursed && hasWitchCursed) {
+    const hasWitchCursedAfter = player.statuses.includes('witch_cursed');
+    if (!hadWitchCursed && hasWitchCursedAfter) {
       this.witchCursedTarget = playerId;
     }
     if (
       hadWitchCursed &&
-      !hasWitchCursed &&
+      !hasWitchCursedAfter &&
       this.witchCursedTarget === playerId
     ) {
       this.witchCursedTarget = null;
@@ -1041,6 +1137,117 @@ export class GameManager {
     return true;
   }
 
+  // ── 이단 여행자 능력 ──
+
+  restoreBoneCollectorAbility(
+    boneCollectorId: string,
+    targetPlayerId: string,
+  ): boolean {
+    const collector = this.getPlayer(boneCollectorId);
+    const target = this.getPlayer(targetPlayerId);
+    if (
+      !collector ||
+      !target ||
+      !collector.isAlive ||
+      !collector.isTraveller ||
+      collector.role?.id !== 'bone_collector'
+    ) {
+      return false;
+    }
+    if (this.boneCollectorUsed.has(boneCollectorId)) return false;
+    if (isPoisonedOrDrunk(collector)) return false;
+    if (target.isAlive) return false;
+    if (boneCollectorId === targetPlayerId) return false;
+
+    this.boneCollectorUsed.add(boneCollectorId);
+    this.addStatus(collector, 'no_ability');
+    this.addStatus(target, 'bone_collector_ability');
+    this.boneCollectorRestoredTargets.set(boneCollectorId, targetPlayerId);
+    return true;
+  }
+
+  isBoneCollectorUsed(boneCollectorId: string): boolean {
+    return this.boneCollectorUsed.has(boneCollectorId);
+  }
+
+  applyBaristaEffect(targetPlayerId: string, effect: BaristaEffect): boolean {
+    const target = this.getPlayer(targetPlayerId);
+    if (!target) return false;
+
+    if (effect === 'sober_healthy') {
+      this.addStatus(target, 'barista_sober_healthy');
+      target.statuses = filterSoberHealthyBlockedStatuses(
+        target,
+        target.statuses,
+      );
+      return true;
+    }
+
+    this.addStatus(target, 'barista_acts_twice');
+    return true;
+  }
+
+  shouldRequestDeviantExileJudgement(): boolean {
+    if (!this.exileVote) return false;
+    const target = this.getPlayer(this.exileVote.targetId);
+    if (!target?.isAlive || target.role?.id !== 'deviant') return false;
+    let guiltyCount = 0;
+    for (const vote of this.exileVote.votes.values()) {
+      if (vote) guiltyCount++;
+    }
+    return guiltyCount > Math.floor(this.state.players.length / 2);
+  }
+
+  requestHarlotConsent(
+    harlotId: string,
+    targetPlayerId: string,
+  ): {
+    harlot: Player;
+    target: Player;
+  } | null {
+    const harlot = this.getPlayer(harlotId);
+    const target = this.getPlayer(targetPlayerId);
+    if (
+      !harlot ||
+      !target ||
+      !harlot.isAlive ||
+      !target.isAlive ||
+      harlotId === targetPlayerId ||
+      harlot.role?.id !== 'harlot'
+    ) {
+      return null;
+    }
+
+    this.pendingHarlotConsents.set(targetPlayerId, { harlotId });
+    return { harlot, target };
+  }
+
+  resolveHarlotConsent(
+    targetPlayerId: string,
+    harlotId: string,
+    accepted: boolean,
+  ): {
+    harlot: Player;
+    target: Player;
+    accepted: boolean;
+    targetRoleName?: string;
+  } | null {
+    const pending = this.pendingHarlotConsents.get(targetPlayerId);
+    if (!pending || pending.harlotId !== harlotId) return null;
+    this.pendingHarlotConsents.delete(targetPlayerId);
+
+    const harlot = this.getPlayer(harlotId);
+    const target = this.getPlayer(targetPlayerId);
+    if (!harlot || !target) return null;
+
+    return {
+      harlot,
+      target,
+      accepted,
+      targetRoleName: accepted ? (target.role?.name ?? '???') : undefined,
+    };
+  }
+
   /** 플레이어 진영 판정: 여행자는 travellerAlignment, 일반은 team으로 */
   getPlayerAlignment(playerId: string): 'good' | 'evil' | null {
     const p = this.getPlayer(playerId);
@@ -1218,11 +1425,57 @@ export class GameManager {
   // ── 처형 기록 (시장 승리 조건용) ──
 
   markExecution(): void {
+    const wasExecutionToday = this.executionToday;
     this.executionToday = true;
+    if (!wasExecutionToday) {
+      this.openButcherExtraNomination();
+    }
   }
 
   hadExecutionToday(): boolean {
     return this.executionToday;
+  }
+
+  private findActiveButcher(): Player | undefined {
+    return this.state.players.find(
+      (p) =>
+        p.isAlive &&
+        p.isTraveller &&
+        p.role?.id === 'butcher_traveller' &&
+        !isPoisonedOrDrunk(p),
+    );
+  }
+
+  private openButcherExtraNomination(): void {
+    if (this.butcherExtraNominationUsed) return;
+    if (this.butcherExtraNominationAvailable) return;
+    const butcher = this.findActiveButcher();
+    if (!butcher) return;
+    this.butcherExtraNominationAvailable = true;
+    this.butcherExtraNominatorId = butcher.id;
+  }
+
+  isButcherExtraNominationAvailable(): boolean {
+    if (!this.butcherExtraNominationAvailable) return false;
+    const butcher = this.butcherExtraNominatorId
+      ? this.getPlayer(this.butcherExtraNominatorId)
+      : undefined;
+    return Boolean(
+      butcher?.isAlive &&
+        butcher.isTraveller &&
+        butcher.role?.id === 'butcher_traveller' &&
+        !isPoisonedOrDrunk(butcher),
+    );
+  }
+
+  getButcherExtraNominator(): Player | null {
+    if (!this.isButcherExtraNominationAvailable()) return null;
+    return this.getPlayer(this.butcherExtraNominatorId ?? '') ?? null;
+  }
+
+  consumeButcherExtraNominationWindow(): void {
+    this.executionCandidate = null;
+    this.executionCandidateThreshold = 0;
   }
 
   // ── 성녀 지명 트리거 ──
@@ -1238,7 +1491,11 @@ export class GameManager {
       return { success: false, error: '플레이어를 찾을 수 없습니다' };
     if (!nominator.isAlive)
       return { success: false, error: '사망한 플레이어는 지목할 수 없습니다' };
-    if (nominator.hasNominatedToday)
+    const usingButcherExtraNomination =
+      this.executionToday &&
+      this.isButcherExtraNominationAvailable() &&
+      this.butcherExtraNominatorId === nominatorId;
+    if (nominator.hasNominatedToday && !usingButcherExtraNomination)
       return { success: false, error: '이미 오늘 지목을 사용했습니다' };
     if (nominee.hasBeenNominatedToday)
       return {
@@ -1247,8 +1504,16 @@ export class GameManager {
       };
     if (nominatorId === nomineeId)
       return { success: false, error: '자기 자신은 지목할 수 없습니다' };
-    if (this.executionToday)
+    if (this.executionToday && !usingButcherExtraNomination)
       return { success: false, error: '오늘 이미 처형이 있었습니다' };
+
+    if (usingButcherExtraNomination) {
+      this.butcherExtraNominationAvailable = false;
+      this.butcherExtraNominationUsed = true;
+      this.butcherExtraNominatorId = null;
+      this.executionCandidate = null;
+      this.executionCandidateThreshold = 0;
+    }
 
     nominator.hasNominatedToday = true;
     nominee.hasBeenNominatedToday = true;

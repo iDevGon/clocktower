@@ -150,7 +150,10 @@ export type PlayerStatus =
   | 'cerenovus_mad'
   | 'good_twin'
   | 'evil_twin'
-  | 'no_ability';
+  | 'no_ability'
+  | 'bone_collector_ability'
+  | 'barista_sober_healthy'
+  | 'barista_acts_twice';
 
 export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
   poisoned: '중독',
@@ -164,6 +167,9 @@ export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
   good_twin: '선한 쌍둥이',
   evil_twin: '악한 쌍둥이',
   no_ability: '능력 소진',
+  bone_collector_ability: '유골 수집가 능력',
+  barista_sober_healthy: '바리스타 맑음/건강',
+  barista_acts_twice: '바리스타 2회 발동',
   no_dashii_poisoned: '노 다시 중독',
   vigormortis_poisoned: '비고르모르티스 중독',
   vigormortis_retained: '비고르모르티스 유지',
@@ -181,6 +187,9 @@ export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
   good_twin: '#27ae60',
   evil_twin: '#c0392b',
   no_ability: '#7f8c8d',
+  bone_collector_ability: '#d4a84f',
+  barista_sober_healthy: '#4aa890',
+  barista_acts_twice: '#5a8ec8',
   no_dashii_poisoned: '#9b59b6',
   vigormortis_poisoned: '#9b59b6',
   vigormortis_retained: '#8e44ad',
@@ -205,6 +214,12 @@ export const PLAYER_STATUS_DESCRIPTIONS: Record<PlayerStatus, string> = {
   evil_twin:
     '사악한 쌍둥이. 선한 쌍둥이가 살아 있는 동안 처형으로 사망하지 않습니다.',
   no_ability: '1회성 능력을 이미 사용했습니다.',
+  bone_collector_ability:
+    '유골 수집가가 오늘 능력을 되돌려준 죽은 플레이어입니다.',
+  barista_sober_healthy:
+    '바리스타가 부여한 맑은 정신/건강 상태입니다. 중독과 취함을 무시합니다.',
+  barista_acts_twice:
+    '바리스타가 부여한 능력 2회 발동 상태입니다. 오늘 밤 능력을 두 번 처리할 수 있습니다.',
   no_dashii_poisoned:
     '노 다시의 가장 가까운 마을주민 이웃입니다. 노 다시가 능력을 잃거나 이웃 관계가 바뀌면 해제됩니다.',
   vigormortis_poisoned:

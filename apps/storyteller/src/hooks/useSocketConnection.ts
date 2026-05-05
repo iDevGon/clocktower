@@ -366,6 +366,33 @@ export function useSocketConnection() {
               'ability',
             );
         });
+        newSocket.on('butcher:extraNomination', (data) => {
+          const gs = useGameStore.getState().gameState;
+          const msg = `${data.butcherName}이(가) 추가 지명을 할 수 있습니다`;
+          useGameStore.getState().showEventToast({
+            title: '백정 추가 지명',
+            message: msg,
+          });
+          useLogStore.getState().addLog(gs?.day ?? 0, 'day', msg, 'ability');
+        });
+        newSocket.on('deviant:exileJudgement', (data) => {
+          useGameStore.getState().setDeviantExileJudgement(data);
+          useGameStore.getState().showEventToast({
+            title: '기인 추방 판정',
+            message: `${data.targetName} 추방 투표가 통과했습니다`,
+          });
+        });
+        newSocket.on('harlot:consentResult', (data) => {
+          const gs = useGameStore.getState().gameState;
+          const msg = data.accepted
+            ? `${data.targetName}이(가) ${data.harlotName}의 방문에 동의했습니다`
+            : `${data.targetName}이(가) ${data.harlotName}의 방문을 거절했습니다`;
+          useGameStore.getState().showEventToast({
+            title: '창녀 방문 결과',
+            message: msg,
+          });
+          useLogStore.getState().addLog(gs?.day ?? 0, 'night', msg, 'ability');
+        });
         newSocket.on('fangGu:jumped', (data) => {
           const gs = useGameStore.getState().gameState;
           const msg = `${data.oldDemonName} → ${data.newDemonName}`;

@@ -236,6 +236,17 @@ export function useGameActions() {
     }
   }, []);
 
+  const respondHarlotConsent = useCallback(
+    (harlotId: string, accepted: boolean) => {
+      const socket = useConnectionStore.getState().socket;
+      if (socket) {
+        socket.emit('harlot:respond', { harlotId, accepted });
+        usePlayerStore.getState().set({ harlotConsentRequest: null });
+      }
+    },
+    [],
+  );
+
   const leaveGame = useCallback((): Promise<{
     success: boolean;
     error?: string;
@@ -269,6 +280,7 @@ export function useGameActions() {
     consentReady,
     proposeExile,
     castExileVote,
+    respondHarlotConsent,
     leaveGame,
   };
 }

@@ -453,6 +453,17 @@ export function registerPlayerHandlers(
             game.setWitchCursedTarget(targets[0]);
           }
 
+          // 탕녀(Harlot): 선택 대상에게 동의 요청을 보내고, 결과는 대상 응답 후 이야기꾼이 처리
+          if (effectiveRoleId === 'harlot' && targets.length > 0) {
+            const request = game.requestHarlotConsent(playerId, targets[0]);
+            if (request) {
+              playerIo.to(request.target.id).emit('harlot:consentRequested', {
+                harlotId: request.harlot.id,
+                harlotName: request.harlot.name,
+              });
+            }
+          }
+
           const reportRoleId = effectiveRoleId;
           // 점쟁이 판정: 선택된 2명 중 악마/Red Herring 포함 여부
           const fortuneTellerResult =
@@ -472,6 +483,26 @@ export function registerPlayerHandlers(
           );
         }
       }
+    });
+
+    socket.on('harlot:respond', ({ harlotId, accepted }) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) return;
+
+      const result = game.resolveHarlotConsent(playerId, harlotId, accepted);
+      if (!result) return;
+
+      const payload = {
+        harlotId: result.harlot.id,
+        harlotName: result.harlot.name,
+        targetId: result.target.id,
+        targetName: result.target.name,
+        accepted: result.accepted,
+        targetRoleName: result.targetRoleName,
+      };
+      storytellerIo.emit('harlot:consentResult', payload);
+      playerIo.to(result.harlot.id).emit('harlot:consentResult', payload);
+      playerIo.to(result.target.id).emit('harlot:consentResult', payload);
     });
 
     // 처단자(Slayer) 능력 사용
@@ -1215,6 +1246,18 @@ export function registerPlayerHandlers(
 
       // 전원 투표 완료 시 자동 종료
       if (result.allVoted) {
+        if (game.shouldRequestDeviantExileJudgement()) {
+          const exileVote = game.getExileVote();
+          const target = exileVote ? game.getPlayer(exileVote.targetId) : null;
+          storytellerIo.emit('deviant:exileJudgement', {
+            targetId: exileVote?.targetId ?? '',
+            targetName: target?.name ?? exileVote?.targetId ?? '',
+            guiltyCount: exileVote?.guiltyCount ?? 0,
+            totalPlayers: game.getState().players.length,
+          });
+          return;
+        }
+
         const closeResult = game.closeExileVote();
         if (closeResult) {
           const target = game.getPlayer(closeResult.targetId);

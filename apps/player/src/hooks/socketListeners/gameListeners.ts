@@ -92,6 +92,7 @@ export function attachGameListeners(socket: AppSocket) {
             // 총잡이 하루 1회 리셋 + 첫 투표자 기록 리셋
             gunslingerUsedToday: false,
             todayFirstVoteGuiltyVoters: null,
+            harlotConsentRequest: null,
           }
         : {}),
       // 새 게임 시작 (setup): 역할/상태 초기화, 피드백 히스토리 리셋
@@ -122,6 +123,7 @@ export function attachGameListeners(socket: AppSocket) {
             todayFirstVoteGuiltyVoters: null,
             gunslingerFiredOverlay: null,
             scapegoatSwappedOverlay: null,
+            harlotConsentRequest: null,
             beggarTokens: 0,
             beggarAlignmentInfos: [],
             voteResult: null,
@@ -263,6 +265,22 @@ export function attachGameListeners(socket: AppSocket) {
         scapegoatId: data.scapegoatId,
         scapegoatName: data.scapegoatName,
       },
+    });
+  });
+
+  socket.on('harlot:consentRequested', (data) => {
+    usePlayerStore.getState().set({ harlotConsentRequest: data });
+  });
+
+  socket.on('harlot:consentResult', (data) => {
+    const state = usePlayerStore.getState();
+    const isParticipant =
+      state.playerId === data.harlotId || state.playerId === data.targetId;
+    if (!isParticipant) return;
+    usePlayerStore.getState().set({ harlotConsentRequest: null });
+    usePlayerStore.getState().showEventToast({
+      title: '창녀 방문 결과',
+      message: data.accepted ? '방문에 동의했습니다' : '방문을 거절했습니다',
     });
   });
 

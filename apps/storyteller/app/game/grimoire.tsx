@@ -197,6 +197,8 @@ export default function GrimoireScreen() {
     vigormortisKillMinion,
     pitHagChangeRole,
     assignGoodTwin,
+    boneCollectorRestore,
+    applyBaristaEffect,
     assignRedHerring,
     kickPlayer,
     addTraveller,
@@ -216,6 +218,10 @@ export default function GrimoireScreen() {
   const jugglerCorrectCount = useGameStore((s) => s.jugglerCorrectCount);
   const scapegoatOffer = useGameStore((s) => s.scapegoatOffer);
   const setScapegoatOffer = useGameStore((s) => s.setScapegoatOffer);
+  const deviantExileJudgement = useGameStore((s) => s.deviantExileJudgement);
+  const setDeviantExileJudgement = useGameStore(
+    (s) => s.setDeviantExileJudgement,
+  );
   const mayorNightDeathPending = useGameStore((s) => s.mayorNightDeathPending);
   const mayorNightDeathId = useGameStore((s) => s.mayorNightDeathId);
   const mayorNightDeathName = useGameStore((s) => s.mayorNightDeathName);
@@ -1463,6 +1469,8 @@ export default function GrimoireScreen() {
           onSnakeCharmerSwap={snakeCharmerSwap}
           onVigormortisKillMinion={vigormortisKillMinion}
           onPitHagChangeRole={pitHagChangeRole}
+          onBoneCollectorRestore={boneCollectorRestore}
+          onApplyBaristaEffect={applyBaristaEffect}
           nightWakeUpTargets={nightWakeUpTargets}
           styles={styles}
           editionId={detectedEditionId}
@@ -1773,6 +1781,23 @@ export default function GrimoireScreen() {
             confirmWitchCurseDeath(witchCursePending.nominatorId, false);
           }
           setWitchCursePending(null);
+        }}
+      />
+
+      <ConfirmModal
+        visible={!!deviantExileJudgement}
+        title="기인 추방 판정"
+        message={`${deviantExileJudgement?.targetName ?? '기인'}의 추방 투표가 통과했습니다. 오늘 웃기지 않았다고 판단하여 추방할까요?`}
+        confirmText="추방"
+        cancelText="살림"
+        confirmStyle="destructive"
+        onConfirm={() => {
+          forceCloseExile(true);
+          setDeviantExileJudgement(null);
+        }}
+        onCancel={() => {
+          forceCloseExile(false);
+          setDeviantExileJudgement(null);
         }}
       />
 

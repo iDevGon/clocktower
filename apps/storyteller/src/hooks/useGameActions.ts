@@ -257,6 +257,21 @@ export function useGameActions() {
     [socket],
   );
 
+  const boneCollectorRestore = useCallback(
+    (boneCollectorId: string, targetPlayerId: string) =>
+      socket?.emit('boneCollector:restore', {
+        boneCollectorId,
+        targetPlayerId,
+      }),
+    [socket],
+  );
+
+  const applyBaristaEffect = useCallback(
+    (targetPlayerId: string, effect: 'sober_healthy' | 'acts_twice') =>
+      socket?.emit('barista:apply', { targetPlayerId, effect }),
+    [socket],
+  );
+
   const sendChatToPlayer = useCallback(
     (playerId: string, message: string) =>
       socket?.emit('chat:sendToPlayer', { playerId, message }),
@@ -356,6 +371,8 @@ export function useGameActions() {
     vigormortisKillMinion,
     pitHagChangeRole,
     assignGoodTwin,
+    boneCollectorRestore,
+    applyBaristaEffect,
     sendChatToPlayer,
     kickPlayer,
     addTraveller,

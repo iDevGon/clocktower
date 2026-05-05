@@ -334,6 +334,19 @@ export function registerStorytellerHandlers(
               return;
             }
             emitPromotionIfAny(game, playerIo, storytellerIo);
+            const butcher = game.getButcherExtraNominator();
+            if (butcher) {
+              game.consumeButcherExtraNominationWindow();
+              game.returnToNomination();
+              playerIo.emit('game:phase', 'day');
+              playerIo.emit('day:subPhase', 'nomination');
+              storytellerIo.emit('butcher:extraNomination', {
+                butcherId: butcher.id,
+                butcherName: butcher.name,
+              });
+              storytellerIo.emit('game:state', game.getStorytellerState());
+              return;
+            }
           }
         }
 
@@ -509,15 +522,23 @@ export function registerStorytellerHandlers(
 
         // 실제 역할 + 주정뱅이(drunkAs) + 철학자(philosopherGrantedRole) 모두 수집.
         // 철학자가 활성화될 때(roleId === 'philosopher')도 본인 포함되어야 하므로 그대로 매치
-        const candidates = state.players.filter(
-          (p) =>
-            (p.role?.id === roleId ||
-              (p.role?.id === 'drunk' && p.drunkAs === roleId) ||
-              (p.role?.id === 'philosopher' &&
-                p.philosopherGrantedRole === roleId)) &&
-            (isOnlyWhenDead
-              ? !p.isAlive && game.hasPendingNightKill(p.id)
-              : p.isAlive || p.statuses.includes('vigormortis_retained')),
+        const baseCandidates = state.players.filter((p) => {
+          const roleMatches =
+            p.role?.id === roleId ||
+            (p.role?.id === 'drunk' && p.drunkAs === roleId) ||
+            (p.role?.id === 'philosopher' &&
+              p.philosopherGrantedRole === roleId);
+          if (!roleMatches) return false;
+          return isOnlyWhenDead
+            ? !p.isAlive && game.hasPendingNightKill(p.id)
+            : p.isAlive ||
+                p.statuses.includes('vigormortis_retained') ||
+                p.statuses.includes('bone_collector_ability');
+        });
+        const candidates = baseCandidates.flatMap((p) =>
+          !isOnlyWhenDead && p.statuses.includes('barista_acts_twice')
+            ? [p, p]
+            : [p],
         );
 
         // Fisher-Yates 셔플
@@ -958,11 +979,9 @@ export function registerStorytellerHandlers(
       if (alignment === 'evil') {
         const state = game.getState();
         const demons = state.players.filter((p) => p.role?.team === 'demon');
-        const minions = state.players.filter((p) => p.role?.team === 'minion');
         if (demons.length > 0) {
           playerIo.to(playerId).emit('evil:info', {
             demonName: demons[0].name,
-            otherMinionNames: minions.map((m) => m.name),
           });
         }
       }
@@ -1067,6 +1086,42 @@ export function registerStorytellerHandlers(
       console.log(
         `Exile force-closed by storyteller: ${target?.name} - ${closeResult.exiled ? 'exiled' : 'survived'}`,
       );
+    });
+
+    socket.on(
+      'boneCollector:restore',
+      ({ boneCollectorId, targetPlayerId }) => {
+        const success = game.restoreBoneCollectorAbility(
+          boneCollectorId,
+          targetPlayerId,
+        );
+        if (!success) return;
+        const collector = game.getPlayer(boneCollectorId);
+        const target = game.getPlayer(targetPlayerId);
+        if (collector) playerIo.emit('game:playerUpdate', collector);
+        if (target) playerIo.emit('game:playerUpdate', target);
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      },
+    );
+
+    socket.on('barista:apply', ({ targetPlayerId, effect }) => {
+      const success = game.applyBaristaEffect(targetPlayerId, effect);
+      if (!success) return;
+      const target = game.getPlayer(targetPlayerId);
+      if (target) {
+        playerIo.to(target.id).emit('night:feedback', {
+          feedback: {
+            type: 'players',
+            playerNames: [target.name],
+            message:
+              effect === 'sober_healthy'
+                ? '바리스타 효과: 맑은 정신이고 건강합니다.'
+                : '바리스타 효과: 능력이 두 번 작동합니다.',
+          },
+        });
+        playerIo.emit('game:playerUpdate', target);
+      }
+      storytellerIo.emit('game:state', game.getStorytellerState());
     });
 
     // ── Sects & Violets 전용 핸들러 ──

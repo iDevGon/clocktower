@@ -192,6 +192,20 @@ export interface ServerToClientEvents {
     guiltyCount: number;
     totalPlayers: number;
   }) => void;
+  /** 탕녀가 방문한 대상에게 동의를 요청 */
+  'harlot:consentRequested': (data: {
+    harlotId: string;
+    harlotName: string;
+  }) => void;
+  /** 탕녀 방문 동의 결과 */
+  'harlot:consentResult': (data: {
+    harlotId: string;
+    harlotName: string;
+    targetId: string;
+    targetName: string;
+    accepted: boolean;
+    targetRoleName?: string;
+  }) => void;
 }
 
 /**
@@ -237,6 +251,27 @@ export interface ServerToStorytellerEvents {
   'exile:start': ServerToClientEvents['exile:start'];
   'exile:voteUpdate': ServerToClientEvents['exile:voteUpdate'];
   'exile:result': ServerToClientEvents['exile:result'];
+  /** 도살자 추가 지명 가능 알림 */
+  'butcher:extraNomination': (data: {
+    butcherId: string;
+    butcherName: string;
+  }) => void;
+  /** 익살꾼 추방 투표 통과 후 이야기꾼 판정 요청 */
+  'deviant:exileJudgement': (data: {
+    targetId: string;
+    targetName: string;
+    guiltyCount: number;
+    totalPlayers: number;
+  }) => void;
+  /** 탕녀 방문 동의 결과 */
+  'harlot:consentResult': (data: {
+    harlotId: string;
+    harlotName: string;
+    targetId: string;
+    targetName: string;
+    accepted: boolean;
+    targetRoleName?: string;
+  }) => void;
   /** 게임 중 참가 요청: 이야기꾼 승인 대기 */
   'traveller:pendingApproval': (data: {
     socketId: string;
@@ -396,6 +431,8 @@ export interface ClientToServerEvents {
     data: { guilty: boolean },
     callback?: (res: { success: boolean; error?: string }) => void,
   ) => void;
+  /** 탕녀 방문 요청에 대한 대상 플레이어의 동의/거절 */
+  'harlot:respond': (data: { harlotId: string; accepted: boolean }) => void;
   /** 여행자로 게임에 참가 (게임 진행 중에도 가능) */
   'game:joinAsTraveller': (
     data: { playerName: string },
@@ -534,4 +571,14 @@ export interface StorytellerToServerEvents {
   }) => void;
   /** 희생양 처형 교체: 현재 처형 후보를 희생양으로 교체 */
   'scapegoat:swap': (data: { scapegoatId: string }) => void;
+  /** 유골 수집가가 죽은 플레이어의 능력을 황혼까지 복구 */
+  'boneCollector:restore': (data: {
+    boneCollectorId: string;
+    targetPlayerId: string;
+  }) => void;
+  /** 바리스타가 오늘 밤/내일 낮 효과를 부여 */
+  'barista:apply': (data: {
+    targetPlayerId: string;
+    effect: 'sober_healthy' | 'acts_twice';
+  }) => void;
 }

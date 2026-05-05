@@ -452,7 +452,7 @@ export const TROUBLE_BREWING_TRAVELLERS: TravellerRole[] = [
     name: '거지',
     team: 'traveller',
     ability:
-      '투표하려면 투표 토큰을 사용해야 합니다. 죽은 플레이어가 당신에게 투표 토큰을 주면 그 플레이어의 진영을 알게 됩니다. 당신은 항상 맑은 정신입니다.',
+      '투표하려면 투표 토큰을 사용해야 합니다. 죽은 플레이어가 당신에게 투표 토큰을 주면 그 플레이어의 진영을 알게 됩니다. 당신은 항상 맑은 정신이고 건강합니다.',
     edition: 'trouble_brewing',
   },
   {
@@ -1061,11 +1061,13 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     type: 'select_one',
     instruction: '내일 투표가 3표로 계산될 플레이어를 선택하세요',
     excludeSelf: true,
+    includeDeadTargets: true,
   },
   thief: {
     type: 'select_one',
     instruction: '내일 투표가 음수로 계산될 플레이어를 선택하세요',
     excludeSelf: true,
+    includeDeadTargets: true,
   },
   apprentice: {
     type: 'passive',
@@ -1076,6 +1078,7 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     type: 'select_one',
     instruction: '능력을 되찾을 죽은 플레이어를 선택하세요 (1회 사용)',
     excludeSelf: true,
+    includeDeadTargets: true,
   },
   harlot: {
     type: 'select_one',

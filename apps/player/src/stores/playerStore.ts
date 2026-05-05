@@ -131,6 +131,11 @@ interface PlayerState {
     scapegoatId: string;
     scapegoatName: string;
   } | null;
+  /** 창녀 방문 동의 요청 */
+  harlotConsentRequest: {
+    harlotId: string;
+    harlotName: string;
+  } | null;
   /** 거지가 보유한 투표 토큰 수 (자신) */
   beggarTokens: number;
   /** 거지가 받은 토큰에 대한 진영 정보 로그 (수여자별) */
@@ -259,6 +264,10 @@ const initialState = {
     originalName: string;
     scapegoatId: string;
     scapegoatName: string;
+  } | null,
+  harlotConsentRequest: null as {
+    harlotId: string;
+    harlotName: string;
   } | null,
   beggarTokens: 0,
   beggarAlignmentInfos: [] as Array<{

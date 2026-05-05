@@ -38,6 +38,14 @@ interface NightPanelProps {
     poisonedNeighborId: string,
   ) => void;
   onPitHagChangeRole?: (targetPlayerId: string, newRoleId: string) => void;
+  onBoneCollectorRestore?: (
+    boneCollectorId: string,
+    targetPlayerId: string,
+  ) => void;
+  onApplyBaristaEffect?: (
+    targetPlayerId: string,
+    effect: 'sober_healthy' | 'acts_twice',
+  ) => void;
   nightWakeUpTargets: string[];
   styles: ReturnType<typeof createGrimoireStyles>;
   /** 에디션 ID (밤 순서 결정에 사용) */
@@ -71,6 +79,8 @@ export function NightPanel({
   onSnakeCharmerSwap,
   onVigormortisKillMinion,
   onPitHagChangeRole,
+  onBoneCollectorRestore,
+  onApplyBaristaEffect,
   nightWakeUpTargets,
   styles,
   editionId,
@@ -83,6 +93,7 @@ export function NightPanel({
   );
   const [nightOrderComplete, setNightOrderComplete] = useState(false);
   const [nightElapsed, setNightElapsed] = useState(0);
+  const [baristaTargetId, setBaristaTargetId] = useState<string | null>(null);
   const nightTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Track elapsed time per active night role
@@ -104,6 +115,7 @@ export function NightPanel({
     if (activeNightRoleId) {
       setFeedbackCollapsed(false);
       setFeedbackSentForRole(null);
+      setBaristaTargetId(null);
     }
   }, [activeNightRoleId]);
 
@@ -156,6 +168,20 @@ export function NightPanel({
     return pairs;
   }, [activeNightRoleId, playerOrder, players]);
 
+  const baristaCandidates = useMemo(
+    () => players.filter((p) => p.isAlive),
+    [players],
+  );
+  const selectedBaristaTarget = baristaTargetId
+    ? players.find((p) => p.id === baristaTargetId)
+    : null;
+
+  const handleBaristaApply = (effect: 'sober_healthy' | 'acts_twice') => {
+    if (!baristaTargetId) return;
+    onApplyBaristaEffect?.(baristaTargetId, effect);
+    setFeedbackSentForRole(activeNightRoleId);
+  };
+
   return (
     <View>
       {nightActions.length > 0 && (
@@ -171,6 +197,7 @@ export function NightPanel({
           onSnakeCharmerSwap={onSnakeCharmerSwap}
           onVigormortisKillMinion={onVigormortisKillMinion}
           onPitHagChangeRole={onPitHagChangeRole}
+          onBoneCollectorRestore={onBoneCollectorRestore}
         />
       )}
       <View>
@@ -224,6 +251,75 @@ export function NightPanel({
             editionId={editionId}
             extraRoleIds={extraNightRoleIds}
           />
+
+          {activeNightRoleId === 'barista' && !isFeedbackSent && (
+            <View
+              style={{
+                marginTop: 12,
+                borderWidth: 1,
+                borderColor: '#3a3a42',
+                backgroundColor: '#17171b',
+                padding: 12,
+                gap: 10,
+              }}
+            >
+              <Text style={{ color: '#e0ddd8', fontWeight: '700' }}>
+                바리스타 효과
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {baristaCandidates.map((player) => {
+                  const selected = player.id === baristaTargetId;
+                  return (
+                    <Pressable
+                      key={player.id}
+                      onPress={() => setBaristaTargetId(player.id)}
+                      style={{
+                        borderWidth: 1,
+                        borderColor: selected ? '#d4a84f' : '#3a3a42',
+                        backgroundColor: selected ? '#2b2418' : '#202026',
+                        paddingHorizontal: 10,
+                        paddingVertical: 8,
+                      }}
+                    >
+                      <Text style={{ color: selected ? '#f0d48a' : '#c8c2b8' }}>
+                        {player.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              {selectedBaristaTarget && (
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <Pressable
+                    onPress={() => handleBaristaApply('sober_healthy')}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#1f3b34',
+                      paddingVertical: 10,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ color: '#8ee0c0', fontWeight: '700' }}>
+                      맑음/건강
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => handleBaristaApply('acts_twice')}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#1e2f48',
+                      paddingVertical: 10,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ color: '#9fc4f0', fontWeight: '700' }}>
+                      능력 2회
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Feedback overlay - covers NightOrderPanel */}
           {hasNightFeedback && !feedbackCollapsed && !isFeedbackSent && (

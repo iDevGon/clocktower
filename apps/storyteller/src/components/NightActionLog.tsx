@@ -43,6 +43,11 @@ const ROLE_TARGET_ACTIONS: Record<string, TargetActionConfig> = {
     doneLabel: '광기',
     status: 'cerenovus_mad',
   },
+  bone_collector: {
+    label: '능력 복구',
+    doneLabel: '복구됨',
+    status: 'bone_collector_ability',
+  },
   // butler, fortune_teller 등은 타겟 액션 버튼 불필요
 };
 
@@ -65,6 +70,10 @@ interface NightActionLogProps {
     poisonedNeighborId: string,
   ) => void;
   onPitHagChangeRole?: (targetPlayerId: string, newRoleId: string) => void;
+  onBoneCollectorRestore?: (
+    boneCollectorId: string,
+    targetPlayerId: string,
+  ) => void;
 }
 
 export function NightActionLog({
@@ -79,6 +88,7 @@ export function NightActionLog({
   onSnakeCharmerSwap,
   onVigormortisKillMinion,
   onPitHagChangeRole,
+  onBoneCollectorRestore,
 }: NightActionLogProps) {
   const { fontSize } = useResponsive();
   const scale = fontSize.md / 12;
@@ -449,6 +459,40 @@ export function NightActionLog({
                               {alreadyDone
                                 ? `${getPlayerName(targetId)} 교환됨`
                                 : `${getPlayerName(targetId)} 악마와 교환`}
+                            </Text>
+                          </Pressable>
+                        );
+                      }
+
+                      if (action.roleId === 'bone_collector') {
+                        return (
+                          <Pressable
+                            key={targetId}
+                            onPress={() => {
+                              if (alreadyDone) return;
+                              onBoneCollectorRestore?.(
+                                action.playerId,
+                                targetId,
+                              );
+                              setProcessedTargets((prev) =>
+                                new Set(prev).add(targetId),
+                              );
+                            }}
+                            style={[
+                              styles.killButton,
+                              alreadyDone && styles.killButtonDone,
+                            ]}
+                            disabled={alreadyDone}
+                          >
+                            <Text
+                              style={[
+                                styles.killText,
+                                alreadyDone && styles.killTextDone,
+                              ]}
+                            >
+                              {alreadyDone
+                                ? `${getPlayerName(targetId)} 복구됨`
+                                : `${getPlayerName(targetId)} 능력 복구`}
                             </Text>
                           </Pressable>
                         );

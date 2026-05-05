@@ -17,6 +17,7 @@ import { ExileVoteModal } from '../src/components/ExileVoteModal';
 import { FeedbackHistoryModal } from '../src/components/FeedbackHistoryModal';
 import { GameOverlays } from '../src/components/GameOverlays';
 import { GunslingerFiredOverlay } from '../src/components/GunslingerFiredOverlay';
+import { HarlotConsentModal } from '../src/components/HarlotConsentModal';
 import { JugglerAnnouncementOverlay } from '../src/components/JugglerAnnouncementOverlay';
 import { JugglerDeclareModal } from '../src/components/JugglerDeclareModal';
 import { NominateModal } from '../src/components/NominateModal';
@@ -115,6 +116,7 @@ export default function GameScreen() {
     giveBeggarToken,
     proposeExile,
     castExileVote,
+    respondHarlotConsent,
     leaveGame,
   } = useGameActions();
 
@@ -897,6 +899,7 @@ export default function GameScreen() {
       />
 
       <ExileVoteModal onVote={castExileVote} />
+      <HarlotConsentModal onRespond={respondHarlotConsent} />
 
       <SeatingChart
         visible={seatingChartVisible}

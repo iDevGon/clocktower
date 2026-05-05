@@ -155,6 +155,21 @@ interface GameStore {
       scapegoatName: string;
     } | null,
   ) => void;
+  /** 익살꾼 추방 투표 통과 후 이야기꾼 판정 요청 */
+  deviantExileJudgement: {
+    targetId: string;
+    targetName: string;
+    guiltyCount: number;
+    totalPlayers: number;
+  } | null;
+  setDeviantExileJudgement: (
+    judgement: {
+      targetId: string;
+      targetName: string;
+      guiltyCount: number;
+      totalPlayers: number;
+    } | null,
+  ) => void;
   setGameState: (state: GameState) => void;
   addNightAction: (action: NightAction) => void;
   clearNightActions: () => void;
@@ -324,6 +339,9 @@ export const useGameStore = create<GameStore>()(
         })),
       scapegoatOffer: null,
       setScapegoatOffer: (offer) => set({ scapegoatOffer: offer }),
+      deviantExileJudgement: null,
+      setDeviantExileJudgement: (judgement) =>
+        set({ deviantExileJudgement: judgement }),
       setGameState: (state) => {
         // 서버 상태의 player.statuses를 playerStatuses 스토어에 동기화
         const synced: Record<string, PlayerStatus[]> = Object.fromEntries(
@@ -520,6 +538,7 @@ export const useGameStore = create<GameStore>()(
           artistRequest: null,
           jugglerCorrectCount: {},
           scapegoatOffer: null,
+          deviantExileJudgement: null,
         }),
     }),
     {
