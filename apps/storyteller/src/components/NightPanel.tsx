@@ -30,10 +30,22 @@ interface NightPanelProps {
   onSendFeedback: (playerId: string, feedback: NightFeedbackPayload) => void;
   onKill: (playerId: string) => void;
   onSetStatus: (playerId: string, status: PlayerStatus) => void;
+  onFangGuJump?: (oldDemonId: string, newDemonId: string) => void;
+  onSnakeCharmerSwap?: (snakeCharmerId: string, demonId: string) => void;
+  onVigormortisKillMinion?: (
+    vigormortisId: string,
+    minionId: string,
+    poisonedNeighborId: string,
+  ) => void;
+  onPitHagChangeRole?: (targetPlayerId: string, newRoleId: string) => void;
   nightWakeUpTargets: string[];
   styles: ReturnType<typeof createGrimoireStyles>;
   /** 에디션 ID (밤 순서 결정에 사용) */
   editionId?: string;
+  /** 곡예사 추측의 정답 수 (playerId → count) */
+  jugglerCorrectCount?: Record<string, number>;
+  /** 표준 night order에 없지만 추가로 활성화 가능한 역할 (예: 철학자가 부여받은 첫 밤 역할) */
+  extraNightRoleIds?: string[];
 }
 
 export function NightPanel({
@@ -55,9 +67,15 @@ export function NightPanel({
   onSendFeedback,
   onKill,
   onSetStatus,
+  onFangGuJump,
+  onSnakeCharmerSwap,
+  onVigormortisKillMinion,
+  onPitHagChangeRole,
   nightWakeUpTargets,
   styles,
   editionId,
+  jugglerCorrectCount,
+  extraNightRoleIds,
 }: NightPanelProps) {
   const [feedbackCollapsed, setFeedbackCollapsed] = useState(false);
   const [feedbackSentForRole, setFeedbackSentForRole] = useState<string | null>(
@@ -106,7 +124,9 @@ export function NightPanel({
       (p) =>
         (p.role?.id === activeNightRoleId ||
           (p.role?.id === 'drunk' && p.drunkAs === activeNightRoleId)) &&
-        (isOnlyWhenDead ? !p.isAlive : p.isAlive),
+        (isOnlyWhenDead
+          ? !p.isAlive
+          : p.isAlive || p.statuses.includes('vigormortis_retained')),
     );
   }, [activeNightRoleId, players, nightWakeUpTargets]);
 
@@ -146,6 +166,11 @@ export function NightPanel({
           onSendFeedback={onSendFeedback}
           onKill={onKill}
           onSetStatus={onSetStatus}
+          playerOrder={playerOrder}
+          onFangGuJump={onFangGuJump}
+          onSnakeCharmerSwap={onSnakeCharmerSwap}
+          onVigormortisKillMinion={onVigormortisKillMinion}
+          onPitHagChangeRole={onPitHagChangeRole}
         />
       )}
       <View>
@@ -197,6 +222,7 @@ export function NightPanel({
               setNightOrderComplete(true);
             }}
             editionId={editionId}
+            extraRoleIds={extraNightRoleIds}
           />
 
           {/* Feedback overlay - covers NightOrderPanel */}
@@ -240,6 +266,7 @@ export function NightPanel({
                   setFeedbackCollapsed(true);
                 }}
                 wakeUpTargetIds={nightWakeUpTargets}
+                jugglerCorrectCount={jugglerCorrectCount}
               />
             </View>
           )}

@@ -182,7 +182,7 @@ clocktower/
 
 | 에디션 | 역할 |
 |--------|------|
-| Trouble Brewing (5) | 속죄양, 총잡이, 거지, 관료, 도둑 |
+| Trouble Brewing (5) | 희생양, 총잡이, 거지, 관료, 도둑 |
 | Sects & Violets (5) | 백정, 뼈 수집가, 창녀, 바리스타, 기인 |
 | Bad Moon Rising (5) | 견습생, 사감, 부두, 판사, 주교 |
 

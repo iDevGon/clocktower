@@ -32,6 +32,9 @@ export function attachVoteListeners(socket: AppSocket) {
   socket.on('vote:result', (data) => {
     // 처형 예정자 추적: 서버에서 보내는 executionCandidate를 그대로 사용
     // 동률 시 null이 전달되므로 기존 값 유지하지 않음
+    const prev = usePlayerStore.getState();
+    const firstVoteVoters =
+      prev.todayFirstVoteGuiltyVoters ?? Object.keys(data.votes);
     usePlayerStore.getState().set({
       voteResult: data,
       nomination: null,
@@ -40,6 +43,7 @@ export function attachVoteListeners(socket: AppSocket) {
       voteCountdown: null,
       votePreselections: {},
       executionCandidate: data.executionCandidate ?? null,
+      todayFirstVoteGuiltyVoters: firstVoteVoters,
     });
     // 5초 후 phase만 day로 전환 (voteResult는 유지)
     setTimeout(() => {

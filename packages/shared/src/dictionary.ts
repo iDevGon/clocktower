@@ -51,6 +51,27 @@ export const STATUS_ENTRIES: StatusEntry[] = [
       '주정뱅이 상태입니다. 주정뱅이는 자신이 주정뱅이인 것을 모르며, 다른 마을주민 역할이라고 생각합니다. 하지만 실제로는 능력이 없으며, 받는 정보는 모두 거짓일 수 있습니다.',
   },
   {
+    id: 'no_dashii_poisoned',
+    label: '노 다시 중독',
+    color: '#9b59b6',
+    description:
+      '노 다시의 가장 가까운 마을주민 이웃입니다. 생사와 관계없이 노 다시가 능력을 유지하는 동안 중독됩니다.',
+  },
+  {
+    id: 'vigormortis_poisoned',
+    label: '비고르모르티스 중독',
+    color: '#9b59b6',
+    description:
+      '비고르모르티스가 죽인 하수인의 마을주민 이웃입니다. 해당 하수인이 능력을 유지하는 동안 중독됩니다.',
+  },
+  {
+    id: 'vigormortis_retained',
+    label: '비고르모르티스 유지',
+    color: '#8e44ad',
+    description:
+      '비고르모르티스에게 죽은 하수인입니다. 비고르모르티스가 살아 있고 능력이 있으면 죽은 뒤에도 능력을 유지합니다.',
+  },
+  {
     id: 'protected',
     label: '보호',
     color: '#2ecc71',

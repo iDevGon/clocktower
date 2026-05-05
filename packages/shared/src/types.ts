@@ -15,6 +15,8 @@ export interface Player {
   id: string;
   name: string;
   role?: Role;
+  /** 현재 진영. 일반적으로 role.team에서 파생되지만, 이발사/마귀할멈/뱀 조련사 등으로 달라질 수 있습니다. */
+  alignment?: 'good' | 'evil';
   drunkAs?: string;
   isAlive: boolean;
   hasNominatedToday: boolean;
@@ -26,6 +28,8 @@ export interface Player {
   isTraveller?: boolean;
   /** 여행자의 진영 (good/evil). 이야기꾼이 결정 */
   travellerAlignment?: 'good' | 'evil';
+  /** 철학자가 능력을 부여받은 역할 ID. 이후 밤마다 이 역할의 능력을 사용 */
+  philosopherGrantedRole?: string;
 }
 
 /** 여행자 역할 정의. 일반 역할과 달리 team은 항상 'traveller' */
@@ -63,6 +67,10 @@ export interface NightActionDef {
   excludeSelf: boolean;
   /** 사망 시에만 능력이 발동하는 역할 (예: 까마귀지기) */
   onlyWhenDead?: boolean;
+  /** 여행자를 대상으로 지목할 수 없는 역할 (예: 꿈꾸는 자) */
+  excludeTraveller?: boolean;
+  /** 죽은 플레이어도 대상으로 선택할 수 있는 역할 */
+  includeDeadTargets?: boolean;
 }
 
 export interface NightAction {
@@ -80,6 +88,8 @@ export interface PlayerInfo {
   isAlive: boolean;
   deadVoteUsed?: boolean;
   isTraveller?: boolean;
+  /** 여행자 역할 ID (공개 정보, 거지 식별 등에 사용) */
+  travellerRoleId?: string;
 }
 
 export type FeedbackType =
@@ -87,8 +97,12 @@ export type FeedbackType =
   | 'number'
   | 'yes_no'
   | 'players_and_role'
+  | 'dreamer_info'
+  | 'players'
+  | 'mad_as'
   | 'role'
-  | 'grimoire';
+  | 'grimoire'
+  | 'savant_info';
 
 export interface NightFeedbackDef {
   type: FeedbackType;
@@ -100,6 +114,14 @@ export type NightFeedbackPayload =
   | { type: 'number'; value: number }
   | { type: 'yes_no'; value: boolean; targetNames?: string[] }
   | { type: 'players_and_role'; playerNames: string[]; roleName: string }
+  | {
+      type: 'dreamer_info';
+      targetName: string;
+      goodRoleName: string;
+      evilRoleName: string;
+    }
+  | { type: 'players'; playerNames: string[]; message?: string }
+  | { type: 'mad_as'; roleName: string }
   | { type: 'no_match'; message: string }
   | { type: 'role'; roleName: string }
   | {
@@ -111,10 +133,14 @@ export type NightFeedbackPayload =
         isAlive: boolean;
         statuses: PlayerStatus[];
       }[];
-    };
+    }
+  | { type: 'savant_info'; info1: string; info2: string };
 
 export type PlayerStatus =
   | 'poisoned'
+  | 'no_dashii_poisoned'
+  | 'vigormortis_poisoned'
+  | 'vigormortis_retained'
   | 'drunk'
   | 'protected'
   | 'cursed'
@@ -138,6 +164,9 @@ export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
   good_twin: '선한 쌍둥이',
   evil_twin: '악한 쌍둥이',
   no_ability: '능력 소진',
+  no_dashii_poisoned: '노 다시 중독',
+  vigormortis_poisoned: '비고르모르티스 중독',
+  vigormortis_retained: '비고르모르티스 유지',
 };
 
 export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
@@ -152,6 +181,9 @@ export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
   good_twin: '#27ae60',
   evil_twin: '#c0392b',
   no_ability: '#7f8c8d',
+  no_dashii_poisoned: '#9b59b6',
+  vigormortis_poisoned: '#9b59b6',
+  vigormortis_retained: '#8e44ad',
 };
 
 export const PLAYER_STATUS_DESCRIPTIONS: Record<PlayerStatus, string> = {
@@ -173,7 +205,23 @@ export const PLAYER_STATUS_DESCRIPTIONS: Record<PlayerStatus, string> = {
   evil_twin:
     '사악한 쌍둥이. 선한 쌍둥이가 살아 있는 동안 처형으로 사망하지 않습니다.',
   no_ability: '1회성 능력을 이미 사용했습니다.',
+  no_dashii_poisoned:
+    '노 다시의 가장 가까운 마을주민 이웃입니다. 노 다시가 능력을 잃거나 이웃 관계가 바뀌면 해제됩니다.',
+  vigormortis_poisoned:
+    '비고르모르티스가 죽인 하수인의 마을주민 이웃입니다. 해당 하수인이 능력을 유지하는 동안 중독됩니다.',
+  vigormortis_retained:
+    '비고르모르티스에게 죽은 하수인입니다. 비고르모르티스가 살아 있고 능력이 있으면 죽은 뒤에도 능력을 유지합니다.',
 };
+
+export const POISON_STATUSES: PlayerStatus[] = [
+  'poisoned',
+  'no_dashii_poisoned',
+  'vigormortis_poisoned',
+];
+
+export function hasPoisonStatus(statuses: PlayerStatus[]): boolean {
+  return statuses.some((status) => POISON_STATUSES.includes(status));
+}
 
 export type WinningTeam = 'good' | 'evil';
 
@@ -188,7 +236,8 @@ export interface GameResult {
     | 'witch_curse'
     | 'klutz'
     | 'evil_twin'
-    | 'vortox_no_execution';
+    | 'vortox_no_execution'
+    | 'gunslinger';
   players: {
     id: string;
     name: string;

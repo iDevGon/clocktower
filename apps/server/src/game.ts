@@ -15,14 +15,13 @@ import {
   DEFAULT_GAME_SETTINGS,
   getRoleById,
   getTravellerById,
+  hasPoisonStatus,
   SECTS_AND_VIOLETS_ROLES,
 } from '@clocktower/shared/logic';
 
 /** 플레이어가 중독 또는 취함 상태인지 확인 (능력 무효화 판정용) */
 function isPoisonedOrDrunk(player: Player): boolean {
-  return (
-    player.statuses.includes('poisoned') || player.statuses.includes('drunk')
-  );
+  return hasPoisonStatus(player.statuses) || player.statuses.includes('drunk');
 }
 
 /**
@@ -33,7 +32,9 @@ function isPoisonedOrDrunk(player: Player): boolean {
  */
 function isDetectedAsEvil(player: Player): boolean {
   const actualEvil =
-    player.role?.team === 'minion' || player.role?.team === 'demon';
+    player.alignment != null
+      ? player.alignment === 'evil'
+      : player.role?.team === 'minion' || player.role?.team === 'demon';
   if (!player.statuses.includes('misregistered')) return actualEvil;
 
   // 은둔자: 선 → 악으로 위장
@@ -69,6 +70,23 @@ export class GameManager {
   private nightActionTargets = new Map<string, string[]>();
   // 사냥꾼 능력 사용 추적
   private slayerUsed = new Set<string>();
+  // 화가 능력 사용 추적 (게임 중 1회)
+  private artistUsed = new Set<string>();
+  // 백치천재 능력 사용 추적 (하루 1회)
+  private savantUsedToday = new Set<string>();
+  // 철학자 능력 사용 추적 (게임 중 1회)
+  private philosopherUsed = new Set<string>();
+  // 곡예사 능력 사용 추적 (게임 중 1회) + 추측 저장 (밤 피드백 정답 수 계산용)
+  private jugglerUsed = new Set<string>();
+  private jugglerGuesses = new Map<
+    string,
+    Array<{ playerId: string; roleId: string }>
+  >();
+  // 총잡이 능력 사용 추적 (매일 1회) + 오늘 첫 투표 찬성자 (총잡이 대상 제한)
+  private gunslingerUsedToday = new Set<string>();
+  private todayFirstVoteGuiltyVoters: string[] | null = null;
+  // 거지 토큰 개수 (투표 시 소비)
+  private beggarTokens = new Map<string, number>();
   // 처단자 선언 확인 추적 (투표 중 일시정지용)
   private slayerAcks = new Set<string>();
   private voteClockPausedNomineeId: string | null = null;
@@ -121,10 +139,141 @@ export class GameManager {
   private witchCursedTarget: string | null = null;
   // 팡 구 외지인 교환 발동 여부 (게임당 1회)
   private fangGuJumped = false;
+  // 비고르모르티스가 죽여 능력을 유지하는 하수인과 그 독 대상
+  private vigormortisRetainedMinions = new Set<string>();
+  private vigormortisPoisonTargets = new Map<string, string>();
   // 사악한 쌍둥이 매핑 (evilTwinId → goodTwinId)
   private evilTwinPairs = new Map<string, string>();
   // 현재 에디션 ID (밤 순서 결정에 사용)
   private editionId = 'trouble_brewing';
+
+  private getDefaultAlignmentForRole(
+    role: Role | undefined,
+  ): 'good' | 'evil' | undefined {
+    if (!role) return undefined;
+    if (role.team === 'townsfolk' || role.team === 'outsider') return 'good';
+    if (role.team === 'minion' || role.team === 'demon') return 'evil';
+    return undefined;
+  }
+
+  private getEffectiveAlignment(player: Player): 'good' | 'evil' | null {
+    if (player.isTraveller) return player.travellerAlignment ?? null;
+    return (
+      player.alignment ?? this.getDefaultAlignmentForRole(player.role) ?? null
+    );
+  }
+
+  private addStatus(player: Player, status: PlayerStatus): void {
+    if (!player.statuses.includes(status)) player.statuses.push(status);
+  }
+
+  private removeStatus(player: Player, status: PlayerStatus): void {
+    player.statuses = player.statuses.filter((s) => s !== status);
+  }
+
+  private getTownsfolkNeighborIds(sourcePlayerId: string): string[] {
+    const order =
+      this.state.playerOrder.length > 0
+        ? this.state.playerOrder
+        : this.state.players.map((p) => p.id);
+    const idx = order.indexOf(sourcePlayerId);
+    if (idx === -1) return [];
+
+    const neighborIds: string[] = [];
+    for (let i = 1; i < order.length; i++) {
+      const player = this.getPlayer(order[(idx + i) % order.length]);
+      if (player?.role?.team === 'townsfolk') {
+        neighborIds.push(player.id);
+        break;
+      }
+    }
+    for (let i = 1; i < order.length; i++) {
+      const player = this.getPlayer(
+        order[(idx - i + order.length) % order.length],
+      );
+      if (player?.role?.team === 'townsfolk') {
+        if (!neighborIds.includes(player.id)) neighborIds.push(player.id);
+        break;
+      }
+    }
+    return neighborIds;
+  }
+
+  private hasActiveVigormortis(): boolean {
+    return this.state.players.some(
+      (p) => p.isAlive && p.role?.id === 'vigormortis' && !isPoisonedOrDrunk(p),
+    );
+  }
+
+  private hasLivingVigormortisRole(): boolean {
+    return this.state.players.some(
+      (p) => p.isAlive && p.role?.id === 'vigormortis',
+    );
+  }
+
+  private syncNoDashiiPoisoning(): void {
+    for (const player of this.state.players) {
+      this.removeStatus(player, 'no_dashii_poisoned');
+    }
+
+    for (const noDashii of this.state.players) {
+      if (
+        noDashii.isAlive &&
+        noDashii.role?.id === 'no_dashii' &&
+        !isPoisonedOrDrunk(noDashii)
+      ) {
+        for (const neighborId of this.getNoDashiiPoisonedNeighbors(
+          noDashii.id,
+        )) {
+          const neighbor = this.getPlayer(neighborId);
+          if (neighbor) this.addStatus(neighbor, 'no_dashii_poisoned');
+        }
+      }
+    }
+  }
+
+  private syncVigormortisPoisoning(): void {
+    const hasVigormortis = this.hasActiveVigormortis();
+    const hasLivingVigormortisRole = this.hasLivingVigormortisRole();
+
+    for (const player of this.state.players) {
+      this.removeStatus(player, 'vigormortis_poisoned');
+      if (!hasVigormortis) this.removeStatus(player, 'vigormortis_retained');
+    }
+
+    if (!hasLivingVigormortisRole) {
+      this.vigormortisRetainedMinions.clear();
+      this.vigormortisPoisonTargets.clear();
+      return;
+    }
+    if (!hasVigormortis) return;
+
+    for (const minionId of [...this.vigormortisRetainedMinions]) {
+      const minion = this.getPlayer(minionId);
+      if (!minion || minion.isAlive || minion.role?.team !== 'minion') {
+        this.vigormortisRetainedMinions.delete(minionId);
+        this.vigormortisPoisonTargets.delete(minionId);
+        if (minion) this.removeStatus(minion, 'vigormortis_retained');
+        continue;
+      }
+      if (isPoisonedOrDrunk(minion)) {
+        this.removeStatus(minion, 'vigormortis_retained');
+        continue;
+      }
+
+      this.addStatus(minion, 'vigormortis_retained');
+      const targetId = this.vigormortisPoisonTargets.get(minionId);
+      const target = targetId ? this.getPlayer(targetId) : undefined;
+      if (target?.role?.team === 'townsfolk') {
+        this.addStatus(target, 'vigormortis_poisoned');
+      }
+    }
+  }
+
+  private syncContinuousPoisoning(): void {
+    this.syncVigormortisPoisoning();
+    this.syncNoDashiiPoisoning();
+  }
 
   create(): string {
     const id = randomUUID().slice(0, 8);
@@ -142,6 +291,14 @@ export class GameManager {
     this.butlerMasters.clear();
     this.nightActionTargets.clear();
     this.slayerUsed.clear();
+    this.artistUsed.clear();
+    this.savantUsedToday.clear();
+    this.philosopherUsed.clear();
+    this.jugglerUsed.clear();
+    this.jugglerGuesses.clear();
+    this.gunslingerUsedToday.clear();
+    this.todayFirstVoteGuiltyVoters = null;
+    this.beggarTokens.clear();
     this.slayerAcks.clear();
     this.voteClockPausedNomineeId = null;
     this.virginTriggered = false;
@@ -157,6 +314,8 @@ export class GameManager {
     this.bluffRoles = [];
     this.witchCursedTarget = null;
     this.fangGuJumped = false;
+    this.vigormortisRetainedMinions.clear();
+    this.vigormortisPoisonTargets.clear();
     this.evilTwinPairs.clear();
     this.editionId = 'trouble_brewing';
     this.clearVoteTimer();
@@ -185,6 +344,7 @@ export class GameManager {
     const players = this.state.players.map((p) => ({
       ...p,
       role: undefined,
+      alignment: undefined,
       drunkAs: undefined,
       isAlive: true,
       hasNominatedToday: false,
@@ -211,6 +371,14 @@ export class GameManager {
     this.butlerMasters.clear();
     this.nightActionTargets.clear();
     this.slayerUsed.clear();
+    this.artistUsed.clear();
+    this.savantUsedToday.clear();
+    this.philosopherUsed.clear();
+    this.jugglerUsed.clear();
+    this.jugglerGuesses.clear();
+    this.gunslingerUsedToday.clear();
+    this.todayFirstVoteGuiltyVoters = null;
+    this.beggarTokens.clear();
     this.slayerAcks.clear();
     this.voteClockPausedNomineeId = null;
     this.virginTriggered = false;
@@ -229,6 +397,8 @@ export class GameManager {
     this.exileVote = null;
     this.witchCursedTarget = null;
     this.fangGuJumped = false;
+    this.vigormortisRetainedMinions.clear();
+    this.vigormortisPoisonTargets.clear();
     this.evilTwinPairs.clear();
     this.editionId = 'trouble_brewing';
     this.clearVoteTimer();
@@ -306,6 +476,7 @@ export class GameManager {
     this.state.playerOrder = this.state.playerOrder.filter(
       (id) => id !== playerId,
     );
+    this.syncContinuousPoisoning();
     return true;
   }
 
@@ -524,6 +695,7 @@ export class GameManager {
     this.state.started = true;
     this.state.phase = 'night';
     this.state.day = 1;
+    this.syncContinuousPoisoning();
     return { success: true };
   }
 
@@ -541,6 +713,10 @@ export class GameManager {
       this.exileVote = null;
       // 마녀 저주 초기화 (밤 시작 시)
       this.clearWitchCurse();
+      // 총잡이 하루 1회 / 오늘 첫 투표자 기록 리셋
+      this.gunslingerUsedToday.clear();
+      this.savantUsedToday.clear();
+      this.todayFirstVoteGuiltyVoters = null;
       this.state.players.forEach((p) => {
         p.hasNominatedToday = false;
         p.hasBeenNominatedToday = false;
@@ -549,6 +725,7 @@ export class GameManager {
           (s) => s !== 'poisoned' && s !== 'protected' && s !== 'cerenovus_mad',
         );
       });
+      this.syncContinuousPoisoning();
     }
     if (phase === 'day') {
       this.state.day++;
@@ -564,8 +741,10 @@ export class GameManager {
     const player = this.getPlayer(playerId);
     if (!player) return;
     player.role = undefined;
+    player.alignment = undefined;
     player.drunkAs = undefined;
     player.statuses = player.statuses.filter((s) => s !== 'drunk');
+    this.syncContinuousPoisoning();
   }
 
   /** 여행자를 제외한 모든 플레이어의 역할을 해제 */
@@ -573,11 +752,13 @@ export class GameManager {
     for (const player of this.state.players) {
       if (player.isTraveller) continue;
       player.role = undefined;
+      player.alignment = undefined;
       player.drunkAs = undefined;
       player.statuses = player.statuses.filter((s) => s !== 'drunk');
     }
     this.bluffRoles = [];
     this.preselectedBluffIds = [];
+    this.syncContinuousPoisoning();
   }
 
   assignRole(playerId: string, roleId: string, drunkAs?: string): void {
@@ -593,6 +774,7 @@ export class GameManager {
       edition: '',
     };
     player.role = role;
+    player.alignment = this.getDefaultAlignmentForRole(role);
     player.drunkAs = drunkAs;
 
     // 주정뱅이는 처음부터 '취함' 상태 자동 부여
@@ -600,14 +782,19 @@ export class GameManager {
       if (!player.statuses.includes('drunk')) {
         player.statuses.push('drunk');
       }
+      this.syncContinuousPoisoning();
       return;
     }
     player.statuses = player.statuses.filter((s) => s !== 'drunk');
+    this.syncContinuousPoisoning();
   }
 
   kill(playerId: string): void {
     const player = this.getPlayer(playerId);
-    if (player) player.isAlive = false;
+    if (player) {
+      player.isAlive = false;
+      this.syncContinuousPoisoning();
+    }
   }
 
   hasPendingNightKill(playerId: string): boolean {
@@ -654,7 +841,10 @@ export class GameManager {
 
   revive(playerId: string): void {
     const player = this.getPlayer(playerId);
-    if (player) player.isAlive = true;
+    if (player) {
+      player.isAlive = true;
+      this.syncContinuousPoisoning();
+    }
   }
 
   setPlayerStatuses(playerId: string, statuses: PlayerStatus[]): void {
@@ -676,6 +866,7 @@ export class GameManager {
     ) {
       this.witchCursedTarget = null;
     }
+    this.syncContinuousPoisoning();
   }
 
   // ── 밤 진행 상태 (재접속 복원용) ──
@@ -717,8 +908,7 @@ export class GameManager {
     // 선한 플레이어 중 점쟁이 본인을 제외한 후보
     const candidates = this.state.players.filter(
       (p) =>
-        p.id !== fortuneTeller.id &&
-        (p.role?.team === 'townsfolk' || p.role?.team === 'outsider'),
+        p.id !== fortuneTeller.id && this.getEffectiveAlignment(p) === 'good',
     );
     if (candidates.length === 0) return null;
 
@@ -758,12 +948,13 @@ export class GameManager {
 
   /**
    * 점쟁이 판정: 선택된 2명 중 악마 또는 red herring이 포함되어 있으면 true.
-   * 점쟁이가 중독/취함이면 결과를 반전합니다.
+   * actor가 중독/취함이면 결과를 반전합니다.
+   * actorId 미지정 시 실제 점쟁이의 상태를 사용 (역호환).
    */
-  judgeFortuneTeller(targets: string[]): boolean {
-    const fortuneTeller = this.state.players.find(
-      (p) => p.role?.id === 'fortune_teller',
-    );
+  judgeFortuneTeller(targets: string[], actorId?: string): boolean {
+    const actor = actorId
+      ? this.getPlayer(actorId)
+      : this.state.players.find((p) => p.role?.id === 'fortune_teller');
 
     const hasDemonOrRedHerring = targets.some((targetId) => {
       const target = this.getPlayer(targetId);
@@ -786,11 +977,103 @@ export class GameManager {
     });
 
     // 중독/취함 상태면 결과 반전
-    if (fortuneTeller && isPoisonedOrDrunk(fortuneTeller)) {
+    if (actor && isPoisonedOrDrunk(actor)) {
       return !hasDemonOrRedHerring;
     }
 
     return hasDemonOrRedHerring;
+  }
+
+  /**
+   * 임의의 플레이어(예: 철학자가 점쟁이 능력 부여)에 대해 Red Herring을 배정합니다.
+   * 이미 RH가 있으면 그대로 둡니다.
+   */
+  ensureRedHerringForActor(actorId: string): string | null {
+    if (this.fortuneTellerRedHerring) return this.fortuneTellerRedHerring;
+    const actor = this.getPlayer(actorId);
+    if (!actor) return null;
+    const candidates = this.state.players.filter(
+      (p) => p.id !== actorId && this.getEffectiveAlignment(p) === 'good',
+    );
+    if (candidates.length === 0) return null;
+    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+    this.fortuneTellerRedHerring = chosen.id;
+    if (!chosen.statuses.includes('cursed')) {
+      chosen.statuses.push('cursed');
+    }
+    return chosen.id;
+  }
+
+  // ── 총잡이 능력 ──
+
+  isGunslingerUsedToday(playerId: string): boolean {
+    return this.gunslingerUsedToday.has(playerId);
+  }
+
+  markGunslingerUsedToday(playerId: string): void {
+    this.gunslingerUsedToday.add(playerId);
+  }
+
+  /** 오늘 첫 투표에서 찬성(guilty) 표를 던진 플레이어 ID 목록. 투표가 아직이면 null */
+  getTodayFirstVoteGuiltyVoters(): string[] | null {
+    return this.todayFirstVoteGuiltyVoters
+      ? [...this.todayFirstVoteGuiltyVoters]
+      : null;
+  }
+
+  // ── 거지 토큰 ──
+
+  getBeggarTokens(beggarId: string): number {
+    return this.beggarTokens.get(beggarId) ?? 0;
+  }
+
+  addBeggarToken(beggarId: string): number {
+    const next = (this.beggarTokens.get(beggarId) ?? 0) + 1;
+    this.beggarTokens.set(beggarId, next);
+    return next;
+  }
+
+  /** 토큰 1개 소비. 토큰 없으면 false */
+  consumeBeggarToken(beggarId: string): boolean {
+    const current = this.beggarTokens.get(beggarId) ?? 0;
+    if (current <= 0) return false;
+    this.beggarTokens.set(beggarId, current - 1);
+    return true;
+  }
+
+  /** 플레이어 진영 판정: 여행자는 travellerAlignment, 일반은 team으로 */
+  getPlayerAlignment(playerId: string): 'good' | 'evil' | null {
+    const p = this.getPlayer(playerId);
+    if (!p) return null;
+    return this.getEffectiveAlignment(p);
+  }
+
+  /** 처형 후보와 같은 진영의 살아있는 희생양(본인 제외) 반환 */
+  findScapegoatForCandidate(candidateId: string): Player | null {
+    const candidateAlignment = this.getPlayerAlignment(candidateId);
+    if (!candidateAlignment) return null;
+    return (
+      this.state.players.find(
+        (p) =>
+          p.isAlive &&
+          p.id !== candidateId &&
+          p.role?.id === 'scapegoat' &&
+          p.travellerAlignment === candidateAlignment,
+      ) ?? null
+    );
+  }
+
+  /** 처형 후보를 희생양으로 교체 */
+  swapExecutionCandidateToScapegoat(scapegoatId: string): boolean {
+    if (!this.executionCandidate) return false;
+    const scapegoat = this.getPlayer(scapegoatId);
+    if (!scapegoat || !scapegoat.isAlive || scapegoat.role?.id !== 'scapegoat')
+      return false;
+    this.executionCandidate = {
+      playerId: scapegoatId,
+      guiltyVotes: this.executionCandidate.guiltyVotes,
+    };
+    return true;
   }
 
   // ── 집사 주인 관리 ──
@@ -862,6 +1145,74 @@ export class GameManager {
 
   markSlayerUsed(playerId: string): void {
     this.slayerUsed.add(playerId);
+  }
+
+  // ── 화가 능력 ──
+
+  isArtistUsed(playerId: string): boolean {
+    return this.artistUsed.has(playerId);
+  }
+
+  markArtistUsed(playerId: string): void {
+    this.artistUsed.add(playerId);
+  }
+
+  // ── 백치천재 능력 ──
+
+  isSavantUsedToday(playerId: string): boolean {
+    return this.savantUsedToday.has(playerId);
+  }
+
+  markSavantUsedToday(playerId: string): void {
+    this.savantUsedToday.add(playerId);
+  }
+
+  // ── 철학자 능력 ──
+
+  isPhilosopherUsed(playerId: string): boolean {
+    return this.philosopherUsed.has(playerId);
+  }
+
+  markPhilosopherUsed(playerId: string): void {
+    this.philosopherUsed.add(playerId);
+  }
+
+  // ── 곡예사 능력 ──
+
+  isJugglerUsed(playerId: string): boolean {
+    return this.jugglerUsed.has(playerId);
+  }
+
+  recordJugglerGuesses(
+    playerId: string,
+    guesses: Array<{ playerId: string; roleId: string }>,
+  ): void {
+    this.jugglerUsed.add(playerId);
+    this.jugglerGuesses.set(playerId, guesses);
+  }
+
+  /** 저장된 곡예사 추측 중 정답 수 (drunk는 drunkAs로 매치). 추측이 없으면 0 */
+  judgeJuggler(jugglerId: string): number {
+    const guesses = this.jugglerGuesses.get(jugglerId);
+    if (!guesses) return 0;
+    let count = 0;
+    for (const g of guesses) {
+      const target = this.getPlayer(g.playerId);
+      if (!target?.role) continue;
+      const effective =
+        target.role.id === 'drunk' && target.drunkAs
+          ? target.drunkAs
+          : target.role.id;
+      if (effective === g.roleId) count++;
+    }
+    return count;
+  }
+
+  /** 특정 역할 ID를 실제로 보유한 플레이어 1명 (drunkAs 보유자도 매치 — 원래 holder 의도) */
+  findPlayerByRoleId(roleId: string): Player | undefined {
+    return this.state.players.find(
+      (p) => p.role?.id === roleId || p.drunkAs === roleId,
+    );
   }
 
   // ── 처형 기록 (시장 승리 조건용) ──
@@ -940,6 +1291,16 @@ export class GameManager {
     const player = this.getPlayer(playerId);
     if (!player)
       return { success: false, error: '플레이어를 찾을 수 없습니다' };
+
+    // 거지: 투표 토큰이 필요. 토큰이 없으면 투표 불가
+    if (player.role?.id === 'beggar' && player.isAlive) {
+      if (!this.consumeBeggarToken(playerId)) {
+        return {
+          success: false,
+          error: '투표하려면 투표 토큰이 필요합니다',
+        };
+      }
+    }
 
     if (!player.isAlive) {
       if (player.deadVoteUsed || this.ghostVotesUsed.has(playerId))
@@ -1114,6 +1475,11 @@ export class GameManager {
     }
 
     this.clearVoteTimer();
+
+    // 총잡이: 오늘 첫 투표 찬성자 기록 (처음 집계되는 경우에만)
+    if (this.todayFirstVoteGuiltyVoters === null) {
+      this.todayFirstVoteGuiltyVoters = Object.keys(current.votes);
+    }
 
     const candidateInfo = this.executionCandidate
       ? {
@@ -1499,9 +1865,11 @@ export class GameManager {
     if (fangGuRole) {
       target.role = fangGuRole;
     }
+    target.alignment = 'evil';
 
     // 기존 팡 구는 사망
     oldDemon.isAlive = false;
+    this.syncContinuousPoisoning();
 
     return { oldDemon, newDemon: target };
   }
@@ -1525,8 +1893,79 @@ export class GameManager {
     // 주정뱅이 상태 제거 (역할 변경 시)
     player.drunkAs = undefined;
     player.statuses = player.statuses.filter((s) => s !== 'drunk');
+    this.syncContinuousPoisoning();
 
     return true;
+  }
+
+  handleSnakeCharmerSwap(
+    snakeCharmerId: string,
+    demonId: string,
+  ): { oldSnakeCharmer: Player; oldDemon: Player } | null {
+    const oldSnakeCharmer = this.getPlayer(snakeCharmerId);
+    const oldDemon = this.getPlayer(demonId);
+    if (!oldSnakeCharmer || !oldDemon) return null;
+    if (!oldSnakeCharmer.role || !oldDemon.role) return null;
+    if (oldDemon.role.team !== 'demon') return null;
+
+    const snakeRole = oldSnakeCharmer.role;
+    const demonRole = oldDemon.role;
+    const snakeAlignment = this.getEffectiveAlignment(oldSnakeCharmer);
+    const demonAlignment = this.getEffectiveAlignment(oldDemon);
+
+    oldSnakeCharmer.role = demonRole;
+    oldDemon.role = snakeRole;
+    oldSnakeCharmer.alignment = demonAlignment ?? 'evil';
+    oldDemon.alignment = snakeAlignment ?? 'good';
+
+    if (!oldDemon.statuses.includes('poisoned')) {
+      oldDemon.statuses.push('poisoned');
+    }
+    this.syncContinuousPoisoning();
+
+    return { oldSnakeCharmer, oldDemon };
+  }
+
+  // ── 비고르모르티스: 죽인 하수인 능력 유지 + 이웃 중독 ──
+
+  getVigormortisTownsfolkNeighborIds(minionId: string): string[] {
+    return this.getTownsfolkNeighborIds(minionId);
+  }
+
+  handleVigormortisMinionKill(
+    vigormortisId: string,
+    minionId: string,
+    poisonedNeighborId: string,
+  ): { minion: Player; poisonedNeighbor: Player } | null {
+    const vigormortis = this.getPlayer(vigormortisId);
+    const minion = this.getPlayer(minionId);
+    const poisonedNeighbor = this.getPlayer(poisonedNeighborId);
+    if (!vigormortis || !minion || !poisonedNeighbor) return null;
+    if (
+      !vigormortis.isAlive ||
+      vigormortis.role?.id !== 'vigormortis' ||
+      isPoisonedOrDrunk(vigormortis)
+    ) {
+      return null;
+    }
+    if (minion.role?.team !== 'minion') return null;
+    if (poisonedNeighbor.role?.team !== 'townsfolk') return null;
+    if (
+      !this.getVigormortisTownsfolkNeighborIds(minionId).includes(
+        poisonedNeighborId,
+      )
+    ) {
+      return null;
+    }
+
+    minion.isAlive = false;
+    this.vigormortisRetainedMinions.add(minionId);
+    this.vigormortisPoisonTargets.set(minionId, poisonedNeighborId);
+    this.addStatus(minion, 'vigormortis_retained');
+    this.addStatus(poisonedNeighbor, 'vigormortis_poisoned');
+    this.syncContinuousPoisoning();
+
+    return { minion, poisonedNeighbor };
   }
 
   // ── 이발사: 역할 교환 ──
@@ -1585,40 +2024,11 @@ export class GameManager {
   // ── 노 다시: 인접 마을주민 중독 계산 ──
 
   /**
-   * 노 다시의 양쪽 가장 가까운 살아있는 마을주민을 찾습니다.
+   * 노 다시의 양쪽 가장 가까운 마을주민 이웃을 찾습니다.
    * playerOrder 기준으로 탐색합니다.
    */
   getNoDashiiPoisonedNeighbors(noDashiiPlayerId: string): string[] {
-    const order = this.state.playerOrder;
-    const idx = order.indexOf(noDashiiPlayerId);
-    if (idx === -1) return [];
-
-    const neighbors: string[] = [];
-
-    // 시계방향 탐색
-    for (let i = 1; i < order.length; i++) {
-      const checkIdx = (idx + i) % order.length;
-      const player = this.getPlayer(order[checkIdx]);
-      if (!player?.isAlive) continue;
-      if (player.role?.team === 'townsfolk') {
-        neighbors.push(player.id);
-        break;
-      }
-    }
-
-    // 반시계방향 탐색
-    for (let i = 1; i < order.length; i++) {
-      const checkIdx = (idx - i + order.length) % order.length;
-      const player = this.getPlayer(order[checkIdx]);
-      if (!player?.isAlive) continue;
-      if (player.role?.team === 'townsfolk') {
-        if (neighbors.includes(player.id)) break;
-        neighbors.push(player.id);
-        break;
-      }
-    }
-
-    return neighbors;
+    return this.getTownsfolkNeighborIds(noDashiiPlayerId);
   }
 
   // ── 시계공: 악마와 가장 가까운 하수인 사이의 거리 ──
@@ -1654,13 +2064,41 @@ export class GameManager {
 
   /** Vortox 확인: 보르톡스가 게임에 있는지 */
   hasVortox(): boolean {
-    return this.state.players.some((p) => p.isAlive && p.role?.id === 'vortox');
+    return this.state.players.some(
+      (p) => p.isAlive && p.role?.id === 'vortox' && !isPoisonedOrDrunk(p),
+    );
+  }
+
+  /** 보르톡스 게임에서 낮이 처형 없이 끝났을 때 악 팀 승리 결과를 생성합니다. */
+  checkVortoxNoExecutionWin(): GameResult | null {
+    if (!this.state.started || this.state.phase === 'ended') return null;
+    if (!this.hasVortox() || this.executionToday) return null;
+
+    this.state.phase = 'ended';
+    return {
+      winningTeam: 'evil',
+      reason: '보르톡스 게임에서 처형 없이 낮이 끝났습니다',
+      cause: 'vortox_no_execution',
+      players: this.state.players.map((p) => ({
+        id: p.id,
+        name: p.name,
+        role: p.role ?? {
+          id: 'unknown',
+          name: '???',
+          team: 'townsfolk',
+          ability: '',
+          edition: '',
+        },
+        isAlive: p.isAlive,
+        team: p.role?.team ?? 'townsfolk',
+      })),
+    };
   }
 
   /**
    * 승리 조건에 S&V 추가 확인:
    * - 사악한 쌍둥이의 선한 쌍둥이 처형 → 악 팀 승리
-   * - 보르톡스: 처형 없는 날 → 선 팀 승리
+   * - 보르톡스: 처형 없는 날 → 악 팀 승리
    * - 악마 사망 시 사악한 쌍둥이가 둘 다 살아있으면 게임 계속
    */
   checkWinCondition(
@@ -1713,8 +2151,11 @@ export class GameManager {
       return buildResult('evil', '선한 쌍둥이가 처형되었습니다');
     }
 
-    // 악마 사망 체크
-    const aliveDemon = alivePlayers.find((p) => p.role?.team === 'demon');
+    // 악한 악마 사망 체크. 뱀 조련사/마귀할멈으로 역할과 진영이 달라질 수 있습니다.
+    const aliveDemon = alivePlayers.find(
+      (p) =>
+        p.role?.team === 'demon' && this.getEffectiveAlignment(p) === 'evil',
+    );
     if (!aliveDemon) {
       // 임프 자해 승계가 예약되어 있으면 게임 계속
       if (this.pendingImpPromotion) {
@@ -1734,8 +2175,7 @@ export class GameManager {
 
       // 탕녀 승계: 생존자 5명 이상이고 살아있는 (중독되지 않은) 탕녀가 있으면 게임 계속
       const aliveScarletWoman = alivePlayers.find(
-        (p) =>
-          p.role?.id === 'scarlet_woman' && !p.statuses.includes('poisoned'),
+        (p) => p.role?.id === 'scarlet_woman' && !hasPoisonStatus(p.statuses),
       );
       if (aliveScarletWoman && aliveCount >= 5) {
         // 탕녀를 임프로 자동 승계

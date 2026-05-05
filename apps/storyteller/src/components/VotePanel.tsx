@@ -106,7 +106,10 @@ export function VotePanel({
             <View style={styles.defenseRow}>
               <Text style={styles.countdownText}>변론 중</Text>
               <View
-                style={[styles.consentBadge, allReady && styles.consentBadgeReady]}
+                style={[
+                  styles.consentBadge,
+                  allReady && styles.consentBadgeReady,
+                ]}
               >
                 <Text
                   style={[
@@ -125,7 +128,9 @@ export function VotePanel({
                     ]}
                   >
                     {voteConsentReadyIds
-                      .map((id) => players.find((p) => p.id === id)?.name ?? '?')
+                      .map(
+                        (id) => players.find((p) => p.id === id)?.name ?? '?',
+                      )
                       .join(', ')}
                   </Text>
                 )}

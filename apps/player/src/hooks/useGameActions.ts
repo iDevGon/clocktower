@@ -80,6 +80,114 @@ export function useGameActions() {
     [],
   );
 
+  const useSavant = useCallback((): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    return new Promise((resolve) => {
+      const socket = useConnectionStore.getState().socket;
+      if (!socket || !socket.connected) {
+        resolve({ success: false, error: '연결되어 있지 않습니다' });
+        return;
+      }
+      socket.emit('savant:use', (res) => {
+        if (res.success) {
+          usePlayerStore.getState().set({ savantUsedToday: true });
+        }
+        resolve(res);
+      });
+    });
+  }, []);
+
+  const declareJuggler = useCallback(
+    (
+      guesses: Array<{ playerId: string; roleId: string }>,
+    ): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        const socket = useConnectionStore.getState().socket;
+        if (!socket || !socket.connected) {
+          resolve({ success: false, error: '연결되어 있지 않습니다' });
+          return;
+        }
+        socket.emit('juggler:declare', { guesses }, (res) => {
+          if (res.success) {
+            usePlayerStore.getState().set({ jugglerUsed: true });
+          }
+          resolve(res);
+        });
+      });
+    },
+    [],
+  );
+
+  const choosePhilosopherRole = useCallback(
+    (roleId: string): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        const socket = useConnectionStore.getState().socket;
+        if (!socket || !socket.connected) {
+          resolve({ success: false, error: '연결되어 있지 않습니다' });
+          return;
+        }
+        socket.emit('philosopher:choose', { roleId }, (res) => {
+          resolve(res);
+        });
+      });
+    },
+    [],
+  );
+
+  const useGunslinger = useCallback(
+    (targetId: string): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        const socket = useConnectionStore.getState().socket;
+        if (!socket || !socket.connected) {
+          resolve({ success: false, error: '연결되어 있지 않습니다' });
+          return;
+        }
+        socket.emit('gunslinger:use', { targetId }, (res) => {
+          if (res.success) {
+            usePlayerStore.getState().set({ gunslingerUsedToday: true });
+          }
+          resolve(res);
+        });
+      });
+    },
+    [],
+  );
+
+  const giveBeggarToken = useCallback(
+    (beggarId: string): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        const socket = useConnectionStore.getState().socket;
+        if (!socket || !socket.connected) {
+          resolve({ success: false, error: '연결되어 있지 않습니다' });
+          return;
+        }
+        socket.emit('beggar:giveToken', { beggarId }, (res) => resolve(res));
+      });
+    },
+    [],
+  );
+
+  const useArtist = useCallback((): Promise<{
+    success: boolean;
+    error?: string;
+  }> => {
+    return new Promise((resolve) => {
+      const socket = useConnectionStore.getState().socket;
+      if (!socket || !socket.connected) {
+        resolve({ success: false, error: '연결되어 있지 않습니다' });
+        return;
+      }
+      socket.emit('artist:use', (res) => {
+        if (res.success) {
+          usePlayerStore.getState().set({ artistUsed: true });
+        }
+        resolve(res);
+      });
+    });
+  }, []);
+
   const nominatePlayer = useCallback(
     (nomineeId: string): Promise<{ success: boolean; error?: string }> => {
       return new Promise((resolve) => {
@@ -152,6 +260,12 @@ export function useGameActions() {
     sendChatToStoryteller,
     nominatePlayer,
     useSlayer,
+    useSavant,
+    useArtist,
+    choosePhilosopherRole,
+    declareJuggler,
+    useGunslinger,
+    giveBeggarToken,
     consentReady,
     proposeExile,
     castExileVote,

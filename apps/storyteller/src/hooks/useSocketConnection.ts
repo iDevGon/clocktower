@@ -223,6 +223,27 @@ export function useSocketConnection() {
             .getState()
             .setMayorNightDeath(data.mayorId, data.mayorName);
         });
+        newSocket.on('witch:curseDeath', (data) => {
+          useGameStore.getState().setWitchCursePending(data);
+          useGameStore.getState().showEventToast({
+            title: '마녀 저주 발동',
+            message: `${data.nominatorName}이(가) 지명했습니다`,
+          });
+        });
+        newSocket.on('barber:died', (data) => {
+          useGameStore.getState().setBarberDiedPending(data);
+          useGameStore.getState().showEventToast({
+            title: '이발사 사망',
+            message: `${data.barberName} 사망. 교환할 두 플레이어를 선택하세요`,
+          });
+        });
+        newSocket.on('klutz:died', (data) => {
+          useGameStore.getState().setKlutzDiedPending(data);
+          useGameStore.getState().showEventToast({
+            title: '얼뜨기 사망',
+            message: `${data.klutzName}이(가) 살아있는 플레이어를 선택해야 합니다`,
+          });
+        });
         newSocket.on('night:wakeUpTargets', (data) => {
           useGameStore.getState().setNightWakeUpTargets(data.candidateIds);
         });
@@ -276,6 +297,110 @@ export function useSocketConnection() {
           useLogStore
             .getState()
             .addLog(gs?.day ?? 0, gs?.phase ?? 'setup', `🚪 ${msg}`, 'death');
+        });
+        newSocket.on('savant:requested', (data) => {
+          useGameStore.getState().setSavantRequest({
+            playerId: data.playerId,
+            playerName: data.playerName,
+          });
+          useGameStore.getState().showEventToast({
+            title: '백치천재 능력 요청',
+            message: `${data.playerName}이(가) 정보를 요청했습니다`,
+          });
+        });
+        newSocket.on('artist:requested', (data) => {
+          useGameStore.getState().setArtistRequest({
+            playerId: data.playerId,
+            playerName: data.playerName,
+          });
+          useGameStore.getState().showEventToast({
+            title: '화가 능력 요청',
+            message: `${data.playerName}이(가) 예/아니오 질문을 했습니다`,
+          });
+        });
+        newSocket.on('juggler:announced', (data) => {
+          const gs = useGameStore.getState().gameState;
+          const summary = data.guesses
+            .map((g) => `${g.playerName}=${g.roleName}`)
+            .join(', ');
+          useGameStore.getState().showEventToast({
+            title: '곡예사 공개 선언',
+            message: `${data.jugglerName}: ${summary}`,
+          });
+          useLogStore
+            .getState()
+            .addLog(
+              gs?.day ?? 0,
+              'day',
+              `🎪 ${data.jugglerName}: ${summary}`,
+              'ability',
+            );
+        });
+        newSocket.on('juggler:correctCount', (data) => {
+          useGameStore
+            .getState()
+            .setJugglerCorrectCount(data.jugglerId, data.correctCount);
+        });
+        newSocket.on('gunslinger:fired', (data) => {
+          const gs = useGameStore.getState().gameState;
+          const msg = `${data.gunslingerName}이(가) ${data.targetName}(${data.targetRoleName}) 사살`;
+          useGameStore.getState().showEventToast({
+            title: '총잡이 발사',
+            message: msg,
+          });
+          useLogStore
+            .getState()
+            .addLog(gs?.day ?? 0, 'day', `🔫 ${msg}`, 'death');
+        });
+        newSocket.on('scapegoat:offer', (data) => {
+          useGameStore.getState().setScapegoatOffer(data);
+        });
+        newSocket.on('scapegoat:swapped', (data) => {
+          const gs = useGameStore.getState().gameState;
+          useLogStore
+            .getState()
+            .addLog(
+              gs?.day ?? 0,
+              'day',
+              `🐐 희생양 교체: ${data.originalName} → ${data.scapegoatName}`,
+              'ability',
+            );
+        });
+        newSocket.on('fangGu:jumped', (data) => {
+          const gs = useGameStore.getState().gameState;
+          const msg = `${data.oldDemonName} → ${data.newDemonName}`;
+          useGameStore.getState().showEventToast({
+            title: '팡 구 점프',
+            message: msg,
+          });
+          useLogStore
+            .getState()
+            .addLog(gs?.day ?? 0, 'night', `팡 구 점프: ${msg}`, 'ability');
+        });
+        newSocket.on('snakeCharmer:swapped', (data) => {
+          const gs = useGameStore.getState().gameState;
+          const msg = `${data.snakeCharmerName} ↔ ${data.demonName}`;
+          useGameStore.getState().showEventToast({
+            title: '뱀 조련사 교환',
+            message: msg,
+          });
+          useLogStore
+            .getState()
+            .addLog(gs?.day ?? 0, 'night', `뱀 조련사 교환: ${msg}`, 'ability');
+        });
+        newSocket.on('philosopher:granted', (data) => {
+          const gs = useGameStore.getState().gameState;
+          const drunkenedPart = data.drunkenedPlayerName
+            ? ` (${data.drunkenedPlayerName} 중독)`
+            : '';
+          const msg = `${data.philosopherName} → ${data.roleName} 능력 부여${drunkenedPart}`;
+          useGameStore.getState().showEventToast({
+            title: '철학자 능력 발동',
+            message: msg,
+          });
+          useLogStore
+            .getState()
+            .addLog(gs?.day ?? 0, 'night', `📜 ${msg}`, 'ability');
         });
         newSocket.on('chat:receiveFromPlayer', (message) => {
           const store = useGameStore.getState();

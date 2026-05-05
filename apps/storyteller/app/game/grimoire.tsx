@@ -1,6 +1,7 @@
 import {
   ALL_TRAVELLER_ROLES,
   type GameSettings,
+  getNightOrderForEdition,
   getRandomTipText,
   getRoleById,
   getTravellersForEdition,
@@ -32,6 +33,7 @@ import {
   ActionModal,
   type ActionModalOption,
 } from '../../src/components/ActionModal';
+import { ArtistRequestModal } from '../../src/components/ArtistRequestModal';
 import { ChatToast } from '../../src/components/ChatToast';
 import { ConfirmModal } from '../../src/components/ConfirmModal';
 import { DaySubPhaseBar } from '../../src/components/DaySubPhaseBar';
@@ -49,8 +51,11 @@ import { PhaseTipToast } from '../../src/components/PhaseTipToast';
 import { PlayerPickerModal } from '../../src/components/PlayerPickerModal';
 import { ChefHintBar, EmpathHintBar } from '../../src/components/RoleHintBars';
 import { RoleRevealWaitingOverlay } from '../../src/components/RoleRevealWaitingOverlay';
+import { SavantRequestModal } from '../../src/components/SavantRequestModal';
+import { ScapegoatOfferModal } from '../../src/components/ScapegoatOfferModal';
 import { SettingsPanel } from '../../src/components/SettingsPanel';
 import { StorytellerChatModal } from '../../src/components/StorytellerChatModal';
+import { TwoPlayerPickerModal } from '../../src/components/TwoPlayerPickerModal';
 import { VoteClockFace } from '../../src/components/VoteClockFace';
 import { VoteClockHand } from '../../src/components/VoteClockHand';
 import { VotePanel } from '../../src/components/VotePanel';
@@ -183,6 +188,15 @@ export default function GrimoireScreen() {
     sendChatToPlayer,
     sweetheartDrunk,
     mayorRedirect,
+    scapegoatSwap,
+    confirmWitchCurseDeath,
+    barberSwapRoles,
+    klutzChoose,
+    fangGuConfirmJump,
+    snakeCharmerSwap,
+    vigormortisKillMinion,
+    pitHagChangeRole,
+    assignGoodTwin,
     assignRedHerring,
     kickPlayer,
     addTraveller,
@@ -195,10 +209,23 @@ export default function GrimoireScreen() {
   const sweetheartDiedPending = useGameStore((s) => s.sweetheartDiedPending);
   const sweetheartDiedName = useGameStore((s) => s.sweetheartDiedName);
   const clearSweetheartDied = useGameStore((s) => s.clearSweetheartDied);
+  const savantRequest = useGameStore((s) => s.savantRequest);
+  const setSavantRequest = useGameStore((s) => s.setSavantRequest);
+  const artistRequest = useGameStore((s) => s.artistRequest);
+  const setArtistRequest = useGameStore((s) => s.setArtistRequest);
+  const jugglerCorrectCount = useGameStore((s) => s.jugglerCorrectCount);
+  const scapegoatOffer = useGameStore((s) => s.scapegoatOffer);
+  const setScapegoatOffer = useGameStore((s) => s.setScapegoatOffer);
   const mayorNightDeathPending = useGameStore((s) => s.mayorNightDeathPending);
   const mayorNightDeathId = useGameStore((s) => s.mayorNightDeathId);
   const mayorNightDeathName = useGameStore((s) => s.mayorNightDeathName);
   const clearMayorNightDeath = useGameStore((s) => s.clearMayorNightDeath);
+  const witchCursePending = useGameStore((s) => s.witchCursePending);
+  const setWitchCursePending = useGameStore((s) => s.setWitchCursePending);
+  const barberDiedPending = useGameStore((s) => s.barberDiedPending);
+  const setBarberDiedPending = useGameStore((s) => s.setBarberDiedPending);
+  const klutzDiedPending = useGameStore((s) => s.klutzDiedPending);
+  const setKlutzDiedPending = useGameStore((s) => s.setKlutzDiedPending);
 
   // 사랑꾼 사망 시 취하게 할 대상 후보: 살아있는 플레이어 (사랑꾼 본인 제외)
   const sweetheartDrunkCandidates = useMemo(() => {
@@ -229,6 +256,54 @@ export default function GrimoireScreen() {
     },
     [mayorNightDeathId, mayorRedirect, clearMayorNightDeath],
   );
+
+  const isGoodAligned = useCallback(
+    (player: { alignment?: string; role?: { team: string } }) => {
+      if (player.alignment) return player.alignment === 'good';
+      return (
+        player.role?.team === 'townsfolk' || player.role?.team === 'outsider'
+      );
+    },
+    [],
+  );
+
+  const barberSwapCandidates = useMemo(() => {
+    if (!players) return [];
+    return players.filter((p) => !p.isTraveller && p.role);
+  }, [players]);
+
+  const klutzChoiceCandidates = useMemo(() => {
+    if (!players) return [];
+    return players.filter((p) => p.isAlive);
+  }, [players]);
+
+  const activeEvilTwin = useMemo(() => {
+    if (activeNightRoleId !== 'evil_twin' || !players) return null;
+    return (
+      players.find(
+        (p) =>
+          p.isAlive &&
+          p.role?.id === 'evil_twin' &&
+          !p.statuses.includes('evil_twin'),
+      ) ?? null
+    );
+  }, [activeNightRoleId, players]);
+  const [evilTwinModalDismissed, setEvilTwinModalDismissed] = useState(false);
+  useEffect(() => {
+    if (activeNightRoleId === 'evil_twin') {
+      setEvilTwinModalDismissed(false);
+    }
+  }, [activeNightRoleId]);
+  const goodTwinCandidates = useMemo(() => {
+    if (!players || !activeEvilTwin) return [];
+    return players.filter(
+      (p) =>
+        p.id !== activeEvilTwin.id &&
+        p.isAlive &&
+        !p.isTraveller &&
+        isGoodAligned(p),
+    );
+  }, [activeEvilTwin, isGoodAligned, players]);
 
   // Red Herring 선택 모달 상태 (게임 시작 시 점쟁이가 있으면 표시)
   const hasFortuneTeller = useMemo(
@@ -1178,13 +1253,44 @@ export default function GrimoireScreen() {
   // Memoize activeRoleIds and dormantRoleIds for NightOrderPanel
   const activeRoleIds = useMemo(() => {
     if (!players) return [];
-    return players
-      .filter((p) => p.isAlive)
-      .flatMap((p) => {
-        if (p.role?.id === 'drunk' && p.drunkAs) return [p.drunkAs];
-        return p.role?.id ? [p.role.id] : [];
-      });
+    return players.flatMap((p) => {
+      const ids: string[] = [];
+      if (p.role?.id === 'drunk' && p.drunkAs) {
+        ids.push(p.drunkAs);
+      } else if (p.role?.id === 'philosopher' && p.philosopherGrantedRole) {
+        ids.push(p.role.id, p.philosopherGrantedRole);
+      } else if (p.role?.id) {
+        ids.push(p.role.id);
+      }
+      return ids.filter(
+        (id) =>
+          p.isAlive ||
+          NIGHT_ACTIONS[id]?.onlyWhenDead ||
+          p.statuses.includes('vigormortis_retained'),
+      );
+    });
   }, [players]);
+
+  // 철학자가 부여받은 역할이 현재 day의 night order에 없으면 extras로 추가
+  const extraNightRoleIds = useMemo(() => {
+    if (!players || !gameState) return [];
+    const standardOrder = detectedEditionId
+      ? getNightOrderForEdition(detectedEditionId, gameState.day)
+      : [];
+    const extras: string[] = [];
+    for (const p of players) {
+      if (
+        p.isAlive &&
+        p.role?.id === 'philosopher' &&
+        p.philosopherGrantedRole &&
+        !standardOrder.includes(p.philosopherGrantedRole) &&
+        !extras.includes(p.philosopherGrantedRole)
+      ) {
+        extras.push(p.philosopherGrantedRole);
+      }
+    }
+    return extras;
+  }, [players, gameState, detectedEditionId]);
 
   const dormantRoleIds = useMemo(() => {
     if (!players) return [];
@@ -1353,9 +1459,15 @@ export default function GrimoireScreen() {
           onSendFeedback={sendNightFeedback}
           onKill={kill}
           onSetStatus={setPlayerStatus}
+          onFangGuJump={fangGuConfirmJump}
+          onSnakeCharmerSwap={snakeCharmerSwap}
+          onVigormortisKillMinion={vigormortisKillMinion}
+          onPitHagChangeRole={pitHagChangeRole}
           nightWakeUpTargets={nightWakeUpTargets}
           styles={styles}
           editionId={detectedEditionId}
+          jugglerCorrectCount={jugglerCorrectCount}
+          extraNightRoleIds={extraNightRoleIds}
         />
       )}
       {hasActiveVote && currentNomination && (
@@ -1644,6 +1756,70 @@ export default function GrimoireScreen() {
         scale={scale}
       />
 
+      <ConfirmModal
+        visible={!!witchCursePending}
+        title="마녀 저주 발동"
+        message={`${witchCursePending?.nominatorName ?? '저주 대상'}이(가) 지명했습니다. 마녀 저주로 즉시 사망 처리할까요?`}
+        confirmText="사망 처리"
+        cancelText="무시"
+        confirmStyle="destructive"
+        onConfirm={() => {
+          if (!witchCursePending) return;
+          confirmWitchCurseDeath(witchCursePending.nominatorId, true);
+          setWitchCursePending(null);
+        }}
+        onCancel={() => {
+          if (witchCursePending) {
+            confirmWitchCurseDeath(witchCursePending.nominatorId, false);
+          }
+          setWitchCursePending(null);
+        }}
+      />
+
+      <TwoPlayerPickerModal
+        visible={!!barberDiedPending}
+        title="이발사 사망"
+        description={`${barberDiedPending?.barberName ?? '이발사'}이(가) 사망했습니다. 교환할 두 플레이어를 선택하세요.`}
+        themeColor="#4aa890"
+        candidates={barberSwapCandidates}
+        onConfirm={(playerId1, playerId2) => {
+          barberSwapRoles(playerId1, playerId2);
+          setBarberDiedPending(null);
+        }}
+        onClose={() => setBarberDiedPending(null)}
+        scale={scale}
+      />
+
+      <PlayerPickerModal
+        visible={!!klutzDiedPending}
+        title="얼뜨기 사망"
+        description={`${klutzDiedPending?.klutzName ?? '얼뜨기'}이(가) 사망했습니다. 살아있는 플레이어 1명을 선택하세요.`}
+        themeColor="#c07040"
+        candidates={klutzChoiceCandidates}
+        onSelectPlayer={(playerId) => {
+          if (!klutzDiedPending) return;
+          klutzChoose(klutzDiedPending.klutzId, playerId);
+          setKlutzDiedPending(null);
+        }}
+        onClose={() => setKlutzDiedPending(null)}
+        scale={scale}
+      />
+
+      <PlayerPickerModal
+        visible={!!activeEvilTwin && !evilTwinModalDismissed}
+        title="사악한 쌍둥이"
+        description={`${activeEvilTwin?.name ?? '사악한 쌍둥이'}의 선한 쌍둥이를 선택하세요.`}
+        themeColor="#c07040"
+        candidates={goodTwinCandidates}
+        onSelectPlayer={(playerId) => {
+          if (!activeEvilTwin) return;
+          assignGoodTwin(activeEvilTwin.id, playerId);
+          setEvilTwinModalDismissed(true);
+        }}
+        onClose={() => setEvilTwinModalDismissed(true)}
+        scale={scale}
+      />
+
       {/* 점쟁이 저주 대상 (Red Herring) 선택 모달 */}
       <PlayerPickerModal
         visible={showRedHerringModal}
@@ -1658,6 +1834,51 @@ export default function GrimoireScreen() {
         onClose={() => {}}
         dismissable={false}
         scale={scale}
+      />
+
+      {/* 백치천재 능력 요청 → 참/거짓 정보 입력 모달 */}
+      <SavantRequestModal
+        visible={!!savantRequest}
+        playerName={savantRequest?.playerName ?? ''}
+        onSubmit={(trueInfo, falseInfo) => {
+          if (!savantRequest) return;
+          // 서버가 50% 확률로 swap하므로 여기서는 그대로 보냄 (info1=참, info2=거짓)
+          sendNightFeedback(savantRequest.playerId, {
+            type: 'savant_info',
+            info1: trueInfo,
+            info2: falseInfo,
+          });
+          setSavantRequest(null);
+        }}
+        onClose={() => setSavantRequest(null)}
+      />
+
+      {/* 화가 능력 요청 → 예/아니오 답변 모달 */}
+      <ArtistRequestModal
+        visible={!!artistRequest}
+        playerName={artistRequest?.playerName ?? ''}
+        onAnswer={(yes) => {
+          if (!artistRequest) return;
+          sendNightFeedback(artistRequest.playerId, {
+            type: 'yes_no',
+            value: yes,
+          });
+          setArtistRequest(null);
+        }}
+        onClose={() => setArtistRequest(null)}
+      />
+
+      {/* 희생양 교체 제안 모달 */}
+      <ScapegoatOfferModal
+        visible={!!scapegoatOffer}
+        candidateName={scapegoatOffer?.candidateName ?? ''}
+        scapegoatName={scapegoatOffer?.scapegoatName ?? ''}
+        onAccept={() => {
+          if (!scapegoatOffer) return;
+          scapegoatSwap(scapegoatOffer.scapegoatId);
+          setScapegoatOffer(null);
+        }}
+        onReject={() => setScapegoatOffer(null)}
       />
 
       {/* 메모 입력 모달 */}

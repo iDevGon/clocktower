@@ -12,18 +12,22 @@ function useNightActionLogStyles() {
 
 interface NumberFeedbackProps {
   suggestedNumber?: number;
+  /** 표시할 최대 숫자 (기본 3, 곡예사는 5) */
+  maxNumber?: number;
   onSend: (fb: NightFeedbackPayload) => void;
 }
 
 export function NumberFeedback({
   suggestedNumber,
+  maxNumber = 3,
   onSend,
 }: NumberFeedbackProps) {
   const styles = useNightActionLogStyles();
   const hasSuggestion = suggestedNumber !== undefined;
+  const numbers = Array.from({ length: maxNumber + 1 }, (_, i) => i);
   return (
     <View style={styles.composerRow}>
-      {[0, 1, 2, 3].map((n) => {
+      {numbers.map((n) => {
         const isSuggested = hasSuggestion && n === suggestedNumber;
         const isDimmed = hasSuggestion && n !== suggestedNumber;
         return (

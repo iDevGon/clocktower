@@ -94,6 +94,51 @@ interface PlayerState {
   slayerUsed: boolean;
   slayerFizzle: { slayerName: string; targetName: string } | null;
   slayerAcked: boolean;
+  /** 백치천재가 오늘 능력을 이미 사용했는지 (낮마다 리셋) */
+  savantUsedToday: boolean;
+  /** 화가가 게임 중 능력을 이미 사용했는지 (게임 중 1회) */
+  artistUsed: boolean;
+  /** 철학자가 부여받은 역할 ID (미선택 시 null) */
+  philosopherGrantedRole: string | null;
+  /** 곡예사 능력을 게임 중 사용했는지 (게임 중 1회) */
+  jugglerUsed: boolean;
+  /** 다른 플레이어의 곡예사 공개 선언 오버레이 */
+  jugglerAnnouncement: {
+    jugglerId: string;
+    jugglerName: string;
+    guesses: Array<{
+      playerId: string;
+      playerName: string;
+      roleId: string;
+      roleName: string;
+    }>;
+  } | null;
+  /** 총잡이 능력을 오늘 이미 사용했는지 (매일 1회) */
+  gunslingerUsedToday: boolean;
+  /** 오늘 첫 투표의 찬성자 ID 목록 (총잡이 대상 제한) */
+  todayFirstVoteGuiltyVoters: string[] | null;
+  gunslingerFiredOverlay: {
+    gunslingerId: string;
+    gunslingerName: string;
+    targetId: string;
+    targetName: string;
+    targetRoleName: string;
+  } | null;
+  /** 희생양 교체 오버레이 (전체 플레이어 공개) */
+  scapegoatSwappedOverlay: {
+    originalId: string;
+    originalName: string;
+    scapegoatId: string;
+    scapegoatName: string;
+  } | null;
+  /** 거지가 보유한 투표 토큰 수 (자신) */
+  beggarTokens: number;
+  /** 거지가 받은 토큰에 대한 진영 정보 로그 (수여자별) */
+  beggarAlignmentInfos: Array<{
+    giverId: string;
+    giverName: string;
+    giverAlignment: 'good' | 'evil';
+  }>;
   gameSettings: GameSettings | null;
   voteCountdown: VoteCountdown | null;
   voteClock: VoteClock | null;
@@ -185,6 +230,42 @@ const initialState = {
   slayerUsed: false,
   slayerFizzle: null as { slayerName: string; targetName: string } | null,
   slayerAcked: false,
+  savantUsedToday: false,
+  artistUsed: false,
+  philosopherGrantedRole: null as string | null,
+  jugglerUsed: false,
+  jugglerAnnouncement: null as {
+    jugglerId: string;
+    jugglerName: string;
+    guesses: Array<{
+      playerId: string;
+      playerName: string;
+      roleId: string;
+      roleName: string;
+    }>;
+  } | null,
+  gunslingerUsedToday: false,
+  /** 오늘 첫 투표의 찬성자 ID 목록 (총잡이 대상 제한) */
+  todayFirstVoteGuiltyVoters: null as string[] | null,
+  gunslingerFiredOverlay: null as {
+    gunslingerId: string;
+    gunslingerName: string;
+    targetId: string;
+    targetName: string;
+    targetRoleName: string;
+  } | null,
+  scapegoatSwappedOverlay: null as {
+    originalId: string;
+    originalName: string;
+    scapegoatId: string;
+    scapegoatName: string;
+  } | null,
+  beggarTokens: 0,
+  beggarAlignmentInfos: [] as Array<{
+    giverId: string;
+    giverName: string;
+    giverAlignment: 'good' | 'evil';
+  }>,
   gameSettings: null as GameSettings | null,
   voteCountdown: null as VoteCountdown | null,
   voteClock: null as VoteClock | null,

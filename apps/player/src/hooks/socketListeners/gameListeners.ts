@@ -89,6 +89,9 @@ export function attachGameListeners(socket: AppSocket) {
             nominationPaused: false,
             nominationRemainingMs: null,
             defenseClock: null,
+            // 총잡이 하루 1회 리셋 + 첫 투표자 기록 리셋
+            gunslingerUsedToday: false,
+            todayFirstVoteGuiltyVoters: null,
           }
         : {}),
       // 새 게임 시작 (setup): 역할/상태 초기화, 피드백 히스토리 리셋
@@ -110,21 +113,37 @@ export function attachGameListeners(socket: AppSocket) {
             nightDeathAnnouncement: null,
             executionHappenedToday: false,
             slayerUsed: false,
+            savantUsedToday: false,
+            artistUsed: false,
+            philosopherGrantedRole: null,
+            jugglerUsed: false,
+            jugglerAnnouncement: null,
+            gunslingerUsedToday: false,
+            todayFirstVoteGuiltyVoters: null,
+            gunslingerFiredOverlay: null,
+            scapegoatSwappedOverlay: null,
+            beggarTokens: 0,
+            beggarAlignmentInfos: [],
             voteResult: null,
             executionCandidate: null,
             nominatedTodayIds: [],
           }
         : {}),
+      // 백치천재 능력은 매일 1회 → 새로운 낮 시작 시 리셋
+      ...(phase === 'day' ? { savantUsedToday: false } : {}),
     });
   });
 
   socket.on('game:state', (state) => {
-    const playerMap = new Map(
-      state.players.map(({ id, name, isAlive, isTraveller }) => [
-        id,
-        { id, name, isAlive, isTraveller },
-      ]),
-    );
+    const toInfo = (p: (typeof state.players)[number]) => ({
+      id: p.id,
+      name: p.name,
+      isAlive: p.isAlive,
+      isTraveller: p.isTraveller,
+      // 여행자 역할은 공개 정보 → 거지 식별 등에 사용
+      travellerRoleId: p.isTraveller ? p.role?.id : undefined,
+    });
+    const playerMap = new Map(state.players.map((p) => [p.id, toInfo(p)]));
 
     // playerOrder가 있으면 그 순서대로, 없으면 원래 순서 유지
     const players =
@@ -132,12 +151,7 @@ export function attachGameListeners(socket: AppSocket) {
         ? state.playerOrder
             .map((id) => playerMap.get(id))
             .filter((p): p is NonNullable<typeof p> => p != null)
-        : state.players.map(({ id, name, isAlive, isTraveller }) => ({
-            id,
-            name,
-            isAlive,
-            isTraveller,
-          }));
+        : state.players.map(toInfo);
 
     // Game was reset - player no longer exists in the game
     const { playerId, playerName } = usePlayerStore.getState();
@@ -168,6 +182,7 @@ export function attachGameListeners(socket: AppSocket) {
       const showDeathOverlay = wasDeath && !(isOnlyWhenDead && isNightKill);
       usePlayerStore.getState().set({
         isAlive: player.isAlive,
+        philosopherGrantedRole: player.philosopherGrantedRole ?? null,
         ...(showDeathOverlay
           ? {
               justDied: true,
@@ -201,6 +216,53 @@ export function attachGameListeners(socket: AppSocket) {
     usePlayerStore.getState().showEventToast({
       title: '여행자 참가',
       message: `${data.playerName}이(가) 여행자(${data.roleName})로 참가했습니다`,
+    });
+  });
+
+  // 곡예사 공개 선언: 모든 플레이어에게 오버레이 표시
+  socket.on('juggler:announced', (data) => {
+    usePlayerStore.getState().set({ jugglerAnnouncement: data });
+  });
+
+  // 총잡이 사살 선언: 모든 플레이어에게 오버레이 표시
+  socket.on('gunslinger:fired', (data) => {
+    usePlayerStore.getState().set({ gunslingerFiredOverlay: data });
+  });
+
+  // 거지 토큰 수령: 본인에게만 전송
+  socket.on('beggar:tokenReceived', (data) => {
+    const prev = usePlayerStore.getState();
+    usePlayerStore.getState().set({
+      beggarTokens: data.tokenCount,
+      beggarAlignmentInfos: [
+        ...prev.beggarAlignmentInfos,
+        {
+          giverId: data.giverId,
+          giverName: data.giverName,
+          giverAlignment: data.giverAlignment,
+        },
+      ],
+    });
+    usePlayerStore.getState().showEventToast({
+      title: '투표 토큰 수령',
+      message: `${data.giverName} (${data.giverAlignment === 'good' ? '선' : '악'}) — 토큰 ${data.tokenCount}`,
+    });
+  });
+
+  // 희생양 교체: 모든 플레이어에 브로드캐스트 (executionCandidate 갱신 + 오버레이)
+  socket.on('scapegoat:swapped', (data) => {
+    usePlayerStore.getState().set({
+      executionCandidate: {
+        playerId: data.scapegoatId,
+        playerName: data.scapegoatName,
+        guiltyVotes: data.guiltyVotes,
+      },
+      scapegoatSwappedOverlay: {
+        originalId: data.originalId,
+        originalName: data.originalName,
+        scapegoatId: data.scapegoatId,
+        scapegoatName: data.scapegoatName,
+      },
     });
   });
 

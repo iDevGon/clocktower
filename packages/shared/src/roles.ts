@@ -238,7 +238,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '꿈꾸는 자',
     team: 'townsfolk',
     ability:
-      '매일 밤, 플레이어 1명을 선택합니다: 그 플레이어의 역할 또는 가짜 역할 중 하나를 알게 됩니다.',
+      '매일 밤, 플레이어 1명을 선택합니다(자신과 여행자 제외): 선한 역할 1개와 악한 역할 1개를 보여주며, 그중 하나가 해당 플레이어의 실제 역할입니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -246,7 +246,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '뱀 조련사',
     team: 'townsfolk',
     ability:
-      '매일 밤, 플레이어 1명을 선택합니다 (이전과 다른 사람): 그 플레이어가 악마이면 당신과 역할을 교환하고, 당신은 중독됩니다.',
+      '매일 밤, 플레이어 1명을 선택합니다 (이전과 다른 사람): 그 플레이어가 악마이면 서로 역할과 진영을 교환하고, 새로운 뱀 조련사(원래 악마)는 중독됩니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -283,7 +283,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '백치천재',
     team: 'townsfolk',
     ability:
-      '매일 낮, 스토리텔러로부터 2개의 정보를 받습니다. 하나는 참이고 하나는 거짓입니다.',
+      '매일 낮, 이야기꾼로부터 2개의 정보를 받습니다. 하나는 참이고 하나는 거짓입니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -306,8 +306,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     id: 'artist',
     name: '화가',
     team: 'townsfolk',
-    ability:
-      '게임 중 1회, 낮에 스토리텔러에게 예/아니오 질문을 할 수 있습니다.',
+    ability: '게임 중 1회, 낮에 이야기꾼에게 예/아니오 질문을 할 수 있습니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -333,7 +332,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '변종',
     team: 'outsider',
     ability:
-      '자신이 외지인이라고 "밝히면", 처형될 수 있습니다. (스토리텔러 재량)',
+      '자신이 외지인이라고 "밝히면", 처형될 수 있습니다. (이야기꾼 재량)',
     edition: 'sects_and_violets',
   },
   {
@@ -390,7 +389,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '마귀할멈',
     team: 'minion',
     ability:
-      '매일 밤*, 플레이어를 선택하고 역할을 지정합니다: 그 플레이어의 역할이 변경됩니다. 같은 역할이 이미 있으면 둘 중 하나가 사망합니다.',
+      '매일 밤*, 플레이어 1명과 현재 게임에 없는 역할을 선택합니다: 그 플레이어가 그 역할이 됩니다. 악마가 만들어지면 그날 밤 사망은 이야기꾼이 임의로 정합니다.',
     edition: 'sects_and_violets',
   },
 
@@ -416,7 +415,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '노 다시',
     team: 'demon',
     ability:
-      '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 가장 가까운 살아있는 마을주민 2명이 중독됩니다.',
+      '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 가장 가까운 마을주민 이웃 2명이 중독됩니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -424,7 +423,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '보르톡스',
     team: 'demon',
     ability:
-      '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 마을주민의 정보는 모두 거짓입니다. 처형이 있는 날 아무도 사망하지 않으면 선한 팀이 승리합니다.',
+      '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 마을주민의 정보는 모두 거짓입니다. 낮이 끝날 때 아무도 처형되지 않으면 악한 팀이 승리합니다.',
     edition: 'sects_and_violets',
   },
 ];
@@ -434,7 +433,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
 export const TROUBLE_BREWING_TRAVELLERS: TravellerRole[] = [
   {
     id: 'scapegoat',
-    name: '속죄양',
+    name: '희생양',
     team: 'traveller',
     ability:
       '당신과 같은 진영의 플레이어가 처형되면, 대신 당신이 처형될 수 있습니다.',
@@ -964,8 +963,9 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
   },
   dreamer: {
     type: 'select_one',
-    instruction: '확인할 플레이어를 선택하세요',
+    instruction: '확인할 플레이어를 선택하세요 (여행자 제외)',
     excludeSelf: true,
+    excludeTraveller: true,
   },
   snake_charmer: {
     type: 'select_one',
@@ -1022,11 +1022,13 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     type: 'select_one',
     instruction: '광기를 부여할 플레이어를 선택하세요',
     excludeSelf: true,
+    includeDeadTargets: true,
   },
   pit_hag: {
     type: 'select_one',
     instruction: '역할을 변경할 플레이어를 선택하세요',
     excludeSelf: true,
+    includeDeadTargets: true,
   },
   fang_gu: {
     type: 'select_one',
@@ -1106,14 +1108,15 @@ export const NIGHT_FEEDBACK: Record<string, NightFeedbackDef> = {
 
   // ── Sects & Violets ──
   clockmaker: { type: 'number' },
-  dreamer: { type: 'players_and_role' },
+  dreamer: { type: 'dreamer_info' },
   mathematician: { type: 'number' },
   flowergirl: { type: 'yes_no' },
   town_crier: { type: 'yes_no' },
   oracle: { type: 'number' },
   seamstress: { type: 'yes_no' },
   juggler: { type: 'number' },
-  sage: { type: 'players_and_role' },
+  sage: { type: 'players' },
+  savant: { type: 'savant_info' },
 
   // ── 여행자 (Traveller) ──
   apprentice: { type: 'role' },

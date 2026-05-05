@@ -1,9 +1,12 @@
-import type {
-  ClientToServerEvents,
-  ServerToClientEvents,
-  ServerToStorytellerEvents,
-  StorytellerToServerEvents,
-  WhisperMessage,
+import {
+  type ClientToServerEvents,
+  getRoleById,
+  hasPoisonStatus,
+  type Player,
+  type ServerToClientEvents,
+  type ServerToStorytellerEvents,
+  type StorytellerToServerEvents,
+  type WhisperMessage,
 } from '@clocktower/shared/logic';
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
@@ -24,6 +27,52 @@ function getPlayerIdFromSocket(socket: {
 }): string | undefined {
   const rooms = Array.from(socket.rooms);
   return rooms.find((r) => r !== socket.id);
+}
+
+function hasEffectiveRole(
+  player: {
+    role?: { id: string };
+    drunkAs?: string;
+    philosopherGrantedRole?: string;
+  },
+  roleId: string,
+): boolean {
+  return (
+    player.role?.id === roleId ||
+    (player.role?.id === 'drunk' && player.drunkAs === roleId) ||
+    (player.role?.id === 'philosopher' &&
+      player.philosopherGrantedRole === roleId)
+  );
+}
+
+function emitDeathTriggers(
+  player: Player | undefined,
+  storytellerIo: StorytellerNamespace,
+  options: { isNight: boolean },
+): void {
+  if (!player?.role) return;
+  if (player.role.id === 'sweetheart') {
+    storytellerIo.emit('sweetheart:died', {
+      sweetheartName: player.name,
+    });
+  }
+  if (player.role.id === 'mayor' && options.isNight) {
+    storytellerIo.emit('mayor:nightDeath', {
+      mayorId: player.id,
+      mayorName: player.name,
+    });
+  }
+  if (player.role.id === 'barber') {
+    storytellerIo.emit('barber:died', {
+      barberName: player.name,
+    });
+  }
+  if (player.role.id === 'klutz') {
+    storytellerIo.emit('klutz:died', {
+      klutzId: player.id,
+      klutzName: player.name,
+    });
+  }
 }
 
 export function registerPlayerHandlers(
@@ -285,6 +334,7 @@ export function registerPlayerHandlers(
         const nominator = game.getPlayer(playerId);
         game.kill(result.virginKill);
         game.markExecution();
+        emitDeathTriggers(nominator, storytellerIo, { isNight: false });
         playerIo.emit('virgin:triggered', {
           virginName: virgin?.name ?? nomineeId,
           nominatorName: nominator?.name ?? playerId,
@@ -381,25 +431,33 @@ export function registerPlayerHandlers(
           // 밤 행동 타깃 기록 (임프 자해 감지용)
           game.recordNightAction(playerId, targets);
 
-          // 집사(Butler) 주인 선택 저장
-          if (player.role.id === 'butler' && targets.length > 0) {
+          // 행동 수행 시점의 효과적 역할 ID
+          // - 주정뱅이: drunkAs (능력은 무효)
+          // - 철학자: philosopherGrantedRole (실제 능력 보유)
+          // - 그 외: 본 역할
+          const effectiveRoleId =
+            player.role.id === 'drunk' && player.drunkAs
+              ? player.drunkAs
+              : player.role.id === 'philosopher' &&
+                  player.philosopherGrantedRole
+                ? player.philosopherGrantedRole
+                : player.role.id;
+
+          // 집사(Butler) 주인 선택 저장 (철학자가 집사 능력 가진 경우 포함)
+          if (effectiveRoleId === 'butler' && targets.length > 0) {
             game.setButlerMaster(playerId, targets[0]);
           }
 
-          // 마녀(Witch) 저주 대상 저장
-          if (player.role.id === 'witch' && targets.length > 0) {
+          // 마녀(Witch) 저주 대상 저장 (철학자가 마녀 능력 가진 경우 포함)
+          if (effectiveRoleId === 'witch' && targets.length > 0) {
             game.setWitchCursedTarget(targets[0]);
           }
 
-          // 주정뱅이는 가짜 역할 ID로 행동을 보고
-          const reportRoleId =
-            player.role.id === 'drunk' && player.drunkAs
-              ? player.drunkAs
-              : player.role.id;
+          const reportRoleId = effectiveRoleId;
           // 점쟁이 판정: 선택된 2명 중 악마/Red Herring 포함 여부
           const fortuneTellerResult =
             reportRoleId === 'fortune_teller'
-              ? game.judgeFortuneTeller(targets)
+              ? game.judgeFortuneTeller(targets, playerId)
               : undefined;
 
           storytellerIo.emit('night:actionReceived', {
@@ -476,7 +534,7 @@ export function registerPlayerHandlers(
       // 실제 처단자이고 대상이 악마면 자동 사망 (중독 상태면 무효)
       const killCondition =
         isSlayer &&
-        !player.statuses.includes('poisoned') &&
+        !hasPoisonStatus(player.statuses) &&
         target.role?.team === 'demon';
 
       if (!killCondition) {
@@ -503,6 +561,9 @@ export function registerPlayerHandlers(
 
       game.kill(targetId);
       game.markExecution(); // 처단자 처형은 처형으로 간주 → 더 이상 지목 불가
+      emitDeathTriggers(target, storytellerIo, {
+        isNight: false,
+      });
       const killedTarget = game.getPlayer(targetId);
       if (killedTarget) {
         playerIo.emit('execution:announced', {
@@ -552,6 +613,425 @@ export function registerPlayerHandlers(
           startClockwiseVote(game, playerIo, storytellerIo, pausedNomineeId);
         }
       }
+    });
+
+    // 철학자(Philosopher) 능력 사용: 부여받을 선한 역할 선택 (게임 중 1회)
+    socket.on('philosopher:choose', ({ roleId }, callback) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      const player = game.getPlayer(playerId);
+      if (!player) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      if (!player.isAlive) {
+        callback({
+          success: false,
+          error: '사망한 상태에서는 사용할 수 없습니다',
+        });
+        return;
+      }
+      const state = game.getState();
+      if (state.phase !== 'night') {
+        callback({ success: false, error: '밤에만 사용할 수 있습니다' });
+        return;
+      }
+      if (player.role?.id !== 'philosopher') {
+        callback({ success: false, error: '철학자만 사용할 수 있습니다' });
+        return;
+      }
+      if (game.isPhilosopherUsed(playerId)) {
+        callback({ success: false, error: '이미 사용했습니다' });
+        return;
+      }
+      const chosenRole = getRoleById(roleId);
+      if (!chosenRole) {
+        callback({ success: false, error: '존재하지 않는 역할입니다' });
+        return;
+      }
+      if (chosenRole.id === 'philosopher') {
+        callback({ success: false, error: '철학자 자신은 선택할 수 없습니다' });
+        return;
+      }
+      if (chosenRole.team !== 'townsfolk' && chosenRole.team !== 'outsider') {
+        callback({ success: false, error: '선한 역할만 선택할 수 있습니다' });
+        return;
+      }
+
+      game.markPhilosopherUsed(playerId);
+      player.philosopherGrantedRole = roleId;
+
+      // 게임 내에 해당 역할 보유자가 있으면 중독시킴
+      const holder = game.findPlayerByRoleId(roleId);
+      let drunkenedPlayerId: string | undefined;
+      let drunkenedPlayerName: string | undefined;
+      if (holder && holder.id !== playerId) {
+        if (!holder.statuses.includes('drunk')) {
+          holder.statuses.push('drunk');
+        }
+        drunkenedPlayerId = holder.id;
+        drunkenedPlayerName = holder.name;
+      }
+
+      // 점쟁이 능력 부여 시 Red Herring이 없으면 자동 배정 (이미 있으면 유지)
+      if (roleId === 'fortune_teller') {
+        game.ensureRedHerringForActor(playerId);
+      }
+
+      callback({ success: true });
+
+      // 철학자 본인에게 갱신된 Player 정보 전달 (philosopherGrantedRole 동기화)
+      playerIo.to(playerId).emit('game:playerUpdate', player);
+      // 중독된 보유자가 있으면 해당 플레이어에게도 업데이트 전달
+      if (holder && holder.id !== playerId) {
+        playerIo.to(holder.id).emit('game:playerUpdate', holder);
+      }
+      // 이야기꾼에게 grant 알림 + 전체 상태 갱신
+      storytellerIo.emit('philosopher:granted', {
+        philosopherId: playerId,
+        philosopherName: player.name,
+        roleId,
+        roleName: chosenRole.name,
+        drunkenedPlayerId,
+        drunkenedPlayerName,
+      });
+      storytellerIo.emit('game:state', game.getState());
+      console.log(
+        `Philosopher: ${player.name} -> ${chosenRole.name}${
+          drunkenedPlayerName ? ` (drunkened ${drunkenedPlayerName})` : ''
+        }`,
+      );
+    });
+
+    // 총잡이(Gunslinger) 낮에 오늘 첫 투표자 중 1명 사살 (하루 1회)
+    socket.on('gunslinger:use', ({ targetId }, callback) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      const player = game.getPlayer(playerId);
+      if (!player) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      if (!player.isAlive) {
+        callback({
+          success: false,
+          error: '사망한 상태에서는 사용할 수 없습니다',
+        });
+        return;
+      }
+      if (player.role?.id !== 'gunslinger') {
+        callback({ success: false, error: '총잡이만 사용할 수 있습니다' });
+        return;
+      }
+      const state = game.getState();
+      if (state.phase !== 'day' && state.phase !== 'vote') {
+        callback({ success: false, error: '낮에만 사용할 수 있습니다' });
+        return;
+      }
+      if (game.isGunslingerUsedToday(playerId)) {
+        callback({ success: false, error: '오늘 이미 사용했습니다' });
+        return;
+      }
+      const voters = game.getTodayFirstVoteGuiltyVoters();
+      if (!voters) {
+        callback({
+          success: false,
+          error: '오늘 첫 투표 집계 후에만 사용할 수 있습니다',
+        });
+        return;
+      }
+      if (!voters.includes(targetId)) {
+        callback({
+          success: false,
+          error: '오늘 첫 투표에 찬성한 플레이어만 대상이 됩니다',
+        });
+        return;
+      }
+      const target = game.getPlayer(targetId);
+      if (!target || !target.isAlive) {
+        callback({ success: false, error: '대상이 유효하지 않습니다' });
+        return;
+      }
+
+      game.markGunslingerUsedToday(playerId);
+      game.kill(targetId);
+      emitDeathTriggers(target, storytellerIo, {
+        isNight: false,
+      });
+
+      callback({ success: true });
+
+      const payload = {
+        gunslingerId: playerId,
+        gunslingerName: player.name,
+        targetId,
+        targetName: target.name,
+        targetRoleName: target.role?.name ?? '알 수 없음',
+      };
+      playerIo.emit('gunslinger:fired', payload);
+      storytellerIo.emit('gunslinger:fired', payload);
+      const killedTarget = game.getPlayer(targetId);
+      if (killedTarget) playerIo.emit('game:playerUpdate', killedTarget);
+      storytellerIo.emit('game:state', game.getState());
+      console.log(`Gunslinger: ${player.name} shot ${target.name}`);
+
+      const winResult = game.checkWinCondition();
+      if (winResult) {
+        winResult.cause = 'gunslinger';
+        winResult.reason = `${player.name}(총잡이)이(가) ${target.name}을(를) 사살했습니다`;
+        playerIo.emit('game:end', winResult);
+        storytellerIo.emit('game:end', winResult);
+      }
+    });
+
+    // 거지(Beggar)에게 죽은 플레이어가 투표 토큰 수여
+    socket.on('beggar:giveToken', ({ beggarId }, callback) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      const giver = game.getPlayer(playerId);
+      if (!giver) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      if (giver.isAlive) {
+        callback({
+          success: false,
+          error: '죽은 플레이어만 토큰을 수여할 수 있습니다',
+        });
+        return;
+      }
+      if (giver.deadVoteUsed) {
+        callback({
+          success: false,
+          error: '이미 죽은 표(또는 토큰 수여)를 사용했습니다',
+        });
+        return;
+      }
+      const beggar = game.getPlayer(beggarId);
+      if (!beggar || !beggar.isAlive || beggar.role?.id !== 'beggar') {
+        callback({ success: false, error: '유효한 거지가 아닙니다' });
+        return;
+      }
+      giver.deadVoteUsed = true;
+      const tokenCount = game.addBeggarToken(beggarId);
+      const alignment = game.getPlayerAlignment(playerId);
+      callback({ success: true });
+      playerIo.to(beggarId).emit('beggar:tokenReceived', {
+        giverId: playerId,
+        giverName: giver.name,
+        giverAlignment: alignment ?? 'good',
+        tokenCount,
+      });
+      playerIo.emit('game:playerUpdate', giver);
+      storytellerIo.emit('game:state', game.getState());
+      console.log(
+        `Beggar token: ${giver.name} → ${beggar.name} (total ${tokenCount})`,
+      );
+    });
+
+    // 곡예사(Juggler) 첫 낮 공개 추측 (1~5개, 게임 중 1회)
+    socket.on('juggler:declare', ({ guesses }, callback) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      const player = game.getPlayer(playerId);
+      if (!player) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      if (!player.isAlive) {
+        callback({
+          success: false,
+          error: '사망한 상태에서는 사용할 수 없습니다',
+        });
+        return;
+      }
+      const state = game.getState();
+      if (state.phase !== 'day') {
+        callback({ success: false, error: '낮에만 사용할 수 있습니다' });
+        return;
+      }
+      if (state.day !== 1) {
+        callback({ success: false, error: '첫 낮에만 사용할 수 있습니다' });
+        return;
+      }
+      const effectiveRoleId =
+        player.role?.id === 'drunk' && player.drunkAs
+          ? player.drunkAs
+          : player.role?.id;
+      if (effectiveRoleId !== 'juggler') {
+        callback({ success: false, error: '곡예사만 사용할 수 있습니다' });
+        return;
+      }
+      if (game.isJugglerUsed(playerId)) {
+        callback({ success: false, error: '이미 사용했습니다' });
+        return;
+      }
+      if (!Array.isArray(guesses) || guesses.length < 1 || guesses.length > 5) {
+        callback({
+          success: false,
+          error: '추측은 1~5개여야 합니다',
+        });
+        return;
+      }
+
+      // 추측 검증 + 메타데이터 (이름) 결합
+      const enriched: Array<{
+        playerId: string;
+        playerName: string;
+        roleId: string;
+        roleName: string;
+      }> = [];
+      for (const g of guesses) {
+        const target = game.getPlayer(g.playerId);
+        const role = getRoleById(g.roleId);
+        if (!target || !role) {
+          callback({
+            success: false,
+            error: '잘못된 플레이어 또는 역할입니다',
+          });
+          return;
+        }
+        enriched.push({
+          playerId: g.playerId,
+          playerName: target.name,
+          roleId: g.roleId,
+          roleName: role.name,
+        });
+      }
+
+      game.recordJugglerGuesses(
+        playerId,
+        guesses.map((g) => ({ playerId: g.playerId, roleId: g.roleId })),
+      );
+      const correctCount = game.judgeJuggler(playerId);
+
+      callback({ success: true });
+
+      // 모든 플레이어 + 이야기꾼에게 공개 선언 브로드캐스트
+      playerIo.emit('juggler:announced', {
+        jugglerId: playerId,
+        jugglerName: player.name,
+        guesses: enriched,
+      });
+      storytellerIo.emit('juggler:announced', {
+        jugglerId: playerId,
+        jugglerName: player.name,
+        guesses: enriched,
+      });
+      // 이야기꾼에게만 정답 수 (밤 피드백 추천값)
+      storytellerIo.emit('juggler:correctCount', {
+        jugglerId: playerId,
+        correctCount,
+      });
+      console.log(
+        `Juggler 선언: ${player.name} → ${enriched.length}개 추측 (정답 ${correctCount})`,
+      );
+    });
+
+    // 화가(Artist) 능력 사용 요청: 이야기꾼이 예/아니오로 답변 (게임 중 1회)
+    socket.on('artist:use', (callback) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+
+      const player = game.getPlayer(playerId);
+      if (!player) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+
+      if (!player.isAlive) {
+        callback({
+          success: false,
+          error: '사망한 상태에서는 사용할 수 없습니다',
+        });
+        return;
+      }
+
+      if (!hasEffectiveRole(player, 'artist')) {
+        callback({ success: false, error: '화가만 사용할 수 있습니다' });
+        return;
+      }
+
+      const state = game.getState();
+      if (state.phase !== 'day') {
+        callback({ success: false, error: '낮에만 사용할 수 있습니다' });
+        return;
+      }
+
+      if (game.isArtistUsed(playerId)) {
+        callback({ success: false, error: '이미 사용했습니다' });
+        return;
+      }
+
+      game.markArtistUsed(playerId);
+      callback({ success: true });
+      storytellerIo.emit('artist:requested', {
+        playerId,
+        playerName: player.name,
+      });
+      console.log(`Artist 요청: ${player.name}`);
+    });
+
+    // 백치천재(Savant) 능력 사용 요청: 이야기꾼에게 알림 → 이야기꾼이 참/거짓 정보 2개 입력
+    socket.on('savant:use', (callback) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+
+      const player = game.getPlayer(playerId);
+      if (!player) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+
+      if (!player.isAlive) {
+        callback({
+          success: false,
+          error: '사망한 상태에서는 사용할 수 없습니다',
+        });
+        return;
+      }
+
+      if (!hasEffectiveRole(player, 'savant')) {
+        callback({ success: false, error: '백치천재만 사용할 수 있습니다' });
+        return;
+      }
+
+      const state = game.getState();
+      if (state.phase !== 'day') {
+        callback({ success: false, error: '낮에만 사용할 수 있습니다' });
+        return;
+      }
+
+      if (game.isSavantUsedToday(playerId)) {
+        callback({ success: false, error: '오늘 이미 사용했습니다' });
+        return;
+      }
+
+      game.markSavantUsedToday(playerId);
+      callback({ success: true });
+      storytellerIo.emit('savant:requested', {
+        playerId,
+        playerName: player.name,
+      });
+      console.log(`Savant 요청: ${player.name}`);
     });
 
     // 변론 중 투표 동의 토글

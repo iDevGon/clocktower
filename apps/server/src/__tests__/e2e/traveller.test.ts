@@ -28,7 +28,7 @@ async function addTravellerWithRole(
   // 잠시 대기하여 joinAsTraveller로 인한 game:state 이벤트가 전파되도록 함
   await new Promise((r) => setTimeout(r, 100));
 
-  // 역할 배정 - game:state를 스토리텔러가 수신할 때까지 대기
+  // 역할 배정 - game:state를 이야기꾼이 수신할 때까지 대기
   const statePromise = waitForEvent(ctx.storyteller as Socket, 'game:state');
 
   const addResult = await new Promise<{
@@ -167,7 +167,7 @@ describe('E2E: 여행자 역할 배정 및 알림', () => {
 
     const roleData = await rolePromise;
     expect(roleData.roleId).toBe('scapegoat');
-    expect(roleData.roleName).toBe('속죄양');
+    expect(roleData.roleName).toBe('희생양');
 
     const joinedData = await travellerJoinedPromise;
     expect(joinedData.playerId).toBe(travellerId);
@@ -470,7 +470,7 @@ describe('E2E: 여행자 추방', () => {
     const exileData = await exilePromise;
     expect(exileData.playerId).toBe(travellerId);
     expect(exileData.playerName).toBe('Traveller1');
-    expect(exileData.roleName).toBe('속죄양');
+    expect(exileData.roleName).toBe('희생양');
 
     const player = ctx.app.game.getPlayer(travellerId);
     expect(player?.isAlive).toBe(false);

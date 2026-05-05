@@ -159,4 +159,37 @@ export const sharedStyles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 4,
   },
+  savantPair: {
+    width: '100%',
+    gap: 10,
+    marginTop: 4,
+  },
+  savantRow: {
+    backgroundColor: '#16141e',
+    borderWidth: 1,
+    borderColor: '#3a3452',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  savantTag: {
+    color: '#8070b0',
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  savantText: {
+    color: '#e0ddd8',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  savantHint: {
+    color: '#8a8a8a',
+    fontSize: 11,
+    textAlign: 'center',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
 });

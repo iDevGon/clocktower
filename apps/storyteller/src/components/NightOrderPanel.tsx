@@ -39,6 +39,8 @@ interface NightOrderPanelProps {
   onNightComplete?: () => void;
   /** 에디션 ID (밤 순서 결정에 사용) */
   editionId?: string;
+  /** 표준 night order에 없지만 추가로 활성화 가능한 역할 (예: 철학자가 부여받은 첫 밤 역할) */
+  extraRoleIds?: string[];
 }
 
 export function NightOrderPanel({
@@ -50,6 +52,7 @@ export function NightOrderPanel({
   onActivateRole,
   onNightComplete,
   editionId,
+  extraRoleIds = EMPTY_STRING_ARRAY,
 }: NightOrderPanelProps) {
   const { device, fontSize } = useResponsive();
   const scale = fontSize.md / 12;
@@ -58,11 +61,17 @@ export function NightOrderPanel({
     [scale, device],
   );
 
-  const order = editionId
+  const baseOrder = editionId
     ? getNightOrderForEdition(editionId, day)
     : day <= 1
       ? FIRST_NIGHT_ORDER
       : OTHER_NIGHT_ORDER;
+  // 철학자가 부여받은 첫 밤 역할처럼 표준 순서엔 없지만 활성화가 필요한 역할을 끝에 append
+  const order = useMemo(() => {
+    if (extraRoleIds.length === 0) return baseOrder;
+    const extras = extraRoleIds.filter((id) => !baseOrder.includes(id));
+    return extras.length === 0 ? baseOrder : [...baseOrder, ...extras];
+  }, [baseOrder, extraRoleIds]);
 
   const [activeIndex, setActiveIndex] = useState<number | null>(() => {
     if (activeNightRoleId) {

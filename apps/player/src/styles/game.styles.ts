@@ -301,6 +301,82 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  /* ── Savant button ── */
+  savantButton: {
+    backgroundColor: '#3a5a7a',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  savantButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  /* ── Artist button ── */
+  artistButton: {
+    backgroundColor: '#7a5a8a',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  artistButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  /* ── Juggler button ── */
+  jugglerButton: {
+    backgroundColor: '#5a3a7a',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  jugglerButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  /* ── Gunslinger button ── */
+  gunslingerButton: {
+    backgroundColor: '#7a3a3a',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  gunslingerButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  /* ── Beggar token UI ── */
+  beggarButton: {
+    backgroundColor: '#5a4a2a',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  beggarButtonText: {
+    color: '#e8d8a8',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  beggarTokenText: {
+    color: '#d8c888',
+    fontSize: 14,
+    fontWeight: '700',
+    backgroundColor: '#2a2418',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#5a4a2a',
+  },
+
   /* ── Settings modal ── */
   settingsOverlay: {
     flex: 1,

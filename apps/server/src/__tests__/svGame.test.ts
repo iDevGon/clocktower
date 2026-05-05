@@ -220,6 +220,17 @@ describe('S&V GameManager', () => {
       expect(gm.getPlayer(players[0].id)?.role?.id).toBe('artist');
     });
 
+    it('역할 변경은 플레이어의 현재 진영을 바꾸지 않는다', () => {
+      const { gm, players } = createStartedSVGame();
+      expect(gm.getPlayerAlignment(players[0].id)).toBe('good');
+
+      const success = gm.changePlayerRole(players[0].id, 'vortox');
+
+      expect(success).toBe(true);
+      expect(gm.getPlayer(players[0].id)?.role?.id).toBe('vortox');
+      expect(gm.getPlayerAlignment(players[0].id)).toBe('good');
+    });
+
     it('이미 게임에 있는 역할로는 변경할 수 없다', () => {
       const { gm, players } = createStartedSVGame();
       // dreamer는 이미 players[1]에 배정됨
@@ -238,6 +249,46 @@ describe('S&V GameManager', () => {
 
       expect(gm.getPlayer(players[0].id)?.role?.id).toBe(role1);
       expect(gm.getPlayer(players[1].id)?.role?.id).toBe(role0);
+    });
+
+    it('역할 교환은 두 플레이어의 현재 진영을 유지한다', () => {
+      const { gm, players } = createStartedSVGame();
+      expect(gm.getPlayerAlignment(players[0].id)).toBe('good');
+      expect(gm.getPlayerAlignment(players[6].id)).toBe('evil');
+
+      gm.swapPlayerRoles(players[0].id, players[6].id);
+
+      expect(gm.getPlayer(players[0].id)?.role?.id).toBe('fang_gu');
+      expect(gm.getPlayer(players[6].id)?.role?.id).toBe('clockmaker');
+      expect(gm.getPlayerAlignment(players[0].id)).toBe('good');
+      expect(gm.getPlayerAlignment(players[6].id)).toBe('evil');
+    });
+  });
+
+  describe('뱀 조련사 역할 교환', () => {
+    it('악마를 선택하면 직업과 진영을 교환하고 새 뱀 조련사가 중독된다', () => {
+      const { gm, players } = createStartedSVGame();
+      gm.changePlayerRole(players[0].id, 'snake_charmer');
+
+      const result = gm.handleSnakeCharmerSwap(players[0].id, players[6].id);
+
+      expect(result).not.toBeNull();
+      expect(gm.getPlayer(players[0].id)?.role?.id).toBe('fang_gu');
+      expect(gm.getPlayer(players[6].id)?.role?.id).toBe('snake_charmer');
+      expect(gm.getPlayerAlignment(players[0].id)).toBe('evil');
+      expect(gm.getPlayerAlignment(players[6].id)).toBe('good');
+      expect(gm.getPlayer(players[6].id)?.statuses).toContain('poisoned');
+    });
+
+    it('악마가 아닌 플레이어를 선택하면 교환하지 않는다', () => {
+      const { gm, players } = createStartedSVGame();
+      gm.changePlayerRole(players[0].id, 'snake_charmer');
+
+      const result = gm.handleSnakeCharmerSwap(players[0].id, players[1].id);
+
+      expect(result).toBeNull();
+      expect(gm.getPlayer(players[0].id)?.role?.id).toBe('snake_charmer');
+      expect(gm.getPlayer(players[1].id)?.role?.id).toBe('dreamer');
     });
   });
 
@@ -270,6 +321,142 @@ describe('S&V GameManager', () => {
       expect(neighbors).toContain(players[4].id);
       expect(neighbors).toContain(players[2].id);
     });
+
+    it('사망한 마을주민도 노 다시의 이웃 후보에 포함한다', () => {
+      const { gm, players } = createSVGame(7);
+      gm.assignRole(players[0].id, 'clockmaker');
+      gm.assignRole(players[1].id, 'dreamer');
+      gm.assignRole(players[2].id, 'flowergirl');
+      gm.assignRole(players[3].id, 'no_dashii');
+      gm.assignRole(players[4].id, 'oracle');
+      gm.assignRole(players[5].id, 'witch');
+      gm.assignRole(players[6].id, 'seamstress');
+      gm.start();
+      gm.kill(players[4].id);
+
+      const neighbors = gm.getNoDashiiPoisonedNeighbors(players[3].id);
+
+      expect(neighbors).toContain(players[4].id);
+      expect(neighbors).toContain(players[2].id);
+    });
+
+    it('노 다시 이웃은 지속 중독 상태를 받고 노 다시가 죽으면 해제된다', () => {
+      const { gm, players } = createSVGame(7);
+      gm.assignRole(players[0].id, 'clockmaker');
+      gm.assignRole(players[1].id, 'dreamer');
+      gm.assignRole(players[2].id, 'flowergirl');
+      gm.assignRole(players[3].id, 'no_dashii');
+      gm.assignRole(players[4].id, 'oracle');
+      gm.assignRole(players[5].id, 'witch');
+      gm.assignRole(players[6].id, 'seamstress');
+      gm.start();
+
+      expect(gm.getPlayer(players[2].id)?.statuses).toContain(
+        'no_dashii_poisoned',
+      );
+      expect(gm.getPlayer(players[4].id)?.statuses).toContain(
+        'no_dashii_poisoned',
+      );
+
+      gm.kill(players[3].id);
+
+      expect(gm.getPlayer(players[2].id)?.statuses).not.toContain(
+        'no_dashii_poisoned',
+      );
+      expect(gm.getPlayer(players[4].id)?.statuses).not.toContain(
+        'no_dashii_poisoned',
+      );
+    });
+  });
+
+  describe('비고르모르티스', () => {
+    it('죽인 하수인은 능력을 유지하고 선택한 마을주민 이웃을 중독한다', () => {
+      const { gm, players } = createSVGame(7);
+      gm.assignRole(players[0].id, 'clockmaker');
+      gm.assignRole(players[1].id, 'witch');
+      gm.assignRole(players[2].id, 'dreamer');
+      gm.assignRole(players[3].id, 'flowergirl');
+      gm.assignRole(players[4].id, 'oracle');
+      gm.assignRole(players[5].id, 'seamstress');
+      gm.assignRole(players[6].id, 'vigormortis');
+      gm.start();
+
+      const result = gm.handleVigormortisMinionKill(
+        players[6].id,
+        players[1].id,
+        players[2].id,
+      );
+
+      expect(result?.minion.id).toBe(players[1].id);
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(false);
+      expect(gm.getPlayer(players[1].id)?.statuses).toContain(
+        'vigormortis_retained',
+      );
+      expect(gm.getPlayer(players[2].id)?.statuses).toContain(
+        'vigormortis_poisoned',
+      );
+    });
+
+    it('비고르모르티스가 죽으면 유지 능력과 중독이 해제된다', () => {
+      const { gm, players } = createSVGame(7);
+      gm.assignRole(players[0].id, 'clockmaker');
+      gm.assignRole(players[1].id, 'witch');
+      gm.assignRole(players[2].id, 'dreamer');
+      gm.assignRole(players[3].id, 'flowergirl');
+      gm.assignRole(players[4].id, 'oracle');
+      gm.assignRole(players[5].id, 'seamstress');
+      gm.assignRole(players[6].id, 'vigormortis');
+      gm.start();
+
+      gm.handleVigormortisMinionKill(
+        players[6].id,
+        players[1].id,
+        players[2].id,
+      );
+      gm.kill(players[6].id);
+
+      expect(gm.getPlayer(players[1].id)?.statuses).not.toContain(
+        'vigormortis_retained',
+      );
+      expect(gm.getPlayer(players[2].id)?.statuses).not.toContain(
+        'vigormortis_poisoned',
+      );
+    });
+
+    it('비고르모르티스가 일시적으로 중독되면 유지/이웃 중독만 잠시 꺼진다', () => {
+      const { gm, players } = createSVGame(7);
+      gm.assignRole(players[0].id, 'clockmaker');
+      gm.assignRole(players[1].id, 'witch');
+      gm.assignRole(players[2].id, 'dreamer');
+      gm.assignRole(players[3].id, 'flowergirl');
+      gm.assignRole(players[4].id, 'oracle');
+      gm.assignRole(players[5].id, 'seamstress');
+      gm.assignRole(players[6].id, 'vigormortis');
+      gm.start();
+
+      gm.handleVigormortisMinionKill(
+        players[6].id,
+        players[1].id,
+        players[2].id,
+      );
+      gm.setPlayerStatuses(players[6].id, ['poisoned']);
+
+      expect(gm.getPlayer(players[1].id)?.statuses).not.toContain(
+        'vigormortis_retained',
+      );
+      expect(gm.getPlayer(players[2].id)?.statuses).not.toContain(
+        'vigormortis_poisoned',
+      );
+
+      gm.setPlayerStatuses(players[6].id, []);
+
+      expect(gm.getPlayer(players[1].id)?.statuses).toContain(
+        'vigormortis_retained',
+      );
+      expect(gm.getPlayer(players[2].id)?.statuses).toContain(
+        'vigormortis_poisoned',
+      );
+    });
   });
 
   describe('보르톡스', () => {
@@ -289,6 +476,24 @@ describe('S&V GameManager', () => {
     it('보르톡스가 없으면 hasVortox가 false', () => {
       const { gm } = createStartedSVGame();
       expect(gm.hasVortox()).toBe(false);
+    });
+
+    it('처형 없는 날이 끝나면 악 팀 승리 결과를 만든다', () => {
+      const { gm, players } = createSVGame(7);
+      gm.assignRole(players[0].id, 'clockmaker');
+      gm.assignRole(players[1].id, 'dreamer');
+      gm.assignRole(players[2].id, 'flowergirl');
+      gm.assignRole(players[3].id, 'oracle');
+      gm.assignRole(players[4].id, 'seamstress');
+      gm.assignRole(players[5].id, 'witch');
+      gm.assignRole(players[6].id, 'vortox');
+      gm.start();
+      gm.setPhase('day');
+
+      const result = gm.checkVortoxNoExecutionWin();
+
+      expect(result?.winningTeam).toBe('evil');
+      expect(result?.cause).toBe('vortox_no_execution');
     });
   });
 

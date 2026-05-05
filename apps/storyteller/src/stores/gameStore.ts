@@ -81,6 +81,16 @@ interface GameStore {
   mayorNightDeathName: string | null;
   setMayorNightDeath: (id: string, name: string) => void;
   clearMayorNightDeath: () => void;
+  witchCursePending: { nominatorId: string; nominatorName: string } | null;
+  setWitchCursePending: (
+    pending: { nominatorId: string; nominatorName: string } | null,
+  ) => void;
+  barberDiedPending: { barberName: string } | null;
+  setBarberDiedPending: (pending: { barberName: string } | null) => void;
+  klutzDiedPending: { klutzId: string; klutzName: string } | null;
+  setKlutzDiedPending: (
+    pending: { klutzId: string; klutzName: string } | null,
+  ) => void;
   nightWakeUpTargets: string[];
   setNightWakeUpTargets: (ids: string[]) => void;
   chatToast: { playerName: string; message: string } | null;
@@ -117,6 +127,34 @@ interface GameStore {
   eventToast: { title: string; message: string } | null;
   showEventToast: (toast: { title: string; message: string }) => void;
   dismissEventToast: () => void;
+  /** 백치천재 능력 사용 요청 (이야기꾼이 참/거짓 정보 2개 입력 필요) */
+  savantRequest: { playerId: string; playerName: string } | null;
+  setSavantRequest: (
+    req: { playerId: string; playerName: string } | null,
+  ) => void;
+  /** 화가 능력 사용 요청 (이야기꾼이 예/아니오 답변 필요) */
+  artistRequest: { playerId: string; playerName: string } | null;
+  setArtistRequest: (
+    req: { playerId: string; playerName: string } | null,
+  ) => void;
+  /** 곡예사 추측의 정답 수 (밤 피드백 추천값 — playerId로 키잉) */
+  jugglerCorrectCount: Record<string, number>;
+  setJugglerCorrectCount: (jugglerId: string, count: number) => void;
+  /** 희생양 교체 제안 (이야기꾼에게 모달 표시) */
+  scapegoatOffer: {
+    candidateId: string;
+    candidateName: string;
+    scapegoatId: string;
+    scapegoatName: string;
+  } | null;
+  setScapegoatOffer: (
+    offer: {
+      candidateId: string;
+      candidateName: string;
+      scapegoatId: string;
+      scapegoatName: string;
+    } | null,
+  ) => void;
   setGameState: (state: GameState) => void;
   addNightAction: (action: NightAction) => void;
   clearNightActions: () => void;
@@ -242,6 +280,12 @@ export const useGameStore = create<GameStore>()(
           mayorNightDeathId: null,
           mayorNightDeathName: null,
         }),
+      witchCursePending: null,
+      setWitchCursePending: (pending) => set({ witchCursePending: pending }),
+      barberDiedPending: null,
+      setBarberDiedPending: (pending) => set({ barberDiedPending: pending }),
+      klutzDiedPending: null,
+      setKlutzDiedPending: (pending) => set({ klutzDiedPending: pending }),
       chatToast: null,
       showChatToast: (toast) => set({ chatToast: toast }),
       dismissChatToast: () => set({ chatToast: null }),
@@ -266,6 +310,20 @@ export const useGameStore = create<GameStore>()(
       eventToast: null,
       showEventToast: (toast) => set({ eventToast: toast }),
       dismissEventToast: () => set({ eventToast: null }),
+      savantRequest: null,
+      setSavantRequest: (req) => set({ savantRequest: req }),
+      artistRequest: null,
+      setArtistRequest: (req) => set({ artistRequest: req }),
+      jugglerCorrectCount: {},
+      setJugglerCorrectCount: (jugglerId, count) =>
+        set((s) => ({
+          jugglerCorrectCount: {
+            ...s.jugglerCorrectCount,
+            [jugglerId]: count,
+          },
+        })),
+      scapegoatOffer: null,
+      setScapegoatOffer: (offer) => set({ scapegoatOffer: offer }),
       setGameState: (state) => {
         // 서버 상태의 player.statuses를 playerStatuses 스토어에 동기화
         const synced: Record<string, PlayerStatus[]> = Object.fromEntries(
@@ -454,7 +512,14 @@ export const useGameStore = create<GameStore>()(
           nominatorPlayers: [],
           roleRevealShown: false,
           slayerWaitingAck: false,
+          witchCursePending: null,
+          barberDiedPending: null,
+          klutzDiedPending: null,
           voteConsentReadyIds: [],
+          savantRequest: null,
+          artistRequest: null,
+          jugglerCorrectCount: {},
+          scapegoatOffer: null,
         }),
     }),
     {

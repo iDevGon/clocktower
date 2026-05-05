@@ -333,6 +333,33 @@ describe('Sects & Violets 역할 정의', () => {
       expect(NIGHT_FEEDBACK[id]).toBeDefined();
     }
   });
+
+  it('꿈꾸는 자와 현자는 전용 피드백 타입을 사용한다', () => {
+    expect(NIGHT_FEEDBACK.dreamer?.type).toBe('dreamer_info');
+    expect(NIGHT_FEEDBACK.sage?.type).toBe('players');
+  });
+
+  it('보르톡스 설명은 처형 없는 날 악 팀 승리로 안내한다', () => {
+    const vortox = SECTS_AND_VIOLETS_ROLES.find((r) => r.id === 'vortox');
+    expect(vortox?.ability).toContain('악한 팀이 승리합니다');
+  });
+
+  it('마귀할멈 설명은 현재 없는 역할만 만들 수 있음을 안내한다', () => {
+    const pitHag = SECTS_AND_VIOLETS_ROLES.find((r) => r.id === 'pit_hag');
+    expect(pitHag?.ability).toContain('현재 게임에 없는 역할');
+    expect(pitHag?.ability).not.toContain('둘 중 하나가 사망');
+  });
+
+  it('노 다시 설명은 생존 여부와 무관한 마을주민 이웃 중독으로 안내한다', () => {
+    const noDashii = SECTS_AND_VIOLETS_ROLES.find((r) => r.id === 'no_dashii');
+    expect(noDashii?.ability).toContain('마을주민 이웃 2명');
+    expect(noDashii?.ability).not.toContain('살아있는');
+  });
+
+  it('세레노버스와 마귀할멈은 죽은 플레이어도 대상으로 선택할 수 있다', () => {
+    expect(NIGHT_ACTIONS.cerenovus?.includeDeadTargets).toBe(true);
+    expect(NIGHT_ACTIONS.pit_hag?.includeDeadTargets).toBe(true);
+  });
 });
 
 describe('S&V 밤 진행 순서', () => {

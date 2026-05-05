@@ -48,7 +48,7 @@ describe('getTravellerById', () => {
   it('존재하는 여행자 역할을 반환한다', () => {
     const scapegoat = getTravellerById('scapegoat');
     expect(scapegoat).toBeDefined();
-    expect(scapegoat?.name).toBe('속죄양');
+    expect(scapegoat?.name).toBe('희생양');
     expect(scapegoat?.team).toBe('traveller');
   });
 

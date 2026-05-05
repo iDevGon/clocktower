@@ -4,11 +4,12 @@ import type {
   PlayerInfo,
   Role,
 } from '@clocktower/shared';
-import { NIGHT_ACTIONS } from '@clocktower/shared';
+import { getRoleById, NIGHT_ACTIONS } from '@clocktower/shared';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { FeedbackDisplay } from './FeedbackDisplay';
 import { styles } from './NightActionPrompt.styles';
+import { PhilosopherRolePicker } from './PhilosopherRolePicker';
 
 interface NightActionPromptProps {
   role: Role;
@@ -17,6 +18,10 @@ interface NightActionPromptProps {
   submitted: boolean;
   feedback: NightFeedbackPayload | null;
   onSubmit: (targets: string[]) => void;
+  /** 철학자가 능력을 부여받은 역할 ID (선택 후) */
+  philosopherGrantedRoleId?: string | null;
+  /** 철학자 첫 밤에 부여받을 역할 선택 콜백 */
+  onChoosePhilosopherRole?: (roleId: string) => Promise<void> | void;
 }
 
 export function NightActionPrompt({
@@ -26,9 +31,52 @@ export function NightActionPrompt({
   submitted,
   feedback,
   onSubmit,
+  philosopherGrantedRoleId,
+  onChoosePhilosopherRole,
 }: NightActionPromptProps) {
-  const actionDef: NightActionDef | undefined = NIGHT_ACTIONS[role.id];
   const [selected, setSelected] = useState<string[]>([]);
+  const [pickerVisible, setPickerVisible] = useState(false);
+
+  // 철학자가 아직 역할을 선택하지 않았다면 선택 프롬프트 노출
+  if (
+    role.id === 'philosopher' &&
+    !philosopherGrantedRoleId &&
+    !feedback &&
+    !submitted
+  ) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.roleName}>{role.name}</Text>
+        <Text style={styles.instruction}>
+          능력을 부여받을 선한 역할을 선택하세요
+        </Text>
+        <Pressable
+          onPress={() => setPickerVisible(true)}
+          style={styles.submitButton}
+        >
+          <Text style={styles.submitText}>역할 선택</Text>
+        </Pressable>
+        <PhilosopherRolePicker
+          visible={pickerVisible}
+          edition={role.edition}
+          onPick={async (roleId) => {
+            setPickerVisible(false);
+            await onChoosePhilosopherRole?.(roleId);
+          }}
+          onClose={() => setPickerVisible(false)}
+        />
+      </View>
+    );
+  }
+
+  // 철학자가 부여받은 역할 → 그 역할의 night action을 사용
+  const effectiveRoleId =
+    role.id === 'philosopher' && philosopherGrantedRoleId
+      ? philosopherGrantedRoleId
+      : role.id;
+  const effectiveRole: Role =
+    effectiveRoleId === role.id ? role : (getRoleById(effectiveRoleId) ?? role);
+  const actionDef: NightActionDef | undefined = NIGHT_ACTIONS[effectiveRoleId];
 
   if (!actionDef) return null;
 
@@ -64,7 +112,8 @@ export function NightActionPrompt({
   const maxTargets = actionDef.type === 'select_two' ? 2 : 1;
   const availablePlayers = players.filter((p) => {
     if (actionDef.excludeSelf && p.id === myPlayerId) return false;
-    return p.isAlive;
+    if (actionDef.excludeTraveller && p.isTraveller) return false;
+    return actionDef.includeDeadTargets || p.isAlive;
   });
 
   const handleToggle = (playerId: string) => {
@@ -81,9 +130,16 @@ export function NightActionPrompt({
 
   const canSubmit = selected.length === maxTargets;
 
+  const isPhilosopherChannelled =
+    role.id === 'philosopher' && effectiveRole.id !== role.id;
+
   return (
     <View style={styles.container}>
-      <Text style={styles.roleName}>{role.name}</Text>
+      <Text style={styles.roleName}>
+        {isPhilosopherChannelled
+          ? `${role.name} → ${effectiveRole.name}`
+          : effectiveRole.name}
+      </Text>
       <Text style={styles.instruction}>{actionDef.instruction}</Text>
 
       <ScrollView

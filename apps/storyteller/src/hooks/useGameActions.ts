@@ -197,6 +197,66 @@ export function useGameActions() {
     [socket],
   );
 
+  const scapegoatSwap = useCallback(
+    (scapegoatId: string) => socket?.emit('scapegoat:swap', { scapegoatId }),
+    [socket],
+  );
+
+  const confirmWitchCurseDeath = useCallback(
+    (nominatorId: string, kill: boolean) =>
+      socket?.emit('witch:confirmCurseDeath', { nominatorId, kill }),
+    [socket],
+  );
+
+  const barberSwapRoles = useCallback(
+    (playerId1: string, playerId2: string) =>
+      socket?.emit('barber:swapRoles', { playerId1, playerId2 }),
+    [socket],
+  );
+
+  const klutzChoose = useCallback(
+    (klutzId: string, chosenPlayerId: string) =>
+      socket?.emit('klutz:choose', { klutzId, chosenPlayerId }),
+    [socket],
+  );
+
+  const fangGuConfirmJump = useCallback(
+    (oldDemonId: string, newDemonId: string) =>
+      socket?.emit('fangGu:confirmJump', { oldDemonId, newDemonId }),
+    [socket],
+  );
+
+  const snakeCharmerSwap = useCallback(
+    (snakeCharmerId: string, demonId: string) =>
+      socket?.emit('snakeCharmer:swap', { snakeCharmerId, demonId }),
+    [socket],
+  );
+
+  const vigormortisKillMinion = useCallback(
+    (vigormortisId: string, minionId: string, poisonedNeighborId: string) =>
+      socket?.emit('vigormortis:killMinion', {
+        vigormortisId,
+        minionId,
+        poisonedNeighborId,
+      }),
+    [socket],
+  );
+
+  const pitHagChangeRole = useCallback(
+    (targetPlayerId: string, newRoleId: string) =>
+      socket?.emit('pitHag:changeRole', { targetPlayerId, newRoleId }),
+    [socket],
+  );
+
+  const assignGoodTwin = useCallback(
+    (evilTwinPlayerId: string, goodTwinPlayerId: string) =>
+      socket?.emit('evilTwin:assignGoodTwin', {
+        evilTwinPlayerId,
+        goodTwinPlayerId,
+      }),
+    [socket],
+  );
+
   const sendChatToPlayer = useCallback(
     (playerId: string, message: string) =>
       socket?.emit('chat:sendToPlayer', { playerId, message }),
@@ -287,6 +347,15 @@ export function useGameActions() {
     assignRedHerring,
     sweetheartDrunk,
     mayorRedirect,
+    scapegoatSwap,
+    confirmWitchCurseDeath,
+    barberSwapRoles,
+    klutzChoose,
+    fangGuConfirmJump,
+    snakeCharmerSwap,
+    vigormortisKillMinion,
+    pitHagChangeRole,
+    assignGoodTwin,
     sendChatToPlayer,
     kickPlayer,
     addTraveller,

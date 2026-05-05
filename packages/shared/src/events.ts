@@ -116,6 +116,40 @@ export interface ServerToClientEvents {
   'player:kicked': () => void;
   /** 플레이어가 퇴장하거나 강퇴되었을 때 전체 플레이어에게 전송 */
   'player:left': (data: { playerId: string; playerName: string }) => void;
+  /** 곡예사가 공개적으로 추측을 선언함. 모든 플레이어에게 오버레이로 표시 */
+  'juggler:announced': (data: {
+    jugglerId: string;
+    jugglerName: string;
+    guesses: Array<{
+      playerId: string;
+      playerName: string;
+      roleId: string;
+      roleName: string;
+    }>;
+  }) => void;
+  /** 총잡이가 사살 선언. 모든 플레이어에게 오버레이로 표시 */
+  'gunslinger:fired': (data: {
+    gunslingerId: string;
+    gunslingerName: string;
+    targetId: string;
+    targetName: string;
+    targetRoleName: string;
+  }) => void;
+  /** 희생양 교체 완료: 처형 예정자가 희생양으로 교체됨 */
+  'scapegoat:swapped': (data: {
+    originalId: string;
+    originalName: string;
+    scapegoatId: string;
+    scapegoatName: string;
+    guiltyVotes: number;
+  }) => void;
+  /** 거지가 토큰을 받음 (본인에게만 송신) */
+  'beggar:tokenReceived': (data: {
+    giverId: string;
+    giverName: string;
+    giverAlignment: 'good' | 'evil';
+    tokenCount: number;
+  }) => void;
   /** 여행자가 게임에 참가했을 때 전체 플레이어에게 전송 */
   'traveller:joined': (data: {
     playerId: string;
@@ -189,6 +223,9 @@ export interface ServerToStorytellerEvents {
   'chat:receiveFromPlayer': ServerToClientEvents['chat:receiveFromPlayer'];
   'virgin:triggered': ServerToClientEvents['virgin:triggered'];
   'witch:curseDeath': ServerToClientEvents['witch:curseDeath'];
+  'juggler:announced': ServerToClientEvents['juggler:announced'];
+  'gunslinger:fired': ServerToClientEvents['gunslinger:fired'];
+  'scapegoat:swapped': ServerToClientEvents['scapegoat:swapped'];
   'execution:announced': ServerToClientEvents['execution:announced'];
   'sweetheart:died': (data: { sweetheartName: string }) => void;
   'mayor:nightDeath': (data: { mayorId: string; mayorName: string }) => void;
@@ -215,6 +252,38 @@ export interface ServerToStorytellerEvents {
     oldDemonName: string;
     newDemonId: string;
     newDemonName: string;
+  }) => void;
+  /** 뱀 조련사가 악마를 선택해 직업과 진영을 교환함 */
+  'snakeCharmer:swapped': (data: {
+    snakeCharmerId: string;
+    snakeCharmerName: string;
+    demonId: string;
+    demonName: string;
+  }) => void;
+  /** 백치천재가 낮에 능력 사용을 요청함 (이야기꾼이 참/거짓 정보 2개 입력 필요) */
+  'savant:requested': (data: { playerId: string; playerName: string }) => void;
+  /** 화가가 낮에 능력 사용을 요청함 (이야기꾼이 예/아니오 답변 필요, 게임 중 1회) */
+  'artist:requested': (data: { playerId: string; playerName: string }) => void;
+  /** 철학자가 능력을 부여받음. 원래 보유자가 있으면 중독 상태가 됨 */
+  'philosopher:granted': (data: {
+    philosopherId: string;
+    philosopherName: string;
+    roleId: string;
+    roleName: string;
+    drunkenedPlayerId?: string;
+    drunkenedPlayerName?: string;
+  }) => void;
+  /** 곡예사 추측 결과의 정답 수 (이야기꾼 전용 — 밤 피드백 입력 시 추천값) */
+  'juggler:correctCount': (data: {
+    jugglerId: string;
+    correctCount: number;
+  }) => void;
+  /** 처형 후보와 같은 진영의 희생양이 생존 시 이야기꾼에게 교체 제안 */
+  'scapegoat:offer': (data: {
+    candidateId: string;
+    candidateName: string;
+    scapegoatId: string;
+    scapegoatName: string;
   }) => void;
 }
 
@@ -269,6 +338,34 @@ export interface ClientToServerEvents {
   'night:action': (data: { targets: string[] }) => void;
   'slayer:use': (
     data: { targetId: string },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 백치천재가 낮에 능력 사용 요청 (이야기꾼이 참/거짓 정보 2개를 보내옴) */
+  'savant:use': (
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 화가가 낮에 능력 사용 요청 (이야기꾼이 예/아니오로 답변, 게임 중 1회) */
+  'artist:use': (
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 철학자가 밤에 부여받을 선한 역할을 선택 (게임 중 1회) */
+  'philosopher:choose': (
+    data: { roleId: string },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 곡예사가 첫 낮에 공개적으로 플레이어-역할 추측 1~5개 선언 (게임 중 1회) */
+  'juggler:declare': (
+    data: { guesses: Array<{ playerId: string; roleId: string }> },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 총잡이가 낮에 오늘 첫 투표자 중 1명을 사살 (하루 1회) */
+  'gunslinger:use': (
+    data: { targetId: string },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 죽은 플레이어가 거지에게 투표 토큰 수여 */
+  'beggar:giveToken': (
+    data: { beggarId: string },
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
   'whisper:send': (data: {
@@ -415,6 +512,16 @@ export interface StorytellerToServerEvents {
     oldDemonId: string;
     newDemonId: string;
   }) => void;
+  /** 뱀 조련사가 선택한 악마와 직업/진영 교환 실행 */
+  'snakeCharmer:swap': (data: {
+    snakeCharmerId: string;
+    demonId: string;
+  }) => void;
+  'vigormortis:killMinion': (data: {
+    vigormortisId: string;
+    minionId: string;
+    poisonedNeighborId: string;
+  }) => void;
   /** 마귀할멈 역할 변경 실행 */
   'pitHag:changeRole': (data: {
     targetPlayerId: string;
@@ -425,4 +532,6 @@ export interface StorytellerToServerEvents {
     evilTwinPlayerId: string;
     goodTwinPlayerId: string;
   }) => void;
+  /** 희생양 처형 교체: 현재 처형 후보를 희생양으로 교체 */
+  'scapegoat:swap': (data: { scapegoatId: string }) => void;
 }

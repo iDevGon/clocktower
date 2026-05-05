@@ -3,7 +3,12 @@ import type {
   NightFeedbackPayload,
   Player,
 } from '@clocktower/shared';
-import { getRoleById, NIGHT_ACTIONS, NIGHT_FEEDBACK } from '@clocktower/shared';
+import {
+  getRoleById,
+  hasPoisonStatus,
+  NIGHT_ACTIONS,
+  NIGHT_FEEDBACK,
+} from '@clocktower/shared';
 import { AbilityText } from '@clocktower/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
@@ -73,6 +78,8 @@ interface NightFeedbackPanelProps {
   onAllFeedbackSent?: () => void;
   /** 서버에서 전달받은 실제 wakeUp 대상 플레이어 ID 목록 */
   wakeUpTargetIds?: string[];
+  /** 곡예사 추측의 정답 수 (playerId → count) */
+  jugglerCorrectCount?: Record<string, number>;
 }
 
 /** Fisher-Yates shuffle (creates a new array) */
@@ -96,6 +103,7 @@ export function NightFeedbackPanel({
   onSendFeedback,
   onAllFeedbackSent,
   wakeUpTargetIds,
+  jugglerCorrectCount,
 }: NightFeedbackPanelProps) {
   const { fontSize } = useResponsive();
   const scale = fontSize.md / 12;
@@ -119,7 +127,9 @@ export function NightFeedbackPanel({
       (p) =>
         (p.role?.id === activeRoleId ||
           (p.role?.id === 'drunk' && p.drunkAs === activeRoleId)) &&
-        (isOnlyWhenDead ? !p.isAlive : p.isAlive),
+        (isOnlyWhenDead
+          ? !p.isAlive
+          : p.isAlive || p.statuses.includes('vigormortis_retained')),
     );
     return shuffle(matched);
   }, [activeRoleId, players, wakeUpTargetIds]);
@@ -167,7 +177,7 @@ export function NightFeedbackPanel({
 
   const targetPlayer = currentTarget;
   const isDrunk = targetPlayer.role?.id === 'drunk';
-  const isPoisoned = targetPlayer.statuses.includes('poisoned');
+  const isPoisoned = hasPoisonStatus(targetPlayer.statuses);
   const isMalfunctioning = isDrunk || isPoisoned;
   const role = getRoleById(activeRoleId);
   const team = role?.team ?? 'townsfolk';
@@ -260,7 +270,7 @@ export function NightFeedbackPanel({
               const targetNames = ftAction.targets
                 .map((id) => players.find((p) => p.id === id)?.name ?? id)
                 .join(', ');
-              const isPoisoned = targetPlayer.statuses.includes('poisoned');
+              const isPoisoned = hasPoisonStatus(targetPlayer.statuses);
               return (
                 <View
                   style={[
@@ -390,6 +400,11 @@ export function NightFeedbackPanel({
             feedbackDef={feedbackDef}
             players={players.filter((p) => p.id !== targetPlayer.id)}
             isDrunkUser={isMalfunctioning}
+            action={nightActions?.find(
+              (a) =>
+                a.roleId === activeRoleId && a.playerId === targetPlayer.id,
+            )}
+            maxNumber={activeRoleId === 'juggler' ? 5 : undefined}
             suggestedNumber={
               isDrunk
                 ? undefined
@@ -397,7 +412,9 @@ export function NightFeedbackPanel({
                   ? empathHint.evilCount
                   : activeRoleId === 'chef' && chefHint
                     ? chefHint.evilPairCount
-                    : undefined
+                    : activeRoleId === 'juggler'
+                      ? jugglerCorrectCount?.[targetPlayer.id]
+                      : undefined
             }
             highlightedRoleName={
               activeRoleId === 'undertaker' && !isMalfunctioning

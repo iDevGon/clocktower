@@ -4,12 +4,19 @@ import type {
   Player,
   PlayerStatus,
 } from '@clocktower/shared';
-import { getRoleById, NIGHT_FEEDBACK } from '@clocktower/shared';
+import {
+  getRoleById,
+  hasPoisonStatus,
+  NIGHT_FEEDBACK,
+} from '@clocktower/shared';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
 import { FeedbackComposer } from './FeedbackComposer';
+import { useGameEditionRoles } from './feedback/useGameEditionRoles';
 import { createNightActionLogStyles } from './NightActionLog.styles';
+import { PlayerPickerModal } from './PlayerPickerModal';
+import { RolePickerModal } from './RolePickerModal';
 
 export { NightFeedbackPanel } from './NightFeedbackPanel';
 
@@ -23,8 +30,19 @@ interface TargetActionConfig {
 
 const ROLE_TARGET_ACTIONS: Record<string, TargetActionConfig> = {
   imp: { label: '사망 처리', doneLabel: '사망', isKill: true },
+  fang_gu: { label: '사망 처리', doneLabel: '사망', isKill: true },
+  vigormortis: { label: '사망 처리', doneLabel: '사망', isKill: true },
+  no_dashii: { label: '사망 처리', doneLabel: '사망', isKill: true },
+  vortox: { label: '사망 처리', doneLabel: '사망', isKill: true },
   poisoner: { label: '중독 처리', doneLabel: '중독됨', status: 'poisoned' },
   monk: { label: '보호 처리', doneLabel: '보호됨', status: 'protected' },
+  snake_charmer: { label: '확인', doneLabel: '확인' },
+  pit_hag: { label: '역할 변경', doneLabel: '역할 변경' },
+  cerenovus: {
+    label: '광기 처리',
+    doneLabel: '광기',
+    status: 'cerenovus_mad',
+  },
   // butler, fortune_teller 등은 타겟 액션 버튼 불필요
 };
 
@@ -38,6 +56,15 @@ interface NightActionLogProps {
   onSendFeedback: (playerId: string, feedback: NightFeedbackPayload) => void;
   onKill?: (playerId: string) => void;
   onSetStatus?: (playerId: string, status: PlayerStatus) => void;
+  playerOrder?: string[];
+  onFangGuJump?: (oldDemonId: string, newDemonId: string) => void;
+  onSnakeCharmerSwap?: (snakeCharmerId: string, demonId: string) => void;
+  onVigormortisKillMinion?: (
+    vigormortisId: string,
+    minionId: string,
+    poisonedNeighborId: string,
+  ) => void;
+  onPitHagChangeRole?: (targetPlayerId: string, newRoleId: string) => void;
 }
 
 export function NightActionLog({
@@ -47,6 +74,11 @@ export function NightActionLog({
   onSendFeedback,
   onKill,
   onSetStatus,
+  playerOrder,
+  onFangGuJump,
+  onSnakeCharmerSwap,
+  onVigormortisKillMinion,
+  onPitHagChangeRole,
 }: NightActionLogProps) {
   const { fontSize } = useResponsive();
   const scale = fontSize.md / 12;
@@ -61,6 +93,69 @@ export function NightActionLog({
   const [processedTargets, setProcessedTargets] = useState<Set<string>>(
     new Set(),
   );
+  const [pitHagTarget, setPitHagTarget] = useState<{
+    targetId: string;
+    targetName: string;
+  } | null>(null);
+  const [cerenovusTarget, setCerenovusTarget] = useState<{
+    targetId: string;
+    targetName: string;
+  } | null>(null);
+  const [vigormortisPoisonChoice, setVigormortisPoisonChoice] = useState<{
+    vigormortisId: string;
+    minionId: string;
+    minionName: string;
+    candidates: Player[];
+  } | null>(null);
+  const gameRoles = useGameEditionRoles(players);
+  const goodRoles = useMemo(
+    () =>
+      gameRoles.filter(
+        (role) => role.team === 'townsfolk' || role.team === 'outsider',
+      ),
+    [gameRoles],
+  );
+  const pitHagDisabledRoleIds = useMemo(() => {
+    const disabled = new Set<string>();
+    for (const p of players) {
+      if (p.id !== pitHagTarget?.targetId && p.role) disabled.add(p.role.id);
+    }
+    return disabled;
+  }, [pitHagTarget?.targetId, players]);
+
+  const getTownsfolkNeighborPlayers = (sourcePlayerId: string) => {
+    const order =
+      playerOrder && playerOrder.length > 0
+        ? playerOrder
+        : players.map((p) => p.id);
+    const idx = order.indexOf(sourcePlayerId);
+    if (idx === -1) return [];
+    const neighborIds: string[] = [];
+
+    for (let i = 1; i < order.length; i++) {
+      const player = players.find(
+        (p) => p.id === order[(idx + i) % order.length],
+      );
+      if (player?.role?.team === 'townsfolk') {
+        neighborIds.push(player.id);
+        break;
+      }
+    }
+
+    for (let i = 1; i < order.length; i++) {
+      const player = players.find(
+        (p) => p.id === order[(idx - i + order.length) % order.length],
+      );
+      if (player?.role?.team === 'townsfolk') {
+        if (!neighborIds.includes(player.id)) neighborIds.push(player.id);
+        break;
+      }
+    }
+
+    return neighborIds
+      .map((id) => players.find((p) => p.id === id))
+      .filter((player): player is Player => player != null);
+  };
 
   const handleSend = (
     action: NightAction,
@@ -72,7 +167,11 @@ export function NightActionLog({
     setExpandedIndex(null);
   };
 
-  const handleTargetAction = (targetId: string, config: TargetActionConfig) => {
+  const handleTargetAction = (
+    _action: NightAction,
+    targetId: string,
+    config: TargetActionConfig,
+  ) => {
     if (config.isKill) {
       onKill?.(targetId);
     } else if (config.status) {
@@ -178,12 +277,189 @@ export function NightActionLog({
                         ? processedTargets.has(targetId) ||
                           !isPlayerAlive(targetId)
                         : processedTargets.has(targetId);
+                      if (action.roleId === 'pit_hag') {
+                        return (
+                          <Pressable
+                            key={targetId}
+                            onPress={() =>
+                              setPitHagTarget({
+                                targetId,
+                                targetName: getPlayerName(targetId),
+                              })
+                            }
+                            style={[
+                              styles.killButton,
+                              processedTargets.has(targetId) &&
+                                styles.killButtonDone,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.killText,
+                                processedTargets.has(targetId) &&
+                                  styles.killTextDone,
+                              ]}
+                            >
+                              {processedTargets.has(targetId)
+                                ? `${getPlayerName(targetId)} 역할 변경됨`
+                                : `${getPlayerName(targetId)} 역할 변경`}
+                            </Text>
+                          </Pressable>
+                        );
+                      }
+
+                      if (action.roleId === 'cerenovus') {
+                        return (
+                          <Pressable
+                            key={targetId}
+                            onPress={() =>
+                              setCerenovusTarget({
+                                targetId,
+                                targetName: getPlayerName(targetId),
+                              })
+                            }
+                            style={[
+                              styles.killButton,
+                              processedTargets.has(targetId) &&
+                                styles.killButtonDone,
+                            ]}
+                            disabled={processedTargets.has(targetId)}
+                          >
+                            <Text
+                              style={[
+                                styles.killText,
+                                processedTargets.has(targetId) &&
+                                  styles.killTextDone,
+                              ]}
+                            >
+                              {processedTargets.has(targetId)
+                                ? `${getPlayerName(targetId)} 광기 지정됨`
+                                : `${getPlayerName(targetId)} 광기 역할 지정`}
+                            </Text>
+                          </Pressable>
+                        );
+                      }
+
+                      if (
+                        action.roleId === 'vigormortis' &&
+                        targetPlayer?.role?.team === 'minion'
+                      ) {
+                        return (
+                          <Pressable
+                            key={targetId}
+                            onPress={() => {
+                              if (alreadyDone) return;
+                              const candidates =
+                                getTownsfolkNeighborPlayers(targetId);
+                              if (candidates.length === 0) {
+                                handleTargetAction(
+                                  action,
+                                  targetId,
+                                  actionConfig,
+                                );
+                                return;
+                              }
+                              setVigormortisPoisonChoice({
+                                vigormortisId: action.playerId,
+                                minionId: targetId,
+                                minionName: getPlayerName(targetId),
+                                candidates,
+                              });
+                            }}
+                            style={[
+                              styles.killButton,
+                              alreadyDone && styles.killButtonDone,
+                            ]}
+                            disabled={alreadyDone}
+                          >
+                            <Text
+                              style={[
+                                styles.killText,
+                                alreadyDone && styles.killTextDone,
+                              ]}
+                            >
+                              {alreadyDone
+                                ? `${getPlayerName(targetId)} 유지됨`
+                                : `${getPlayerName(targetId)} 처치/유지`}
+                            </Text>
+                          </Pressable>
+                        );
+                      }
+
+                      if (
+                        action.roleId === 'fang_gu' &&
+                        targetPlayer?.role?.team === 'outsider'
+                      ) {
+                        return (
+                          <Pressable
+                            key={targetId}
+                            onPress={() => {
+                              if (alreadyDone) return;
+                              onFangGuJump?.(action.playerId, targetId);
+                              setProcessedTargets((prev) =>
+                                new Set(prev).add(targetId),
+                              );
+                            }}
+                            style={[
+                              styles.killButton,
+                              alreadyDone && styles.killButtonDone,
+                            ]}
+                            disabled={alreadyDone}
+                          >
+                            <Text
+                              style={[
+                                styles.killText,
+                                alreadyDone && styles.killTextDone,
+                              ]}
+                            >
+                              {alreadyDone
+                                ? `${getPlayerName(targetId)} 팡 구`
+                                : `${getPlayerName(targetId)} 팡 구 점프`}
+                            </Text>
+                          </Pressable>
+                        );
+                      }
+
+                      if (
+                        action.roleId === 'snake_charmer' &&
+                        targetPlayer?.role?.team === 'demon'
+                      ) {
+                        return (
+                          <Pressable
+                            key={targetId}
+                            onPress={() => {
+                              if (alreadyDone) return;
+                              onSnakeCharmerSwap?.(action.playerId, targetId);
+                              setProcessedTargets((prev) =>
+                                new Set(prev).add(targetId),
+                              );
+                            }}
+                            style={[
+                              styles.killButton,
+                              alreadyDone && styles.killButtonDone,
+                            ]}
+                            disabled={alreadyDone}
+                          >
+                            <Text
+                              style={[
+                                styles.killText,
+                                alreadyDone && styles.killTextDone,
+                              ]}
+                            >
+                              {alreadyDone
+                                ? `${getPlayerName(targetId)} 교환됨`
+                                : `${getPlayerName(targetId)} 악마와 교환`}
+                            </Text>
+                          </Pressable>
+                        );
+                      }
+
                       return (
                         <Pressable
                           key={targetId}
                           onPress={() =>
                             !alreadyDone &&
-                            handleTargetAction(targetId, actionConfig)
+                            handleTargetAction(action, targetId, actionConfig)
                           }
                           style={[
                             styles.killButton,
@@ -214,12 +490,14 @@ export function NightActionLog({
                     );
                     const isActionPlayerMalfunctioning =
                       actionPlayer?.role?.id === 'drunk' ||
-                      actionPlayer?.statuses.includes('poisoned');
+                      (actionPlayer != null &&
+                        hasPoisonStatus(actionPlayer.statuses));
                     return (
                       <FeedbackComposer
                         feedbackDef={feedbackDef}
                         players={players}
                         isDrunkUser={isActionPlayerMalfunctioning}
+                        action={action}
                         onSend={(fb) => handleSend(action, i, fb)}
                       />
                     );
@@ -228,6 +506,68 @@ export function NightActionLog({
             );
           })}
       </ScrollView>
+      <RolePickerModal
+        visible={pitHagTarget != null}
+        title="마귀할멈 역할 변경"
+        description={`${pitHagTarget?.targetName ?? '대상'}의 새 역할을 선택하세요. 현재 게임에 없는 역할만 지정할 수 있고 진영은 유지됩니다.`}
+        roles={gameRoles}
+        disabledRoleIds={pitHagDisabledRoleIds}
+        disabledLabel="현재 게임에 있음"
+        onSelectRole={(roleId) => {
+          if (!pitHagTarget) return;
+          onPitHagChangeRole?.(pitHagTarget.targetId, roleId);
+          setProcessedTargets((prev) =>
+            new Set(prev).add(pitHagTarget.targetId),
+          );
+          setPitHagTarget(null);
+        }}
+        onClose={() => setPitHagTarget(null)}
+        scale={scale}
+      />
+      <RolePickerModal
+        visible={cerenovusTarget != null}
+        title="세레노버스 광기 지정"
+        description={`${cerenovusTarget?.targetName ?? '대상'}이 낮 동안 주장해야 할 선한 역할을 선택하세요.`}
+        roles={goodRoles}
+        onSelectRole={(roleId) => {
+          if (!cerenovusTarget) return;
+          const role = gameRoles.find((r) => r.id === roleId);
+          if (!role) return;
+          onSetStatus?.(cerenovusTarget.targetId, 'cerenovus_mad');
+          onSendFeedback(cerenovusTarget.targetId, {
+            type: 'mad_as',
+            roleName: role.name,
+          });
+          setProcessedTargets((prev) =>
+            new Set(prev).add(cerenovusTarget.targetId),
+          );
+          setCerenovusTarget(null);
+        }}
+        onClose={() => setCerenovusTarget(null)}
+        scale={scale}
+      />
+      <PlayerPickerModal
+        visible={vigormortisPoisonChoice != null}
+        title="비고르모르티스 중독 대상"
+        description={`${vigormortisPoisonChoice?.minionName ?? '하수인'}의 능력을 유지하고 중독시킬 마을주민 이웃을 선택하세요.`}
+        themeColor="#9b59b6"
+        candidates={vigormortisPoisonChoice?.candidates ?? []}
+        onSelectPlayer={(poisonedNeighborId) => {
+          if (!vigormortisPoisonChoice) return;
+          onVigormortisKillMinion?.(
+            vigormortisPoisonChoice.vigormortisId,
+            vigormortisPoisonChoice.minionId,
+            poisonedNeighborId,
+          );
+          setProcessedTargets((prev) =>
+            new Set(prev).add(vigormortisPoisonChoice.minionId),
+          );
+          setVigormortisPoisonChoice(null);
+        }}
+        onClose={() => setVigormortisPoisonChoice(null)}
+        showRole
+        scale={scale}
+      />
     </View>
   );
 }

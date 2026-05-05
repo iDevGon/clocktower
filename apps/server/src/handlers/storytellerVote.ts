@@ -1,5 +1,6 @@
 import type {
   ClientToServerEvents,
+  Player,
   ServerToClientEvents,
   ServerToStorytellerEvents,
   StorytellerToServerEvents,
@@ -18,6 +19,24 @@ type StorytellerSocket = Socket<
   ServerToStorytellerEvents
 >;
 
+/** 처형 후보와 같은 진영 희생양이 살아있으면 이야기꾼에게 교체 제안 */
+function offerScapegoatIfMatch(
+  game: GameManager,
+  storytellerIo: StorytellerNamespace,
+): void {
+  const candidate = game.getExecutionCandidate();
+  if (!candidate) return;
+  const scapegoat = game.findScapegoatForCandidate(candidate.playerId);
+  if (!scapegoat) return;
+  const candidatePlayer = game.getPlayer(candidate.playerId);
+  storytellerIo.emit('scapegoat:offer', {
+    candidateId: candidate.playerId,
+    candidateName: candidatePlayer?.name ?? candidate.playerId,
+    scapegoatId: scapegoat.id,
+    scapegoatName: scapegoat.name,
+  });
+}
+
 /** 탕녀 승계가 발생했으면 승계 플레이어에게 role:assign 전송 */
 function emitPromotionIfAny(
   game: GameManager,
@@ -34,6 +53,36 @@ function emitPromotionIfAny(
       roleName: promoted.role.name,
     });
     storytellerIo.emit('game:state', game.getStorytellerState());
+  }
+}
+
+function emitDeathTriggers(
+  player: Player | undefined,
+  storytellerIo: StorytellerNamespace,
+  options: { isNight: boolean },
+): void {
+  if (!player?.role) return;
+  if (player.role.id === 'sweetheart') {
+    storytellerIo.emit('sweetheart:died', {
+      sweetheartName: player.name,
+    });
+  }
+  if (player.role.id === 'mayor' && options.isNight) {
+    storytellerIo.emit('mayor:nightDeath', {
+      mayorId: player.id,
+      mayorName: player.name,
+    });
+  }
+  if (player.role.id === 'barber') {
+    storytellerIo.emit('barber:died', {
+      barberName: player.name,
+    });
+  }
+  if (player.role.id === 'klutz') {
+    storytellerIo.emit('klutz:died', {
+      klutzId: player.id,
+      klutzName: player.name,
+    });
   }
 }
 
@@ -138,6 +187,7 @@ export function startClockwiseVote(
       if (result) {
         playerIo.emit('vote:result', result);
         storytellerIo.emit('vote:result', result);
+        offerScapegoatIfMatch(game, storytellerIo);
         game.returnToNomination();
         playerIo.emit('game:phase', 'day');
         playerIo.emit('day:subPhase', 'nomination');
@@ -173,6 +223,7 @@ export function registerVoteHandlers(
       const nominator = game.getPlayer(nominatorId);
       game.kill(result.virginKill);
       game.markExecution();
+      emitDeathTriggers(nominator, storytellerIo, { isNight: false });
       playerIo.emit('virgin:triggered', {
         virginName: virgin?.name ?? nomineeId,
         nominatorName: nominator?.name ?? nominatorId,
@@ -292,6 +343,7 @@ export function registerVoteHandlers(
     if (result) {
       playerIo.emit('vote:result', result);
       storytellerIo.emit('vote:result', result);
+      offerScapegoatIfMatch(game, storytellerIo);
 
       // 투표 종료 후 → 지목 단계로 복귀 (처형은 밤 전환 시 수행)
       game.returnToNomination();
@@ -307,6 +359,27 @@ export function registerVoteHandlers(
 
       storytellerIo.emit('game:state', game.getStorytellerState());
     }
+  });
+
+  socket.on('scapegoat:swap', ({ scapegoatId }) => {
+    const candidate = game.getExecutionCandidate();
+    if (!candidate) return;
+    const original = game.getPlayer(candidate.playerId);
+    const scapegoat = game.getPlayer(scapegoatId);
+    if (!scapegoat || !original) return;
+    const ok = game.swapExecutionCandidateToScapegoat(scapegoatId);
+    if (!ok) return;
+    const payload = {
+      originalId: original.id,
+      originalName: original.name,
+      scapegoatId: scapegoat.id,
+      scapegoatName: scapegoat.name,
+      guiltyVotes: candidate.guiltyVotes,
+    };
+    playerIo.emit('scapegoat:swapped', payload);
+    storytellerIo.emit('scapegoat:swapped', payload);
+    storytellerIo.emit('game:state', game.getStorytellerState());
+    console.log(`Scapegoat swap: ${original.name} → ${scapegoat.name}`);
   });
 
   socket.on('slayer:forceAck', () => {

@@ -81,6 +81,49 @@ export function FeedbackDisplay({ feedback, compact }: FeedbackDisplayProps) {
           </Text>
         </View>
       );
+    case 'dreamer_info':
+      return (
+        <View style={bannerStyle}>
+          {!compact && <Text style={labelStyle}>꿈꾸는 자 정보</Text>}
+          <Text style={sharedStyles.playersText}>
+            <Text style={sharedStyles.highlight}>{feedback.targetName}</Text>
+          </Text>
+          <Text style={sharedStyles.roleText}>
+            <Text style={sharedStyles.highlight}>{feedback.goodRoleName}</Text>
+            {' 또는 '}
+            <Text style={sharedStyles.highlight}>{feedback.evilRoleName}</Text>
+            입니다
+          </Text>
+        </View>
+      );
+    case 'players':
+      return (
+        <View style={bannerStyle}>
+          {!compact && <Text style={labelStyle}>진행자 안내</Text>}
+          <Text style={sharedStyles.playersText}>
+            {feedback.playerNames.map((name, i) => (
+              <Text key={name}>
+                {i > 0 && '과(와) '}
+                <Text style={sharedStyles.highlight}>{name}</Text>
+              </Text>
+            ))}
+          </Text>
+          {feedback.message && (
+            <Text style={sharedStyles.roleText}>{feedback.message}</Text>
+          )}
+        </View>
+      );
+    case 'mad_as':
+      return (
+        <View style={bannerStyle}>
+          {!compact && <Text style={labelStyle}>세레노버스 광기</Text>}
+          <Text style={sharedStyles.roleText}>
+            오늘 낮 동안{' '}
+            <Text style={sharedStyles.highlight}>{feedback.roleName}</Text>
+            라고 주장해야 합니다
+          </Text>
+        </View>
+      );
     case 'role':
       return (
         <View style={bannerStyle}>
@@ -96,6 +139,25 @@ export function FeedbackDisplay({ feedback, compact }: FeedbackDisplayProps) {
           {!compact && <Text style={labelStyle}>진행자 안내</Text>}
           <Text style={compact ? compactStyles.big : inlineStyles.big}>
             {feedback.message}
+          </Text>
+        </View>
+      );
+    case 'savant_info':
+      return (
+        <View style={bannerStyle}>
+          {!compact && <Text style={labelStyle}>백치천재 정보</Text>}
+          <View style={sharedStyles.savantPair}>
+            <View style={sharedStyles.savantRow}>
+              <Text style={sharedStyles.savantTag}>정보 1</Text>
+              <Text style={sharedStyles.savantText}>{feedback.info1}</Text>
+            </View>
+            <View style={sharedStyles.savantRow}>
+              <Text style={sharedStyles.savantTag}>정보 2</Text>
+              <Text style={sharedStyles.savantText}>{feedback.info2}</Text>
+            </View>
+          </View>
+          <Text style={sharedStyles.savantHint}>
+            둘 중 하나는 참, 하나는 거짓입니다
           </Text>
         </View>
       );

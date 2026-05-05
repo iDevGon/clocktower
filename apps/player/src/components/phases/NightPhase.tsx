@@ -16,6 +16,8 @@ interface NightPhaseProps {
   nightActionSubmitted: boolean;
   nightFeedback: NightFeedbackPayload | null;
   onSubmitNightAction: (targets: string[]) => void;
+  philosopherGrantedRoleId?: string | null;
+  onChoosePhilosopherRole?: (roleId: string) => Promise<void> | void;
 }
 
 export function NightPhase({
@@ -28,6 +30,8 @@ export function NightPhase({
   nightActionSubmitted,
   nightFeedback,
   onSubmitNightAction,
+  philosopherGrantedRoleId,
+  onChoosePhilosopherRole,
 }: NightPhaseProps) {
   const isDead = !usePlayerStore((s) => s.isAlive);
   const nightWakeUp = usePlayerStore((s) => s.nightWakeUp);
@@ -57,6 +61,8 @@ export function NightPhase({
           submitted={nightActionSubmitted}
           feedback={nightFeedback}
           onSubmit={onSubmitNightAction}
+          philosopherGrantedRoleId={philosopherGrantedRoleId}
+          onChoosePhilosopherRole={onChoosePhilosopherRole}
         />
       )}
     </View>

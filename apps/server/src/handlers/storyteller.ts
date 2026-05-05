@@ -1,5 +1,6 @@
 import type {
   ClientToServerEvents,
+  Player,
   Role,
   ServerToClientEvents,
   ServerToStorytellerEvents,
@@ -115,6 +116,36 @@ function resolveBluffRoles(
   }
 
   return selected;
+}
+
+function emitDeathTriggers(
+  player: Player | undefined,
+  storytellerIo: StorytellerNamespace,
+  options: { isNight: boolean },
+): void {
+  if (!player?.role) return;
+  if (player.role.id === 'sweetheart') {
+    storytellerIo.emit('sweetheart:died', {
+      sweetheartName: player.name,
+    });
+  }
+  if (player.role.id === 'mayor' && options.isNight) {
+    storytellerIo.emit('mayor:nightDeath', {
+      mayorId: player.id,
+      mayorName: player.name,
+    });
+  }
+  if (player.role.id === 'barber') {
+    storytellerIo.emit('barber:died', {
+      barberName: player.name,
+    });
+  }
+  if (player.role.id === 'klutz') {
+    storytellerIo.emit('klutz:died', {
+      klutzId: player.id,
+      klutzName: player.name,
+    });
+  }
 }
 
 /**
@@ -269,6 +300,9 @@ export function registerStorytellerHandlers(
             game.kill(candidate.playerId);
             game.markExecution();
             const killedPlayer = game.getPlayer(candidate.playerId);
+            emitDeathTriggers(candidatePlayer, storytellerIo, {
+              isNight: false,
+            });
             if (killedPlayer) {
               // 처형 알림을 먼저 전송 (사망 알림보다 먼저)
               playerIo.emit('execution:announced', {
@@ -303,31 +337,10 @@ export function registerStorytellerHandlers(
           }
         }
 
-        // S&V: 보르톡스 - 처형 없는 날 → 선 팀 승리
+        // S&V: 보르톡스 - 처형 없는 날 → 악 팀 승리
         if (!candidate && game.hasVortox() && game.getState().day > 1) {
-          const vortoxWin = game.checkWinCondition();
-          if (!vortoxWin) {
-            // 강제로 보르톡스 승리 조건 실행
-            game.endGame();
-            const state = game.getState();
-            const result = {
-              winningTeam: 'good' as const,
-              reason: '보르톡스 게임에서 처형이 없었습니다',
-              cause: 'vortox_no_execution' as const,
-              players: state.players.map((p) => ({
-                id: p.id,
-                name: p.name,
-                role: p.role ?? {
-                  id: 'unknown',
-                  name: '???',
-                  team: 'townsfolk' as const,
-                  ability: '',
-                  edition: '',
-                },
-                isAlive: p.isAlive,
-                team: (p.role?.team ?? 'townsfolk') as 'townsfolk',
-              })),
-            };
+          const result = game.checkVortoxNoExecutionWin();
+          if (result) {
             playerIo.emit('game:end', result);
             playerIo.emit('game:phase', 'ended');
             storytellerIo.emit('game:end', result);
@@ -451,7 +464,18 @@ export function registerStorytellerHandlers(
     });
 
     socket.on('night:sendFeedback', ({ playerId, feedback }) => {
-      playerIo.to(playerId).emit('night:feedback', { feedback });
+      // 백치천재 정보는 정보 노출 순서로 참/거짓이 추론되지 않도록 50% 확률로 swap
+      const deliveredFeedback =
+        feedback.type === 'savant_info' && Math.random() < 0.5
+          ? {
+              type: 'savant_info' as const,
+              info1: feedback.info2,
+              info2: feedback.info1,
+            }
+          : feedback;
+      playerIo
+        .to(playerId)
+        .emit('night:feedback', { feedback: deliveredFeedback });
       console.log(`Feedback -> ${playerId}: ${JSON.stringify(feedback)}`);
 
       // 대기열에 다음 플레이어가 있으면 순차 wakeUp
@@ -483,14 +507,17 @@ export function registerStorytellerHandlers(
         const actionDef = NIGHT_ACTIONS[roleId];
         const isOnlyWhenDead = actionDef?.onlyWhenDead === true;
 
-        // 실제 역할 + 주정뱅이(drunkAs) 모두 수집
+        // 실제 역할 + 주정뱅이(drunkAs) + 철학자(philosopherGrantedRole) 모두 수집.
+        // 철학자가 활성화될 때(roleId === 'philosopher')도 본인 포함되어야 하므로 그대로 매치
         const candidates = state.players.filter(
           (p) =>
             (p.role?.id === roleId ||
-              (p.role?.id === 'drunk' && p.drunkAs === roleId)) &&
+              (p.role?.id === 'drunk' && p.drunkAs === roleId) ||
+              (p.role?.id === 'philosopher' &&
+                p.philosopherGrantedRole === roleId)) &&
             (isOnlyWhenDead
               ? !p.isAlive && game.hasPendingNightKill(p.id)
-              : p.isAlive),
+              : p.isAlive || p.statuses.includes('vigormortis_retained')),
         );
 
         // Fisher-Yates 셔플
@@ -768,18 +795,6 @@ export function registerStorytellerHandlers(
       // 임프 자해 감지: 사망 처리 전에 체크
       const isImpSelfKill = killedPlayer?.role?.id === 'imp' && isNight;
 
-      // 사랑꾼 사망 감지: 사망 처리 전에 체크
-      const isSweetheartDeath = killedPlayer?.role?.id === 'sweetheart';
-
-      // 시장 밤 사망 감지: 사망 처리 전에 체크
-      const isMayorNightDeath = killedPlayer?.role?.id === 'mayor' && isNight;
-
-      // S&V: 이발사 사망 감지
-      const isBarberDeath = killedPlayer?.role?.id === 'barber';
-
-      // S&V: 얼뜨기 사망 감지
-      const isKlutzDeath = killedPlayer?.role?.id === 'klutz';
-
       game.kill(playerId);
 
       // 임프 자해 → 하수인 승계 예약 (낮 전환 시 실행)
@@ -789,35 +804,7 @@ export function registerStorytellerHandlers(
 
       storytellerIo.emit('game:state', game.getStorytellerState());
 
-      // 사랑꾼 사망 → 이야기꾼에게 취하게 할 대상 선택 요청
-      if (isSweetheartDeath && killedPlayer) {
-        storytellerIo.emit('sweetheart:died', {
-          sweetheartName: killedPlayer.name,
-        });
-      }
-
-      // 시장 밤 사망 → 이야기꾼에게 대신 죽일 대상 선택 요청
-      if (isMayorNightDeath && killedPlayer) {
-        storytellerIo.emit('mayor:nightDeath', {
-          mayorId: playerId,
-          mayorName: killedPlayer.name,
-        });
-      }
-
-      // S&V: 이발사 사망 → 이야기꾼에게 역할 교환 대상 선택 요청
-      if (isBarberDeath && killedPlayer) {
-        storytellerIo.emit('barber:died', {
-          barberName: killedPlayer.name,
-        });
-      }
-
-      // S&V: 얼뜨기 사망 → 이야기꾼에게 선택 요청
-      if (isKlutzDeath && killedPlayer) {
-        storytellerIo.emit('klutz:died', {
-          klutzId: playerId,
-          klutzName: killedPlayer.name,
-        });
-      }
+      emitDeathTriggers(killedPlayer, storytellerIo, { isNight });
 
       // 승리 조건 체크
       const winResult = game.checkWinCondition();
@@ -1090,11 +1077,8 @@ export function registerStorytellerHandlers(
       if (!nominator) return;
       game.kill(nominatorId);
       game.markExecution();
+      emitDeathTriggers(nominator, storytellerIo, { isNight: false });
       playerIo.emit('witch:curseDeath', {
-        nominatorId,
-        nominatorName: nominator.name,
-      });
-      storytellerIo.emit('witch:curseDeath', {
         nominatorId,
         nominatorName: nominator.name,
       });
@@ -1149,8 +1133,7 @@ export function registerStorytellerHandlers(
     socket.on('klutz:choose', ({ chosenPlayerId }) => {
       const chosen = game.getPlayer(chosenPlayerId);
       if (!chosen) return;
-      const isEvil =
-        chosen.role?.team === 'minion' || chosen.role?.team === 'demon';
+      const isEvil = game.getPlayerAlignment(chosenPlayerId) === 'evil';
       if (isEvil) {
         // 얼뜨기가 악한 플레이어를 선택 → 악 팀 승리
         const winResult = game.checkWinCondition();
@@ -1206,6 +1189,47 @@ export function registerStorytellerHandlers(
       });
       storytellerIo.emit('game:state', game.getStorytellerState());
     });
+
+    socket.on('snakeCharmer:swap', ({ snakeCharmerId, demonId }) => {
+      const result = game.handleSnakeCharmerSwap(snakeCharmerId, demonId);
+      if (!result) return;
+
+      if (result.oldSnakeCharmer.role) {
+        playerIo.to(snakeCharmerId).emit('role:assign', {
+          roleId: result.oldSnakeCharmer.role.id,
+          roleName: result.oldSnakeCharmer.role.name,
+        });
+      }
+      if (result.oldDemon.role) {
+        playerIo.to(demonId).emit('role:assign', {
+          roleId: result.oldDemon.role.id,
+          roleName: result.oldDemon.role.name,
+        });
+      }
+
+      storytellerIo.emit('snakeCharmer:swapped', {
+        snakeCharmerId,
+        snakeCharmerName: result.oldSnakeCharmer.name,
+        demonId,
+        demonName: result.oldDemon.name,
+      });
+      storytellerIo.emit('game:state', game.getStorytellerState());
+    });
+
+    socket.on(
+      'vigormortis:killMinion',
+      ({ vigormortisId, minionId, poisonedNeighborId }) => {
+        const result = game.handleVigormortisMinionKill(
+          vigormortisId,
+          minionId,
+          poisonedNeighborId,
+        );
+        if (!result) return;
+
+        game.addPendingNightKill(minionId);
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      },
+    );
 
     socket.on('pitHag:changeRole', ({ targetPlayerId, newRoleId }) => {
       const success = game.changePlayerRole(targetPlayerId, newRoleId);

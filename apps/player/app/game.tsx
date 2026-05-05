@@ -16,6 +16,9 @@ import { DeadVignette } from '../src/components/DeadVignette';
 import { ExileVoteModal } from '../src/components/ExileVoteModal';
 import { FeedbackHistoryModal } from '../src/components/FeedbackHistoryModal';
 import { GameOverlays } from '../src/components/GameOverlays';
+import { GunslingerFiredOverlay } from '../src/components/GunslingerFiredOverlay';
+import { JugglerAnnouncementOverlay } from '../src/components/JugglerAnnouncementOverlay';
+import { JugglerDeclareModal } from '../src/components/JugglerDeclareModal';
 import { NominateModal } from '../src/components/NominateModal';
 import {
   DiscussionPhase,
@@ -27,6 +30,7 @@ import {
 } from '../src/components/PhaseContent';
 import { PhaseIndicator } from '../src/components/PhaseIndicator';
 import { FlippableRoleCard } from '../src/components/RoleCard';
+import { ScapegoatSwappedOverlay } from '../src/components/ScapegoatSwappedOverlay';
 import { SeatingChart } from '../src/components/SeatingChart';
 import { StorytellerChatModal } from '../src/components/StorytellerChatModal';
 import { StorytellerChatToast } from '../src/components/StorytellerChatToast';
@@ -72,6 +76,18 @@ export default function GameScreen() {
   );
   const slayerUsed = usePlayerStore((s) => s.slayerUsed);
   const slayerFizzle = usePlayerStore((s) => s.slayerFizzle);
+  const savantUsedToday = usePlayerStore((s) => s.savantUsedToday);
+  const artistUsed = usePlayerStore((s) => s.artistUsed);
+  const philosopherGrantedRole = usePlayerStore(
+    (s) => s.philosopherGrantedRole,
+  );
+  const jugglerUsed = usePlayerStore((s) => s.jugglerUsed);
+  const gunslingerUsedToday = usePlayerStore((s) => s.gunslingerUsedToday);
+  const todayFirstVoteGuiltyVoters = usePlayerStore(
+    (s) => s.todayFirstVoteGuiltyVoters,
+  );
+  const beggarTokens = usePlayerStore((s) => s.beggarTokens);
+  const deadVoteUsed = usePlayerStore((s) => s.deadVoteUsed);
   const evilInfo = usePlayerStore((s) => s.evilInfo);
   const gameSettings = usePlayerStore((s) => s.gameSettings);
   const executionHappenedToday = usePlayerStore(
@@ -91,6 +107,12 @@ export default function GameScreen() {
     sendChatToStoryteller,
     nominatePlayer,
     useSlayer: activateSlayer,
+    useSavant: activateSavant,
+    useArtist: activateArtist,
+    choosePhilosopherRole,
+    declareJuggler,
+    useGunslinger: activateGunslinger,
+    giveBeggarToken,
     proposeExile,
     castExileVote,
     leaveGame,
@@ -164,6 +186,9 @@ export default function GameScreen() {
   } | null>(null);
   const [nominateModalVisible, setNominateModalVisible] = useState(false);
   const [slayerModalVisible, setSlayerModalVisible] = useState(false);
+  const [jugglerModalVisible, setJugglerModalVisible] = useState(false);
+  const [gunslingerModalVisible, setGunslingerModalVisible] = useState(false);
+  const [beggarModalVisible, setBeggarModalVisible] = useState(false);
   const [feedbackHistoryVisible, setFeedbackHistoryVisible] = useState(false);
   const [dictionaryVisible, setDictionaryVisible] = useState(false);
   const [chatModalVisible, setChatModalVisible] = useState(false);
@@ -189,7 +214,11 @@ export default function GameScreen() {
   const activeRoleId = nightProgress?.activeRoleId;
   const isRoleActive =
     role != null &&
-    (activeRoleId === role.id || (drunkAs != null && activeRoleId === drunkAs));
+    (activeRoleId === role.id ||
+      (drunkAs != null && activeRoleId === drunkAs) ||
+      (role.id === 'philosopher' &&
+        philosopherGrantedRole != null &&
+        activeRoleId === philosopherGrantedRole));
   // 서버가 night:wakeUp을 개별 전송하므로, wakeUp 수신 시에만 차례로 인정
   const isMyTurn = isRoleActive && nightWakeUp != null;
 
@@ -201,7 +230,10 @@ export default function GameScreen() {
   }, [nightWakeUp, isRoleActive]);
 
   // 까마귀지기가 밤에 죽었을 때만 전용 오버레이 표시
-  const effectiveRoleId = drunkAs ?? role?.id;
+  const effectiveRoleId =
+    role?.id === 'philosopher' && philosopherGrantedRole
+      ? philosopherGrantedRole
+      : (drunkAs ?? role?.id);
   useEffect(() => {
     if (nightWakeUp && isRoleActive && effectiveRoleId === 'ravenkeeper') {
       setRavenkeeperOverlay(true);
@@ -235,11 +267,87 @@ export default function GameScreen() {
     }
   };
 
+  const handleSavant = async () => {
+    const result = await activateSavant();
+    if (!result.success) {
+      Alert.alert('백치천재 실패', result.error ?? '사용할 수 없습니다');
+    }
+  };
+
+  const handleArtist = async () => {
+    const result = await activateArtist();
+    if (!result.success) {
+      Alert.alert('화가 실패', result.error ?? '사용할 수 없습니다');
+    }
+  };
+
   const canUseSlayer =
     isAlive &&
     !slayerUsed &&
     role?.team !== 'traveller' &&
     (currentPhase === 'day' || currentPhase === 'vote');
+
+  const canUseSavant =
+    isAlive &&
+    !savantUsedToday &&
+    effectiveRoleId === 'savant' &&
+    currentPhase === 'day';
+
+  const canUseArtist =
+    isAlive &&
+    !artistUsed &&
+    effectiveRoleId === 'artist' &&
+    currentPhase === 'day';
+
+  const canUseJuggler =
+    isAlive &&
+    !jugglerUsed &&
+    effectiveRoleId === 'juggler' &&
+    currentPhase === 'day' &&
+    nightCount === 1;
+
+  const handleJugglerSubmit = async (
+    guesses: Array<{ playerId: string; roleId: string }>,
+  ) => {
+    const result = await declareJuggler(guesses);
+    if (!result.success) {
+      Alert.alert('곡예사 실패', result.error ?? '사용할 수 없습니다');
+    }
+  };
+
+  const canUseGunslinger =
+    isAlive &&
+    !gunslingerUsedToday &&
+    role?.id === 'gunslinger' &&
+    (currentPhase === 'day' || currentPhase === 'vote') &&
+    (todayFirstVoteGuiltyVoters?.length ?? 0) > 0;
+
+  const handleGunslingerFire = async (targetId: string) => {
+    setGunslingerModalVisible(false);
+    const result = await activateGunslinger(targetId);
+    if (!result.success) {
+      Alert.alert('총잡이 실패', result.error ?? '사용할 수 없습니다');
+    }
+  };
+
+  const aliveBeggars = useMemo(
+    () =>
+      gamePlayers.filter(
+        (p) => p.isAlive && p.id !== playerId && p.travellerRoleId === 'beggar',
+      ),
+    [gamePlayers, playerId],
+  );
+
+  const canGiveBeggarToken =
+    !isAlive && !deadVoteUsed && aliveBeggars.length > 0;
+
+  const handleGiveBeggarToken = async (beggarId: string) => {
+    setBeggarModalVisible(false);
+    const result = await giveBeggarToken(beggarId);
+    if (!result.success) {
+      Alert.alert('토큰 수여 실패', result.error ?? '');
+    }
+  };
 
   const nominatablePlayers = useMemo(
     () =>
@@ -363,6 +471,16 @@ export default function GameScreen() {
           nightActionSubmitted={nightActionSubmitted}
           nightFeedback={nightFeedback}
           onSubmitNightAction={submitNightAction}
+          philosopherGrantedRoleId={philosopherGrantedRole}
+          onChoosePhilosopherRole={async (roleId) => {
+            const result = await choosePhilosopherRole(roleId);
+            if (!result.success) {
+              Alert.alert(
+                '철학자 능력 실패',
+                result.error ?? '사용할 수 없습니다',
+              );
+            }
+          }}
         />
 
         <WhisperPhase
@@ -441,6 +559,65 @@ export default function GameScreen() {
             >
               <Text style={styles.slayerButtonText}>처단자 선언</Text>
             </Pressable>
+          </View>
+        )}
+
+        {canUseSavant && (
+          <View style={styles.slayerContainer}>
+            <Pressable onPress={handleSavant} style={styles.savantButton}>
+              <Text style={styles.savantButtonText}>백치천재 능력 사용</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {canUseArtist && (
+          <View style={styles.slayerContainer}>
+            <Pressable onPress={handleArtist} style={styles.artistButton}>
+              <Text style={styles.artistButtonText}>화가 능력 사용</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {canUseJuggler && (
+          <View style={styles.slayerContainer}>
+            <Pressable
+              onPress={() => setJugglerModalVisible(true)}
+              style={styles.jugglerButton}
+            >
+              <Text style={styles.jugglerButtonText}>곡예사 능력 사용</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {canUseGunslinger && (
+          <View style={styles.slayerContainer}>
+            <Pressable
+              onPress={() => setGunslingerModalVisible(true)}
+              style={styles.gunslingerButton}
+            >
+              <Text style={styles.gunslingerButtonText}>총잡이 사살</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {canGiveBeggarToken && (
+          <View style={styles.slayerContainer}>
+            <Pressable
+              onPress={() => setBeggarModalVisible(true)}
+              style={styles.beggarButton}
+            >
+              <Text style={styles.beggarButtonText}>
+                거지에게 투표 토큰 주기
+              </Text>
+            </Pressable>
+          </View>
+        )}
+
+        {role?.id === 'beggar' && isAlive && (
+          <View style={styles.slayerContainer}>
+            <Text style={styles.beggarTokenText}>
+              투표 토큰: {beggarTokens}
+            </Text>
           </View>
         )}
 
@@ -592,6 +769,37 @@ export default function GameScreen() {
         onNominate={handleSlayer}
         onClose={() => setSlayerModalVisible(false)}
       />
+
+      <JugglerDeclareModal
+        visible={jugglerModalVisible}
+        edition={role?.edition ?? 'sects_and_violets'}
+        players={gamePlayers}
+        myPlayerId={playerId}
+        onSubmit={handleJugglerSubmit}
+        onClose={() => setJugglerModalVisible(false)}
+      />
+
+      <NominateModal
+        visible={gunslingerModalVisible}
+        players={gamePlayers.filter((p) =>
+          (todayFirstVoteGuiltyVoters ?? []).includes(p.id),
+        )}
+        onNominate={handleGunslingerFire}
+        onClose={() => setGunslingerModalVisible(false)}
+        title="총잡이 사살 대상"
+      />
+
+      <NominateModal
+        visible={beggarModalVisible}
+        players={aliveBeggars}
+        onNominate={handleGiveBeggarToken}
+        onClose={() => setBeggarModalVisible(false)}
+        title="토큰을 줄 거지 선택"
+      />
+
+      <JugglerAnnouncementOverlay />
+      <GunslingerFiredOverlay />
+      <ScapegoatSwappedOverlay />
 
       <FeedbackHistoryModal
         visible={feedbackHistoryVisible}
