@@ -23,11 +23,20 @@ export function GunslingerFiredOverlay() {
     <Modal visible transparent animationType="fade" onRequestClose={dismiss}>
       <Pressable style={styles.overlay} onPress={dismiss}>
         <Pressable style={styles.panel} onPress={(e) => e.stopPropagation?.()}>
-          <Text style={styles.tag}>총잡이 발사</Text>
+          <Text style={styles.tag}>
+            {overlay.killed === false ? '총잡이 발사 실패' : '총잡이 발사'}
+          </Text>
           <View style={styles.row}>
             <Text style={styles.gunslingerName}>{overlay.gunslingerName}</Text>
             <Text style={styles.arrow}>→</Text>
-            <Text style={styles.targetName}>{overlay.targetName}</Text>
+            <Text
+              style={[
+                styles.targetName,
+                overlay.killed !== false && styles.targetNameKilled,
+              ]}
+            >
+              {overlay.targetName}
+            </Text>
           </View>
           <Text style={styles.targetRole}>{overlay.targetRoleName}</Text>
           <Text style={styles.hint}>탭하여 닫기</Text>
@@ -83,6 +92,8 @@ const styles = StyleSheet.create({
     color: '#e0ddd8',
     fontSize: 20,
     fontWeight: '800',
+  },
+  targetNameKilled: {
     textDecorationLine: 'line-through',
   },
   targetRole: {

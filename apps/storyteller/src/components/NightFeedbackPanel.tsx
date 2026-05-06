@@ -22,6 +22,8 @@ import {
   panelStyles,
 } from './NightFeedbackPanel.styles';
 import { TEAM_COLORS } from './NightOrderPanel.styles';
+import { getPendingFeedbackIndex } from './nightFeedbackQueue';
+import { isAbilityMalfunctioning } from './nightRoleLogic';
 
 /** Map team → gradient colors for the animated border card */
 const TEAM_CARD_COLORS: Record<
@@ -109,7 +111,7 @@ export function NightFeedbackPanel({
   const scale = fontSize.md / 12;
   const styles = useMemo(() => createNightActionLogStyles(scale), [scale]);
 
-  const [sentIds, setSentIds] = useState<Set<string>>(new Set());
+  const [sentIndices, setSentIndices] = useState<Set<number>>(new Set());
   const prevRoleIdRef = useRef(activeRoleId);
 
   // 대상 플레이어 목록 (서버의 wakeUp 대상과 동기화)
@@ -139,19 +141,19 @@ export function NightFeedbackPanel({
   // activeRoleId 변경 시 sent 상태 초기화
   if (prevRoleIdRef.current !== activeRoleId) {
     prevRoleIdRef.current = activeRoleId;
-    setSentIds(new Set());
+    setSentIndices(new Set());
   }
 
   // 모든 피드백 전송 완료 시 부모에게 알림
   useEffect(() => {
     if (
       targetPlayers.length > 0 &&
-      sentIds.size >= targetPlayers.length &&
+      sentIndices.size >= targetPlayers.length &&
       onAllFeedbackSent
     ) {
       onAllFeedbackSent();
     }
-  }, [sentIds, targetPlayers, onAllFeedbackSent]);
+  }, [sentIndices, targetPlayers, onAllFeedbackSent]);
 
   if (!activeRoleId) return null;
 
@@ -166,8 +168,10 @@ export function NightFeedbackPanel({
   if (targetPlayers.length === 0) return null;
 
   // 아직 피드백 미전송인 첫 번째 플레이어를 현재 대상으로 표시
-  const currentTarget = targetPlayers.find((p) => !sentIds.has(p.id));
-  const allSent = !currentTarget;
+  const currentIndex = getPendingFeedbackIndex(targetPlayers, sentIndices);
+  const currentTarget =
+    currentIndex == null ? undefined : targetPlayers[currentIndex];
+  const allSent = currentTarget == null;
 
   if (allSent) {
     return (
@@ -183,7 +187,7 @@ export function NightFeedbackPanel({
     targetPlayer.role?.id === 'beggar' ||
     targetPlayer.statuses.includes('barista_sober_healthy');
   const isPoisoned = !isSoberHealthy && hasPoisonStatus(targetPlayer.statuses);
-  const isMalfunctioning = !isSoberHealthy && (isDrunk || isPoisoned);
+  const isMalfunctioning = isAbilityMalfunctioning(targetPlayer);
   const role = getRoleById(activeRoleId);
   const team = role?.team ?? 'townsfolk';
   const cardColors = TEAM_CARD_COLORS[team] ?? FALLBACK_CARD_COLORS;
@@ -208,12 +212,14 @@ export function NightFeedbackPanel({
       }
     }
     onSendFeedback(targetPlayer.id, fb);
-    setSentIds((prev) => new Set(prev).add(targetPlayer.id));
+    if (currentIndex != null) {
+      setSentIndices((prev) => new Set(prev).add(currentIndex));
+    }
   };
 
   const progressLabel =
     targetPlayers.length > 1
-      ? `(${sentIds.size + 1}/${targetPlayers.length})`
+      ? `(${sentIndices.size + 1}/${targetPlayers.length})`
       : '';
 
   return (
@@ -411,7 +417,7 @@ export function NightFeedbackPanel({
             )}
             maxNumber={activeRoleId === 'juggler' ? 5 : undefined}
             suggestedNumber={
-              isDrunk
+              isMalfunctioning
                 ? undefined
                 : activeRoleId === 'empath' && empathHint
                   ? empathHint.evilCount

@@ -143,6 +143,55 @@ describe('E2E: 처단자', () => {
     expect(endResult.cause).toBe('slayer');
   }, 15000);
 
+  it('처단자 능력 사망은 처형으로 기록하지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'slayer' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+
+    await advanceToDay(ctx);
+
+    const endPromise = waitForEvent(ctx.players[0] as Socket, 'game:end');
+    const slayerRes = await new Promise<{
+      success: boolean;
+      error?: string;
+    }>((resolve) => {
+      ctx.players[0].emit('slayer:use', { targetId: playerIds[4] }, resolve);
+    });
+
+    expect(slayerRes.success).toBe(true);
+    await endPromise;
+    expect(ctx.app.game.hadExecutionToday()).toBe(false);
+  }, 15000);
+
+  it('취한 처단자는 악마를 선택해도 죽이지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'slayer' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+
+    await advanceToDay(ctx);
+    ctx.app.game.setPlayerStatuses(playerIds[0], ['drunk']);
+
+    const slayerRes = await new Promise<{
+      success: boolean;
+      error?: string;
+    }>((resolve) => {
+      ctx.players[0].emit('slayer:use', { targetId: playerIds[4] }, resolve);
+    });
+
+    expect(slayerRes.success).toBe(true);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(ctx.app.game.getPlayer(playerIds[4])?.isAlive).toBe(true);
+    expect(ctx.app.game.hadExecutionToday()).toBe(false);
+  }, 15000);
+
   it('처단자가 마을 주민을 선택하면 효과 없음', async () => {
     await setupGameWithRoles(ctx, [
       { roleId: 'slayer' },

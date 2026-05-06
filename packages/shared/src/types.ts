@@ -326,7 +326,7 @@ export type DeathReason =
 export const DEATH_REASON_LABELS: Record<DeathReason, string> = {
   execution: '투표로 처형됨',
   virgin: '성결자의 능력으로 처형됨',
-  slayer: '처단자에게 처형됨',
+  slayer: '처단자의 능력으로 사망함',
   night_kill: '밤에 사망함',
   exile: '추방됨',
   witch_curse: '마녀의 저주로 사망함',

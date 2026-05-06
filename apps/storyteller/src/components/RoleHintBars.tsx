@@ -38,19 +38,17 @@ export function EmpathHintBar({
 }
 
 interface ChefHintBarProps {
-  players: Player[];
-  playerOrder: string[];
   chefEvilPairIds: Set<string>;
   chefEvilPairCount: number;
+  chefEvilPairNames: string[][];
   fontSize: { sm: number; md: number };
   styles: ReturnType<typeof createGrimoireStyles>;
 }
 
 export function ChefHintBar({
-  players,
-  playerOrder,
   chefEvilPairIds,
   chefEvilPairCount,
+  chefEvilPairNames,
   fontSize,
   styles,
 }: ChefHintBarProps) {
@@ -62,22 +60,7 @@ export function ChefHintBar({
         인접 악한 쌍:
       </Text>
       <Text style={[styles.chefHintNames, { fontSize: fontSize.sm }]}>
-        {(() => {
-          const order = playerOrder;
-          const pairs: string[] = [];
-          for (let i = 0; i < order.length; i++) {
-            const curr = order[i];
-            const next = order[(i + 1) % order.length];
-            const cp = players.find((p) => p.id === curr);
-            const np = players.find((p) => p.id === next);
-            const isEvil = (p: typeof cp) =>
-              p?.role?.team === 'minion' || p?.role?.team === 'demon';
-            if (isEvil(cp) && isEvil(np)) {
-              pairs.push(`${cp?.name}-${np?.name}`);
-            }
-          }
-          return pairs.join(', ') || '없음';
-        })()}
+        {chefEvilPairNames.map((pair) => pair.join('-')).join(', ') || '없음'}
       </Text>
       <Text style={[styles.chefHintCount, { fontSize: fontSize.md }]}>
         {chefEvilPairCount}쌍

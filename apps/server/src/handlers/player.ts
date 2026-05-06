@@ -45,6 +45,26 @@ function hasEffectiveRole(
   );
 }
 
+function isPoisonedOrDrunkStatus(statuses: Player['statuses']): boolean {
+  return hasPoisonStatus(statuses) || statuses.includes('drunk');
+}
+
+function toPlayerInfo(player: Player) {
+  return {
+    id: player.id,
+    name: player.name,
+    isAlive: player.isAlive,
+    deadVoteUsed: player.deadVoteUsed,
+    isTraveller: player.isTraveller,
+    travellerRoleId: player.isTraveller ? player.role?.id : undefined,
+  };
+}
+
+function getRejoinNightCount(state: { phase: string; day: number }): number {
+  if (state.phase === 'night') return state.day;
+  return Math.max(0, state.day - 1);
+}
+
 function emitDeathTriggers(
   player: Player | undefined,
   storytellerIo: StorytellerNamespace,
@@ -121,7 +141,7 @@ export function registerPlayerHandlers(
       callback({ success: true, playerId: player.id });
       // 설정 전송
       socket.emit('game:settings', game.getSettings());
-      storytellerIo.emit('game:state', game.getState());
+      storytellerIo.emit('game:state', game.getStorytellerState());
       console.log(`Player joined: ${playerName}`);
     });
 
@@ -169,31 +189,20 @@ export function registerPlayerHandlers(
           ? player.drunkAs
           : player.role?.id;
 
+      const gamePlayers = state.players.map(toPlayerInfo);
+
       // 밤 페이즈일 때 진행 상태 포함
       let nightProgress:
         | {
             activeRoleId: string | null;
             order: string[];
-            players: { id: string; name: string; isAlive: boolean }[];
+            players: ReturnType<typeof toPlayerInfo>[];
           }
         | undefined;
       if (state.phase === 'night') {
         const np = game.getNightProgress();
-        const players = state.players.map((p) => ({
-          id: p.id,
-          name: p.name,
-          isAlive: p.isAlive,
-        }));
-        nightProgress = { ...np, players };
+        nightProgress = { ...np, players: gamePlayers };
       }
-
-      const gamePlayers = state.players.map((p) => ({
-        id: p.id,
-        name: p.name,
-        isAlive: p.isAlive,
-        deadVoteUsed: p.deadVoteUsed,
-        isTraveller: p.isTraveller,
-      }));
 
       // 집사의 주인 이름 조회
       const effectiveRoleId =
@@ -257,6 +266,7 @@ export function registerPlayerHandlers(
         daySubPhase: state.daySubPhase,
         hasNominatedToday: player.hasNominatedToday,
         deadVoteUsed: player.deadVoteUsed,
+        nightCount: getRejoinNightCount(state),
         nightProgress,
         gamePlayers,
         butlerMasterName,
@@ -361,7 +371,7 @@ export function registerPlayerHandlers(
           });
           playerIo.emit('game:playerUpdate', killedNominator);
         }
-        storytellerIo.emit('game:state', game.getState());
+        storytellerIo.emit('game:state', game.getStorytellerState());
 
         // 성결자 트리거 후 승리 조건 체크
         const winResult = game.checkWinCondition();
@@ -370,7 +380,7 @@ export function registerPlayerHandlers(
           playerIo.emit('game:end', winResult);
           playerIo.emit('game:phase', 'ended');
           storytellerIo.emit('game:end', winResult);
-          storytellerIo.emit('game:state', game.getState());
+          storytellerIo.emit('game:state', game.getStorytellerState());
         }
         return;
       }
@@ -380,13 +390,15 @@ export function registerPlayerHandlers(
       const nominator = game.getPlayer(playerId);
       const nominee = game.getPlayer(nomineeId);
       playerIo.emit('day:subPhase', 'defense');
-      playerIo.emit('vote:start', {
+      const voteStartData = {
         nominatorId: playerId,
         nomineeId,
         nominatorName: nominator?.name ?? playerId,
         nomineeName: nominee?.name ?? nomineeId,
-      });
-      storytellerIo.emit('game:state', game.getState());
+      };
+      playerIo.emit('vote:start', voteStartData);
+      storytellerIo.emit('vote:start', voteStartData);
+      storytellerIo.emit('game:state', game.getStorytellerState());
     });
 
     socket.on('vote:cast', (callback) => {
@@ -399,7 +411,7 @@ export function registerPlayerHandlers(
       // 오프라인 모드가 아닌 비-시계방향 투표 시 즉시 확정 (항상 찬성)
       const result = game.castVote(playerId);
       if (result.success) {
-        storytellerIo.emit('game:state', game.getState());
+        storytellerIo.emit('game:state', game.getStorytellerState());
       }
       if (typeof callback === 'function') callback(result);
     });
@@ -499,6 +511,7 @@ export function registerPlayerHandlers(
         targetName: result.target.name,
         accepted: result.accepted,
         targetRoleName: result.targetRoleName,
+        needsFalseInfo: result.needsFalseInfo,
       };
       storytellerIo.emit('harlot:consentResult', payload);
       playerIo.to(result.harlot.id).emit('harlot:consentResult', payload);
@@ -562,10 +575,10 @@ export function registerPlayerHandlers(
         targetId,
       });
 
-      // 실제 처단자이고 대상이 악마면 자동 사망 (중독 상태면 무효)
+      // 실제 처단자이고 대상이 악마면 자동 사망 (취함/중독 상태면 무효)
       const killCondition =
         isSlayer &&
-        !hasPoisonStatus(player.statuses) &&
+        !isPoisonedOrDrunkStatus(player.statuses) &&
         target.role?.team === 'demon';
 
       if (!killCondition) {
@@ -591,7 +604,6 @@ export function registerPlayerHandlers(
       }
 
       game.kill(targetId);
-      game.markExecution(); // 처단자 처형은 처형으로 간주 → 더 이상 지목 불가
       emitDeathTriggers(target, storytellerIo, {
         isNight: false,
       });
@@ -611,7 +623,7 @@ export function registerPlayerHandlers(
         });
         playerIo.emit('game:playerUpdate', killedTarget);
       }
-      storytellerIo.emit('game:state', game.getState());
+      storytellerIo.emit('game:state', game.getStorytellerState());
 
       const winResult = game.checkWinCondition();
       if (winResult) {
@@ -620,7 +632,7 @@ export function registerPlayerHandlers(
         playerIo.emit('game:end', winResult);
         playerIo.emit('game:phase', 'ended');
         storytellerIo.emit('game:end', winResult);
-        storytellerIo.emit('game:state', game.getState());
+        storytellerIo.emit('game:state', game.getStorytellerState());
       }
 
       console.log(`Slayer: ${player.name} -> ${target.name}`);
@@ -729,7 +741,7 @@ export function registerPlayerHandlers(
         drunkenedPlayerId,
         drunkenedPlayerName,
       });
-      storytellerIo.emit('game:state', game.getState());
+      storytellerIo.emit('game:state', game.getStorytellerState());
       console.log(
         `Philosopher: ${player.name} -> ${chosenRole.name}${
           drunkenedPlayerName ? ` (drunkened ${drunkenedPlayerName})` : ''
@@ -791,10 +803,13 @@ export function registerPlayerHandlers(
       }
 
       game.markGunslingerUsedToday(playerId);
-      game.kill(targetId);
-      emitDeathTriggers(target, storytellerIo, {
-        isNight: false,
-      });
+      const blocked = isPoisonedOrDrunkStatus(player.statuses);
+      if (!blocked) {
+        game.kill(targetId);
+        emitDeathTriggers(target, storytellerIo, {
+          isNight: false,
+        });
+      }
 
       callback({ success: true });
 
@@ -804,15 +819,16 @@ export function registerPlayerHandlers(
         targetId,
         targetName: target.name,
         targetRoleName: target.role?.name ?? '알 수 없음',
+        killed: !blocked,
       };
       playerIo.emit('gunslinger:fired', payload);
       storytellerIo.emit('gunslinger:fired', payload);
-      const killedTarget = game.getPlayer(targetId);
-      if (killedTarget) playerIo.emit('game:playerUpdate', killedTarget);
-      storytellerIo.emit('game:state', game.getState());
+      const updatedTarget = game.getPlayer(targetId);
+      if (updatedTarget) playerIo.emit('game:playerUpdate', updatedTarget);
+      storytellerIo.emit('game:state', game.getStorytellerState());
       console.log(`Gunslinger: ${player.name} shot ${target.name}`);
 
-      const winResult = game.checkWinCondition();
+      const winResult = blocked ? null : game.checkWinCondition();
       if (winResult) {
         winResult.cause = 'gunslinger';
         winResult.reason = `${player.name}(총잡이)이(가) ${target.name}을(를) 사살했습니다`;
@@ -863,7 +879,7 @@ export function registerPlayerHandlers(
         tokenCount,
       });
       playerIo.emit('game:playerUpdate', giver);
-      storytellerIo.emit('game:state', game.getState());
+      storytellerIo.emit('game:state', game.getStorytellerState());
       console.log(
         `Beggar token: ${giver.name} → ${beggar.name} (total ${tokenCount})`,
       );
@@ -893,7 +909,7 @@ export function registerPlayerHandlers(
         callback({ success: false, error: '낮에만 사용할 수 있습니다' });
         return;
       }
-      if (state.day !== 1) {
+      if (state.day > 2) {
         callback({ success: false, error: '첫 낮에만 사용할 수 있습니다' });
         return;
       }
@@ -1313,7 +1329,7 @@ export function registerPlayerHandlers(
         const player = game.getPlayer(playerId);
         const playerName = player?.name ?? playerId;
         game.removePlayer(playerId);
-        storytellerIo.emit('game:state', game.getState());
+        storytellerIo.emit('game:state', game.getStorytellerState());
         console.log(`Player left lobby: ${playerName}`);
         return;
       }

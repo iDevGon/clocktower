@@ -149,6 +149,33 @@ describe('gameStore', () => {
     });
   });
 
+  describe('applyScapegoatSwap', () => {
+    it('희생양 교체 후 처형 예정자와 장의사 기준 대상을 희생양으로 갱신한다', () => {
+      useGameStore.getState().setExecutionCandidate({
+        playerId: 'original',
+        playerName: 'Original',
+        guiltyVotes: 4,
+      });
+      useGameStore.getState().setLastExecutedPlayerId('original');
+
+      useGameStore.getState().applyScapegoatSwap({
+        originalId: 'original',
+        originalName: 'Original',
+        scapegoatId: 'scapegoat',
+        scapegoatName: 'Scapegoat',
+        guiltyVotes: 4,
+      });
+
+      expect(useGameStore.getState().executionCandidate).toEqual({
+        playerId: 'scapegoat',
+        playerName: 'Scapegoat',
+        guiltyVotes: 4,
+      });
+      expect(useGameStore.getState().lastExecutedPlayerId).toBe('scapegoat');
+      expect(useGameStore.getState().scapegoatOffer).toBeNull();
+    });
+  });
+
   describe('addChatMessage', () => {
     it('비활성 채팅이면 unread 증가', () => {
       useGameStore.getState().addChatMessage({

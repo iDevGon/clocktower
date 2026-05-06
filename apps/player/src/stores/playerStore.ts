@@ -123,6 +123,7 @@ interface PlayerState {
     targetId: string;
     targetName: string;
     targetRoleName: string;
+    killed?: boolean;
   } | null;
   /** 희생양 교체 오버레이 (전체 플레이어 공개) */
   scapegoatSwappedOverlay: {
@@ -258,6 +259,7 @@ const initialState = {
     targetId: string;
     targetName: string;
     targetRoleName: string;
+    killed?: boolean;
   } | null,
   scapegoatSwappedOverlay: null as {
     originalId: string;

@@ -188,12 +188,13 @@ function sendEvilInfo(
 function getPlayerInfoList(game: GameManager) {
   return game
     .getState()
-    .players.map(({ id, name, isAlive, deadVoteUsed, isTraveller }) => ({
+    .players.map(({ id, name, isAlive, deadVoteUsed, isTraveller, role }) => ({
       id,
       name,
       isAlive,
       deadVoteUsed,
       ...(isTraveller && { isTraveller }),
+      ...(isTraveller && role?.id && { travellerRoleId: role.id }),
     }));
 }
 
@@ -1131,7 +1132,6 @@ export function registerStorytellerHandlers(
       const nominator = game.getPlayer(nominatorId);
       if (!nominator) return;
       game.kill(nominatorId);
-      game.markExecution();
       emitDeathTriggers(nominator, storytellerIo, { isNight: false });
       playerIo.emit('witch:curseDeath', {
         nominatorId,
@@ -1286,20 +1286,27 @@ export function registerStorytellerHandlers(
       },
     );
 
-    socket.on('pitHag:changeRole', ({ targetPlayerId, newRoleId }) => {
-      const success = game.changePlayerRole(targetPlayerId, newRoleId);
-      if (!success) return;
-      const player = game.getPlayer(targetPlayerId);
-      if (player?.role) {
-        playerIo.to(targetPlayerId).emit('role:assign', {
-          roleId: player.role.id,
-          roleName: player.role.name,
-        });
-      }
-      // 에디션 재감지 (새로운 역할이 다른 에디션일 수 있음)
-      game.detectEdition();
-      storytellerIo.emit('game:state', game.getStorytellerState());
-    });
+    socket.on(
+      'pitHag:changeRole',
+      ({ pitHagId, targetPlayerId, newRoleId }) => {
+        const success = game.changePlayerRole(
+          targetPlayerId,
+          newRoleId,
+          pitHagId,
+        );
+        if (!success) return;
+        const player = game.getPlayer(targetPlayerId);
+        if (player?.role) {
+          playerIo.to(targetPlayerId).emit('role:assign', {
+            roleId: player.role.id,
+            roleName: player.role.name,
+          });
+        }
+        // 에디션 재감지 (새로운 역할이 다른 에디션일 수 있음)
+        game.detectEdition();
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      },
+    );
 
     socket.on(
       'evilTwin:assignGoodTwin',

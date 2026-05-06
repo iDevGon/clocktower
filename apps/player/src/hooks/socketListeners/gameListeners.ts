@@ -28,6 +28,8 @@ function handleRejoin(socket: AppSocket) {
       hasNominatedToday: res.hasNominatedToday ?? false,
       deadVoteUsed: res.deadVoteUsed ?? false,
       nightProgress: res.nightProgress ?? null,
+      nightCount: res.nightCount ?? usePlayerStore.getState().nightCount,
+      gamePlayers: res.gamePlayers ?? usePlayerStore.getState().gamePlayers,
       nomination: res.nomination ?? null,
       executionCandidate: res.executionCandidate ?? null,
     });
@@ -277,10 +279,18 @@ export function attachGameListeners(socket: AppSocket) {
     const isParticipant =
       state.playerId === data.harlotId || state.playerId === data.targetId;
     if (!isParticipant) return;
+    const isHarlot = state.playerId === data.harlotId;
+    const message = !data.accepted
+      ? '방문을 거절했습니다'
+      : isHarlot && data.targetRoleName
+        ? `${data.targetName}: ${data.targetRoleName}`
+        : isHarlot && data.needsFalseInfo
+          ? `${data.targetName}: 이야기꾼에게 정보를 확인하세요`
+          : '방문에 동의했습니다';
     usePlayerStore.getState().set({ harlotConsentRequest: null });
     usePlayerStore.getState().showEventToast({
       title: '창녀 방문 결과',
-      message: data.accepted ? '방문에 동의했습니다' : '방문을 거절했습니다',
+      message,
     });
   });
 

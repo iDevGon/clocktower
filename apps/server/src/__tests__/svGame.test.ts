@@ -210,6 +210,26 @@ describe('S&V GameManager', () => {
       const result = gm.handleFangGuJump(players[6].id, players[0].id);
       expect(result).toBeNull();
     });
+
+    it('취하거나 중독된 팡 구는 외지인 교환을 할 수 없다', () => {
+      const { gm, players } = createSVGame(8);
+      gm.assignRole(players[0].id, 'clockmaker');
+      gm.assignRole(players[1].id, 'dreamer');
+      gm.assignRole(players[2].id, 'flowergirl');
+      gm.assignRole(players[3].id, 'oracle');
+      gm.assignRole(players[4].id, 'seamstress');
+      gm.assignRole(players[5].id, 'sweetheart');
+      gm.assignRole(players[6].id, 'witch');
+      gm.assignRole(players[7].id, 'fang_gu');
+      gm.start();
+      gm.setPlayerStatuses(players[7].id, ['poisoned']);
+
+      const result = gm.handleFangGuJump(players[7].id, players[5].id);
+
+      expect(result).toBeNull();
+      expect(gm.getPlayer(players[5].id)?.role?.id).toBe('sweetheart');
+      expect(gm.getPlayer(players[7].id)?.isAlive).toBe(true);
+    });
   });
 
   describe('마귀할멈 역할 변경', () => {
@@ -236,6 +256,21 @@ describe('S&V GameManager', () => {
       // dreamer는 이미 players[1]에 배정됨
       const success = gm.changePlayerRole(players[0].id, 'dreamer');
       expect(success).toBe(false);
+    });
+
+    it('취하거나 중독된 마귀할멈은 역할을 변경할 수 없다', () => {
+      const { gm, players } = createStartedSVGame();
+      gm.changePlayerRole(players[5].id, 'pit_hag');
+      gm.setPlayerStatuses(players[5].id, ['drunk']);
+
+      const success = gm.changePlayerRole(
+        players[0].id,
+        'artist',
+        players[5].id,
+      );
+
+      expect(success).toBe(false);
+      expect(gm.getPlayer(players[0].id)?.role?.id).toBe('clockmaker');
     });
   });
 
@@ -289,6 +324,18 @@ describe('S&V GameManager', () => {
       expect(result).toBeNull();
       expect(gm.getPlayer(players[0].id)?.role?.id).toBe('snake_charmer');
       expect(gm.getPlayer(players[1].id)?.role?.id).toBe('dreamer');
+    });
+
+    it('취하거나 중독된 뱀 조련사는 악마를 선택해도 교환하지 않는다', () => {
+      const { gm, players } = createStartedSVGame();
+      gm.changePlayerRole(players[0].id, 'snake_charmer');
+      gm.setPlayerStatuses(players[0].id, ['poisoned']);
+
+      const result = gm.handleSnakeCharmerSwap(players[0].id, players[6].id);
+
+      expect(result).toBeNull();
+      expect(gm.getPlayer(players[0].id)?.role?.id).toBe('snake_charmer');
+      expect(gm.getPlayer(players[6].id)?.role?.id).toBe('fang_gu');
     });
   });
 

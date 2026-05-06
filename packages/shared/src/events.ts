@@ -134,6 +134,7 @@ export interface ServerToClientEvents {
     targetId: string;
     targetName: string;
     targetRoleName: string;
+    killed?: boolean;
   }) => void;
   /** 희생양 교체 완료: 처형 예정자가 희생양으로 교체됨 */
   'scapegoat:swapped': (data: {
@@ -205,6 +206,7 @@ export interface ServerToClientEvents {
     targetName: string;
     accepted: boolean;
     targetRoleName?: string;
+    needsFalseInfo?: boolean;
   }) => void;
 }
 
@@ -271,6 +273,7 @@ export interface ServerToStorytellerEvents {
     targetName: string;
     accepted: boolean;
     targetRoleName?: string;
+    needsFalseInfo?: boolean;
   }) => void;
   /** 게임 중 참가 요청: 이야기꾼 승인 대기 */
   'traveller:pendingApproval': (data: {
@@ -346,6 +349,7 @@ export interface ClientToServerEvents {
       daySubPhase?: DaySubPhase | null;
       hasNominatedToday?: boolean;
       deadVoteUsed?: boolean;
+      nightCount?: number;
       nightProgress?: {
         activeRoleId: string | null;
         order: string[];
@@ -561,6 +565,7 @@ export interface StorytellerToServerEvents {
   }) => void;
   /** 마귀할멈 역할 변경 실행 */
   'pitHag:changeRole': (data: {
+    pitHagId: string;
     targetPlayerId: string;
     newRoleId: string;
   }) => void;

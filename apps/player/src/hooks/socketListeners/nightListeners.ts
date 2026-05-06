@@ -19,6 +19,8 @@ export function attachNightListeners(socket: AppSocket) {
     const store = usePlayerStore.getState();
     usePlayerStore.getState().set({
       nightWakeUp: roleId,
+      nightActionSubmitted: false,
+      nightFeedback: null,
       // 승계 오버레이가 밤 행동 UI를 가리지 않도록 즉시 해제
       ...(store.rolePromotion ? { rolePromotion: null } : {}),
     });

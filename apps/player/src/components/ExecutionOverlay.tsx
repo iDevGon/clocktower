@@ -32,7 +32,7 @@ const REASON_ICONS: Record<string, string> = {
 const REASON_TITLES: Record<string, string> = {
   execution: '\uCC98\uD615',
   virgin: '\uC131\uB140\uC758 \uC2EC\uD310',
-  slayer: '\uC0AC\uB0E5\uAFBC\uC758 \uC120\uC5B8',
+  slayer: '\uCC98\uB2E8\uC790\uC758 \uC120\uC5B8',
 };
 
 // ── Axe swing animation ──

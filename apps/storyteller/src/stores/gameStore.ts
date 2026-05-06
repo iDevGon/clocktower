@@ -155,6 +155,13 @@ interface GameStore {
       scapegoatName: string;
     } | null,
   ) => void;
+  applyScapegoatSwap: (swap: {
+    originalId: string;
+    originalName: string;
+    scapegoatId: string;
+    scapegoatName: string;
+    guiltyVotes: number;
+  }) => void;
   /** 익살꾼 추방 투표 통과 후 이야기꾼 판정 요청 */
   deviantExileJudgement: {
     targetId: string;
@@ -339,6 +346,19 @@ export const useGameStore = create<GameStore>()(
         })),
       scapegoatOffer: null,
       setScapegoatOffer: (offer) => set({ scapegoatOffer: offer }),
+      applyScapegoatSwap: (swap) =>
+        set((s) => ({
+          executionCandidate: {
+            playerId: swap.scapegoatId,
+            playerName: swap.scapegoatName,
+            guiltyVotes: swap.guiltyVotes,
+          },
+          lastExecutedPlayerId:
+            s.lastExecutedPlayerId === swap.originalId
+              ? swap.scapegoatId
+              : s.lastExecutedPlayerId,
+          scapegoatOffer: null,
+        })),
       deviantExileJudgement: null,
       setDeviantExileJudgement: (judgement) =>
         set({ deviantExileJudgement: judgement }),

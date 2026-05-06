@@ -117,6 +117,7 @@ export function useConnection() {
           daySubPhase: res.daySubPhase ?? null,
           hasNominatedToday: res.hasNominatedToday ?? false,
           deadVoteUsed: res.deadVoteUsed ?? false,
+          nightCount: res.nightCount ?? usePlayerStore.getState().nightCount,
           nightProgress: res.nightProgress ?? null,
           gamePlayers: res.gamePlayers ?? [],
           butlerMasterName: res.butlerMasterName ?? null,

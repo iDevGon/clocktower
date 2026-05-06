@@ -1170,7 +1170,19 @@ export class GameManager {
     return this.boneCollectorUsed.has(boneCollectorId);
   }
 
+  private hasActiveBarista(): boolean {
+    return this.state.players.some(
+      (p) =>
+        p.isAlive &&
+        p.isTraveller &&
+        p.role?.id === 'barista' &&
+        !isPoisonedOrDrunk(p),
+    );
+  }
+
   applyBaristaEffect(targetPlayerId: string, effect: BaristaEffect): boolean {
+    if (!this.hasActiveBarista()) return false;
+
     const target = this.getPlayer(targetPlayerId);
     if (!target) return false;
 
@@ -1191,6 +1203,7 @@ export class GameManager {
     if (!this.exileVote) return false;
     const target = this.getPlayer(this.exileVote.targetId);
     if (!target?.isAlive || target.role?.id !== 'deviant') return false;
+    if (isPoisonedOrDrunk(target)) return false;
     let guiltyCount = 0;
     for (const vote of this.exileVote.votes.values()) {
       if (vote) guiltyCount++;
@@ -1231,6 +1244,7 @@ export class GameManager {
     target: Player;
     accepted: boolean;
     targetRoleName?: string;
+    needsFalseInfo?: boolean;
   } | null {
     const pending = this.pendingHarlotConsents.get(targetPlayerId);
     if (!pending || pending.harlotId !== harlotId) return null;
@@ -1240,11 +1254,15 @@ export class GameManager {
     const target = this.getPlayer(targetPlayerId);
     if (!harlot || !target) return null;
 
+    const harlotBlocked = isPoisonedOrDrunk(harlot);
+
     return {
       harlot,
       target,
       accepted,
-      targetRoleName: accepted ? (target.role?.name ?? '???') : undefined,
+      targetRoleName:
+        accepted && !harlotBlocked ? (target.role?.name ?? '???') : undefined,
+      needsFalseInfo: accepted && harlotBlocked ? true : undefined,
     };
   }
 
@@ -1265,7 +1283,8 @@ export class GameManager {
           p.isAlive &&
           p.id !== candidateId &&
           p.role?.id === 'scapegoat' &&
-          p.travellerAlignment === candidateAlignment,
+          p.travellerAlignment === candidateAlignment &&
+          !isPoisonedOrDrunk(p),
       ) ?? null
     );
   }
@@ -1274,7 +1293,12 @@ export class GameManager {
   swapExecutionCandidateToScapegoat(scapegoatId: string): boolean {
     if (!this.executionCandidate) return false;
     const scapegoat = this.getPlayer(scapegoatId);
-    if (!scapegoat || !scapegoat.isAlive || scapegoat.role?.id !== 'scapegoat')
+    if (
+      !scapegoat ||
+      !scapegoat.isAlive ||
+      scapegoat.role?.id !== 'scapegoat' ||
+      isPoisonedOrDrunk(scapegoat)
+    )
       return false;
     this.executionCandidate = {
       playerId: scapegoatId,
@@ -2122,6 +2146,12 @@ export class GameManager {
 
     const oldDemon = this.getPlayer(oldDemonId);
     if (!oldDemon) return null;
+    if (
+      !oldDemon.isAlive ||
+      oldDemon.role?.id !== 'fang_gu' ||
+      isPoisonedOrDrunk(oldDemon)
+    )
+      return null;
 
     this.fangGuJumped = true;
 
@@ -2141,7 +2171,21 @@ export class GameManager {
 
   // ── 마귀할멈: 역할 변경 ──
 
-  changePlayerRole(playerId: string, newRoleId: string): boolean {
+  changePlayerRole(
+    playerId: string,
+    newRoleId: string,
+    pitHagId?: string,
+  ): boolean {
+    if (pitHagId) {
+      const pitHag = this.getPlayer(pitHagId);
+      if (
+        !pitHag?.isAlive ||
+        pitHag.role?.id !== 'pit_hag' ||
+        isPoisonedOrDrunk(pitHag)
+      )
+        return false;
+    }
+
     const player = this.getPlayer(playerId);
     if (!player) return false;
 
@@ -2171,6 +2215,12 @@ export class GameManager {
     const oldDemon = this.getPlayer(demonId);
     if (!oldSnakeCharmer || !oldDemon) return null;
     if (!oldSnakeCharmer.role || !oldDemon.role) return null;
+    if (
+      !oldSnakeCharmer.isAlive ||
+      oldSnakeCharmer.role.id !== 'snake_charmer' ||
+      isPoisonedOrDrunk(oldSnakeCharmer)
+    )
+      return null;
     if (oldDemon.role.team !== 'demon') return null;
 
     const snakeRole = oldSnakeCharmer.role;

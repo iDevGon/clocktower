@@ -243,8 +243,12 @@ export function useGameActions() {
   );
 
   const pitHagChangeRole = useCallback(
-    (targetPlayerId: string, newRoleId: string) =>
-      socket?.emit('pitHag:changeRole', { targetPlayerId, newRoleId }),
+    (pitHagId: string, targetPlayerId: string, newRoleId: string) =>
+      socket?.emit('pitHag:changeRole', {
+        pitHagId,
+        targetPlayerId,
+        newRoleId,
+      }),
     [socket],
   );
 

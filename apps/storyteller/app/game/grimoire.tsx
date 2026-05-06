@@ -46,6 +46,10 @@ import { GameEndBanner } from '../../src/components/GameResultBanners';
 import { GrimoireBottomBar } from '../../src/components/GrimoireBottomBar';
 import { GrimoireTopBar } from '../../src/components/GrimoireTopBar';
 import { NightPanel } from '../../src/components/NightPanel';
+import {
+  getChefHint,
+  getEmpathHint,
+} from '../../src/components/nightRoleLogic';
 import { PhaseBar } from '../../src/components/PhaseBar';
 import { PhaseTipToast } from '../../src/components/PhaseTipToast';
 import { PlayerPickerModal } from '../../src/components/PlayerPickerModal';
@@ -1101,112 +1105,28 @@ export default function GrimoireScreen() {
     [],
   );
 
-  // 초공감자(Empath) 이웃 하이라이트
-  // Build a player lookup map for O(1) access in neighbor/pair calculations
-  const playerById = useMemo(() => {
-    return new Map((players ?? []).map((p) => [p.id, p]));
-  }, [players]);
-
-  const empathNeighborIds = useMemo(() => {
-    if (gameState?.phase !== 'night' || activeNightRoleId !== 'empath')
-      return new Set<string>();
-    const empathPlayer = gameState.players.find(
-      (p) =>
-        p.role?.id === 'empath' ||
-        (p.role?.id === 'drunk' && p.drunkAs === 'empath'),
-    );
-    if (!empathPlayer) return new Set<string>();
-    // 주정뱅이면 하이라이트 비활성화
-    if (empathPlayer.role?.id === 'drunk') return new Set<string>();
-
-    const order = playerOrder;
-    const empathIndex = order.indexOf(empathPlayer.id);
-    if (empathIndex === -1) return new Set<string>();
-
-    const neighbors = new Set<string>();
-
-    // 시계방향 탐색
-    for (let i = 1; i < order.length; i++) {
-      const idx = (empathIndex + i) % order.length;
-      const p = playerById.get(order[idx]);
-      if (p?.isAlive) {
-        neighbors.add(p.id);
-        break;
-      }
+  const empathHint = useMemo(() => {
+    if (gameState?.phase !== 'night' || activeNightRoleId !== 'empath') {
+      return { neighborIds: new Set<string>(), neighbors: [], evilCount: 0 };
     }
+    return getEmpathHint(gameState.players, playerOrder);
+  }, [gameState?.phase, gameState?.players, activeNightRoleId, playerOrder]);
+  const empathNeighborIds = empathHint.neighborIds;
+  const empathEvilCount = empathHint.evilCount;
 
-    // 반시계방향 탐색
-    for (let i = 1; i < order.length; i++) {
-      const idx = (empathIndex - i + order.length) % order.length;
-      const p = playerById.get(order[idx]);
-      if (p?.isAlive) {
-        if (neighbors.has(p.id)) break; // 같은 플레이어 (2명만 생존)
-        neighbors.add(p.id);
-        break;
-      }
+  const chefHint = useMemo(() => {
+    if (gameState?.phase !== 'night' || activeNightRoleId !== 'chef') {
+      return {
+        evilPairIds: new Set<string>(),
+        evilPairCount: 0,
+        evilPairNames: [],
+      };
     }
-
-    return neighbors;
-  }, [
-    gameState?.phase,
-    gameState?.players,
-    activeNightRoleId,
-    playerOrder,
-    playerById,
-  ]);
-
-  // 초공감자 악한 이웃 수 계산
-  const empathEvilCount = useMemo(() => {
-    if (empathNeighborIds.size === 0) return 0;
-    return (
-      gameState?.players.filter(
-        (p) =>
-          empathNeighborIds.has(p.id) &&
-          (p.role?.team === 'minion' || p.role?.team === 'demon'),
-      ).length ?? 0
-    );
-  }, [empathNeighborIds, gameState?.players]);
-
-  // 요리사(Chef) 인접 악한 쌍 계산
-  const { chefEvilPairIds, chefEvilPairCount } = useMemo(() => {
-    if (gameState?.phase !== 'night' || activeNightRoleId !== 'chef')
-      return { chefEvilPairIds: new Set<string>(), chefEvilPairCount: 0 };
-    // 주정뱅이면 하이라이트 비활성화
-    const chefPlayer = gameState.players.find(
-      (p) =>
-        p.role?.id === 'chef' ||
-        (p.role?.id === 'drunk' && p.drunkAs === 'chef'),
-    );
-    if (chefPlayer?.role?.id === 'drunk')
-      return { chefEvilPairIds: new Set<string>(), chefEvilPairCount: 0 };
-    const order = playerOrder;
-    if (order.length < 2)
-      return { chefEvilPairIds: new Set<string>(), chefEvilPairCount: 0 };
-
-    const isEvil = (id: string) => {
-      const p = playerById.get(id);
-      return p?.role?.team === 'minion' || p?.role?.team === 'demon';
-    };
-
-    const pairIds = new Set<string>();
-    let count = 0;
-    for (let i = 0; i < order.length; i++) {
-      const curr = order[i];
-      const next = order[(i + 1) % order.length];
-      if (isEvil(curr) && isEvil(next)) {
-        pairIds.add(curr);
-        pairIds.add(next);
-        count++;
-      }
-    }
-    return { chefEvilPairIds: pairIds, chefEvilPairCount: count };
-  }, [
-    gameState?.phase,
-    gameState?.players,
-    activeNightRoleId,
-    playerOrder,
-    playerById,
-  ]);
+    return getChefHint(gameState.players, playerOrder);
+  }, [gameState?.phase, gameState?.players, activeNightRoleId, playerOrder]);
+  const chefEvilPairIds = chefHint.evilPairIds;
+  const chefEvilPairCount = chefHint.evilPairCount;
+  const chefEvilPairNames = chefHint.evilPairNames;
 
   const currentNomination = gameState?.nominations?.length
     ? gameState.nominations[gameState.nominations.length - 1]
@@ -1459,6 +1379,7 @@ export default function GrimoireScreen() {
           empathNeighborIds={empathNeighborIds}
           empathEvilCount={empathEvilCount}
           chefEvilPairCount={chefEvilPairCount}
+          chefEvilPairNames={chefEvilPairNames}
           playerOrder={playerOrder}
           onActivateRole={setActiveNightRole}
           onNightComplete={() => setNightOrderComplete(true)}
@@ -1586,10 +1507,9 @@ export default function GrimoireScreen() {
 
       {/* 요리사 인접 악한 쌍 힌트 */}
       <ChefHintBar
-        players={gameState.players}
-        playerOrder={playerOrder}
         chefEvilPairIds={chefEvilPairIds}
         chefEvilPairCount={chefEvilPairCount}
+        chefEvilPairNames={chefEvilPairNames}
         fontSize={fontSize}
         styles={styles}
       />

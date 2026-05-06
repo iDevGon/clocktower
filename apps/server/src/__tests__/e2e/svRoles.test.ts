@@ -91,6 +91,66 @@ describe('E2E: S&V 낮 능력 검증', () => {
     expect(result.success).toBe(false);
     expect(result.error).toContain('화가');
   }, 15000);
+
+  it('곡예사는 첫 낮에 공개 추측을 선언할 수 있다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'juggler' },
+      { roleId: 'dreamer' },
+      { roleId: 'flowergirl' },
+      { roleId: 'witch' },
+      { roleId: 'vortox' },
+    ]);
+    await advanceToDay(ctx);
+
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.players[0].emit(
+          'juggler:declare',
+          { guesses: [{ playerId: playerIds[1], roleId: 'dreamer' }] },
+          resolve,
+        );
+      },
+    );
+
+    expect(result.success).toBe(true);
+  }, 15000);
+
+  it('마녀 저주 사망은 처형으로 기록하지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'clockmaker' },
+      { roleId: 'dreamer' },
+      { roleId: 'flowergirl' },
+      { roleId: 'witch' },
+      { roleId: 'vortox' },
+    ]);
+    await advanceToDay(ctx);
+    ctx.app.game.setWitchCursedTarget(playerIds[0]);
+
+    const nominateResult = await new Promise<{
+      success: boolean;
+      error?: string;
+    }>((resolve) => {
+      ctx.players[0].emit(
+        'nominate:request',
+        { nomineeId: playerIds[1] },
+        resolve,
+      );
+    });
+    expect(nominateResult.success).toBe(true);
+
+    const deathPromise = waitForEvent(
+      ctx.players[0] as Socket,
+      'witch:curseDeath',
+    );
+    ctx.storyteller.emit('witch:confirmCurseDeath', {
+      nominatorId: playerIds[0],
+      kill: true,
+    });
+    await deathPromise;
+
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
+    expect(ctx.app.game.hadExecutionToday()).toBe(false);
+  }, 15000);
 });
 
 describe('E2E: S&V 사망 트리거', () => {

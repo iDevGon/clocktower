@@ -4,17 +4,18 @@ import type {
   Player,
   PlayerStatus,
 } from '@clocktower/shared';
-import {
-  getRoleById,
-  hasPoisonStatus,
-  NIGHT_FEEDBACK,
-} from '@clocktower/shared';
+import { getRoleById, NIGHT_FEEDBACK } from '@clocktower/shared';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
 import { FeedbackComposer } from './FeedbackComposer';
 import { useGameEditionRoles } from './feedback/useGameEditionRoles';
 import { createNightActionLogStyles } from './NightActionLog.styles';
+import {
+  getActionTargetKey,
+  getKillActionBlockReason,
+  isAbilityMalfunctioning,
+} from './nightRoleLogic';
 import { PlayerPickerModal } from './PlayerPickerModal';
 import { RolePickerModal } from './RolePickerModal';
 
@@ -69,7 +70,11 @@ interface NightActionLogProps {
     minionId: string,
     poisonedNeighborId: string,
   ) => void;
-  onPitHagChangeRole?: (targetPlayerId: string, newRoleId: string) => void;
+  onPitHagChangeRole?: (
+    pitHagId: string,
+    targetPlayerId: string,
+    newRoleId: string,
+  ) => void;
   onBoneCollectorRestore?: (
     boneCollectorId: string,
     targetPlayerId: string,
@@ -104,14 +109,19 @@ export function NightActionLog({
     new Set(),
   );
   const [pitHagTarget, setPitHagTarget] = useState<{
+    actionIndex: number;
+    pitHagId: string;
     targetId: string;
     targetName: string;
   } | null>(null);
   const [cerenovusTarget, setCerenovusTarget] = useState<{
+    actionIndex: number;
+    cerenovusId: string;
     targetId: string;
     targetName: string;
   } | null>(null);
   const [vigormortisPoisonChoice, setVigormortisPoisonChoice] = useState<{
+    actionIndex: number;
     vigormortisId: string;
     minionId: string;
     minionName: string;
@@ -178,7 +188,8 @@ export function NightActionLog({
   };
 
   const handleTargetAction = (
-    _action: NightAction,
+    action: NightAction,
+    index: number,
     targetId: string,
     config: TargetActionConfig,
   ) => {
@@ -187,7 +198,9 @@ export function NightActionLog({
     } else if (config.status) {
       onSetStatus?.(targetId, config.status);
     }
-    setProcessedTargets((prev) => new Set(prev).add(targetId));
+    setProcessedTargets((prev) =>
+      new Set(prev).add(getActionTargetKey(action, index, targetId)),
+    );
   };
 
   return (
@@ -208,10 +221,13 @@ export function NightActionLog({
             const feedbackDef = NIGHT_FEEDBACK[action.roleId];
             const hasTargets = action.targets.length > 0;
             const actionConfig = ROLE_TARGET_ACTIONS[action.roleId];
+            const actionPlayer = players.find((p) => p.id === action.playerId);
+            const isActionPlayerMalfunctioning =
+              isAbilityMalfunctioning(actionPlayer);
 
             return (
               <Pressable
-                key={`${action.playerId}-${action.roleId}`}
+                key={`${i}-${action.playerId}-${action.roleId}`}
                 onPress={() => {
                   if (
                     feedbackDef &&
@@ -252,18 +268,36 @@ export function NightActionLog({
                 {hasTargets && actionConfig && (
                   <View style={styles.killRow}>
                     {action.targets.map((targetId) => {
-                      const targetStatuses = playerStatuses?.[targetId] ?? [];
                       const targetPlayer = players.find(
                         (p) => p.id === targetId,
                       );
-                      const isSoldier =
-                        actionConfig.isKill &&
-                        targetPlayer?.role?.id === 'soldier';
-                      const isProtected =
-                        actionConfig.isKill &&
-                        targetStatuses.includes('protected');
+                      const targetStatuses =
+                        playerStatuses?.[targetId] ??
+                        targetPlayer?.statuses ??
+                        [];
+                      const targetKey = getActionTargetKey(action, i, targetId);
+                      const blockReason = actionConfig.isKill
+                        ? getKillActionBlockReason(
+                            action.roleId,
+                            actionPlayer,
+                            targetPlayer,
+                            targetStatuses,
+                          )
+                        : isActionPlayerMalfunctioning
+                          ? 'actor_malfunctioning'
+                          : null;
 
-                      if (isSoldier) {
+                      if (blockReason === 'actor_malfunctioning') {
+                        return (
+                          <View key={targetId} style={styles.protectedBadge}>
+                            <Text style={styles.protectedText}>
+                              {getPlayerName(targetId)} 능력 무효 — 처리 없음
+                            </Text>
+                          </View>
+                        );
+                      }
+
+                      if (blockReason === 'soldier') {
                         return (
                           <View key={targetId} style={styles.protectedBadge}>
                             <Text style={styles.protectedText}>
@@ -273,7 +307,7 @@ export function NightActionLog({
                         );
                       }
 
-                      if (isProtected) {
+                      if (blockReason === 'protected') {
                         return (
                           <View key={targetId} style={styles.protectedBadge}>
                             <Text style={styles.protectedText}>
@@ -284,33 +318,35 @@ export function NightActionLog({
                       }
 
                       const alreadyDone = actionConfig.isKill
-                        ? processedTargets.has(targetId) ||
+                        ? processedTargets.has(targetKey) ||
                           !isPlayerAlive(targetId)
-                        : processedTargets.has(targetId);
+                        : processedTargets.has(targetKey);
                       if (action.roleId === 'pit_hag') {
                         return (
                           <Pressable
                             key={targetId}
                             onPress={() =>
                               setPitHagTarget({
+                                actionIndex: i,
+                                pitHagId: action.playerId,
                                 targetId,
                                 targetName: getPlayerName(targetId),
                               })
                             }
                             style={[
                               styles.killButton,
-                              processedTargets.has(targetId) &&
+                              processedTargets.has(targetKey) &&
                                 styles.killButtonDone,
                             ]}
                           >
                             <Text
                               style={[
                                 styles.killText,
-                                processedTargets.has(targetId) &&
+                                processedTargets.has(targetKey) &&
                                   styles.killTextDone,
                               ]}
                             >
-                              {processedTargets.has(targetId)
+                              {processedTargets.has(targetKey)
                                 ? `${getPlayerName(targetId)} 역할 변경됨`
                                 : `${getPlayerName(targetId)} 역할 변경`}
                             </Text>
@@ -324,25 +360,27 @@ export function NightActionLog({
                             key={targetId}
                             onPress={() =>
                               setCerenovusTarget({
+                                actionIndex: i,
+                                cerenovusId: action.playerId,
                                 targetId,
                                 targetName: getPlayerName(targetId),
                               })
                             }
                             style={[
                               styles.killButton,
-                              processedTargets.has(targetId) &&
+                              processedTargets.has(targetKey) &&
                                 styles.killButtonDone,
                             ]}
-                            disabled={processedTargets.has(targetId)}
+                            disabled={processedTargets.has(targetKey)}
                           >
                             <Text
                               style={[
                                 styles.killText,
-                                processedTargets.has(targetId) &&
+                                processedTargets.has(targetKey) &&
                                   styles.killTextDone,
                               ]}
                             >
-                              {processedTargets.has(targetId)
+                              {processedTargets.has(targetKey)
                                 ? `${getPlayerName(targetId)} 광기 지정됨`
                                 : `${getPlayerName(targetId)} 광기 역할 지정`}
                             </Text>
@@ -364,12 +402,14 @@ export function NightActionLog({
                               if (candidates.length === 0) {
                                 handleTargetAction(
                                   action,
+                                  i,
                                   targetId,
                                   actionConfig,
                                 );
                                 return;
                               }
                               setVigormortisPoisonChoice({
+                                actionIndex: i,
                                 vigormortisId: action.playerId,
                                 minionId: targetId,
                                 minionName: getPlayerName(targetId),
@@ -407,7 +447,7 @@ export function NightActionLog({
                               if (alreadyDone) return;
                               onFangGuJump?.(action.playerId, targetId);
                               setProcessedTargets((prev) =>
-                                new Set(prev).add(targetId),
+                                new Set(prev).add(targetKey),
                               );
                             }}
                             style={[
@@ -441,7 +481,7 @@ export function NightActionLog({
                               if (alreadyDone) return;
                               onSnakeCharmerSwap?.(action.playerId, targetId);
                               setProcessedTargets((prev) =>
-                                new Set(prev).add(targetId),
+                                new Set(prev).add(targetKey),
                               );
                             }}
                             style={[
@@ -475,7 +515,7 @@ export function NightActionLog({
                                 targetId,
                               );
                               setProcessedTargets((prev) =>
-                                new Set(prev).add(targetId),
+                                new Set(prev).add(targetKey),
                               );
                             }}
                             style={[
@@ -503,7 +543,12 @@ export function NightActionLog({
                           key={targetId}
                           onPress={() =>
                             !alreadyDone &&
-                            handleTargetAction(action, targetId, actionConfig)
+                            handleTargetAction(
+                              action,
+                              i,
+                              targetId,
+                              actionConfig,
+                            )
                           }
                           style={[
                             styles.killButton,
@@ -526,26 +571,15 @@ export function NightActionLog({
                     })}
                   </View>
                 )}
-                {isExpanded &&
-                  feedbackDef &&
-                  (() => {
-                    const actionPlayer = players.find(
-                      (p) => p.id === action.playerId,
-                    );
-                    const isActionPlayerMalfunctioning =
-                      actionPlayer?.role?.id === 'drunk' ||
-                      (actionPlayer != null &&
-                        hasPoisonStatus(actionPlayer.statuses));
-                    return (
-                      <FeedbackComposer
-                        feedbackDef={feedbackDef}
-                        players={players}
-                        isDrunkUser={isActionPlayerMalfunctioning}
-                        action={action}
-                        onSend={(fb) => handleSend(action, i, fb)}
-                      />
-                    );
-                  })()}
+                {isExpanded && feedbackDef && (
+                  <FeedbackComposer
+                    feedbackDef={feedbackDef}
+                    players={players}
+                    isDrunkUser={isActionPlayerMalfunctioning}
+                    action={action}
+                    onSend={(fb) => handleSend(action, i, fb)}
+                  />
+                )}
               </Pressable>
             );
           })}
@@ -559,9 +593,19 @@ export function NightActionLog({
         disabledLabel="현재 게임에 있음"
         onSelectRole={(roleId) => {
           if (!pitHagTarget) return;
-          onPitHagChangeRole?.(pitHagTarget.targetId, roleId);
+          onPitHagChangeRole?.(
+            pitHagTarget.pitHagId,
+            pitHagTarget.targetId,
+            roleId,
+          );
           setProcessedTargets((prev) =>
-            new Set(prev).add(pitHagTarget.targetId),
+            new Set(prev).add(
+              getActionTargetKey(
+                { playerId: pitHagTarget.pitHagId, roleId: 'pit_hag' },
+                pitHagTarget.actionIndex,
+                pitHagTarget.targetId,
+              ),
+            ),
           );
           setPitHagTarget(null);
         }}
@@ -583,7 +627,13 @@ export function NightActionLog({
             roleName: role.name,
           });
           setProcessedTargets((prev) =>
-            new Set(prev).add(cerenovusTarget.targetId),
+            new Set(prev).add(
+              getActionTargetKey(
+                { playerId: cerenovusTarget.cerenovusId, roleId: 'cerenovus' },
+                cerenovusTarget.actionIndex,
+                cerenovusTarget.targetId,
+              ),
+            ),
           );
           setCerenovusTarget(null);
         }}
@@ -604,7 +654,16 @@ export function NightActionLog({
             poisonedNeighborId,
           );
           setProcessedTargets((prev) =>
-            new Set(prev).add(vigormortisPoisonChoice.minionId),
+            new Set(prev).add(
+              getActionTargetKey(
+                {
+                  playerId: vigormortisPoisonChoice.vigormortisId,
+                  roleId: 'vigormortis',
+                },
+                vigormortisPoisonChoice.actionIndex,
+                vigormortisPoisonChoice.minionId,
+              ),
+            ),
           );
           setVigormortisPoisonChoice(null);
         }}

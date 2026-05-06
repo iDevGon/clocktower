@@ -790,6 +790,9 @@ describe('GameManager - 여행자 시스템', () => {
 
     it('바리스타는 대상에게 맑은 정신/건강 또는 능력 2회 발동 상태를 부여한다', () => {
       const { gm, players } = createStartedGame();
+      const barista = gm.addTraveller('Barista');
+      expect(barista).not.toBeNull();
+      gm.assignTravellerRole(barista?.id ?? '', 'barista', 'good');
       const targetId = players[0].id;
 
       gm.setPlayerStatuses(targetId, ['poisoned', 'drunk']);
@@ -821,6 +824,39 @@ describe('GameManager - 여행자 시스템', () => {
       expect(gm.getPlayer(targetId)?.statuses).toContain('barista_acts_twice');
     });
 
+    it('취하거나 중독된 바리스타는 효과를 부여하지 못한다', () => {
+      const { gm, players } = createStartedGame();
+      const barista = gm.addTraveller('Barista');
+      expect(barista).not.toBeNull();
+      gm.assignTravellerRole(barista?.id ?? '', 'barista', 'good');
+      gm.setPlayerStatuses(barista?.id ?? '', ['drunk']);
+
+      const targetId = players[0].id;
+      expect(gm.applyBaristaEffect(targetId, 'acts_twice')).toBe(false);
+      expect(gm.getPlayer(targetId)?.statuses).not.toContain(
+        'barista_acts_twice',
+      );
+    });
+
+    it('취하거나 중독된 희생양은 처형 후보 교체 대상이 되지 않는다', () => {
+      const { gm, players } = createStartedGame();
+      const scapegoat = gm.addTraveller('Scapegoat');
+      expect(scapegoat).not.toBeNull();
+      gm.assignTravellerRole(scapegoat?.id ?? '', 'scapegoat', 'good');
+      gm.setPhase('day');
+      gm.setDaySubPhase('nomination');
+
+      const nomination = gm.nominate(players[0].id, players[1].id);
+      expect(nomination.success).toBe(true);
+      for (const voter of players.slice(0, 3)) {
+        expect(gm.castVote(voter.id).success).toBe(true);
+      }
+      expect(gm.closeVote()?.executionCandidate?.playerId).toBe(players[1].id);
+
+      gm.setPlayerStatuses(scapegoat?.id ?? '', ['drunk']);
+      expect(gm.findScapegoatForCandidate(players[1].id)).toBeNull();
+    });
+
     it('익살꾼 추방 투표가 통과하면 이야기꾼 판정이 필요하다', () => {
       const { gm, players } = createStartedGame();
       const deviant = gm.addTraveller('Deviant');
@@ -841,6 +877,44 @@ describe('GameManager - 여행자 시스템', () => {
       const closeResult = gm.closeExileVote(true);
       expect(closeResult?.exiled).toBe(true);
       expect(gm.getPlayer(deviant?.id ?? '')?.isAlive).toBe(false);
+    });
+
+    it('취하거나 중독된 익살꾼은 추방 판정 요청을 만들지 않는다', () => {
+      const { gm, players } = createStartedGame();
+      const deviant = gm.addTraveller('Deviant');
+      expect(deviant).not.toBeNull();
+      gm.assignTravellerRole(deviant?.id ?? '', 'deviant', 'good');
+      gm.setPlayerStatuses(deviant?.id ?? '', ['poisoned']);
+      gm.setPhase('day');
+
+      const started = gm.startExileVote(players[0].id, deviant?.id ?? '');
+      expect(started.success).toBe(true);
+      for (const player of gm.getState().players) {
+        const result = gm.castExileVote(player.id, true);
+        expect(result.success).toBe(true);
+      }
+
+      expect(gm.shouldRequestDeviantExileJudgement()).toBe(false);
+    });
+
+    it('취하거나 중독된 창녀는 동의를 받아도 실제 역할명을 받지 않는다', () => {
+      const { gm, players } = createStartedGame();
+      const harlot = gm.addTraveller('Harlot');
+      expect(harlot).not.toBeNull();
+      gm.assignTravellerRole(harlot?.id ?? '', 'harlot', 'good');
+      gm.setPlayerStatuses(harlot?.id ?? '', ['drunk']);
+
+      const request = gm.requestHarlotConsent(harlot?.id ?? '', players[0].id);
+      expect(request).not.toBeNull();
+
+      const result = gm.resolveHarlotConsent(
+        players[0].id,
+        harlot?.id ?? '',
+        true,
+      );
+      expect(result?.accepted).toBe(true);
+      expect(result?.targetRoleName).toBeUndefined();
+      expect(result?.needsFalseInfo).toBe(true);
     });
   });
 

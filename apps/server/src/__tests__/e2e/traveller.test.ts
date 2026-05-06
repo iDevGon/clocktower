@@ -348,6 +348,97 @@ describe('E2E: S&V 여행자 진행 이벤트', () => {
     expect(result.accepted).toBe(true);
     expect(result.targetRoleName).toBeDefined();
   }, 20000);
+
+  it('취한 창녀는 방문 동의를 받아도 실제 역할명을 받지 않는다', async () => {
+    const { playerIds } = await setupFullGame(ctx);
+    const harlot = await addTravellerWithRole(ctx, 'Harlot', 'harlot', 'good');
+    ctx.app.game.setPlayerStatuses(harlot.playerId, ['drunk']);
+
+    const targetSocket = ctx.players[0] as Socket;
+    const requestPromise = waitForEvent<{
+      harlotId: string;
+      harlotName: string;
+    }>(targetSocket, 'harlot:consentRequested');
+    const resultPromise = waitForEvent<{
+      harlotId: string;
+      targetId: string;
+      accepted: boolean;
+      targetRoleName?: string;
+      needsFalseInfo?: boolean;
+    }>(ctx.storyteller as Socket, 'harlot:consentResult');
+
+    harlot.socket.emit('night:action', { targets: [playerIds[0]] });
+    await requestPromise;
+
+    targetSocket.emit('harlot:respond', {
+      harlotId: harlot.playerId,
+      accepted: true,
+    });
+
+    const result = await resultPromise;
+    expect(result.accepted).toBe(true);
+    expect(result.targetRoleName).toBeUndefined();
+    expect(result.needsFalseInfo).toBe(true);
+  }, 20000);
+
+  it('취한 총잡이는 발사해도 대상을 죽이지 않는다', async () => {
+    const { playerIds } = await setupFullGame(ctx);
+    const gunslinger = await addTravellerWithRole(
+      ctx,
+      'Gunslinger',
+      'gunslinger',
+      'good',
+    );
+    await advanceToDay(ctx, 'nomination');
+
+    const voteStartPromise = waitForEvent(
+      ctx.players[0] as Socket,
+      'vote:start',
+    );
+    ctx.storyteller.emit('vote:nominate', {
+      nominatorId: playerIds[0],
+      nomineeId: playerIds[1],
+    });
+    await voteStartPromise;
+
+    await new Promise<void>((resolve) => {
+      ctx.players[2].emit('vote:cast', () => resolve());
+    });
+    ctx.storyteller.emit('vote:close');
+    await waitForEvent(ctx.players[0] as Socket, 'vote:result');
+
+    ctx.app.game.setPlayerStatuses(gunslinger.playerId, ['poisoned']);
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        gunslinger.socket.emit(
+          'gunslinger:use',
+          { targetId: playerIds[2] },
+          resolve,
+        );
+      },
+    );
+
+    expect(result.success).toBe(true);
+    expect(ctx.app.game.getPlayer(playerIds[2])?.isAlive).toBe(true);
+  }, 20000);
+
+  it('재접속 응답은 첫 낮 진행과 여행자 대상 정보를 복원한다', async () => {
+    const { playerIds } = await setupFullGame(ctx);
+    await addTravellerWithRole(ctx, 'Traveller', 'scapegoat', 'good');
+    await advanceToDay(ctx, 'nomination');
+
+    const rejoin = await new Promise<{
+      success: boolean;
+      nightCount?: number;
+      gamePlayers?: Array<{ id: string; isTraveller?: boolean }>;
+    }>((resolve) => {
+      ctx.players[0].emit('game:rejoin', { playerId: playerIds[0] }, resolve);
+    });
+
+    expect(rejoin.success).toBe(true);
+    expect(rejoin.nightCount).toBe(1);
+    expect(rejoin.gamePlayers?.some((p) => p.isTraveller)).toBe(true);
+  }, 20000);
 });
 
 describe('E2E: 추방 투표', () => {

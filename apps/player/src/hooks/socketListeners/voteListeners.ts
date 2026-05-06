@@ -92,16 +92,19 @@ export function attachVoteListeners(socket: AppSocket) {
 
   socket.on('execution:announced', (data) => {
     const state = usePlayerStore.getState();
+    const isExecution = data.reason === 'execution' || data.reason === 'virgin';
     if (data.executedId === state.playerId) {
       // 본인이 처형당한 경우: deathReason만 설정 (사망 오버레이에 반영)
-      usePlayerStore
-        .getState()
-        .set({ deathReason: data.reason, executionHappenedToday: true });
+      usePlayerStore.getState().set({
+        deathReason: data.reason,
+        executionHappenedToday: isExecution,
+      });
       return;
     }
     // 다른 플레이어가 처형된 경우: 처형 알림 오버레이 표시
-    usePlayerStore
-      .getState()
-      .set({ executionAnnouncement: data, executionHappenedToday: true });
+    usePlayerStore.getState().set({
+      executionAnnouncement: data,
+      executionHappenedToday: isExecution,
+    });
   });
 }

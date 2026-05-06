@@ -309,4 +309,35 @@ describe('E2E: 블러프 역할 필터링', () => {
     const bluffIds = bluffRoles.map((b) => b.id);
     expect(new Set(bluffIds).size).toBe(3);
   }, 15000);
+
+  it('플레이어가 발생시킨 상태 갱신 후에도 이야기꾼 상태에는 블러프가 유지된다', async () => {
+    const preselected = ['monk', 'ravenkeeper', 'slayer'];
+    const { playerIds } = await setupAndGetBluffs(
+      ctx,
+      [
+        { roleId: 'imp' },
+        { roleId: 'poisoner' },
+        { roleId: 'washerwoman' },
+        { roleId: 'empath' },
+        { roleId: 'fortune_teller' },
+      ],
+      preselected,
+    );
+
+    ctx.app.game.setPhase('day');
+    ctx.app.game.setDaySubPhase('nomination');
+
+    const statePromise = waitForEvent<{ bluffRoles?: { id: string }[] }>(
+      ctx.storyteller as Socket,
+      'game:state',
+    );
+    ctx.players[2].emit('nominate:request', { nomineeId: playerIds[3] }, () => {
+      // callback intentionally ignored; this event still triggers storyteller state.
+    });
+
+    const state = await statePromise;
+    expect(state.bluffRoles?.map((r) => r.id)).toEqual(
+      expect.arrayContaining(preselected),
+    );
+  }, 15000);
 });

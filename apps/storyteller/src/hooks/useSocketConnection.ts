@@ -107,6 +107,9 @@ export function useSocketConnection() {
         );
         newSocket.on('execution:announced', (data: ExecutionAnnouncement) => {
           const gs = useGameStore.getState().gameState;
+          if (data.reason === 'execution' || data.reason === 'virgin') {
+            useGameStore.getState().setLastExecutedPlayerId(data.executedId);
+          }
           useLogStore
             .getState()
             .addLog(
@@ -343,7 +346,10 @@ export function useSocketConnection() {
         });
         newSocket.on('gunslinger:fired', (data) => {
           const gs = useGameStore.getState().gameState;
-          const msg = `${data.gunslingerName}이(가) ${data.targetName}(${data.targetRoleName}) 사살`;
+          const msg =
+            data.killed === false
+              ? `${data.gunslingerName}이(가) ${data.targetName}에게 발사했지만 효과 없음`
+              : `${data.gunslingerName}이(가) ${data.targetName}(${data.targetRoleName}) 사살`;
           useGameStore.getState().showEventToast({
             title: '총잡이 발사',
             message: msg,
@@ -356,6 +362,7 @@ export function useSocketConnection() {
           useGameStore.getState().setScapegoatOffer(data);
         });
         newSocket.on('scapegoat:swapped', (data) => {
+          useGameStore.getState().applyScapegoatSwap(data);
           const gs = useGameStore.getState().gameState;
           useLogStore
             .getState()
@@ -385,7 +392,9 @@ export function useSocketConnection() {
         newSocket.on('harlot:consentResult', (data) => {
           const gs = useGameStore.getState().gameState;
           const msg = data.accepted
-            ? `${data.targetName}이(가) ${data.harlotName}의 방문에 동의했습니다`
+            ? data.needsFalseInfo
+              ? `${data.targetName}이(가) ${data.harlotName}의 방문에 동의했습니다. 가짜 정보 제공 필요`
+              : `${data.targetName}이(가) ${data.harlotName}의 방문에 동의했습니다`
             : `${data.targetName}이(가) ${data.harlotName}의 방문을 거절했습니다`;
           useGameStore.getState().showEventToast({
             title: '창녀 방문 결과',

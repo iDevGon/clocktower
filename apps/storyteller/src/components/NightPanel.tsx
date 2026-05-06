@@ -10,6 +10,7 @@ import { Pressable, Text, View } from 'react-native';
 import type { createGrimoireStyles } from '../styles/grimoire.styles';
 import { NightActionLog, NightFeedbackPanel } from './NightActionLog';
 import { NightOrderPanel } from './NightOrderPanel';
+import { isDetectedAsEvil } from './nightRoleLogic';
 
 interface NightPanelProps {
   day: number;
@@ -24,6 +25,7 @@ interface NightPanelProps {
   empathNeighborIds: Set<string>;
   empathEvilCount: number;
   chefEvilPairCount: number;
+  chefEvilPairNames: string[][];
   playerOrder: string[];
   onActivateRole: (roleId: string | null) => void;
   onNightComplete: () => void;
@@ -37,7 +39,11 @@ interface NightPanelProps {
     minionId: string,
     poisonedNeighborId: string,
   ) => void;
-  onPitHagChangeRole?: (targetPlayerId: string, newRoleId: string) => void;
+  onPitHagChangeRole?: (
+    pitHagId: string,
+    targetPlayerId: string,
+    newRoleId: string,
+  ) => void;
   onBoneCollectorRestore?: (
     boneCollectorId: string,
     targetPlayerId: string,
@@ -69,6 +75,7 @@ export function NightPanel({
   empathNeighborIds,
   empathEvilCount,
   chefEvilPairCount,
+  chefEvilPairNames,
   playerOrder,
   onActivateRole,
   onNightComplete,
@@ -148,25 +155,6 @@ export function NightPanel({
       onNightComplete();
     }
   }, [nightOrderComplete, onNightComplete]);
-
-  // Chef evil pair names computation
-  const chefEvilPairNames = useMemo(() => {
-    if (activeNightRoleId !== 'chef') return [];
-    const order = playerOrder;
-    const pairs: string[][] = [];
-    for (let i = 0; i < order.length; i++) {
-      const curr = order[i];
-      const next = order[(i + 1) % order.length];
-      const cp = players.find((p) => p.id === curr);
-      const np = players.find((p) => p.id === next);
-      const isEvil = (p: typeof cp) =>
-        p?.role?.team === 'minion' || p?.role?.team === 'demon';
-      if (isEvil(cp) && isEvil(np)) {
-        pairs.push([cp?.name ?? '', np?.name ?? '']);
-      }
-    }
-    return pairs;
-  }, [activeNightRoleId, playerOrder, players]);
 
   const baristaCandidates = useMemo(
     () => players.filter((p) => p.isAlive),
@@ -338,9 +326,7 @@ export function NightPanel({
                           .map((p) => ({
                             id: p.id,
                             name: p.name,
-                            isEvil:
-                              p.role?.team === 'minion' ||
-                              p.role?.team === 'demon',
+                            isEvil: isDetectedAsEvil(p),
                           })),
                         evilCount: empathEvilCount,
                       }
