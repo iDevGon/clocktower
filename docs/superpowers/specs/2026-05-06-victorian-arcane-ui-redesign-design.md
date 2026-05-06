@@ -1,190 +1,190 @@
-# Victorian Arcane UI Redesign
+# 빅토리아 아케인 UI 개편
 
-## Goal
+## 목표
 
-Improve the player app and storyteller app visual direction so they no longer feel like generic AI-generated dark dashboards. The new direction should feel specific to Blood on the Clocktower: theatrical, tactile, ominous, and usable during live play.
+플레이어 앱과 이야기꾼 앱의 시각 방향을 개선해, 전형적인 AI 생성형 다크 대시보드처럼 보이지 않게 한다. 새 방향은 Blood on the Clocktower에 어울리도록 연극적이고, 손에 잡히는 물성이 있으며, 불길한 분위기를 갖되 실제 진행 중에도 사용성이 좋아야 한다.
 
-## Chosen Direction
+## 확정 방향
 
-Use a **Belle Epoque / Victorian arcane punk** direction with **Prussian Blue** as the magical accent.
+**벨 에포크 / 빅토리아 아케인 펑크** 방향을 사용하고, 마법적 강조색으로 **프러시안 블루**를 사용한다.
 
-The interface should feel like a magic-assisted Victorian game apparatus:
+인터페이스는 마법으로 보조되는 빅토리아 시대의 게임 장치처럼 느껴져야 한다.
 
-- brass, dark wood, parchment, ink, blood red, and candlelit black as the main material palette
-- Prussian blue for magical lenses, night information, active apparatus states, and subtle arcane circuitry
-- curved Belle Epoque framing, double rules, seals, circular gauges, clockwork motifs, and ledger-like sections
-- restrained magic: no neon cyan, no cyberpunk glow, no purple gradient fantasy panels
+- 황동, 어두운 목재, 양피지, 잉크, 핏빛 붉은색, 촛불 아래의 검은색을 주 재료 팔레트로 사용한다.
+- 프러시안 블루는 마법 렌즈, 밤 정보, 활성화된 장치 상태, 은은한 아케인 회로에 사용한다.
+- 벨 에포크풍 곡선 프레임, 이중선, 봉인, 원형 계기, 시계 장치 모티프, 장부식 구획을 사용한다.
+- 마법 표현은 절제한다. 네온 청록, 사이버펑크 글로우, 보라색 판타지 그라디언트 패널은 사용하지 않는다.
 
-This should not become a modern SaaS dashboard, and it should not become ornamental fantasy wallpaper. The best reference is a practical storyteller tool built out of Victorian records, tokens, brass mechanisms, and controlled magical indicators.
+이 방향은 현대적인 SaaS 대시보드가 아니어야 하고, 장식만 많은 판타지 배경도 아니어야 한다. 가장 가까운 기준은 빅토리아 시대 기록물, 토큰, 황동 장치, 절제된 마법 표식으로 구성된 실용적인 이야기꾼 도구다.
 
-## App Personality
+## 앱별 성격
 
-### Player App
+### 플레이어 앱
 
-The player app should feel like a **private docket**.
+플레이어 앱은 **개인 기록지**처럼 느껴져야 한다.
 
-The player mostly needs to understand:
+플레이어가 주로 이해해야 하는 정보는 다음이다.
 
-- who they are
-- what their role does
-- what phase the game is in
-- whether they can act now
-- what information they have received
+- 자신이 누구인지
+- 자신의 역할이 무엇을 하는지
+- 현재 게임 단계가 무엇인지
+- 지금 행동할 수 있는지
+- 어떤 정보를 받았는지
 
-Primary player screens should use parchment/ledger sections instead of generic cards. The role card can become a formal role docket with a seal/gauge area, double-rule dividers, and a clear phase ledger. Actions should still be obvious and reachable, but the button styling should look like a physical control or stamped command rather than a default rounded rectangle.
+플레이어의 주요 화면은 일반적인 카드보다 양피지와 장부식 구획을 사용한다. 역할 카드는 봉인이나 계기 영역, 이중선 구분자, 명확한 단계 장부를 가진 공식 기록지처럼 바꿀 수 있다. 행동 버튼은 여전히 명확하고 누르기 쉬워야 하지만, 기본 둥근 사각형 버튼이 아니라 물리적 장치나 도장이 찍힌 명령처럼 보여야 한다.
 
-### Storyteller App
+### 이야기꾼 앱
 
-The storyteller app should feel like a **grimoire apparatus**, with separate interaction models for desktop web and mobile/tablet.
+이야기꾼 앱은 **그리모어 장치**처럼 느껴져야 하며, 데스크톱 웹과 모바일/태블릿에서 서로 다른 상호작용 모델을 가져야 한다.
 
-The storyteller needs fast operational scanning:
+이야기꾼은 다음 정보를 빠르게 훑을 수 있어야 한다.
 
-- player positions and roles
-- alive/dead state
-- poisoned/drunk/protected/cursed markers
-- current phase and subphase
-- night order progress
-- pending judgement/action requests
-- nomination, vote, execution, and traveller flow
+- 플레이어 위치와 역할
+- 생존/사망 상태
+- 중독/취함/보호/저주 표식
+- 현재 단계와 하위 단계
+- 밤 순서 진행 상황
+- 대기 중인 판정과 행동 요청
+- 지목, 투표, 처형, 여행자 진행 흐름
 
-The grimoire should remain dense and functional. Tokens can carry more of the theme through double borders, brass rings, Prussian-blue magical state marks, and dead/desaturated treatment. Side panels should feel like ledgers or apparatus modules, but avoid deep nested card stacks.
+그리모어는 밀도 있고 실용적이어야 한다. 토큰에는 이중 테두리, 황동 고리, 프러시안 블루 마법 상태 표식, 사망자의 채도 저하 처리를 통해 테마를 더 담을 수 있다. 사이드 패널은 장부나 장치 모듈처럼 보여야 하지만, 깊게 중첩된 카드 더미처럼 보여서는 안 된다.
 
-#### Desktop Host Console
+#### 데스크톱 호스트 콘솔
 
-The PC/web version should become the primary **live-run control console** for storytellers who can use a larger screen, keyboard, and mouse.
+PC/web 버전은 큰 화면, 키보드, 마우스를 사용할 수 있는 이야기꾼을 위한 주요 **실시간 진행 콘솔**이 되어야 한다.
 
-Desktop should prioritize:
+데스크톱은 다음을 우선한다.
 
-- higher information density without hiding critical state behind bottom sheets
-- simultaneous visibility of the player circle, night/order queue, current phase controls, vote/execution state, logs, and pending role requests
-- left/right auxiliary rails or docked panels instead of modal-heavy flows where practical
-- keyboard shortcuts for common storyteller actions
-- hover/focus affordances and tooltips for compact icon controls
-- faster player lookup and targeting interactions
+- 중요한 상태를 바텀시트 뒤에 숨기지 않는 높은 정보 밀도
+- 플레이어 원형 배치, 밤/순서 큐, 현재 단계 제어, 투표/처형 상태, 로그, 대기 중인 역할 요청의 동시 표시
+- 가능한 곳에서는 모달 중심 흐름보다 좌우 보조 레일 또는 고정 패널 사용
+- 이야기꾼의 자주 쓰는 행동을 위한 키보드 단축키
+- 작은 아이콘 컨트롤을 위한 마우스 hover와 키보드 focus 상태, 툴팁
+- 더 빠른 플레이어 검색과 대상 선택
 
-Recommended desktop layout:
+권장 데스크톱 레이아웃은 다음이다.
 
-- center: large grimoire/player circle with token status marks
-- left rail: phase/subphase controls, day/night progression, edition/game summary
-- right rail: night queue, pending actions, selected player details, role reminders
-- bottom strip: vote/execution/traveller state and high-priority alerts
-- collapsible log drawer: searchable event log and storyteller notes
+- 중앙: 상태 표식이 있는 큰 그리모어/플레이어 원형 배치
+- 왼쪽 레일: 단계/하위 단계 제어, 낮/밤 진행, 에디션/게임 요약
+- 오른쪽 레일: 밤 큐, 대기 중인 행동, 선택된 플레이어 상세, 역할 알림
+- 하단 strip: 투표/처형/여행자 상태와 우선순위 높은 경고
+- 접을 수 있는 로그 drawer: 검색 가능한 이벤트 로그와 이야기꾼 메모
 
-Initial shortcut targets:
+초기 단축키 대상은 다음이다.
 
-- `Space`: advance the active night queue item when safe
-- `N`: open nomination controls
-- `V`: open or focus vote controls
-- `L`: toggle log drawer
-- `W`: open whispers panel
-- `F`: focus player search
-- `Esc`: close active modal/drawer
-- number keys: quick-select visible players when an action target picker is open
+- `Space`: 안전할 때 활성 밤 큐 항목 진행
+- `N`: 지목 제어 열기
+- `V`: 투표 제어 열기 또는 포커스
+- `L`: 로그 drawer 토글
+- `W`: 밀담 패널 열기
+- `F`: 플레이어 검색 포커스
+- `Esc`: 활성 모달/drawer 닫기
+- 숫자키: 행동 대상 선택기가 열려 있을 때 보이는 플레이어 빠른 선택
 
-Shortcuts must never silently perform destructive actions such as killing, executing, exiling, or resetting. Those actions should still require an explicit confirmation or focused command.
+단축키는 살해, 처형, 추방, 리셋처럼 파괴적인 행동을 조용히 즉시 실행하면 안 된다. 그런 행동은 여전히 명시적 확인이나 포커스된 명령이 필요하다.
 
-#### Mobile And Tablet Host App
+#### 모바일 및 태블릿 호스트 앱
 
-The mobile/tablet app should remain a **touch-first grimoire**.
+모바일/태블릿 앱은 **터치 중심 그리모어**로 유지한다.
 
-Mobile/tablet should prioritize:
+모바일/태블릿은 다음을 우선한다.
 
-- readable tokens and reliable drag/tap interaction
-- progressive disclosure for dense panels
-- large touch targets for night actions, voting, and player status changes
-- modal flows where they prevent accidental destructive actions
-- minimal keyboard assumptions
+- 읽기 쉬운 토큰과 안정적인 drag/tap 상호작용
+- 밀도 높은 패널의 점진적 공개
+- 밤 행동, 투표, 플레이어 상태 변경을 위한 큰 터치 영역
+- 실수로 파괴적인 행동을 하지 않도록 막는 모달 흐름
+- 키보드 사용을 전제로 하지 않는 흐름
 
-The mobile/tablet version can share the same Belle Epoque / Victorian arcane visual language, but it should not try to show every desktop panel at once. The goal is a reliable hand-held storyteller tool, not a shrunken desktop console.
+모바일/태블릿 버전은 같은 벨 에포크 / 빅토리아 아케인 시각 언어를 공유할 수 있지만, 데스크톱 패널을 모두 한 화면에 보여주려 해서는 안 된다. 목표는 축소된 데스크톱 콘솔이 아니라 안정적인 손안의 이야기꾼 도구다.
 
-## Visual System
+## 시각 시스템
 
-### Palette
+### 팔레트
 
-Use these as implementation anchors, adjusted as needed for contrast:
+대비를 위해 조정할 수 있지만, 구현 기준은 다음 색상으로 잡는다.
 
-- Base black: `#0d0703`
-- Deep umber: `#1e1005`
-- Dark parchment: `#362008`
-- Brass: `#b78642`
-- Aged gold text: `#e9bd70`
-- Parchment text: `#f0d8b3`
-- Muted parchment: `#c8ae86`
-- Blood action: `#8d3529`
-- Blood highlight: `#da7a50`
-- Prussian blue: `#2f4f8f`
-- Sapphire lens: `#88aaf5`
-- Midnight ink: `#10182f`
+- 기본 검정: `#0d0703`
+- 깊은 엄버: `#1e1005`
+- 어두운 양피지: `#362008`
+- 황동: `#b78642`
+- 오래된 금색 텍스트: `#e9bd70`
+- 양피지 텍스트: `#f0d8b3`
+- 흐린 양피지색: `#c8ae86`
+- 핏빛 행동색: `#8d3529`
+- 핏빛 강조색: `#da7a50`
+- 프러시안 블루: `#2f4f8f`
+- 사파이어 렌즈: `#88aaf5`
+- 미드나이트 잉크: `#10182f`
 
-Prussian blue should be an accent, not the dominant color. Use it for magical affordances, active night information, selected apparatus states, and status markers where it helps readability.
+프러시안 블루는 지배적인 색이 아니라 강조색이어야 한다. 마법적 작동 힌트, 활성 밤 정보, 선택된 장치 상태, 가독성에 도움이 되는 상태 표식에 사용한다.
 
-### Shape And Material
+### 형태와 물성
 
-- Prefer thin borders, double borders, circular gauges, and ledger dividers over generic filled cards.
-- Keep corner radii intentional: small radii for ledger/panel surfaces, circular controls only for seals, gauges, tokens, or icon-only controls.
-- Reduce repeated `borderRadius: 12` card patterns.
-- Avoid large gradient backgrounds. Gradients are acceptable inside brass, blood, or magical apparatus controls when subtle.
-- Use texture through layered borders and fine divider lines, not heavy background noise that hurts readability.
+- 일반적인 채워진 카드보다 얇은 테두리, 이중 테두리, 원형 계기, 장부식 구분선을 우선한다.
+- 모서리 둥글기는 의도를 가지고 사용한다. 장부/패널 표면은 작은 둥글기를 사용하고, 원형 컨트롤은 봉인, 계기, 토큰, 아이콘 전용 컨트롤에만 사용한다.
+- 반복되는 `borderRadius: 12` 카드 패턴을 줄인다.
+- 큰 그라디언트 배경은 피한다. 황동, 핏빛, 마법 장치 컨트롤 내부의 은은한 그라디언트는 허용한다.
+- 텍스처는 가독성을 해치는 강한 배경 노이즈가 아니라, 겹친 테두리와 얇은 구분선을 통해 만든다.
 
-### Typography
+### 타이포그래피
 
-Use the current React Native font stack for the first implementation pass to avoid native font churn. Create the Victorian feeling through:
+첫 구현 단계에서는 네이티브 폰트 관리 비용을 피하기 위해 현재 React Native 폰트 스택을 유지한다. 빅토리아풍 느낌은 다음으로 만든다.
 
-- stronger role titles
-- small uppercase labels with wider letter spacing
-- clear hierarchy between role, phase, status, and body copy
-- restrained decorative treatment only on headings and labels
+- 더 강한 역할 제목
+- 넓은 자간을 가진 작은 대문자 라벨
+- 역할, 단계, 상태, 본문 사이의 명확한 계층
+- 제목과 label에만 제한적으로 들어가는 장식적 처리
 
-If a later pass adds custom fonts, it should be a separate task with cross-platform rendering verification.
+나중에 커스텀 폰트를 추가한다면, 교차 플랫폼 렌더링 검증이 포함된 별도 작업으로 진행한다.
 
-### Motion
+### 모션
 
-Motion should feel mechanical or ritual-like:
+모션은 기계적이거나 의식처럼 느껴져야 한다.
 
-- role reveal: seal/gauge opening, subtle brass shimmer
-- night transition: slow vignette and apparatus dimming
-- execution: blood-red stamped verdict, not flashy explosion
-- active night role: Prussian-blue lens pulse, not neon glow
+- 역할 공개: 봉인/계기 열림, 은은한 황동 shimmer
+- 밤 전환: 느린 vignette와 장치 어두워짐
+- 처형: 화려한 폭발이 아니라 핏빛 판결 도장
+- 활성 밤 역할: 네온 글로우가 아니라 프러시안 블루 렌즈 pulse
 
-Respect low-power/reduced-motion settings. Keep core workflows usable without animation.
+저전력/reduced-motion 설정을 존중한다. 애니메이션이 없어도 핵심 흐름은 사용할 수 있어야 한다.
 
-## Component Scope
+## 컴포넌트 범위
 
-### Shared UI Tokens
+### 공유 UI 토큰
 
-Introduce or update shared tokens in `packages/ui/src/tokens.ts` for the new palette and semantic surfaces:
+새 팔레트와 의미론적 표면을 위해 `packages/ui/src/tokens.ts`의 토큰을 추가하거나 갱신한다.
 
-- base surfaces
-- ledger surfaces
-- brass borders
-- blood actions
-- Prussian-blue apparatus accents
-- muted/dead text states
+- 기본 표면
+- 장부 표면
+- 황동 border
+- 핏빛 action
+- 프러시안 블루 장치 강조색
+- muted/dead 텍스트 상태
 
-Avoid duplicating raw colors independently across player and storyteller style files when the colors represent shared concepts.
+같은 개념을 나타내는 색상은 플레이어 앱과 이야기꾼 앱 스타일 파일에 원시 색상값으로 중복하지 않는다.
 
-### Player App Targets
+### 플레이어 앱 대상
 
-Primary areas:
+주요 대상은 다음이다.
 
 - `apps/player/src/styles/game.styles.ts`
 - `apps/player/src/components/RoleCard.styles.ts`
 - `apps/player/src/components/PhaseContent.styles.ts`
 - `apps/player/src/components/NightActionPrompt.styles.ts`
 - `apps/player/src/components/VotePrompt.tsx`
-- major overlays such as death, execution, night fall, role reveal, gunslinger, scapegoat
+- 사망, 처형, 밤 전환, 역할 공개, 총잡이, 희생양 같은 주요 오버레이
 
-Expected changes:
+예상 변경은 다음이다.
 
-- convert the main role card into a docket-like visual surface
-- turn phase/status information into ledger rows instead of generic badges
-- make primary actions look like stamped or mechanical controls
-- align event overlays with ritual/mechanical styling
-- keep all current role and game logic untouched
+- 메인 역할 카드를 기록지 같은 시각 표면으로 전환
+- 단계/상태 정보를 일반 badge 대신 장부 row로 전환
+- 주요 행동을 도장 찍힌 명령 또는 기계식 컨트롤처럼 보이게 변경
+- 이벤트 오버레이를 의식적/기계적 스타일로 정렬
+- 현재 역할 및 게임 로직은 변경하지 않음
 
-### Storyteller App Targets
+### 이야기꾼 앱 대상
 
-Primary areas:
+주요 대상은 다음이다.
 
 - `apps/storyteller/src/styles/grimoire.styles.ts`
 - `apps/storyteller/src/hooks/useResponsive.ts`
@@ -192,52 +192,52 @@ Primary areas:
 - `apps/storyteller/src/components/NightActionLog.styles.ts`
 - `apps/storyteller/src/components/NightFeedbackPanel.styles.ts`
 - `apps/storyteller/src/components/NightOrderPanel.styles.ts`
-- top/bottom bars, phase bars, vote panel, role hint bars, modals
+- 상단/하단 바, 단계 바, 투표 패널, 역할 힌트 바, 모달
 
-Expected changes:
+예상 변경은 다음이다.
 
-- make the grimoire board feel like an apparatus page rather than a flat dark canvas
-- restyle player tokens with brass/double-ring treatment
-- use Prussian-blue marks for active night/magical information
-- restyle side panels as ledger modules with clear headings and compact data
-- split storyteller layout behavior into desktop console and mobile/tablet grimoire modes
-- introduce non-destructive desktop keyboard shortcuts and focus states
-- preserve fast scanning, drag/tap behavior, and current mobile layout behavior
+- 그리모어 보드를 평평한 다크 캔버스가 아니라 장치 페이지처럼 보이게 변경
+- 플레이어 토큰을 황동/이중 고리 스타일로 변경
+- 활성 밤/마법 정보에 프러시안 블루 표식 사용
+- 사이드 패널을 명확한 제목과 압축된 데이터를 가진 장부 모듈로 변경
+- 이야기꾼 레이아웃을 데스크톱 콘솔 모드와 모바일/태블릿 그리모어 모드로 분리
+- 파괴적이지 않은 데스크톱 키보드 단축키와 포커스 상태 도입
+- 빠른 훑기, 드래그/탭 행동, 현재 모바일 레이아웃 행동은 유지
 
-## Implementation Constraints
+## 구현 제약
 
-- Do not change role rules, socket events, or game-state behavior as part of the visual pass.
-- Keep existing component boundaries where practical.
-- Prefer shared tokens and focused style changes before large component rewrites.
-- Avoid adding heavy dependencies unless a specific visual requirement cannot be met otherwise.
-- Maintain readable contrast on mobile screens and tablets.
-- Verify that Korean text fits in buttons, badges, player tokens, overlays, and modal titles.
-- Preserve low-power mode behavior and do not introduce mandatory expensive effects.
-- Desktop shortcuts must be discoverable through tooltips or a compact shortcut reference, and must not trigger destructive game actions without confirmation.
-- Desktop and mobile storyteller layouts may diverge in composition, but should share the same game state, socket events, and visual token system.
+- 시각 개편 작업에서는 역할 규칙, socket 이벤트, 게임 상태 동작을 변경하지 않는다.
+- 가능한 한 기존 컴포넌트 경계를 유지한다.
+- 큰 컴포넌트 재작성보다 공유 토큰과 집중된 스타일 변경을 우선한다.
+- 특정 시각 요구사항을 달성할 수 없는 경우가 아니라면 무거운 의존성을 추가하지 않는다.
+- 모바일 화면과 태블릿에서 읽을 수 있는 대비를 유지한다.
+- 버튼, 배지, 플레이어 토큰, 오버레이, 모달 제목 안의 한국어 텍스트가 잘 맞는지 검증한다.
+- 저전력 모드 동작을 유지하고 필수적인 고비용 효과를 도입하지 않는다.
+- 데스크톱 단축키는 툴팁 또는 간단한 단축키 안내로 발견 가능해야 하며, 확인 없이 파괴적인 게임 행동을 실행하면 안 된다.
+- 데스크톱과 모바일 이야기꾼 레이아웃은 구성이 달라질 수 있지만, 같은 게임 상태, socket 이벤트, 시각 토큰 시스템을 공유해야 한다.
 
-## Testing And Verification
+## 테스트 및 검증
 
-The implementation should include:
+구현 시 다음을 포함한다.
 
 - `pnpm lint`
 - `pnpm typecheck`
-- targeted component/unit tests only if behavior changes
-- manual or screenshot verification of key screens:
-  - player game screen in day, night, dead, vote, and role reveal states
-  - storyteller grimoire with 6-12 players, night panel open, vote panel open, status markers, traveller markers
-  - storyteller desktop web console at wide viewport with side rails, bottom alert strip, log drawer, and shortcut focus states
-  - storyteller mobile/tablet grimoire with the same game state to confirm layout divergence does not hide required controls
-  - overlays for execution/death/night/role reveal
+- 동작이 바뀌는 경우에만 대상 컴포넌트/단위 테스트
+- 주요 화면의 수동 또는 스크린샷 검증
+  - 낮, 밤, 사망, 투표, 역할 공개 상태의 플레이어 게임 화면
+  - 6-12명 플레이어, 밤 패널 열림, 투표 패널 열림, 상태 표식, 여행자 표식이 있는 이야기꾼 그리모어
+  - 넓은 viewport에서 사이드 레일, 하단 경고 strip, 로그 drawer, 단축키 포커스 상태가 있는 이야기꾼 데스크톱 웹 콘솔
+  - 같은 게임 상태에서 필요한 컨트롤이 숨겨지지 않는지 확인하는 이야기꾼 모바일/태블릿 그리모어
+  - 처형/사망/밤/역할 공개 오버레이
 
-If visual-only changes do not alter behavior, existing tests should remain passing without broad test rewrites.
+시각 변경만 있고 동작이 바뀌지 않는 경우, 기존 테스트는 넓은 재작성 없이 계속 통과해야 한다.
 
-## Non-Goals
+## 비목표
 
-- No modern SaaS/dashboard redesign.
-- No cyan/teal cyberpunk palette.
-- No purple magic-gradient theme.
-- No full rewrite of player or storyteller app navigation.
-- No custom font integration in the first visual implementation pass.
-- No gameplay or socket behavior changes.
-- No destructive one-key shortcuts.
+- 현대적인 SaaS/대시보드 재설계는 하지 않는다.
+- 시안/청록 사이버펑크 팔레트는 사용하지 않는다.
+- 보라색 마법 그라디언트 테마는 사용하지 않는다.
+- 플레이어 앱 또는 이야기꾼 앱 내비게이션을 전면 재작성하지 않는다.
+- 첫 시각 구현 단계에서는 커스텀 폰트 통합을 하지 않는다.
+- 게임 진행 또는 socket 동작은 변경하지 않는다.
+- 파괴적인 단일 키 단축키는 만들지 않는다.

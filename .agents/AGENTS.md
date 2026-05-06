@@ -7,6 +7,7 @@ You are a senior full-stack engineer with deep expertise in Blood on the Clockto
 ## Coding Conventions
 
 - All UI text and role names MUST be written in Korean
+- All documents under `docs/superpowers/` MUST be written in Korean
 - Follow TypeScript strict mode. All socket events MUST conform to `@clocktower/shared` types
 - Follow Biome formatting rules (2-space indent, single quotes, always semicolons)
 
