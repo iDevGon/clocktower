@@ -35,7 +35,7 @@ Primary player screens should use parchment/ledger sections instead of generic c
 
 ### Storyteller App
 
-The storyteller app should feel like a **grimoire apparatus**.
+The storyteller app should feel like a **grimoire apparatus**, with separate interaction models for desktop web and mobile/tablet.
 
 The storyteller needs fast operational scanning:
 
@@ -48,6 +48,54 @@ The storyteller needs fast operational scanning:
 - nomination, vote, execution, and traveller flow
 
 The grimoire should remain dense and functional. Tokens can carry more of the theme through double borders, brass rings, Prussian-blue magical state marks, and dead/desaturated treatment. Side panels should feel like ledgers or apparatus modules, but avoid deep nested card stacks.
+
+#### Desktop Host Console
+
+The PC/web version should become the primary **live-run control console** for storytellers who can use a larger screen, keyboard, and mouse.
+
+Desktop should prioritize:
+
+- higher information density without hiding critical state behind bottom sheets
+- simultaneous visibility of the player circle, night/order queue, current phase controls, vote/execution state, logs, and pending role requests
+- left/right auxiliary rails or docked panels instead of modal-heavy flows where practical
+- keyboard shortcuts for common storyteller actions
+- hover/focus affordances and tooltips for compact icon controls
+- faster player lookup and targeting interactions
+
+Recommended desktop layout:
+
+- center: large grimoire/player circle with token status marks
+- left rail: phase/subphase controls, day/night progression, edition/game summary
+- right rail: night queue, pending actions, selected player details, role reminders
+- bottom strip: vote/execution/traveller state and high-priority alerts
+- collapsible log drawer: searchable event log and storyteller notes
+
+Initial shortcut targets:
+
+- `Space`: advance the active night queue item when safe
+- `N`: open nomination controls
+- `V`: open or focus vote controls
+- `L`: toggle log drawer
+- `W`: open whispers panel
+- `F`: focus player search
+- `Esc`: close active modal/drawer
+- number keys: quick-select visible players when an action target picker is open
+
+Shortcuts must never silently perform destructive actions such as killing, executing, exiling, or resetting. Those actions should still require an explicit confirmation or focused command.
+
+#### Mobile And Tablet Host App
+
+The mobile/tablet app should remain a **touch-first grimoire**.
+
+Mobile/tablet should prioritize:
+
+- readable tokens and reliable drag/tap interaction
+- progressive disclosure for dense panels
+- large touch targets for night actions, voting, and player status changes
+- modal flows where they prevent accidental destructive actions
+- minimal keyboard assumptions
+
+The mobile/tablet version can share the same Belle Epoque / Victorian arcane visual language, but it should not try to show every desktop panel at once. The goal is a reliable hand-held storyteller tool, not a shrunken desktop console.
 
 ## Visual System
 
@@ -139,6 +187,7 @@ Expected changes:
 Primary areas:
 
 - `apps/storyteller/src/styles/grimoire.styles.ts`
+- `apps/storyteller/src/hooks/useResponsive.ts`
 - `apps/storyteller/src/components/PlayerToken.styles.ts`
 - `apps/storyteller/src/components/NightActionLog.styles.ts`
 - `apps/storyteller/src/components/NightFeedbackPanel.styles.ts`
@@ -151,7 +200,9 @@ Expected changes:
 - restyle player tokens with brass/double-ring treatment
 - use Prussian-blue marks for active night/magical information
 - restyle side panels as ledger modules with clear headings and compact data
-- preserve fast scanning, drag/tap behavior, and current layout behavior
+- split storyteller layout behavior into desktop console and mobile/tablet grimoire modes
+- introduce non-destructive desktop keyboard shortcuts and focus states
+- preserve fast scanning, drag/tap behavior, and current mobile layout behavior
 
 ## Implementation Constraints
 
@@ -162,6 +213,8 @@ Expected changes:
 - Maintain readable contrast on mobile screens and tablets.
 - Verify that Korean text fits in buttons, badges, player tokens, overlays, and modal titles.
 - Preserve low-power mode behavior and do not introduce mandatory expensive effects.
+- Desktop shortcuts must be discoverable through tooltips or a compact shortcut reference, and must not trigger destructive game actions without confirmation.
+- Desktop and mobile storyteller layouts may diverge in composition, but should share the same game state, socket events, and visual token system.
 
 ## Testing And Verification
 
@@ -173,6 +226,8 @@ The implementation should include:
 - manual or screenshot verification of key screens:
   - player game screen in day, night, dead, vote, and role reveal states
   - storyteller grimoire with 6-12 players, night panel open, vote panel open, status markers, traveller markers
+  - storyteller desktop web console at wide viewport with side rails, bottom alert strip, log drawer, and shortcut focus states
+  - storyteller mobile/tablet grimoire with the same game state to confirm layout divergence does not hide required controls
   - overlays for execution/death/night/role reveal
 
 If visual-only changes do not alter behavior, existing tests should remain passing without broad test rewrites.
@@ -185,4 +240,4 @@ If visual-only changes do not alter behavior, existing tests should remain passi
 - No full rewrite of player or storyteller app navigation.
 - No custom font integration in the first visual implementation pass.
 - No gameplay or socket behavior changes.
-
+- No destructive one-key shortcuts.
