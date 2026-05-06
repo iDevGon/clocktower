@@ -30,7 +30,7 @@ export {
   SmokeParticles,
   STORYTELLER_SMOKE_PARTICLES,
 } from './components/SmokeParticles';
-export { colors } from './tokens';
+export { colors, typography } from './tokens';
 // Utils
 export {
   applySuggestion,

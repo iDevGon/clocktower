@@ -4,8 +4,8 @@ import {
   getRoleById,
   OTHER_NIGHT_ORDER,
 } from '@clocktower/shared';
-import { AbilityText } from '@clocktower/ui';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { AbilityText, colors } from '@clocktower/ui';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
 import {
@@ -41,6 +41,8 @@ interface NightOrderPanelProps {
   editionId?: string;
   /** 표준 night order에 없지만 추가로 활성화 가능한 역할 (예: 철학자가 부여받은 첫 밤 역할) */
   extraRoleIds?: string[];
+  /** PC 단축키 등 외부 요청으로 밤 순서를 한 단계 진행할 때 증가시키는 값 */
+  advanceRequestId?: number;
 }
 
 export function NightOrderPanel({
@@ -53,6 +55,7 @@ export function NightOrderPanel({
   onNightComplete,
   editionId,
   extraRoleIds = EMPTY_STRING_ARRAY,
+  advanceRequestId,
 }: NightOrderPanelProps) {
   const { device, fontSize } = useResponsive();
   const scale = fontSize.md / 12;
@@ -94,6 +97,7 @@ export function NightOrderPanel({
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const chipWidths = useRef<number[]>([]);
+  const lastAdvanceRequestRef = useRef(advanceRequestId ?? 0);
 
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -148,7 +152,7 @@ export function NightOrderPanel({
 
   const isLastRole = activeIndex !== null && activeIndex >= order.length - 1;
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     const nextIndex = activeIndex === null ? 0 : activeIndex + 1;
     if (nextIndex < order.length) {
       setActiveIndex(nextIndex);
@@ -157,7 +161,18 @@ export function NightOrderPanel({
         onNightComplete?.();
       }
     }
-  };
+  }, [activeIndex, onActivateRole, onNightComplete, order]);
+
+  useEffect(() => {
+    if (
+      advanceRequestId === undefined ||
+      advanceRequestId === lastAdvanceRequestRef.current
+    ) {
+      return;
+    }
+    lastAdvanceRequestRef.current = advanceRequestId;
+    handleNext();
+  }, [advanceRequestId, handleNext]);
 
   const activeRole =
     activeIndex !== null ? getRoleById(order[activeIndex]) : null;
@@ -192,7 +207,7 @@ export function NightOrderPanel({
           } else if (isPast) {
             bgColor = `${tc.dot}40`;
           } else {
-            bgColor = '#1e1e28';
+            bgColor = colors.arcane.surface.base;
           }
 
           return (
@@ -269,18 +284,34 @@ export function NightOrderPanel({
               )}
               {isActiveAbsent ? (
                 <View
-                  style={[styles.inGameBadge, { backgroundColor: '#ffffff08' }]}
+                  style={[
+                    styles.inGameBadge,
+                    { backgroundColor: colors.arcane.surface.base },
+                  ]}
                 >
-                  <Text style={[styles.inGameBadgeText, { color: '#c0a060' }]}>
+                  <Text
+                    style={[
+                      styles.inGameBadgeText,
+                      { color: colors.arcane.text.label },
+                    ]}
+                  >
                     이 직업은 게임에 없지만, 플레이어들은 알 수 없습니다.{'\n'}
                     존재하는 것처럼 시간을 두고 진행하세요.
                   </Text>
                 </View>
               ) : isDormant ? (
                 <View
-                  style={[styles.inGameBadge, { backgroundColor: '#ffffff08' }]}
+                  style={[
+                    styles.inGameBadge,
+                    { backgroundColor: colors.arcane.surface.base },
+                  ]}
                 >
-                  <Text style={[styles.inGameBadgeText, { color: '#c0a060' }]}>
+                  <Text
+                    style={[
+                      styles.inGameBadgeText,
+                      { color: colors.arcane.text.label },
+                    ]}
+                  >
                     현재 사용할 능력이 없지만, 플레이어들은 알 수 없습니다.
                     {'\n'}
                     존재하는 것처럼 시간을 두고 진행하세요.

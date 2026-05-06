@@ -14,33 +14,33 @@ import { useResponsive } from '../hooks/useResponsive';
 import { styles } from './PlayerToken.styles';
 
 const TEAM_BORDER_COLORS = {
-  townsfolk: '#506aaa',
-  outsider: '#3a8878',
-  minion: '#b87838',
-  demon: '#943c3c',
-  traveller: '#7a5a9a',
+  townsfolk: colors.arcane.accent.prussianBlue,
+  outsider: colors.arcane.border.parchment,
+  minion: colors.arcane.border.brass,
+  demon: colors.arcane.action.blood,
+  traveller: colors.team.traveller,
 } as const;
 
 const TEAM_BG_COLORS = {
-  townsfolk: '#14161e',
-  outsider: '#141a18',
-  minion: '#1e1814',
-  demon: '#1e1414',
-  traveller: '#1a141e',
+  townsfolk: colors.arcane.accent.midnightInk,
+  outsider: colors.arcane.surface.ledger,
+  minion: colors.arcane.surface.parchment,
+  demon: colors.arcane.surface.apparatus,
+  traveller: '#1b1224',
 } as const;
 
 export type VoteIndicator = 'guilty' | 'preselected_guilty' | 'nominee';
 
 const VOTE_BORDER_COLORS: Record<VoteIndicator, string> = {
-  guilty: '#e05050',
-  preselected_guilty: '#e0505080',
-  nominee: '#c43c3c',
+  guilty: colors.arcane.action.bloodHighlight,
+  preselected_guilty: `${colors.arcane.action.bloodHighlight}80`,
+  nominee: colors.arcane.action.blood,
 };
 
 const VOTE_GLOW_COLORS: Record<VoteIndicator, string> = {
-  guilty: '#e05050',
-  preselected_guilty: '#e0505060',
-  nominee: '#c43c3c',
+  guilty: colors.arcane.action.bloodHighlight,
+  preselected_guilty: `${colors.arcane.action.bloodHighlight}60`,
+  nominee: colors.arcane.action.blood,
 };
 
 export interface BluffRole {
@@ -103,8 +103,10 @@ export function PlayerToken({
     xl: Math.round(fontSize.xl * sizeRatio),
   };
   const team = player.role?.team;
-  const baseBorderColor = team ? TEAM_BORDER_COLORS[team] : '#3a3a42';
-  const bgColor = team ? TEAM_BG_COLORS[team] : '#1a1a1e';
+  const baseBorderColor = team
+    ? TEAM_BORDER_COLORS[team]
+    : colors.arcane.border.brassDim;
+  const bgColor = team ? TEAM_BG_COLORS[team] : colors.arcane.surface.raised;
 
   // Vote state overrides border when active
   const hasVoteState = !!voteIndicator;
@@ -117,23 +119,23 @@ export function PlayerToken({
   const hasGhostVote = !player.isAlive && !player.deadVoteUsed;
 
   const borderColor = highlighted
-    ? '#f5c542'
+    ? colors.arcane.border.brass
     : empathNeighbor
       ? '#2ecc71'
       : hasVoteState
         ? (voteBorder ?? baseBorderColor)
         : hasGhostVote
-          ? '#5aa0d0'
+          ? colors.arcane.accent.sapphireLens
           : baseBorderColor;
 
   const glowColor = highlighted
-    ? '#f5c542'
+    ? colors.arcane.border.brass
     : empathNeighbor
       ? '#2ecc71'
       : hasVoteState
         ? (voteGlow ?? 'transparent')
         : hasGhostVote
-          ? '#5aa0d0'
+          ? colors.arcane.accent.sapphireLens
           : 'transparent';
 
   const hasGlow = highlighted || empathNeighbor || hasVoteState || hasGhostVote;
@@ -163,6 +165,7 @@ export function PlayerToken({
           },
         ]}
       >
+        <View style={[styles.innerRing, { borderColor }]} />
         <Text
           style={[styles.name, { fontSize: scaledFont.md }]}
           numberOfLines={1}
@@ -175,7 +178,7 @@ export function PlayerToken({
               styles.role,
               {
                 fontSize: scaledFont.sm,
-                color: team ? TEAM_COLORS[team] : '#908e8a',
+                color: team ? TEAM_COLORS[team] : colors.arcane.text.muted,
               },
             ]}
             numberOfLines={1}
@@ -247,7 +250,12 @@ export function PlayerToken({
           )}
         {isExecutionCandidate && (
           <View style={[styles.statusRow, { marginTop: 1 }]}>
-            <View style={[styles.statusBadge, { backgroundColor: '#c43c3c' }]}>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: colors.arcane.action.blood },
+              ]}
+            >
               <Text style={[styles.statusText, { fontSize: scaledFont.xs }]}>
                 처형 예정
               </Text>

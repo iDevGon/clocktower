@@ -1,4 +1,4 @@
-import { colors } from '@clocktower/ui';
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
@@ -19,40 +19,44 @@ export const styles = StyleSheet.create({
     right: 0,
   },
   card: {
-    backgroundColor: colors.surface.elevated,
-    borderRadius: 12,
+    backgroundColor: colors.arcane.surface.ledger,
+    borderRadius: 6,
     borderWidth: 1,
+    borderColor: colors.arcane.border.brassDim,
     padding: 20,
     overflow: 'hidden',
   },
   cardBack: {
-    backgroundColor: '#14141a',
+    backgroundColor: colors.arcane.surface.apparatus,
   },
   teamLabel: {
     fontSize: 12,
+    fontFamily: typography.fontFamily.bodyMedium,
     textTransform: 'uppercase',
     letterSpacing: 2,
     marginBottom: 4,
     marginTop: 2,
   },
   roleName: {
-    color: colors.text.primary,
-    fontSize: 20,
+    color: colors.arcane.text.strong,
+    fontFamily: typography.fontFamily.display,
+    fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 12,
   },
   roleNameDead: {
-    color: '#9a9ca4',
+    color: colors.arcane.text.dead,
   },
   divider: {
     width: '100%',
     height: 1,
-    backgroundColor: colors.border.default,
+    backgroundColor: colors.arcane.border.brassDim,
     marginBottom: 12,
   },
   ability: {
-    color: colors.text.muted,
+    color: colors.arcane.text.primary,
     fontSize: 14,
+    fontFamily: typography.fontFamily.body,
     lineHeight: 20,
   },
   flipHintBar: {
@@ -64,11 +68,12 @@ export const styles = StyleSheet.create({
   flipHintLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#2e2e38',
+    backgroundColor: colors.arcane.border.brassDim,
   },
   flipHintText: {
-    color: '#6a6a7a',
+    color: colors.arcane.text.dead,
     fontSize: 12,
+    fontFamily: typography.fontFamily.bodyMedium,
     letterSpacing: 0.5,
   },
   evilInfoSection: {
@@ -79,14 +84,16 @@ export const styles = StyleSheet.create({
     marginBottom: 6,
   },
   infoLabel: {
-    color: '#b85c5c',
+    color: colors.arcane.action.bloodHighlight,
     fontSize: 13,
+    fontFamily: typography.fontFamily.bodyBold,
     fontWeight: '600',
     width: 80,
   },
   infoValue: {
-    color: '#d0ccc8',
+    color: colors.arcane.text.primary,
     fontSize: 13,
+    fontFamily: typography.fontFamily.body,
     flex: 1,
   },
 
@@ -149,11 +156,12 @@ export const styles = StyleSheet.create({
   backDivider: {
     width: '60%',
     height: 1,
-    backgroundColor: '#242838',
+    backgroundColor: colors.arcane.border.brassDim,
     marginBottom: 16,
   },
   phrase: {
     fontSize: 14,
+    fontFamily: typography.fontFamily.body,
     fontStyle: 'italic',
     textAlign: 'center',
     lineHeight: 20,
@@ -161,6 +169,7 @@ export const styles = StyleSheet.create({
   },
   hiddenHint: {
     fontSize: 14,
+    fontFamily: typography.fontFamily.bodyMedium,
     textAlign: 'center',
     letterSpacing: 1,
     marginBottom: 20,
@@ -182,7 +191,7 @@ export const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 1,
-    backgroundColor: '#1c1e28',
+    backgroundColor: colors.arcane.surface.ledger,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -191,7 +200,7 @@ export const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     borderWidth: 1,
-    backgroundColor: '#1c1e28',
+    backgroundColor: colors.arcane.surface.ledger,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -199,8 +208,9 @@ export const styles = StyleSheet.create({
     fontSize: 14,
   },
   bottomHint: {
-    color: '#3a3e4a',
+    color: colors.arcane.text.dead,
     fontSize: 11,
+    fontFamily: typography.fontFamily.bodyMedium,
     letterSpacing: 1,
   },
 

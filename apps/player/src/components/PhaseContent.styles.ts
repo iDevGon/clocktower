@@ -1,39 +1,44 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 export const whisperStyles = StyleSheet.create({
   activePanel: {
     marginTop: 16,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 8,
+    backgroundColor: colors.arcane.surface.ledger,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.arcane.border.brassDim,
     paddingHorizontal: 14,
     paddingVertical: 10,
     width: '100%',
   },
   activePanelTitle: {
-    color: '#8a8a8a',
+    color: colors.arcane.text.label,
     fontSize: 12,
+    fontFamily: typography.fontFamily.bodyBold,
     fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 6,
   },
   activePanelItem: {
-    color: '#e0ddd8',
+    color: colors.arcane.text.primary,
     fontSize: 14,
+    fontFamily: typography.fontFamily.body,
     paddingVertical: 3,
   },
   countdownText: {
-    color: '#c4a050',
+    color: colors.arcane.text.label,
     fontSize: 32,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
     marginBottom: 4,
   },
   countdownUrgent: {
-    color: '#e05050',
+    color: colors.arcane.action.bloodHighlight,
   },
   expiredTitle: {
-    color: '#555',
+    color: colors.arcane.text.dead,
   },
 });
 
@@ -49,11 +54,13 @@ export const endedStyles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   playerName: {
-    color: '#e0ddd8',
+    color: colors.arcane.text.primary,
     fontSize: 14,
+    fontFamily: typography.fontFamily.body,
   },
   playerRole: {
     fontSize: 14,
+    fontFamily: typography.fontFamily.bodyBold,
     fontWeight: '600',
   },
 });

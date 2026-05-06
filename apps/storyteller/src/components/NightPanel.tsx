@@ -60,6 +60,8 @@ interface NightPanelProps {
   jugglerCorrectCount?: Record<string, number>;
   /** 표준 night order에 없지만 추가로 활성화 가능한 역할 (예: 철학자가 부여받은 첫 밤 역할) */
   extraNightRoleIds?: string[];
+  /** PC 단축키 등 외부 요청으로 밤 순서를 한 단계 진행할 때 증가시키는 값 */
+  advanceRequestId?: number;
 }
 
 export function NightPanel({
@@ -93,6 +95,7 @@ export function NightPanel({
   editionId,
   jugglerCorrectCount,
   extraNightRoleIds,
+  advanceRequestId,
 }: NightPanelProps) {
   const [feedbackCollapsed, setFeedbackCollapsed] = useState(false);
   const [feedbackSentForRole, setFeedbackSentForRole] = useState<string | null>(
@@ -238,6 +241,7 @@ export function NightPanel({
             }}
             editionId={editionId}
             extraRoleIds={extraNightRoleIds}
+            advanceRequestId={advanceRequestId}
           />
 
           {activeNightRoleId === 'barista' && !isFeedbackSent && (

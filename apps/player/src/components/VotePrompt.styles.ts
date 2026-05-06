@@ -1,22 +1,23 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 const COLORS = {
-  brass: '#b8964e',
-  brassLight: '#d4b06a',
-  brassDark: '#8a6e38',
-  blood: '#8b1a1a',
-  bloodGlow: '#c43c3c',
-  bone: '#d4cfc6',
-  boneFaded: '#9a958c',
+  brass: colors.arcane.border.brass,
+  brassLight: colors.arcane.text.label,
+  brassDark: colors.arcane.border.brassDim,
+  blood: colors.arcane.action.blood,
+  bloodGlow: colors.arcane.action.bloodHighlight,
+  bone: colors.arcane.text.strong,
+  boneFaded: colors.arcane.text.muted,
   iron: '#4a4a52',
-  midnight: '#0d0d12',
-  midnightLight: '#14141c',
+  midnight: colors.arcane.surface.base,
+  midnightLight: colors.arcane.surface.apparatus,
 };
 
 export const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.midnightLight,
-    borderRadius: 14,
+    borderRadius: 6,
     borderWidth: 1.5,
     borderColor: COLORS.brassDark,
     padding: 20,
@@ -29,6 +30,7 @@ export const styles = StyleSheet.create({
   label: {
     color: COLORS.bloodGlow,
     fontSize: 11,
+    fontFamily: typography.fontFamily.bodyBold,
     textTransform: 'uppercase',
     letterSpacing: 4,
     marginBottom: 10,
@@ -39,16 +41,19 @@ export const styles = StyleSheet.create({
   nominationInfo: {
     color: COLORS.boneFaded,
     fontSize: 15,
+    fontFamily: typography.fontFamily.body,
     marginBottom: 4,
     lineHeight: 22,
   },
   playerNameHighlight: {
     color: COLORS.bone,
+    fontFamily: typography.fontFamily.bodyBold,
     fontWeight: '800',
   },
   description: {
     color: '#d4a040',
     fontSize: 15,
+    fontFamily: typography.fontFamily.bodyBold,
     fontWeight: '700',
     marginBottom: 16,
     textAlign: 'center',
@@ -60,6 +65,7 @@ export const styles = StyleSheet.create({
   votedText: {
     color: COLORS.brass,
     fontSize: 16,
+    fontFamily: typography.fontFamily.display,
     fontWeight: '800',
     letterSpacing: 2,
     textTransform: 'uppercase',
@@ -67,12 +73,13 @@ export const styles = StyleSheet.create({
   votedSubtext: {
     color: COLORS.boneFaded,
     fontSize: 13,
+    fontFamily: typography.fontFamily.body,
     marginTop: 6,
     fontStyle: 'italic',
   },
   guiltyButton: {
     backgroundColor: '#1a1a20',
-    borderRadius: 10,
+    borderRadius: 6,
     paddingVertical: 14,
     alignItems: 'center',
     borderWidth: 1.5,
@@ -94,7 +101,7 @@ export const styles = StyleSheet.create({
     letterSpacing: 3,
   },
   guiltyTextSelected: {
-    color: '#ffffff',
+    color: colors.arcane.text.strong,
   },
   noSelectionHint: {
     color: COLORS.boneFaded,
@@ -110,6 +117,7 @@ export const styles = StyleSheet.create({
   countdownMessage: {
     color: COLORS.brass,
     fontSize: 16,
+    fontFamily: typography.fontFamily.bodyBold,
     fontWeight: '700',
     letterSpacing: 1,
     marginBottom: 12,
@@ -117,6 +125,7 @@ export const styles = StyleSheet.create({
   countdownNumber: {
     color: COLORS.bloodGlow,
     fontSize: 48,
+    fontFamily: typography.fontFamily.display,
     fontWeight: '900',
     fontVariant: ['tabular-nums'],
     textShadowColor: `${COLORS.bloodGlow}60`,
@@ -132,7 +141,7 @@ export const styles = StyleSheet.create({
   },
   consentButton: {
     backgroundColor: '#1a1a20',
-    borderRadius: 10,
+    borderRadius: 6,
     paddingVertical: 14,
     alignItems: 'center' as const,
     borderWidth: 1.5,
@@ -156,7 +165,7 @@ export const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   consentTextReady: {
-    color: '#ffffff',
+    color: colors.arcane.text.strong,
   },
   consentCount: {
     color: COLORS.boneFaded,

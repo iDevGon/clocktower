@@ -1,9 +1,15 @@
-import { ReducedMotionProvider } from '@clocktower/ui';
+import { ReducedMotionProvider, typography } from '@clocktower/ui';
+import { useFonts } from 'expo-font';
 import * as NavigationBar from 'expo-navigation-bar';
 import { Stack } from 'expo-router';
 import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
 import { DevSettings, Platform } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useSocketConnection } from '../src/hooks/useSocketConnection';
+import { useConnectionStore } from '../src/stores/connectionStore';
+import { useGameStore } from '../src/stores/gameStore';
+import { useSettingsStore } from '../src/stores/settingsStore';
 
 const IS_DEV = process.env.EXPO_PUBLIC_DEV_MODE === 'true';
 if (__DEV__ && !IS_DEV && Platform.OS !== 'web') {
@@ -17,12 +23,6 @@ if (Platform.OS === 'android') {
   NavigationBar.setButtonStyleAsync('light');
 }
 SystemUI.setBackgroundColorAsync('#121214');
-
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useSocketConnection } from '../src/hooks/useSocketConnection';
-import { useConnectionStore } from '../src/stores/connectionStore';
-import { useGameStore } from '../src/stores/gameStore';
-import { useSettingsStore } from '../src/stores/settingsStore';
 
 const SCROLLBAR_CSS = `
   *::-webkit-scrollbar {
@@ -48,6 +48,18 @@ export default function RootLayout() {
   const serverUrl = useConnectionStore((s) => s.serverUrl);
   const isConnected = useConnectionStore((s) => s.isConnected);
   const lowPowerMode = useSettingsStore((s) => s.lowPowerMode);
+  const [fontsLoaded, fontError] = useFonts({
+    [typography.fontFamily
+      .body]: require('../assets/fonts/IBMPlexSansKR-Regular.ttf'),
+    [typography.fontFamily
+      .bodyMedium]: require('../assets/fonts/IBMPlexSansKR-Medium.ttf'),
+    [typography.fontFamily
+      .bodyBold]: require('../assets/fonts/IBMPlexSansKR-Bold.ttf'),
+    [typography.fontFamily
+      .displayLight]: require('../assets/fonts/SchoolSafeStarrySky-Light.ttf'),
+    [typography.fontFamily
+      .display]: require('../assets/fonts/SchoolSafeStarrySky-Bold.ttf'),
+  });
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -66,6 +78,10 @@ export default function RootLayout() {
       useGameStore.getState().reset();
     });
   }, [gameId, serverUrl, isConnected, connect]);
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
 
   return (
     <ReducedMotionProvider value={lowPowerMode}>

@@ -2,8 +2,6 @@ import { getAllTipTexts } from '@clocktower/shared';
 import {
   FullScreenVignette,
   RotatingGameTip,
-  SmokeParticles,
-  STORYTELLER_SMOKE_PARTICLES,
   useReducedMotion,
 } from '@clocktower/ui';
 import { useCameraPermissions } from 'expo-camera';
@@ -149,18 +147,15 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Deep midnight-blue background */}
       <LinearGradient
-        colors={['#06080f', '#0a0e1a', '#0e1020', '#0a0c18', '#060810']}
-        locations={[0, 0.25, 0.5, 0.75, 1]}
+        colors={['#080b14', '#10182f', '#1b1630', '#0d0703']}
+        locations={[0, 0.38, 0.75, 1]}
         style={styles.backgroundGradient}
       />
 
-      {/* Atmospheric layers */}
-      <SmokeParticles particles={STORYTELLER_SMOKE_PARTICLES} />
       <FullScreenVignette
-        color="#04060c"
-        opacityRange={[0.5, 0.75]}
+        color="#05070d"
+        opacityRange={[0.36, 0.62]}
         duration={6000}
       />
 
@@ -170,9 +165,7 @@ export default function HomeScreen() {
         onScanned={handleBarCodeScanned}
       />
 
-      {/* Main content */}
       <View style={styles.content}>
-        {/* Role badge */}
         <Animated.View style={[styles.roleBadge, badgeGlowStyle]}>
           <Text style={styles.roleBadgeIcon}>◉</Text>
           <Text style={styles.roleBadgeText}>이야기꾼</Text>
@@ -246,7 +239,7 @@ export default function HomeScreen() {
             ]}
           >
             <LinearGradient
-              colors={['#3a3010', '#5a4820', '#3a3010']}
+              colors={['#10182f', '#2f4f8f', '#b78642']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.buttonGradient}
@@ -260,7 +253,7 @@ export default function HomeScreen() {
         </View>
 
         <View style={{ alignItems: 'center', marginTop: 24 }}>
-          <RotatingGameTip tips={tips} color="#8b7530" glowColor="#6b5520" />
+          <RotatingGameTip tips={tips} color="#c8ae86" glowColor="#2f4f8f" />
         </View>
       </View>
 

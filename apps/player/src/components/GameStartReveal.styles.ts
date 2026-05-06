@@ -1,3 +1,4 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
@@ -9,15 +10,17 @@ export const styles = StyleSheet.create({
     zIndex: 10,
   },
   openingLabel: {
-    color: '#4a5a80',
+    color: colors.arcane.text.label,
     fontSize: 13,
+    fontFamily: typography.fontFamily.bodyMedium,
     letterSpacing: 6,
     textTransform: 'uppercase',
     marginBottom: 8,
   },
   openingTitle: {
-    color: '#8090c0',
-    fontSize: 20,
+    color: colors.arcane.accent.sapphireLens,
+    fontFamily: typography.fontFamily.display,
+    fontSize: 24,
     fontWeight: '300',
     letterSpacing: 2,
     textAlign: 'center',
@@ -26,7 +29,7 @@ export const styles = StyleSheet.create({
   openingDivider: {
     width: 60,
     height: 1,
-    backgroundColor: '#2a3860',
+    backgroundColor: colors.arcane.border.brassDim,
     marginBottom: 28,
   },
   flipContainer: {
@@ -44,15 +47,15 @@ export const styles = StyleSheet.create({
     right: 0,
   },
   revealCard: {
-    backgroundColor: '#14141a',
-    borderRadius: 14,
+    backgroundColor: colors.arcane.surface.ledger,
+    borderRadius: 6,
     borderWidth: 1.5,
     padding: 22,
     width: '100%',
     overflow: 'hidden',
   },
   revealCardBack: {
-    backgroundColor: '#12121a',
+    backgroundColor: colors.arcane.surface.apparatus,
   },
   shimmerContainer: {
     position: 'absolute',
@@ -69,13 +72,15 @@ export const styles = StyleSheet.create({
   },
   revealTeamLabel: {
     fontSize: 12,
+    fontFamily: typography.fontFamily.bodyMedium,
     textTransform: 'uppercase',
     letterSpacing: 3,
     marginBottom: 6,
   },
   revealRoleName: {
-    color: '#eae8e4',
-    fontSize: 24,
+    color: colors.arcane.text.strong,
+    fontFamily: typography.fontFamily.display,
+    fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 14,
     letterSpacing: 1,
@@ -83,11 +88,11 @@ export const styles = StyleSheet.create({
   revealDivider: {
     width: '100%',
     height: 1,
-    backgroundColor: '#2a2a34',
+    backgroundColor: colors.arcane.border.brassDim,
     marginBottom: 14,
   },
   revealAbility: {
-    color: '#b8b6b2',
+    color: colors.arcane.text.primary,
     fontSize: 14,
     lineHeight: 21,
   },
@@ -99,18 +104,18 @@ export const styles = StyleSheet.create({
     marginBottom: 6,
   },
   infoLabel: {
-    color: '#b85c5c',
+    color: colors.arcane.action.bloodHighlight,
     fontSize: 13,
     fontWeight: '600',
     width: 80,
   },
   infoValue: {
-    color: '#d0ccc8',
+    color: colors.arcane.text.primary,
     fontSize: 13,
     flex: 1,
   },
   nightText: {
-    color: '#6878a8',
+    color: colors.arcane.accent.sapphireLens,
     fontSize: 16,
     fontWeight: '300',
     letterSpacing: 1,
@@ -118,7 +123,7 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
   },
   dismissHint: {
-    color: '#3a4060',
+    color: colors.arcane.text.dead,
     fontSize: 12,
     letterSpacing: 1,
     marginTop: 16,
@@ -144,7 +149,7 @@ export const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderWidth: 1,
-    borderColor: '#5a6898',
+    borderColor: colors.arcane.accent.prussianBlue,
     transform: [{ rotate: '45deg' }],
   },
   backContent: {
@@ -156,7 +161,7 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     textTransform: 'uppercase',
     letterSpacing: 4,
-    color: '#4a5070',
+    color: colors.arcane.text.dead,
     marginBottom: 12,
   },
   backMysteryRow: {
@@ -168,21 +173,21 @@ export const styles = StyleSheet.create({
   backMysteryLine: {
     width: 40,
     height: 1,
-    backgroundColor: '#3a4060',
+    backgroundColor: colors.arcane.border.brassDim,
   },
   backQuestionMark: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#5a6898',
+    color: colors.arcane.accent.sapphireLens,
   },
   backDividerLine: {
     width: '60%',
     height: 1,
-    backgroundColor: '#242838',
+    backgroundColor: colors.arcane.border.brassDim,
     marginBottom: 16,
   },
   backPhrase: {
-    color: '#7080b0',
+    color: colors.arcane.text.primary,
     fontSize: 14,
     fontStyle: 'italic',
     textAlign: 'center',
@@ -198,13 +203,13 @@ export const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#3a406060',
-    backgroundColor: '#1c1e28',
+    borderColor: colors.arcane.border.brassDim,
+    backgroundColor: colors.arcane.surface.ledger,
     alignItems: 'center',
     justifyContent: 'center',
   },
   backSealIcon: {
-    color: '#5a6898',
+    color: colors.arcane.accent.sapphireLens,
     fontSize: 14,
   },
 });

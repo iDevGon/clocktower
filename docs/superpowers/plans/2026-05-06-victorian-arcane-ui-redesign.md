@@ -2,9 +2,9 @@
 
 > **에이전트 작업자용:** REQUIRED SUB-SKILL: 이 계획을 작업 단위로 구현할 때는 `superpowers:subagent-driven-development`(권장) 또는 `superpowers:executing-plans`를 사용한다. 단계는 추적을 위해 checkbox(`- [ ]`) 문법을 사용한다.
 
-**목표:** 플레이어 앱과 이야기꾼 앱을 벨 에포크/빅토리아 아케인 펑크 방향으로 개편하고, 이야기꾼 PC/web 버전에는 정보 밀도 높은 진행 콘솔과 비파괴 단축키를 추가한다.
+**목표:** 플레이어 앱과 이야기꾼 앱을 벨 에포크/빅토리아 아케인 펑크 방향으로 개편하고, `학교안심 별빛하늘` 포인트 폰트를 도입하며, 이야기꾼 PC/web 버전에는 정보 밀도 높은 진행 콘솔과 비파괴 단축키를 추가한다.
 
-**아키텍처:** 먼저 `packages/ui`에 공통 팔레트 토큰을 추가하고, 이야기꾼 앱의 responsive 판단을 순수 helper로 분리한다. 그 다음 이야기꾼 PC 콘솔은 기존 game state와 socket action을 그대로 재사용하는 layout shell로 추가하고, 모바일/태블릿은 기존 터치 중심 grimoire 흐름을 유지한다. 플레이어 앱은 역할 카드, 단계 안내, 주요 행동, 오버레이 스타일을 기록지/장치 표면으로 바꾸되 게임 로직은 건드리지 않는다.
+**아키텍처:** 먼저 `packages/ui`에 공통 팔레트와 타이포그래피 토큰을 추가하고, 양쪽 Expo 앱에서 폰트를 로딩하며, 이야기꾼 앱의 responsive 판단을 순수 helper로 분리한다. 그 다음 이야기꾼 PC 콘솔은 기존 game state와 socket action을 그대로 재사용하는 layout shell로 추가하고, 모바일/태블릿은 기존 터치 중심 grimoire 흐름을 유지한다. 플레이어 앱은 역할 카드, 단계 안내, 주요 행동, 오버레이 스타일을 기록지/장치 표면으로 바꾸되 게임 로직은 건드리지 않는다.
 
 **기술 스택:** React Native, Expo Router, React Native Web, Zustand, Socket.io, Vitest, Biome, Turborepo.
 
@@ -12,14 +12,23 @@
 
 ## 범위 점검
 
-스펙은 플레이어 앱, 이야기꾼 모바일 앱, 이야기꾼 PC 콘솔을 모두 포함한다. 독립 앱을 새로 만드는 대신 같은 Expo 프로젝트 안에서 shared token과 responsive 분기로 나누는 작업이므로 단일 계획으로 진행한다. 단, 커밋은 토큰/기반 구조, 이야기꾼 PC 콘솔, 이야기꾼 시각 정리, 플레이어 시각 정리, 오버레이/검증 단위로 나눈다.
+스펙은 플레이어 앱, 이야기꾼 모바일 앱, 이야기꾼 PC 콘솔을 모두 포함한다. 독립 앱을 새로 만드는 대신 같은 Expo 프로젝트 안에서 shared token과 responsive 분기로 나누는 작업이므로 단일 계획으로 진행한다. 단, 커밋은 폰트/토큰/기반 구조, 이야기꾼 PC 콘솔, 이야기꾼 시각 정리, 플레이어 시각 정리, 오버레이/검증 단위로 나눈다.
 
 ## 파일 구조
 
 - 수정: `packages/ui/src/tokens.ts`
-  - 공통 색상 토큰에 `arcane` 팔레트를 추가한다.
+  - 공통 색상 토큰에 `arcane` 팔레트를 추가하고, `typography` 토큰에 `body`/`display` 폰트 family를 추가한다.
 - 생성: `packages/ui/src/__tests__/tokens.test.ts`
-  - 새 토큰이 export되고 핵심 색상이 고정되어 있는지 확인한다.
+  - 새 토큰이 export되고 핵심 색상과 폰트 이름이 고정되어 있는지 확인한다.
+- 수정: `apps/player/package.json`
+- 수정: `apps/storyteller/package.json`
+  - 필요 시 `expo-font` 의존성을 추가한다.
+- 생성: `apps/player/assets/fonts/`
+- 생성: `apps/storyteller/assets/fonts/`
+  - `학교안심 별빛하늘 L/B`와 기본 UI용 산세리프 폰트 파일을 둔다.
+- 수정: `apps/player/app/_layout.tsx`
+- 수정: `apps/storyteller/app/_layout.tsx`
+  - 앱 시작 시 폰트를 로딩하고, 로딩 실패 시 플랫폼 기본 산세리프로 fallback한다.
 - 생성: `apps/storyteller/src/hooks/responsiveMode.ts`
   - 화면 폭으로 device/layout mode를 결정하는 순수 helper를 둔다.
 - 수정: `apps/storyteller/src/hooks/useResponsive.ts`
@@ -67,11 +76,17 @@
 
 ---
 
-### Task 1: 공통 토큰과 responsive 기반 만들기
+### Task 1: 공통 폰트, 토큰, responsive 기반 만들기
 
 **Files:**
 - Modify: `packages/ui/src/tokens.ts`
 - Create: `packages/ui/src/__tests__/tokens.test.ts`
+- Modify: `apps/player/package.json`
+- Modify: `apps/storyteller/package.json`
+- Create: `apps/player/assets/fonts/`
+- Create: `apps/storyteller/assets/fonts/`
+- Modify: `apps/player/app/_layout.tsx`
+- Modify: `apps/storyteller/app/_layout.tsx`
 - Create: `apps/storyteller/src/hooks/responsiveMode.ts`
 - Modify: `apps/storyteller/src/hooks/useResponsive.ts`
 - Create: `apps/storyteller/src/hooks/__tests__/responsiveMode.test.ts`
@@ -82,7 +97,7 @@
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { colors } from '../tokens';
+import { colors, typography } from '../tokens';
 
 describe('arcane design tokens', () => {
   it('빅토리아 아케인 팔레트를 제공한다', () => {
@@ -94,6 +109,11 @@ describe('arcane design tokens', () => {
 
   it('기존 surface/base 토큰은 유지한다', () => {
     expect(colors.surface.base).toBe('#121214');
+  });
+
+  it('포인트 폰트 토큰을 제공한다', () => {
+    expect(typography.fontFamily.display).toBe('SchoolSafeStarrySky-Bold');
+    expect(typography.fontFamily.body).toBe('IBMPlexSansKR-Regular');
   });
 });
 ```
@@ -147,12 +167,52 @@ Expected: `colors.arcane`이 없어 실패.
   },
 ```
 
+같은 파일에서 typography 토큰을 함께 export한다.
+
+```ts
+export const typography = {
+  fontFamily: {
+    body: 'IBMPlexSansKR-Regular',
+    bodyMedium: 'IBMPlexSansKR-Medium',
+    bodyBold: 'IBMPlexSansKR-Bold',
+    displayLight: 'SchoolSafeStarrySky-Light',
+    display: 'SchoolSafeStarrySky-Bold',
+  },
+} as const;
+```
+
 - [ ] **Step 4: 토큰 테스트 통과 확인**
 
 Run:
 
 ```bash
 pnpm --filter @clocktower/ui test -- src/__tests__/tokens.test.ts
+```
+
+Expected: PASS.
+
+- [ ] **Step 4a: 양쪽 Expo 앱에 폰트 파일과 로딩 추가**
+
+공식 배포처에서 받은 `학교안심 별빛하늘 L/B` 파일과 기본 UI용 산세리프 파일을 양쪽 앱의 `assets/fonts/` 아래에 둔다. 파일명은 import 안정성을 위해 ASCII 이름으로 둔다.
+
+권장 파일명:
+
+```text
+SchoolSafeStarrySky-Light.ttf
+SchoolSafeStarrySky-Bold.ttf
+IBMPlexSansKR-Regular.ttf
+IBMPlexSansKR-Medium.ttf
+IBMPlexSansKR-Bold.ttf
+```
+
+`apps/player/app/_layout.tsx`와 `apps/storyteller/app/_layout.tsx`에서 `expo-font`의 `useFonts`를 사용해 같은 family 이름으로 등록한다. 폰트 로딩 중에는 기존 root layout이 잘못 그려지지 않게 `null` 또는 기존 loading surface를 반환한다. 로딩 실패 시에는 앱을 막지 말고 플랫폼 기본 산세리프로 fallback한다.
+
+- [ ] **Step 4b: 폰트 로딩 후 타입체크 확인**
+
+Run:
+
+```bash
+pnpm typecheck
 ```
 
 Expected: PASS.
@@ -1769,8 +1829,8 @@ git commit -m "chore: UI 개편 검증 후 정리"
 
 ## 자체 검토
 
-- 스펙의 주요 요구사항인 벨 에포크/빅토리아 아케인 방향, 프러시안 블루 accent, 플레이어 개인 기록지, 이야기꾼 grimoire 장치, PC/web 콘솔 분리, 모바일/태블릿 touch-first 유지, 비파괴 단축키 정책을 모두 task에 반영했다.
+- 스펙의 주요 요구사항인 벨 에포크/빅토리아 아케인 방향, `학교안심 별빛하늘` 포인트 폰트, 프러시안 블루 accent, 플레이어 개인 기록지, 이야기꾼 grimoire 장치, PC/web 콘솔 분리, 모바일/태블릿 touch-first 유지, 비파괴 단축키 정책을 모두 task에 반영했다.
 - 파괴적인 one-key shortcut은 Task 2 테스트에서 금지한다.
 - 게임 로직, socket event, role rule 변경은 계획에 포함하지 않았다.
-- 커스텀 폰트는 첫 구현 범위에서 제외했다.
+- 커스텀 폰트는 첫 구현 범위에 포함하되, 장식 폰트 사용처는 짧은 제목과 오버레이로 제한했다.
 - 시각 변경 중심이지만 responsive mode와 shortcut mapping은 순수 helper 테스트로 검증한다.

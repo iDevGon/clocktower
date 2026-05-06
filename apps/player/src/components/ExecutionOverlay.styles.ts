@@ -1,3 +1,4 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
@@ -12,15 +13,17 @@ export const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     letterSpacing: 10,
-    color: '#8b3a00',
+    color: colors.arcane.border.brass,
+    fontFamily: typography.fontFamily.bodyMedium,
     fontWeight: '300',
     textTransform: 'uppercase',
     marginBottom: 0,
   },
   nameText: {
     fontSize: 32,
+    fontFamily: typography.fontFamily.display,
     fontWeight: '900',
-    color: '#e8a060',
+    color: colors.arcane.text.label,
     textAlign: 'center',
     marginBottom: 16,
     textShadowColor: 'rgba(232, 100, 0, 0.3)',
@@ -30,10 +33,10 @@ export const styles = StyleSheet.create({
   reasonBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(139, 58, 0, 0.2)',
+    backgroundColor: 'rgba(38, 22, 6, 0.72)',
     borderWidth: 1,
-    borderColor: 'rgba(139, 58, 0, 0.35)',
-    borderRadius: 8,
+    borderColor: colors.arcane.border.brassDim,
+    borderRadius: 6,
     paddingHorizontal: 16,
     paddingVertical: 10,
     marginBottom: 20,
@@ -44,14 +47,14 @@ export const styles = StyleSheet.create({
   },
   reasonText: {
     fontSize: 14,
-    color: '#c07840',
+    color: colors.arcane.text.primary,
     fontWeight: '500',
     textAlign: 'center',
     flexShrink: 1,
   },
   deathText: {
     fontSize: 13,
-    color: '#5a3015',
+    color: colors.arcane.text.dead,
     fontWeight: '300',
     letterSpacing: 4,
     textTransform: 'uppercase',
@@ -59,7 +62,7 @@ export const styles = StyleSheet.create({
   dismissHint: {
     marginTop: 28,
     fontSize: 12,
-    color: '#5a3015',
+    color: colors.arcane.text.dead,
     letterSpacing: 1,
   },
 });

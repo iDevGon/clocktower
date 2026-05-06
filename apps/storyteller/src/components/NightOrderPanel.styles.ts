@@ -1,20 +1,31 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 const TEAM_COLORS = {
   townsfolk: {
-    bg: '#1a2540',
-    border: '#3a5a8a',
-    text: '#6a9fd8',
-    dot: '#5a8ec8',
+    bg: colors.arcane.accent.midnightInk,
+    border: colors.arcane.accent.prussianBlue,
+    text: colors.arcane.accent.sapphireLens,
+    dot: colors.arcane.accent.sapphireLens,
   },
   outsider: {
-    bg: '#1a2a2a',
-    border: '#2a5a5a',
-    text: '#5ab8a0',
-    dot: '#4aa890',
+    bg: colors.arcane.surface.ledger,
+    border: colors.arcane.border.parchment,
+    text: colors.arcane.text.primary,
+    dot: colors.arcane.text.label,
   },
-  minion: { bg: '#2a1a18', border: '#6a3a28', text: '#d08050', dot: '#c07040' },
-  demon: { bg: '#2a1418', border: '#6a2830', text: '#d04858', dot: '#c03848' },
+  minion: {
+    bg: colors.arcane.surface.parchment,
+    border: colors.arcane.border.brass,
+    text: colors.arcane.text.label,
+    dot: colors.arcane.border.brass,
+  },
+  demon: {
+    bg: colors.arcane.surface.apparatus,
+    border: colors.arcane.action.blood,
+    text: colors.arcane.action.bloodHighlight,
+    dot: colors.arcane.action.blood,
+  },
 } as const;
 
 export { TEAM_COLORS };
@@ -31,15 +42,15 @@ export function createNightOrderPanelStyles(
   return StyleSheet.create({
     container: {
       borderTopWidth: 1,
-      borderColor: '#1e1e24',
-      backgroundColor: '#101014',
+      borderColor: colors.arcane.border.brassDim,
+      backgroundColor: colors.arcane.surface.apparatus,
     },
 
     /* ---- progress bar ---- */
     progressBar: {
       flexDirection: 'row',
       height: s(3),
-      backgroundColor: '#1a1a20',
+      backgroundColor: colors.arcane.surface.base,
     },
     progressSegment: {
       flex: 1,
@@ -58,9 +69,9 @@ export function createNightOrderPanelStyles(
       width: s(isDesktop ? 48 : isTablet ? 44 : 44),
       height: s(isDesktop ? 48 : isTablet ? 44 : 44),
       borderRadius: s(isDesktop ? 24 : 22),
-      backgroundColor: '#1a1a22',
+      backgroundColor: colors.arcane.surface.ledger,
       borderWidth: 1,
-      borderColor: '#2a2a34',
+      borderColor: colors.arcane.border.parchment,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -68,7 +79,7 @@ export function createNightOrderPanelStyles(
       opacity: 0.3,
     },
     navButtonText: {
-      color: '#8090c0',
+      color: colors.arcane.text.label,
       fontSize: s(isDesktop ? 20 : isTablet ? 18 : 16),
       fontWeight: '600',
     },
@@ -76,7 +87,7 @@ export function createNightOrderPanelStyles(
     /* ---- active role card ---- */
     activeCard: {
       flex: 1,
-      borderRadius: s(10),
+      borderRadius: s(6),
       borderWidth: 1,
       paddingHorizontal: s(isDesktop ? 20 : isTablet ? 16 : 14),
       paddingVertical: s(isDesktop ? 14 : isTablet ? 12 : 10),
@@ -84,8 +95,8 @@ export function createNightOrderPanelStyles(
       justifyContent: 'center',
     },
     activeCardIdle: {
-      backgroundColor: '#14141a',
-      borderColor: '#2a2a34',
+      backgroundColor: colors.arcane.surface.base,
+      borderColor: colors.arcane.border.brassDim,
       borderStyle: 'dashed',
     },
     activeCardHeader: {
@@ -106,10 +117,12 @@ export function createNightOrderPanelStyles(
     },
     activeRoleName: {
       fontSize: s(isDesktop ? 17 : isTablet ? 15 : 14),
+      fontFamily: typography.fontFamily.display,
       fontWeight: '700',
     },
     activeRoleTeam: {
       fontSize: s(isDesktop ? 11 : isTablet ? 10 : 9),
+      fontFamily: typography.fontFamily.bodyMedium,
       fontWeight: '500',
       textTransform: 'uppercase',
       letterSpacing: 1,
@@ -119,7 +132,7 @@ export function createNightOrderPanelStyles(
       flexDirection: 'row',
       alignItems: 'center',
       gap: s(4),
-      backgroundColor: '#ffffff08',
+      backgroundColor: '#00000024',
       paddingHorizontal: s(8),
       paddingVertical: s(3),
       borderRadius: s(10),
@@ -131,8 +144,9 @@ export function createNightOrderPanelStyles(
       backgroundColor: '#8090c0',
     },
     timerText: {
-      color: '#c0c8e0',
+      color: colors.arcane.text.strong,
       fontSize: s(isDesktop ? 13 : 12),
+      fontFamily: typography.fontFamily.bodyBold,
       fontWeight: '700',
       fontVariant: ['tabular-nums'],
     },
@@ -140,7 +154,8 @@ export function createNightOrderPanelStyles(
       marginTop: s(6),
       fontSize: s(isDesktop ? 13 : isTablet ? 12 : 11),
       lineHeight: s(isDesktop ? 20 : isTablet ? 18 : 17),
-      color: '#a0a0a8',
+      color: colors.arcane.text.primary,
+      fontFamily: typography.fontFamily.body,
     },
     inGameBadge: {
       marginTop: s(6),
@@ -154,14 +169,16 @@ export function createNightOrderPanelStyles(
       fontWeight: '600',
     },
     idleText: {
-      color: '#505058',
+      color: colors.arcane.text.dead,
       fontSize: s(isDesktop ? 15 : isTablet ? 14 : 13),
+      fontFamily: typography.fontFamily.bodyMedium,
       fontWeight: '500',
       textAlign: 'center',
     },
     stepCounter: {
-      color: '#505060',
+      color: colors.arcane.text.dead,
       fontSize: s(isDesktop ? 12 : 11),
+      fontFamily: typography.fontFamily.bodyMedium,
       fontWeight: '600',
       fontVariant: ['tabular-nums'],
       textAlign: 'center',
@@ -177,10 +194,10 @@ export function createNightOrderPanelStyles(
     roleChip: {
       paddingHorizontal: s(isDesktop ? 14 : isTablet ? 12 : 10),
       paddingVertical: s(isDesktop ? 7 : isTablet ? 6 : 5),
-      borderRadius: s(6),
+      borderRadius: s(4),
       borderWidth: 1,
-      borderColor: '#2a2a34',
-      backgroundColor: '#14141a',
+      borderColor: colors.arcane.border.brassDim,
+      backgroundColor: colors.arcane.surface.base,
     },
     roleChipActive: {
       borderWidth: 1.5,
@@ -194,14 +211,15 @@ export function createNightOrderPanelStyles(
     },
     roleChipName: {
       fontSize: s(isDesktop ? 12 : isTablet ? 11 : 10),
+      fontFamily: typography.fontFamily.bodyMedium,
       fontWeight: '500',
-      color: '#707078',
+      color: colors.arcane.text.muted,
     },
     roleChipNameActive: {
       fontWeight: '700',
     },
     roleChipNamePast: {
-      color: '#404048',
+      color: colors.arcane.text.dead,
     },
   });
 }

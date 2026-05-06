@@ -1,4 +1,5 @@
-import { ReducedMotionProvider } from '@clocktower/ui';
+import { ReducedMotionProvider, typography } from '@clocktower/ui';
+import { useFonts } from 'expo-font';
 import * as NavigationBar from 'expo-navigation-bar';
 import { Stack } from 'expo-router';
 import * as SystemUI from 'expo-system-ui';
@@ -25,6 +26,22 @@ const rootStyle = {
 
 export default function RootLayout() {
   const lowPowerMode = useSettingsStore((s) => s.lowPowerMode);
+  const [fontsLoaded, fontError] = useFonts({
+    [typography.fontFamily
+      .body]: require('../assets/fonts/IBMPlexSansKR-Regular.ttf'),
+    [typography.fontFamily
+      .bodyMedium]: require('../assets/fonts/IBMPlexSansKR-Medium.ttf'),
+    [typography.fontFamily
+      .bodyBold]: require('../assets/fonts/IBMPlexSansKR-Bold.ttf'),
+    [typography.fontFamily
+      .displayLight]: require('../assets/fonts/SchoolSafeStarrySky-Light.ttf'),
+    [typography.fontFamily
+      .display]: require('../assets/fonts/SchoolSafeStarrySky-Bold.ttf'),
+  });
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
 
   return (
     <ReducedMotionProvider value={lowPowerMode}>

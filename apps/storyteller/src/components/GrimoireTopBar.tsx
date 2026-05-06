@@ -1,3 +1,4 @@
+import { colors } from '@clocktower/ui';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { createGrimoireStyles } from '../styles/grimoire.styles';
 
@@ -57,7 +58,7 @@ const localStyles = StyleSheet.create({
     paddingVertical: 4,
   },
   menuIcon: {
-    color: '#908e8a',
+    color: colors.arcane.text.label,
     fontSize: 18,
   },
 });

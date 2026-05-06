@@ -45,6 +45,7 @@ import { EventToast } from '../../src/components/EventToast';
 import { GameEndBanner } from '../../src/components/GameResultBanners';
 import { GrimoireBottomBar } from '../../src/components/GrimoireBottomBar';
 import { GrimoireTopBar } from '../../src/components/GrimoireTopBar';
+import { HostDesktopConsoleFrame } from '../../src/components/HostDesktopConsoleFrame';
 import { NightPanel } from '../../src/components/NightPanel';
 import {
   getChefHint,
@@ -63,8 +64,10 @@ import { TwoPlayerPickerModal } from '../../src/components/TwoPlayerPickerModal'
 import { VoteClockFace } from '../../src/components/VoteClockFace';
 import { VoteClockHand } from '../../src/components/VoteClockHand';
 import { VotePanel } from '../../src/components/VotePanel';
+import type { StorytellerShortcutAction } from '../../src/hooks/storytellerShortcuts';
 import { useGameActions } from '../../src/hooks/useGameActions';
 import { useResponsive } from '../../src/hooks/useResponsive';
+import { useStorytellerKeyboardShortcuts } from '../../src/hooks/useStorytellerKeyboardShortcuts';
 import { useConnectionStore } from '../../src/stores/connectionStore';
 import { useGameStore } from '../../src/stores/gameStore';
 import { useLogStore } from '../../src/stores/logStore';
@@ -143,7 +146,11 @@ const PHASE_LABELS: Record<string, string> = {
 };
 
 export default function GrimoireScreen() {
-  const { fontSize } = useResponsive();
+  const {
+    fontSize,
+    tokenSize: defaultTokenSize,
+    isDesktopConsole,
+  } = useResponsive();
   const scale = fontSize.md / 12;
   const styles = useMemo(() => createGrimoireStyles(scale), [scale]);
 
@@ -174,6 +181,7 @@ export default function GrimoireScreen() {
   const setRoleRevealShown = useGameStore((s) => s.setRoleRevealShown);
   const socket = useConnectionStore((s) => s.socket);
   const addLog = useLogStore((s) => s.addLog);
+  const logs = useLogStore((s) => s.logs);
   const {
     setPhase,
     setDaySubPhase,
@@ -985,10 +993,11 @@ export default function GrimoireScreen() {
 
   const [showBluffs, setShowBluffs] = useState(true);
   const [nightOrderComplete, setNightOrderComplete] = useState(false);
+  const [nightAdvanceRequestId, setNightAdvanceRequestId] = useState(0);
+  const [desktopLogOpen, setDesktopLogOpen] = useState(false);
 
   const [areaSize, setAreaSize] = useState({ width: 0, height: 0 });
 
-  const { tokenSize: defaultTokenSize } = useResponsive();
   const dynamicTokenSize = useMemo(() => {
     if (areaSize.width === 0 || areaSize.height === 0) return defaultTokenSize;
     const playerCount = gameState?.players.length ?? 1;
@@ -1136,6 +1145,78 @@ export default function GrimoireScreen() {
     (gameState?.phase === 'vote' || gameState?.daySubPhase === 'defense') &&
     !!currentNomination;
 
+  const openQuickPlayerPicker = () => {
+    if (!gameState) return;
+    const orderedPlayers =
+      playerOrder.length > 0
+        ? playerOrder.flatMap((id) => {
+            const player = gameState.players.find((p) => p.id === id);
+            return player ? [player] : [];
+          })
+        : gameState.players;
+
+    showModal(
+      '플레이어 선택',
+      orderedPlayers.map((player) => ({
+        text: `${player.name}${player.role ? ` · ${player.role.name}` : ''}`,
+        onPress: () =>
+          handlePlayerPress(player.id, player.name, player.isAlive),
+      })),
+    );
+  };
+
+  const handleShortcutAction = (action: StorytellerShortcutAction) => {
+    if (!gameState) return;
+
+    if (typeof action !== 'string') {
+      const playerId =
+        playerOrder[action.index] ?? gameState.players[action.index]?.id;
+      const player = gameState.players.find((p) => p.id === playerId);
+      if (player) {
+        handlePlayerPress(player.id, player.name, player.isAlive);
+      }
+      return;
+    }
+
+    switch (action) {
+      case 'advanceNightRole':
+        if (gameState.phase === 'night') {
+          setNightAdvanceRequestId((id) => id + 1);
+        }
+        break;
+      case 'openNomination':
+        router.push('/game/nominate');
+        break;
+      case 'focusVote':
+        router.push('/game/nominate');
+        break;
+      case 'toggleLog':
+        setDesktopLogOpen((open) => !open);
+        break;
+      case 'openWhispers':
+        router.push('/game/whispers');
+        break;
+      case 'focusPlayerSearch':
+        openQuickPlayerPicker();
+        break;
+      case 'closeOverlay':
+        setDesktopLogOpen(false);
+        setDictionaryVisible(false);
+        setSettingsVisible(false);
+        setChatModalVisible(false);
+        setMemoModalVisible(false);
+        setGeneralMemoVisible(false);
+        closeModal();
+        break;
+    }
+  };
+
+  useStorytellerKeyboardShortcuts({
+    isDesktopConsole,
+    enabled: !!gameState,
+    onAction: handleShortcutAction,
+  });
+
   // Compute vote indicators per player for token display
   const voteIndicators = useMemo(() => {
     if (!hasActiveVote || !currentNomination) return {};
@@ -1238,167 +1319,167 @@ export default function GrimoireScreen() {
 
   if (!gameState) return null;
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <GrimoireTopBar
-        day={gameState.day}
-        phase={gameState.phase}
-        daySubPhase={gameState.daySubPhase ?? undefined}
-        onMenuPress={handleMenu}
-        styles={styles}
+  const topBarElement = (
+    <GrimoireTopBar
+      day={gameState.day}
+      phase={gameState.phase}
+      daySubPhase={gameState.daySubPhase ?? undefined}
+      onMenuPress={handleMenu}
+      styles={styles}
+    />
+  );
+
+  const daySubPhaseElement =
+    gameState.phase === 'day' ? (
+      <DaySubPhaseBar
+        currentSubPhase={gameState.daySubPhase}
+        onSetSubPhase={setDaySubPhase}
+        whisperClock={whisperClock}
+        discussionClock={discussionClock}
+        nominationClock={nominationClock}
+        nominationPaused={nominationPaused}
+        defenseClock={defenseClock}
       />
+    ) : null;
 
-      {/* 블러프 직업은 악마 토큰 내부에 표시 */}
+  const tokenCanvasElement = (
+    <View
+      style={styles.tokenArea}
+      onLayout={(e) => {
+        const { width, height } = e.nativeEvent.layout;
+        setAreaSize({ width, height });
+      }}
+    >
+      {areaSize.width > 0 &&
+        gameState.players.map((player, index) => {
+          const orderIndex = playerOrder.indexOf(player.id);
+          const effectiveIndex = orderIndex >= 0 ? orderIndex : index;
+          const pos = getTokenPosition(
+            player.id,
+            index,
+            gameState.players.length,
+          );
+          return (
+            <DraggablePlayerToken
+              key={player.id}
+              player={player}
+              statuses={playerStatuses[player.id]}
+              highlighted={player.id === executedPlayerId}
+              empathNeighbor={
+                empathNeighborIds.has(player.id) ||
+                chefEvilPairIds.has(player.id)
+              }
+              voteIndicator={voteIndicators[player.id]}
+              isPreselected={votePreselections[player.id] === true}
+              isExecutionCandidate={
+                executionCandidateData?.playerId === player.id
+              }
+              hasNominated={nominatorPlayers.includes(player.id)}
+              wasNominated={nominatedPlayers.includes(player.id)}
+              memo={playerMemos[player.id]}
+              bluffRoles={
+                player.role?.team === 'demon' ? gameState.bluffRoles : undefined
+              }
+              showBluffs={showBluffs}
+              onToggleBluffs={() => setShowBluffs((v) => !v)}
+              tokenSize={dynamicTokenSize}
+              initialX={pos.x}
+              initialY={pos.y}
+              circularPositions={circularPositions}
+              positionIndex={effectiveIndex}
+              onPress={() =>
+                handlePlayerPress(player.id, player.name, player.isAlive)
+              }
+              onPositionChange={(x, y) => handlePositionChange(player.id, x, y)}
+              onSwap={handleSwap}
+            />
+          );
+        })}
 
-      {gameState.phase === 'day' && (
-        <DaySubPhaseBar
-          currentSubPhase={gameState.daySubPhase}
-          onSetSubPhase={setDaySubPhase}
-          whisperClock={whisperClock}
-          discussionClock={discussionClock}
-          nominationClock={nominationClock}
-          nominationPaused={nominationPaused}
-          defenseClock={defenseClock}
+      {hasActiveVote &&
+        areaSize.width > 0 &&
+        (() => {
+          const nomination =
+            gameState?.nominations[gameState.nominations.length - 1];
+          if (!nomination) return null;
+          const nomineeIndex = playerOrder.indexOf(nomination.nomineeId);
+          if (nomineeIndex < 0) return null;
+          const total = playerOrder.length || gameState?.players.length || 0;
+          if (total === 0) return null;
+          const cX = areaSize.width / 2;
+          const cY = areaSize.height / 2;
+          const r = Math.min(cX, cY) - dynamicTokenSize * 0.6;
+          return (
+            <>
+              <VoteClockFace centerX={cX} centerY={cY} radius={r} />
+              {voteClock && (
+                <VoteClockHand
+                  nomineeIndex={nomineeIndex}
+                  totalPlayers={total}
+                  centerX={cX}
+                  centerY={cY}
+                  radius={r}
+                />
+              )}
+            </>
+          );
+        })()}
+
+      {hasActiveVote && voteCountdown && !voteClock && (
+        <VoteCountdownOverlay
+          countdown={voteCountdown}
+          centerX={areaSize.width / 2}
+          centerY={areaSize.height / 2}
         />
       )}
+      <PhaseTipToast
+        visible={!!phaseTip}
+        phase={gameState?.phase ?? 'night'}
+        tip={phaseTip?.tip ?? ''}
+        onDismiss={() => setPhaseTip(null)}
+      />
+    </View>
+  );
 
-      <View
-        style={styles.tokenArea}
-        onLayout={(e) => {
-          const { width, height } = e.nativeEvent.layout;
-          setAreaSize({ width, height });
-        }}
-      >
-        {areaSize.width > 0 &&
-          gameState.players.map((player, index) => {
-            const orderIndex = playerOrder.indexOf(player.id);
-            const effectiveIndex = orderIndex >= 0 ? orderIndex : index;
-            const pos = getTokenPosition(
-              player.id,
-              index,
-              gameState.players.length,
-            );
-            return (
-              <DraggablePlayerToken
-                key={player.id}
-                player={player}
-                statuses={playerStatuses[player.id]}
-                highlighted={player.id === executedPlayerId}
-                empathNeighbor={
-                  empathNeighborIds.has(player.id) ||
-                  chefEvilPairIds.has(player.id)
-                }
-                voteIndicator={voteIndicators[player.id]}
-                isPreselected={votePreselections[player.id] === true}
-                isExecutionCandidate={
-                  executionCandidateData?.playerId === player.id
-                }
-                hasNominated={nominatorPlayers.includes(player.id)}
-                wasNominated={nominatedPlayers.includes(player.id)}
-                memo={playerMemos[player.id]}
-                bluffRoles={
-                  player.role?.team === 'demon'
-                    ? gameState.bluffRoles
-                    : undefined
-                }
-                showBluffs={showBluffs}
-                onToggleBluffs={() => setShowBluffs((v) => !v)}
-                tokenSize={dynamicTokenSize}
-                initialX={pos.x}
-                initialY={pos.y}
-                circularPositions={circularPositions}
-                positionIndex={effectiveIndex}
-                onPress={() =>
-                  handlePlayerPress(player.id, player.name, player.isAlive)
-                }
-                onPositionChange={(x, y) =>
-                  handlePositionChange(player.id, x, y)
-                }
-                onSwap={handleSwap}
-              />
-            );
-          })}
+  const nightPanelElement =
+    gameState.phase === 'night' ? (
+      <NightPanel
+        day={gameState.day}
+        players={gameState.players}
+        nightActions={nightActions}
+        playerStatuses={playerStatuses}
+        activeNightRoleId={activeNightRoleId}
+        activeRoleIds={activeRoleIds}
+        dormantRoleIds={dormantRoleIds}
+        skippedNightRoles={skippedNightRoles}
+        executedPlayer={executedPlayer}
+        empathNeighborIds={empathNeighborIds}
+        empathEvilCount={empathEvilCount}
+        chefEvilPairCount={chefEvilPairCount}
+        chefEvilPairNames={chefEvilPairNames}
+        playerOrder={playerOrder}
+        onActivateRole={setActiveNightRole}
+        onNightComplete={() => setNightOrderComplete(true)}
+        onSendFeedback={sendNightFeedback}
+        onKill={kill}
+        onSetStatus={setPlayerStatus}
+        onFangGuJump={fangGuConfirmJump}
+        onSnakeCharmerSwap={snakeCharmerSwap}
+        onVigormortisKillMinion={vigormortisKillMinion}
+        onPitHagChangeRole={pitHagChangeRole}
+        onBoneCollectorRestore={boneCollectorRestore}
+        onApplyBaristaEffect={applyBaristaEffect}
+        nightWakeUpTargets={nightWakeUpTargets}
+        styles={styles}
+        editionId={detectedEditionId}
+        jugglerCorrectCount={jugglerCorrectCount}
+        extraNightRoleIds={extraNightRoleIds}
+        advanceRequestId={nightAdvanceRequestId}
+      />
+    ) : null;
 
-        {/* Vote clock face + hand overlay */}
-        {hasActiveVote &&
-          areaSize.width > 0 &&
-          (() => {
-            const nomination =
-              gameState?.nominations[gameState.nominations.length - 1];
-            if (!nomination) return null;
-            const nomineeIndex = playerOrder.indexOf(nomination.nomineeId);
-            if (nomineeIndex < 0) return null;
-            const total = playerOrder.length || gameState?.players.length || 0;
-            if (total === 0) return null;
-            const cX = areaSize.width / 2;
-            const cY = areaSize.height / 2;
-            const r = Math.min(cX, cY) - dynamicTokenSize * 0.6;
-            return (
-              <>
-                <VoteClockFace centerX={cX} centerY={cY} radius={r} />
-                {voteClock && (
-                  <VoteClockHand
-                    nomineeIndex={nomineeIndex}
-                    totalPlayers={total}
-                    centerX={cX}
-                    centerY={cY}
-                    radius={r}
-                  />
-                )}
-              </>
-            );
-          })()}
-
-        {/* Vote countdown overlay */}
-        {hasActiveVote && voteCountdown && !voteClock && (
-          <VoteCountdownOverlay
-            countdown={voteCountdown}
-            centerX={areaSize.width / 2}
-            centerY={areaSize.height / 2}
-          />
-        )}
-        <PhaseTipToast
-          visible={!!phaseTip}
-          phase={gameState?.phase ?? 'night'}
-          tip={phaseTip?.tip ?? ''}
-          onDismiss={() => setPhaseTip(null)}
-        />
-      </View>
-
-      {gameState.phase === 'night' && (
-        <NightPanel
-          day={gameState.day}
-          players={gameState.players}
-          nightActions={nightActions}
-          playerStatuses={playerStatuses}
-          activeNightRoleId={activeNightRoleId}
-          activeRoleIds={activeRoleIds}
-          dormantRoleIds={dormantRoleIds}
-          skippedNightRoles={skippedNightRoles}
-          executedPlayer={executedPlayer}
-          empathNeighborIds={empathNeighborIds}
-          empathEvilCount={empathEvilCount}
-          chefEvilPairCount={chefEvilPairCount}
-          chefEvilPairNames={chefEvilPairNames}
-          playerOrder={playerOrder}
-          onActivateRole={setActiveNightRole}
-          onNightComplete={() => setNightOrderComplete(true)}
-          onSendFeedback={sendNightFeedback}
-          onKill={kill}
-          onSetStatus={setPlayerStatus}
-          onFangGuJump={fangGuConfirmJump}
-          onSnakeCharmerSwap={snakeCharmerSwap}
-          onVigormortisKillMinion={vigormortisKillMinion}
-          onPitHagChangeRole={pitHagChangeRole}
-          onBoneCollectorRestore={boneCollectorRestore}
-          onApplyBaristaEffect={applyBaristaEffect}
-          nightWakeUpTargets={nightWakeUpTargets}
-          styles={styles}
-          editionId={detectedEditionId}
-          jugglerCorrectCount={jugglerCorrectCount}
-          extraNightRoleIds={extraNightRoleIds}
-        />
-      )}
+  const votePanelsElement = (
+    <>
       {hasActiveVote && currentNomination && (
         <VotePanel
           nomination={currentNomination}
@@ -1419,84 +1500,91 @@ export default function GrimoireScreen() {
           onDismissResult={() => setVoteResult(null)}
         />
       )}
-      {!hasActiveVote &&
-        !voteResult &&
-        gameState.phase !== 'night' &&
-        gameState.phase !== 'ended' &&
-        (executedPlayer ? (
-          <View style={styles.executionConfirmedBar}>
-            <Text style={styles.executionConfirmedLabel}>처형 확정</Text>
-            <Text style={styles.executionConfirmedName}>
-              {executedPlayer.name}
-            </Text>
-            <Text style={styles.executionConfirmedRole}>
-              {executedPlayer.role?.name ?? '역할 미배정'}
-            </Text>
-          </View>
-        ) : executionCandidateData ? (
-          <View style={styles.executionCandidateBar}>
-            <Text style={styles.executionCandidateLabel}>처형 예정</Text>
-            <Text style={styles.executionCandidateName}>
-              {executionCandidateData.playerName}
-            </Text>
-            <Text style={styles.executionCandidateVotes}>
-              찬성 {executionCandidateData.guiltyVotes}표
-            </Text>
-          </View>
-        ) : null)}
-      {gameState.phase === 'ended' && gameResult && (
-        <GameEndBanner
-          gameResult={gameResult}
-          fontSize={fontSize}
-          styles={styles}
-        />
-      )}
-      <PhaseBar
-        currentPhase={gameState.phase}
-        onSetPhase={handleSetPhase}
-        disableNext={gameState.phase === 'night' && !nightOrderComplete}
-        onConfirmNext={() => {
-          if (gameState.phase === 'night') {
-            showModal('밤이 끝났습니다', [
-              {
-                text: '낮으로 전환',
-                onPress: () => handleSetPhase('day'),
-              },
-              { text: '계속 진행', style: 'cancel' },
-            ]);
-          } else if (gameState.phase === 'day') {
-            showModal('다음 날 밤으로 진행', [
-              {
-                text: '밤으로 전환',
-                onPress: () => handleSetPhase('night'),
-              },
-              { text: '취소', style: 'cancel' },
-            ]);
-          } else if (gameState.phase === 'ended') {
-            showModal('새 게임을 시작하시겠습니까?', [
-              {
-                text: '새 게임 시작',
-                onPress: async () => {
-                  useGameStore.getState().reset();
-                  useLogStore.getState().clearLogs();
-                  try {
-                    await restartGame();
-                    router.replace('/game/lobby');
-                  } catch {
-                    Alert.alert('오류', '게임 재시작에 실패했습니다.');
-                  }
-                },
-              },
-              { text: '취소', style: 'cancel' },
-            ]);
-          } else {
-            // vote 등에서는 바로 밤으로
-            handleSetPhase('night');
-          }
-        }}
-      />
+    </>
+  );
 
-      {/* 초공감자 이웃 정보 힌트 */}
+  const executionStateElement =
+    !hasActiveVote &&
+    !voteResult &&
+    gameState.phase !== 'night' &&
+    gameState.phase !== 'ended' &&
+    (executedPlayer ? (
+      <View style={styles.executionConfirmedBar}>
+        <Text style={styles.executionConfirmedLabel}>처형 확정</Text>
+        <Text style={styles.executionConfirmedName}>{executedPlayer.name}</Text>
+        <Text style={styles.executionConfirmedRole}>
+          {executedPlayer.role?.name ?? '역할 미배정'}
+        </Text>
+      </View>
+    ) : executionCandidateData ? (
+      <View style={styles.executionCandidateBar}>
+        <Text style={styles.executionCandidateLabel}>처형 예정</Text>
+        <Text style={styles.executionCandidateName}>
+          {executionCandidateData.playerName}
+        </Text>
+        <Text style={styles.executionCandidateVotes}>
+          찬성 {executionCandidateData.guiltyVotes}표
+        </Text>
+      </View>
+    ) : null);
+
+  const gameEndBannerElement =
+    gameState.phase === 'ended' && gameResult ? (
+      <GameEndBanner
+        gameResult={gameResult}
+        fontSize={fontSize}
+        styles={styles}
+      />
+    ) : null;
+
+  const phaseBarElement = (
+    <PhaseBar
+      currentPhase={gameState.phase}
+      onSetPhase={handleSetPhase}
+      disableNext={gameState.phase === 'night' && !nightOrderComplete}
+      onConfirmNext={() => {
+        if (gameState.phase === 'night') {
+          showModal('밤이 끝났습니다', [
+            {
+              text: '낮으로 전환',
+              onPress: () => handleSetPhase('day'),
+            },
+            { text: '계속 진행', style: 'cancel' },
+          ]);
+        } else if (gameState.phase === 'day') {
+          showModal('다음 날 밤으로 진행', [
+            {
+              text: '밤으로 전환',
+              onPress: () => handleSetPhase('night'),
+            },
+            { text: '취소', style: 'cancel' },
+          ]);
+        } else if (gameState.phase === 'ended') {
+          showModal('새 게임을 시작하시겠습니까?', [
+            {
+              text: '새 게임 시작',
+              onPress: async () => {
+                useGameStore.getState().reset();
+                useLogStore.getState().clearLogs();
+                try {
+                  await restartGame();
+                  router.replace('/game/lobby');
+                } catch {
+                  Alert.alert('오류', '게임 재시작에 실패했습니다.');
+                }
+              },
+            },
+            { text: '취소', style: 'cancel' },
+          ]);
+        } else {
+          handleSetPhase('night');
+        }
+      }}
+    />
+  );
+
+  const hintBarsElement = (
+    <>
       <EmpathHintBar
         players={gameState.players}
         empathNeighborIds={empathNeighborIds}
@@ -1504,8 +1592,6 @@ export default function GrimoireScreen() {
         fontSize={fontSize}
         styles={styles}
       />
-
-      {/* 요리사 인접 악한 쌍 힌트 */}
       <ChefHintBar
         chefEvilPairIds={chefEvilPairIds}
         chefEvilPairCount={chefEvilPairCount}
@@ -1513,18 +1599,91 @@ export default function GrimoireScreen() {
         fontSize={fontSize}
         styles={styles}
       />
+    </>
+  );
 
-      {/* 게임 설정 패널 */}
-      {settingsVisible && (
-        <SettingsPanel
-          settings={gameState.settings}
-          onSettingsChange={handleSettingsChange}
-          onClose={() => setSettingsVisible(false)}
-          scale={scale}
-          fontSize={fontSize}
-          styles={styles}
+  const settingsPanelElement = settingsVisible ? (
+    <SettingsPanel
+      settings={gameState.settings}
+      onSettingsChange={handleSettingsChange}
+      onClose={() => setSettingsVisible(false)}
+      scale={scale}
+      fontSize={fontSize}
+      styles={styles}
+    />
+  ) : null;
+
+  const bottomBarElement = (
+    <GrimoireBottomBar
+      phase={gameState.phase}
+      daySubPhase={gameState.daySubPhase ?? undefined}
+      activeWhispersCount={activeWhispers.length}
+      slayerWaitingAck={slayerWaitingAck}
+      totalChatUnread={totalChatUnread}
+      hasMemo={generalMemo.length > 0}
+      onWhispersPress={() => router.push('/game/whispers')}
+      onNominatePress={() => router.push('/game/nominate')}
+      onSlayerForceAck={() => socket?.emit('slayer:forceAck')}
+      onDictionaryPress={() => setDictionaryVisible(true)}
+      onMemoPress={openGeneralMemo}
+      onChatPress={() => {
+        setChatInitialPlayerId(null);
+        setChatModalVisible(true);
+      }}
+      onLogPress={() => {
+        if (isDesktopConsole) {
+          setDesktopLogOpen((open) => !open);
+        } else {
+          router.push('/game/log');
+        }
+      }}
+      scale={scale}
+    />
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {isDesktopConsole ? (
+        <HostDesktopConsoleFrame
+          day={gameState.day}
+          phase={gameState.phase}
+          playerCount={gameState.players.length}
+          aliveCount={gameState.players.filter((p) => p.isAlive).length}
+          activeWhispersCount={activeWhispers.length}
+          unreadCount={totalChatUnread}
+          topBar={topBarElement}
+          grimoire={
+            <>
+              {daySubPhaseElement}
+              {tokenCanvasElement}
+              {votePanelsElement}
+              {executionStateElement}
+              {gameEndBannerElement}
+            </>
+          }
+          rightPanel={nightPanelElement}
+          phaseControls={phaseBarElement}
+          hintBars={hintBarsElement}
+          bottomBar={bottomBarElement}
+          logOpen={desktopLogOpen}
+          logs={logs}
         />
+      ) : (
+        <>
+          {topBarElement}
+          {daySubPhaseElement}
+          {tokenCanvasElement}
+          {nightPanelElement}
+          {votePanelsElement}
+          {executionStateElement}
+          {gameEndBannerElement}
+          {phaseBarElement}
+          {hintBarsElement}
+          {bottomBarElement}
+        </>
       )}
+
+      {settingsPanelElement}
 
       <StorytellerChatModal
         visible={chatModalVisible}
@@ -1914,26 +2073,6 @@ export default function GrimoireScreen() {
           </Pressable>
         </Pressable>
       </Modal>
-
-      <GrimoireBottomBar
-        phase={gameState.phase}
-        daySubPhase={gameState.daySubPhase ?? undefined}
-        activeWhispersCount={activeWhispers.length}
-        slayerWaitingAck={slayerWaitingAck}
-        totalChatUnread={totalChatUnread}
-        hasMemo={generalMemo.length > 0}
-        onWhispersPress={() => router.push('/game/whispers')}
-        onNominatePress={() => router.push('/game/nominate')}
-        onSlayerForceAck={() => socket?.emit('slayer:forceAck')}
-        onDictionaryPress={() => setDictionaryVisible(true)}
-        onMemoPress={openGeneralMemo}
-        onChatPress={() => {
-          setChatInitialPlayerId(null);
-          setChatModalVisible(true);
-        }}
-        onLogPress={() => router.push('/game/log')}
-        scale={scale}
-      />
 
       {/* 게임 시작 시 플레이어 직업 공개 대기 오버레이 */}
       {showRoleRevealWaiting && (

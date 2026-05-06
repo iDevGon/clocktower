@@ -35,6 +35,38 @@ export const colors = {
   team: {
     traveller: '#b07cc6',
   },
+  arcane: {
+    surface: {
+      base: '#0d0703',
+      raised: '#1e1005',
+      parchment: '#362008',
+      ledger: '#261606',
+      apparatus: '#140b05',
+    },
+    border: {
+      brass: '#b78642',
+      brassDim: '#76542a',
+      parchment: '#795a33',
+      double: '#9f743c',
+    },
+    text: {
+      primary: '#f0d8b3',
+      strong: '#ffe8bf',
+      muted: '#c8ae86',
+      label: '#e9bd70',
+      dead: '#7d7160',
+    },
+    action: {
+      blood: '#8d3529',
+      bloodHighlight: '#da7a50',
+      bloodPressed: '#5e1d18',
+    },
+    accent: {
+      prussianBlue: '#2f4f8f',
+      sapphireLens: '#88aaf5',
+      midnightInk: '#10182f',
+    },
+  },
   chat: {
     storyteller: {
       accent: '#8a6a8a',
@@ -50,5 +82,15 @@ export const colors = {
       senderLabel: '#8a9a8a',
       otherBorderColor: '#2e2e34',
     },
+  },
+} as const;
+
+export const typography = {
+  fontFamily: {
+    body: 'IBMPlexSansKR-Regular',
+    bodyMedium: 'IBMPlexSansKR-Medium',
+    bodyBold: 'IBMPlexSansKR-Bold',
+    displayLight: 'SchoolSafeStarrySky-Light',
+    display: 'SchoolSafeStarrySky-Bold',
   },
 } as const;

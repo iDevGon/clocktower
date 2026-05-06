@@ -1,9 +1,16 @@
-import { useWindowDimensions } from 'react-native';
-
-type DeviceType = 'phone' | 'tablet' | 'desktop';
+import { Platform, useWindowDimensions } from 'react-native';
+import {
+  type DeviceType,
+  getDeviceType,
+  getStorytellerLayoutMode,
+  type StorytellerLayoutMode,
+  type StorytellerPlatform,
+} from './responsiveMode';
 
 interface ResponsiveValues {
   device: DeviceType;
+  storytellerLayoutMode: StorytellerLayoutMode;
+  isDesktopConsole: boolean;
   width: number;
   height: number;
   tokenSize: number;
@@ -29,13 +36,18 @@ interface ResponsiveValues {
 export function useResponsive(): ResponsiveValues {
   const { width, height } = useWindowDimensions();
 
-  const device: DeviceType =
-    width >= 1024 ? 'desktop' : width >= 768 ? 'tablet' : 'phone';
+  const device = getDeviceType(width);
+  const storytellerLayoutMode = getStorytellerLayoutMode(
+    width,
+    Platform.OS as StorytellerPlatform,
+  );
 
   const scale = device === 'desktop' ? 1.3 : device === 'tablet' ? 1.15 : 1;
 
   return {
     device,
+    storytellerLayoutMode,
+    isDesktopConsole: storytellerLayoutMode === 'desktop-console',
     width,
     height,
     tokenSize: Math.round(80 * scale),

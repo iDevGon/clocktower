@@ -1,5 +1,10 @@
 import type { Role, Team } from '@clocktower/shared';
-import { AbilityText, RoleTips, useReducedMotion } from '@clocktower/ui';
+import {
+  AbilityText,
+  colors,
+  RoleTips,
+  useReducedMotion,
+} from '@clocktower/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -32,31 +37,31 @@ type TeamStyleEntry = {
 
 const TEAM_STYLES: Record<Team, TeamStyleEntry> = {
   townsfolk: {
-    borderColor: '#506aaa',
+    borderColor: colors.arcane.accent.prussianBlue,
     label: '마을주민',
-    labelColor: '#7090c4',
-    accentDim: '#2a3560',
+    labelColor: colors.arcane.accent.sapphireLens,
+    accentDim: colors.arcane.accent.midnightInk,
   },
   outsider: {
-    borderColor: '#3a8878',
+    borderColor: colors.arcane.border.parchment,
     label: '외지인',
-    labelColor: '#50a090',
-    accentDim: '#1e4a40',
+    labelColor: colors.arcane.text.primary,
+    accentDim: colors.arcane.surface.ledger,
   },
   minion: {
-    borderColor: '#b87838',
+    borderColor: colors.arcane.border.brass,
     label: '하수인',
-    labelColor: '#c48850',
-    accentDim: '#5a3a18',
+    labelColor: colors.arcane.text.label,
+    accentDim: colors.arcane.surface.parchment,
   },
   demon: {
-    borderColor: '#943c3c',
+    borderColor: colors.arcane.action.blood,
     label: '악마',
-    labelColor: '#b85c5c',
-    accentDim: '#4a1c1c',
+    labelColor: colors.arcane.action.bloodHighlight,
+    accentDim: colors.arcane.surface.apparatus,
   },
   traveller: {
-    borderColor: '#6a5a8a',
+    borderColor: colors.team.traveller,
     label: '여행자',
     labelColor: '#a090c0',
     accentDim: '#2a2040',
@@ -64,10 +69,10 @@ const TEAM_STYLES: Record<Team, TeamStyleEntry> = {
 };
 
 const DEAD_TEAM_STYLE: TeamStyleEntry = {
-  borderColor: '#4a4c54',
+  borderColor: colors.arcane.text.dead,
   label: '',
-  labelColor: '#6e7078',
-  accentDim: '#2a2c30',
+  labelColor: colors.arcane.text.dead,
+  accentDim: colors.arcane.surface.base,
 };
 
 const VEIL_PHRASES = [
@@ -366,8 +371,8 @@ function BackFace({ isVeiled }: { isVeiled: boolean }) {
   });
 
   // Back face always uses neutral colors — must NOT reveal team info
-  const borderColor = '#2a3050';
-  const accentColor = '#5a6898';
+  const borderColor = colors.arcane.border.brassDim;
+  const accentColor = colors.arcane.accent.prussianBlue;
 
   return (
     <View style={[styles.card, styles.cardBack, { borderColor }]}>
@@ -413,25 +418,33 @@ function BackFace({ isVeiled }: { isVeiled: boolean }) {
       <View style={styles.backContent}>
         {isVeiled ? (
           <>
-            <Text style={[styles.backTeamLabel, { color: '#4a5070' }]}>
+            <Text
+              style={[styles.backTeamLabel, { color: colors.arcane.text.dead }]}
+            >
               ???
             </Text>
             <View style={styles.mysteryRow}>
               <View
-                style={[styles.mysteryLine, { backgroundColor: '#3a4060' }]}
+                style={[
+                  styles.mysteryLine,
+                  { backgroundColor: colors.arcane.border.brassDim },
+                ]}
               />
               <Text style={[styles.questionMark, { color: accentColor }]}>
                 ?
               </Text>
               <View
-                style={[styles.mysteryLine, { backgroundColor: '#3a4060' }]}
+                style={[
+                  styles.mysteryLine,
+                  { backgroundColor: colors.arcane.border.brassDim },
+                ]}
               />
             </View>
             <View style={styles.backDivider} />
             <RNAnimated.Text
               style={[
                 styles.phrase,
-                { opacity: phraseOpacity, color: '#7080b0' },
+                { opacity: phraseOpacity, color: colors.arcane.text.primary },
               ]}
             >
               {VEIL_PHRASES[phraseIndex]}

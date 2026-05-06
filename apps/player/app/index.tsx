@@ -1,10 +1,5 @@
 import { getAllTipTexts } from '@clocktower/shared';
-import {
-  FullScreenVignette,
-  PLAYER_SMOKE_PARTICLES,
-  RotatingGameTip,
-  SmokeParticles,
-} from '@clocktower/ui';
+import { FullScreenVignette, RotatingGameTip } from '@clocktower/ui';
 import { useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -192,19 +187,16 @@ export default function JoinScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
 
-      {/* Deep dark-crimson background gradient */}
       <LinearGradient
-        colors={['#0a0506', '#120808', '#1a0a0a', '#0d0506', '#080304']}
-        locations={[0, 0.25, 0.5, 0.75, 1]}
+        colors={['#0d0703', '#170906', '#231008', '#0d0703']}
+        locations={[0, 0.35, 0.72, 1]}
         style={styles.backgroundGradient}
       />
 
-      {/* Atmospheric layers */}
-      <SmokeParticles particles={PLAYER_SMOKE_PARTICLES} />
       <FullScreenVignette
-        color="#0a0304"
-        opacityRange={[0.6, 0.85]}
-        duration={5000}
+        color="#090301"
+        opacityRange={[0.35, 0.62]}
+        duration={6000}
       />
 
       <QrScannerModal
@@ -213,8 +205,8 @@ export default function JoinScreen() {
         onBarcodeScanned={handleBarCodeScanned}
       />
 
-      {/* Main content */}
       <View style={styles.content}>
+        <View style={styles.topRule} />
         <View style={styles.titleContainer}>
           <Text style={styles.titleSubtext}>시계 탑에 흐른</Text>
           <Animated.Text style={[styles.titleText, titleGlowStyle]}>
@@ -225,9 +217,9 @@ export default function JoinScreen() {
               <LinearGradient
                 colors={[
                   'transparent',
-                  '#8b1a1a',
-                  '#cc3333',
-                  '#8b1a1a',
+                  '#b78642',
+                  '#8d3529',
+                  '#b78642',
                   'transparent',
                 ]}
                 start={{ x: 0, y: 0.5 }}
@@ -240,7 +232,7 @@ export default function JoinScreen() {
             <Text style={styles.decorCross}>+</Text>
             <Text style={styles.decorCross}>+</Text>
             <Text style={styles.decorCross}>+</Text>
-            <Text style={styles.decorCenter}>+</Text>
+            <Text style={styles.decorCenter}>✦</Text>
             <Text style={styles.decorCross}>+</Text>
             <Text style={styles.decorCross}>+</Text>
             <Text style={styles.decorCross}>+</Text>
@@ -301,7 +293,7 @@ export default function JoinScreen() {
             disabled={isJoining}
           >
             <LinearGradient
-              colors={['#6b1515', '#8b2020', '#6b1515']}
+              colors={['#5e1d18', '#8d3529', '#b78642']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.joinButtonGradient}
@@ -314,13 +306,10 @@ export default function JoinScreen() {
           </Pressable>
         </View>
 
-        <Text style={styles.footerText}>
-          진행자 화면의 QR을 스캔하면 자동으로 입력됩니다
-        </Text>
-
         <View style={styles.tipContainer}>
-          <RotatingGameTip tips={tips} color="#8b5050" glowColor="#6b3030" />
+          <RotatingGameTip tips={tips} color="#c8ae86" glowColor="#8d3529" />
         </View>
+        <View style={styles.bottomRule} />
       </View>
 
       <Text style={styles.copyright}>

@@ -1,3 +1,4 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
@@ -6,18 +7,33 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 9999,
     borderWidth: 2,
+    overflow: 'visible',
+  },
+  innerRing: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    bottom: 5,
+    left: 5,
+    borderRadius: 9999,
+    borderWidth: 1,
+    opacity: 0.35,
   },
   name: {
-    color: '#e0ddd8',
+    color: colors.arcane.text.strong,
     fontSize: 12,
+    fontFamily: typography.fontFamily.bodyBold,
     fontWeight: 'bold',
     textAlign: 'center',
+    paddingHorizontal: 6,
   },
   role: {
-    color: '#908e8a',
+    color: colors.arcane.text.muted,
     fontSize: 10,
+    fontFamily: typography.fontFamily.bodyMedium,
     textAlign: 'center',
     marginTop: 2,
+    paddingHorizontal: 6,
   },
   deadRow: {
     flexDirection: 'row',
@@ -25,8 +41,9 @@ export const styles = StyleSheet.create({
     gap: 4,
   },
   dead: {
-    color: '#b85c5c',
+    color: colors.arcane.action.bloodHighlight,
     fontSize: 10,
+    fontFamily: typography.fontFamily.bodyBold,
     fontWeight: 'bold',
   },
   statusRow: {
@@ -41,11 +58,14 @@ export const styles = StyleSheet.create({
   statusBadge: {
     paddingHorizontal: 4,
     paddingVertical: 1,
-    borderRadius: 4,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: colors.arcane.surface.base,
   },
   statusText: {
-    color: '#ffffff',
+    color: colors.arcane.text.strong,
     fontSize: 8,
+    fontFamily: typography.fontFamily.bodyBold,
     fontWeight: '700',
   },
   voteBadgeText: {
@@ -72,24 +92,27 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(13,7,3,0.82)',
   },
   tooltipBox: {
-    backgroundColor: '#1e1e24',
+    backgroundColor: colors.arcane.surface.raised,
     borderWidth: 1.5,
-    borderRadius: 10,
+    borderRadius: 6,
     paddingHorizontal: 20,
     paddingVertical: 16,
     maxWidth: 280,
+    borderColor: colors.arcane.border.brassDim,
   },
   tooltipTitle: {
     fontSize: 14,
+    fontFamily: typography.fontFamily.bodyBold,
     fontWeight: '700',
     marginBottom: 6,
   },
   tooltipDesc: {
-    color: '#c0c0c8',
+    color: colors.arcane.text.primary,
     fontSize: 13,
+    fontFamily: typography.fontFamily.body,
     lineHeight: 19,
   },
 });

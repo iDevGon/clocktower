@@ -1,3 +1,4 @@
+import { colors, typography } from '@clocktower/ui';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { IS_DEV } from '../constants';
 
@@ -136,8 +137,8 @@ const st = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-evenly',
     borderTopWidth: 1,
-    borderColor: '#2e2e34',
-    backgroundColor: '#161618',
+    borderColor: colors.arcane.border.brassDim,
+    backgroundColor: colors.arcane.surface.apparatus,
   },
   item: {
     alignItems: 'center',
@@ -150,8 +151,10 @@ const st = StyleSheet.create({
     opacity: 0.6,
   },
   itemHighlight: {
-    backgroundColor: '#3a1a1a',
-    borderRadius: 8,
+    backgroundColor: colors.arcane.action.bloodPressed,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.arcane.action.bloodHighlight,
   },
   iconWrap: {
     position: 'relative',
@@ -165,7 +168,7 @@ const st = StyleSheet.create({
     right: -8,
   },
   badgeCount: {
-    backgroundColor: '#c43c3c',
+    backgroundColor: colors.arcane.action.blood,
     borderRadius: 8,
     minWidth: 16,
     height: 16,
@@ -174,7 +177,7 @@ const st = StyleSheet.create({
     paddingHorizontal: 3,
   },
   badgeDot: {
-    backgroundColor: '#7dce82',
+    backgroundColor: colors.arcane.text.label,
     borderRadius: 4,
     width: 8,
     height: 8,
@@ -182,13 +185,13 @@ const st = StyleSheet.create({
     right: -4,
   },
   badgeText: {
-    color: '#ffffff',
+    color: colors.arcane.text.strong,
     fontSize: 9,
     fontWeight: '700',
   },
   label: {
-    color: '#6a6a70',
+    color: colors.arcane.text.muted,
     marginTop: 2,
-    fontWeight: '500',
+    fontFamily: typography.fontFamily.bodyMedium,
   },
 });
