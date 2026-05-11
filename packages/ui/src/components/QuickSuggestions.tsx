@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { colors } from '../tokens';
+import { colors, typography } from '../tokens';
 import { matchQuery } from '../utils/chosung';
 
 export type CandidateCategory = 'player' | 'role' | 'status';
@@ -70,11 +70,11 @@ export function QuickSuggestions({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#1a1a1e',
+    backgroundColor: colors.arcane.surface.apparatus,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderTopWidth: 1,
-    borderColor: '#2e2e34',
+    borderColor: colors.arcane.border.brassDim,
     maxHeight: 44,
   },
   scrollContent: {
@@ -82,13 +82,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    borderRadius: 14,
+    borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,
   },
   chipText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bodyBold,
   },
 });

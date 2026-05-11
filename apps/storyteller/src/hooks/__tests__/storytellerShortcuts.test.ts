@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getNextDaySubPhase,
+  getPhaseAdvanceShortcutResult,
   getStorytellerShortcutAction,
   STORYTELLER_SHORTCUT_LABELS,
 } from '../storytellerShortcuts';
@@ -67,5 +69,46 @@ describe('storytellerShortcuts', () => {
     expect(Object.keys(STORYTELLER_SHORTCUT_LABELS)).not.toContain('execute');
     expect(Object.keys(STORYTELLER_SHORTCUT_LABELS)).not.toContain('exile');
     expect(Object.keys(STORYTELLER_SHORTCUT_LABELS)).not.toContain('resetGame');
+  });
+
+  it('밤 순서가 완료된 상태의 Space는 낮 전환 확인 요청으로 해석한다', () => {
+    expect(
+      getPhaseAdvanceShortcutResult({
+        phase: 'night',
+        nightOrderComplete: true,
+      }),
+    ).toBe('confirmDayTransition');
+  });
+
+  it('낮 페이즈의 Space는 서브페이즈를 먼저 진행한다', () => {
+    expect(
+      getPhaseAdvanceShortcutResult({
+        phase: 'day',
+        daySubPhase: 'whisper',
+        nightOrderComplete: false,
+      }),
+    ).toBe('advanceDaySubPhase');
+    expect(getNextDaySubPhase('whisper')).toBe('discussion');
+    expect(getNextDaySubPhase('discussion')).toBe('nomination');
+  });
+
+  it('낮 마지막 서브페이즈의 Space는 밤 전환 확인 요청으로 해석한다', () => {
+    expect(
+      getPhaseAdvanceShortcutResult({
+        phase: 'day',
+        daySubPhase: 'nomination',
+        nightOrderComplete: false,
+      }),
+    ).toBe('confirmNightTransition');
+  });
+
+  it('변론 중 Space는 낮 서브페이즈 진행으로 처리하지 않는다', () => {
+    expect(
+      getPhaseAdvanceShortcutResult({
+        phase: 'day',
+        daySubPhase: 'defense',
+        nightOrderComplete: false,
+      }),
+    ).toBeNull();
   });
 });

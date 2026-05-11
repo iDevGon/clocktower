@@ -1,3 +1,5 @@
+import type { DaySubPhase } from '@clocktower/shared';
+
 export type StorytellerShortcutActionName =
   | 'advanceNightRole'
   | 'openNomination'
@@ -15,7 +17,7 @@ export const STORYTELLER_SHORTCUT_LABELS: Record<
   StorytellerShortcutActionName,
   string
 > = {
-  advanceNightRole: '밤 순서 진행',
+  advanceNightRole: '페이즈 진행',
   openNomination: '지목 열기',
   focusVote: '투표 제어',
   toggleLog: '로그 열기/닫기',
@@ -34,6 +36,47 @@ interface ShortcutEventLike {
 interface ShortcutContext {
   isDesktopConsole: boolean;
   isTextInputFocused: boolean;
+}
+
+type PhaseAdvanceShortcutResult =
+  | 'advanceNightRole'
+  | 'confirmDayTransition'
+  | 'advanceDaySubPhase'
+  | 'confirmNightTransition'
+  | null;
+
+const DAY_SUB_PHASE_ORDER: DaySubPhase[] = [
+  'whisper',
+  'discussion',
+  'nomination',
+];
+
+export function getNextDaySubPhase(
+  currentSubPhase: DaySubPhase | null | undefined,
+): DaySubPhase | null {
+  if (!currentSubPhase) return 'whisper';
+  const currentIndex = DAY_SUB_PHASE_ORDER.indexOf(currentSubPhase);
+  if (currentIndex < 0) return null;
+  return DAY_SUB_PHASE_ORDER[currentIndex + 1] ?? null;
+}
+
+export function getPhaseAdvanceShortcutResult({
+  phase,
+  nightOrderComplete,
+  daySubPhase,
+}: {
+  phase: string;
+  nightOrderComplete: boolean;
+  daySubPhase?: DaySubPhase | null;
+}): PhaseAdvanceShortcutResult {
+  if (phase === 'day') {
+    if (daySubPhase === 'defense') return null;
+    return getNextDaySubPhase(daySubPhase)
+      ? 'advanceDaySubPhase'
+      : 'confirmNightTransition';
+  }
+  if (phase !== 'night') return null;
+  return nightOrderComplete ? 'confirmDayTransition' : 'advanceNightRole';
 }
 
 export function getStorytellerShortcutAction(

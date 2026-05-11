@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
   },
   panel: {
     backgroundColor: colors.surface.elevated,
-    borderRadius: 12,
+    borderRadius: 6,
     padding: 20,
     width: '85%',
     maxWidth: 420,
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   rejectButton: {
     flex: 1,
     backgroundColor: colors.surface.base,
-    borderRadius: 8,
+    borderRadius: 4,
     paddingVertical: 12,
     alignItems: 'center',
     borderWidth: 1,
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   acceptButton: {
     flex: 1,
     backgroundColor: '#2a1a1e',
-    borderRadius: 8,
+    borderRadius: 4,
     paddingVertical: 12,
     alignItems: 'center',
     borderWidth: 1,

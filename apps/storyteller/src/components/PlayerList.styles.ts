@@ -1,4 +1,7 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
+
+const arcane = colors.arcane;
 
 export const styles = StyleSheet.create({
   listContent: {
@@ -12,10 +15,10 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginBottom: 8,
-    backgroundColor: '#1a1a1e',
-    borderRadius: 8,
+    backgroundColor: arcane.surface.apparatus,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#2e2e34',
+    borderColor: arcane.border.parchment,
   },
   leftGroup: {
     flexDirection: 'row',
@@ -28,12 +31,13 @@ export const styles = StyleSheet.create({
     borderRadius: 9999,
   },
   playerName: {
-    color: '#e0ddd8',
+    color: arcane.text.strong,
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: typography.fontFamily.bodyMedium,
   },
   roleName: {
-    color: '#908e8a',
+    color: arcane.text.muted,
     fontSize: 14,
+    fontFamily: typography.fontFamily.body,
   },
 });

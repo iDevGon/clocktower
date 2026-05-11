@@ -78,7 +78,7 @@ const s = StyleSheet.create({
     maxWidth: 320,
   },
   glowWrap: {
-    borderRadius: 8,
+    borderRadius: 4,
     paddingVertical: 8,
     paddingHorizontal: 12,
   },

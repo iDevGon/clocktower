@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import { VOTE_STATE_BADGE } from './votePresentation';
 
 export function createVotePanelStyles(scale: number) {
   const s = (v: number) => Math.round(v * scale);
@@ -38,11 +39,10 @@ export function createVotePanelStyles(scale: number) {
     },
     voterItem: {
       alignItems: 'center',
-      gap: s(4),
-      minWidth: s(56),
+      gap: s(6),
+      minWidth: s(62),
       paddingVertical: s(4),
       paddingHorizontal: s(4),
-      borderRadius: s(6),
     },
     voterName: {
       color: '#e0ddd8',
@@ -57,12 +57,15 @@ export function createVotePanelStyles(scale: number) {
       gap: s(4),
     },
     guiltyButton: {
-      backgroundColor: '#3a1a1a',
+      backgroundColor: VOTE_STATE_BADGE.raised.backgroundColor,
       borderWidth: 1,
-      borderColor: '#943c3c',
-      borderRadius: 4,
-      paddingHorizontal: s(8),
-      paddingVertical: s(4),
+      borderColor: VOTE_STATE_BADGE.raised.borderColor,
+      paddingHorizontal: s(4),
+      paddingVertical: s(3),
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: s(VOTE_STATE_BADGE.minWidth),
+      minHeight: s(34),
     },
     guiltyText: {
       color: '#e05050',
@@ -83,30 +86,76 @@ export function createVotePanelStyles(scale: number) {
       fontWeight: '700',
     },
     votedBadge: {
-      fontSize: s(11),
-      fontWeight: '700',
-      paddingHorizontal: s(6),
-      paddingVertical: s(3),
-      borderRadius: 4,
+      paddingHorizontal: s(8),
+      paddingVertical: s(5),
       overflow: 'hidden',
+      minWidth: s(VOTE_STATE_BADGE.minWidth),
+      minHeight: s(26),
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: VOTE_STATE_BADGE.down.borderColor,
+      backgroundColor: VOTE_STATE_BADGE.down.backgroundColor,
+    },
+    emptyVoteText: {
+      color: VOTE_STATE_BADGE.down.color,
+      fontSize: s(11),
+      fontWeight: '900',
     },
     votedGuilty: {
-      color: '#ffffff',
-      backgroundColor: '#e05050',
+      backgroundColor: VOTE_STATE_BADGE.raised.backgroundColor,
+      borderColor: VOTE_STATE_BADGE.raised.borderColor,
     },
     votedInnocent: {
-      color: '#ffffff',
       backgroundColor: '#5090e0',
     },
     preselectedGuilty: {
-      color: '#e05050',
-      backgroundColor: '#e0505025',
-      fontStyle: 'italic',
+      backgroundColor: VOTE_STATE_BADGE.pending.backgroundColor,
+      borderWidth: 1,
+      borderColor: VOTE_STATE_BADGE.pending.borderColor,
     },
     preselectedInnocent: {
-      color: '#5090e0',
       backgroundColor: '#5090e025',
-      fontStyle: 'italic',
+      borderWidth: 1,
+      borderColor: '#5090e060',
+    },
+    voteStateBadge: {
+      paddingHorizontal: s(4),
+      paddingVertical: s(3),
+      minWidth: s(VOTE_STATE_BADGE.minWidth),
+      minHeight: s(34),
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: VOTE_STATE_BADGE.down.borderColor,
+      backgroundColor: VOTE_STATE_BADGE.down.backgroundColor,
+    },
+    voteStateRaised: {
+      backgroundColor: VOTE_STATE_BADGE.raised.backgroundColor,
+      borderColor: VOTE_STATE_BADGE.raised.borderColor,
+    },
+    voteStatePending: {
+      backgroundColor: VOTE_STATE_BADGE.pending.backgroundColor,
+      borderColor: VOTE_STATE_BADGE.pending.borderColor,
+    },
+    voteStateDown: {
+      backgroundColor: VOTE_STATE_BADGE.down.backgroundColor,
+      borderColor: VOTE_STATE_BADGE.down.borderColor,
+    },
+    voteStateText: {
+      color: VOTE_STATE_BADGE.down.color,
+      fontSize: s(11),
+      fontWeight: '900',
+    },
+    voteStateRaisedText: {
+      color: VOTE_STATE_BADGE.raised.color,
+    },
+    voteStatePendingText: {
+      color: VOTE_STATE_BADGE.pending.color,
+    },
+    voteStateImage: {
+      width: s(VOTE_STATE_BADGE.iconSize),
+      height: s(VOTE_STATE_BADGE.iconSize),
     },
     timerRow: {
       flexDirection: 'row',
@@ -176,14 +225,14 @@ export function createVotePanelStyles(scale: number) {
       color: '#7dce82',
     },
     countdownText: {
-      color: '#c4a050',
+      color: '#a68a64',
       fontSize: s(14),
       fontWeight: '700',
       fontVariant: ['tabular-nums'] as const,
     },
     closeVoteButton: {
       backgroundColor: '#943c3c',
-      borderRadius: 8,
+      borderRadius: 4,
       paddingVertical: s(10),
       alignItems: 'center',
     },
@@ -194,7 +243,7 @@ export function createVotePanelStyles(scale: number) {
     },
     resultBanner: {
       backgroundColor: '#12121a',
-      borderRadius: 8,
+      borderRadius: 4,
       borderWidth: 1,
       borderColor: '#2a2a36',
       padding: s(14),
@@ -237,7 +286,7 @@ export function createVotePanelStyles(scale: number) {
       color: '#6a9a6a',
     },
     resultSentenceCleared: {
-      color: '#c4a050',
+      color: '#a68a64',
     },
     resultDismiss: {
       backgroundColor: '#2a2a36',

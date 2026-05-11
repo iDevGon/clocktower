@@ -148,7 +148,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={['#080b14', '#10182f', '#1b1630', '#0d0703']}
+        colors={['#080b14', '#10182f', '#1b1630', '#0d0906']}
         locations={[0, 0.38, 0.75, 1]}
         style={styles.backgroundGradient}
       />
@@ -181,9 +181,9 @@ export default function HomeScreen() {
               <LinearGradient
                 colors={[
                   'transparent',
-                  '#8b7530',
-                  '#c4a050',
-                  '#8b7530',
+                  '#6f5e47',
+                  '#8e7758',
+                  '#6f5e47',
                   'transparent',
                 ]}
                 start={{ x: 0, y: 0.5 }}
@@ -239,7 +239,7 @@ export default function HomeScreen() {
             ]}
           >
             <LinearGradient
-              colors={['#10182f', '#2f4f8f', '#b78642']}
+              colors={['#10182f', '#2f4f8f', '#4d5f86']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.buttonGradient}
@@ -253,7 +253,7 @@ export default function HomeScreen() {
         </View>
 
         <View style={{ alignItems: 'center', marginTop: 24 }}>
-          <RotatingGameTip tips={tips} color="#c8ae86" glowColor="#2f4f8f" />
+          <RotatingGameTip tips={tips} color="#a99a86" glowColor="#2f4f8f" />
         </View>
       </View>
 

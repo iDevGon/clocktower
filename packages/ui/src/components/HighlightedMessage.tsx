@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../tokens';
+import { colors, typography } from '../tokens';
 import type { TaggedCandidate } from './QuickSuggestions';
 
 const BADGE_COLORS = colors.badge;
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badge: {
-    borderRadius: 10,
+    borderRadius: 5,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderWidth: 1,
@@ -100,6 +100,6 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bodyBold,
   },
 });

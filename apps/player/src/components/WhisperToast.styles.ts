@@ -12,7 +12,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#2a2a2e',
-    borderRadius: 12,
+    borderRadius: 6,
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderWidth: 1,

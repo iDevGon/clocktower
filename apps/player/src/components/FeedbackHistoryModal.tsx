@@ -21,8 +21,9 @@ export function FeedbackHistoryModal({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.container} onPress={() => {}}>
+      <View style={styles.overlay}>
+        <Pressable style={styles.backdrop} onPress={onClose} />
+        <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.title}>받은 정보</Text>
             <Pressable onPress={onClose} style={styles.closeButton}>
@@ -38,6 +39,7 @@ export function FeedbackHistoryModal({
             <ScrollView
               style={styles.list}
               contentContainerStyle={styles.listContent}
+              nestedScrollEnabled
             >
               {[...history].reverse().map((entry) => (
                 <View
@@ -55,8 +57,8 @@ export function FeedbackHistoryModal({
               ))}
             </ScrollView>
           )}
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }

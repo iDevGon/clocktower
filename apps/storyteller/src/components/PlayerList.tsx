@@ -19,7 +19,7 @@ export function PlayerList({ players, onPlayerPress }: PlayerListProps) {
             <View
               style={[
                 styles.statusDot,
-                { backgroundColor: item.isAlive ? '#5a8068' : '#943c3c' },
+                { backgroundColor: item.isAlive ? '#5a8068' : '#8d3529' },
               ]}
             />
             <Text style={styles.playerName}>{item.name}</Text>

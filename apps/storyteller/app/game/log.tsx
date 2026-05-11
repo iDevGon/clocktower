@@ -1,3 +1,4 @@
+import { colors, typography } from '@clocktower/ui';
 import { useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useResponsive } from '../../src/hooks/useResponsive';
@@ -8,17 +9,17 @@ import {
 } from '../../src/stores/logStore';
 
 const PHASE_COLORS: Record<string, string> = {
-  setup: '#908e8a',
-  night: '#8090c0',
-  day: '#c4a050',
-  vote: '#c47070',
-  ended: '#6ab04c',
+  setup: colors.arcane.text.muted,
+  night: colors.arcane.accent.sapphireLens,
+  day: colors.arcane.text.label,
+  vote: colors.arcane.action.bloodHighlight,
+  ended: '#d7b7ef',
 };
 
 const CATEGORY_COLORS: Record<LogCategory, string> = {
-  death: '#c47070',
-  ability: '#6ab04c',
-  default: '#e0ddd8',
+  death: colors.arcane.action.bloodHighlight,
+  ability: colors.arcane.accent.sapphireLens,
+  default: colors.arcane.text.primary,
 };
 
 const PHASE_LABELS: Record<string, string> = {
@@ -39,18 +40,21 @@ function createLogStyles(scale: number) {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#121214',
+      backgroundColor: colors.arcane.surface.base,
     },
     list: {
       padding: s(16),
-      gap: s(2),
+      gap: s(8),
     },
     item: {
       flexDirection: 'row',
       alignItems: 'baseline',
-      paddingVertical: s(6),
-      borderBottomWidth: 1,
-      borderColor: '#1e1e22',
+      paddingVertical: s(10),
+      paddingHorizontal: s(12),
+      borderWidth: 1,
+      borderColor: colors.arcane.border.parchment,
+      borderRadius: 4,
+      backgroundColor: colors.arcane.surface.apparatus,
     },
     meta: {
       flexDirection: 'row',
@@ -60,22 +64,26 @@ function createLogStyles(scale: number) {
       flexShrink: 0,
     },
     time: {
-      color: '#5c5a58',
+      color: colors.arcane.text.dead,
       fontSize: s(11),
+      fontFamily: typography.fontFamily.bodyMedium,
       fontVariant: ['tabular-nums'],
     },
     phase: {
       fontSize: s(11),
-      fontWeight: '600',
+      fontFamily: typography.fontFamily.bodyBold,
     },
     message: {
-      color: '#e0ddd8',
+      color: colors.arcane.text.primary,
       fontSize: s(13),
+      lineHeight: s(19),
+      fontFamily: typography.fontFamily.body,
       flex: 1,
     },
     empty: {
-      color: '#5c5a58',
+      color: colors.arcane.text.dead,
       fontSize: s(14),
+      fontFamily: typography.fontFamily.body,
       textAlign: 'center',
       marginTop: s(40),
     },

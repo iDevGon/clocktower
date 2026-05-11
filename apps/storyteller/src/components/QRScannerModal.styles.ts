@@ -71,7 +71,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.7)',
     paddingHorizontal: 32,
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: 4,
   },
   scannerCloseText: {
     color: '#e0ddd8',

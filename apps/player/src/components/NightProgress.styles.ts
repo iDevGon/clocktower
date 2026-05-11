@@ -1,3 +1,4 @@
+import { colors } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
@@ -11,7 +12,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#1e2038',
     borderWidth: 1,
     borderColor: '#8090c0',
-    borderRadius: 12,
+    borderRadius: 6,
     paddingHorizontal: 24,
     paddingVertical: 12,
     marginBottom: 24,
@@ -67,10 +68,10 @@ export const styles = StyleSheet.create({
   dotMine: {
     backgroundColor: '#6a5a30',
     borderWidth: 1,
-    borderColor: '#c4a050',
+    borderColor: colors.phase.day,
   },
   dotMyActive: {
-    backgroundColor: '#c4a050',
+    backgroundColor: colors.phase.day,
     width: 14,
     height: 14,
     borderRadius: 7,
@@ -100,7 +101,7 @@ export const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   roleNameMine: {
-    color: '#c4a050',
+    color: colors.phase.day,
     fontWeight: '600',
   },
 });

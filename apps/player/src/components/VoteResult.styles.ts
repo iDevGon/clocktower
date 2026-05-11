@@ -4,7 +4,7 @@ import { StyleSheet } from 'react-native';
 export const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface.elevated,
-    borderRadius: 12,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: '#3a3a42',
     padding: 20,
@@ -63,6 +63,6 @@ export const styles = StyleSheet.create({
     color: '#6a9a6a',
   },
   sentenceCleared: {
-    color: '#c4a050',
+    color: colors.phase.day,
   },
 });

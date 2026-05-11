@@ -24,7 +24,7 @@ export function createNightActionLogStyles(scale: number) {
       backgroundColor: '#1a2618',
       borderWidth: 1,
       borderColor: '#2a3a22',
-      borderRadius: 8,
+      borderRadius: 4,
       paddingHorizontal: s(10),
       paddingVertical: s(6),
       minWidth: s(140),
@@ -51,7 +51,7 @@ export function createNightActionLogStyles(scale: number) {
       fontSize: s(11),
     },
     actionTarget: {
-      color: '#c4a050',
+      color: '#a68a64',
       fontSize: s(11),
       fontWeight: '600',
     },
@@ -144,7 +144,7 @@ export function createNightActionLogStyles(scale: number) {
       backgroundColor: '#1e2038',
       borderWidth: 1,
       borderColor: '#3a3a52',
-      borderRadius: 8,
+      borderRadius: 4,
       width: s(40),
       height: s(36),
       alignItems: 'center',
@@ -174,7 +174,7 @@ export function createNightActionLogStyles(scale: number) {
     // Yes/No
     yesNoButton: {
       flex: 1,
-      borderRadius: 8,
+      borderRadius: 4,
       borderWidth: 1,
       paddingVertical: s(8),
       alignItems: 'center',
@@ -257,10 +257,10 @@ export function createNightActionLogStyles(scale: number) {
     },
     // Drunk warning
     drunkBanner: {
-      backgroundColor: '#3a2a10',
+      backgroundColor: '#2a2118',
       borderWidth: 1,
-      borderColor: '#e67e22',
-      borderRadius: 8,
+      borderColor: '#b07f5c',
+      borderRadius: 4,
       padding: s(10),
       marginBottom: s(8),
       flexDirection: 'row',
@@ -268,7 +268,7 @@ export function createNightActionLogStyles(scale: number) {
       gap: s(6),
     },
     drunkBannerText: {
-      color: '#e67e22',
+      color: '#b07f5c',
       fontSize: s(12),
       fontWeight: '700',
       flex: 1,
@@ -286,14 +286,14 @@ export function createNightActionLogStyles(scale: number) {
     drunkModalContent: {
       backgroundColor: '#1a1a2e',
       borderWidth: 1,
-      borderColor: '#e67e22',
-      borderRadius: 12,
+      borderColor: '#b07f5c',
+      borderRadius: 6,
       padding: s(20),
       maxWidth: 400,
       width: '100%',
     },
     drunkModalTitle: {
-      color: '#e67e22',
+      color: '#b07f5c',
       fontSize: s(15),
       fontWeight: '700',
       marginBottom: s(12),
@@ -313,7 +313,7 @@ export function createNightActionLogStyles(scale: number) {
     drunkModalCancel: {
       flex: 1,
       backgroundColor: '#2e2e34',
-      borderRadius: 8,
+      borderRadius: 4,
       paddingVertical: s(10),
       alignItems: 'center',
     },
@@ -324,13 +324,13 @@ export function createNightActionLogStyles(scale: number) {
     },
     drunkModalConfirm: {
       flex: 1,
-      backgroundColor: '#e67e22',
-      borderRadius: 8,
+      backgroundColor: '#8e7758',
+      borderRadius: 4,
       paddingVertical: s(10),
       alignItems: 'center',
     },
     drunkModalConfirmText: {
-      color: '#1a1a2e',
+      color: '#120d09',
       fontSize: s(13),
       fontWeight: '700',
     },

@@ -1,5 +1,6 @@
 import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
+import { VOTE_CONSENT_READY_ICON } from './VotePrompt.presentation';
 
 const COLORS = {
   brass: colors.arcane.border.brass,
@@ -79,7 +80,6 @@ export const styles = StyleSheet.create({
   },
   guiltyButton: {
     backgroundColor: '#1a1a20',
-    borderRadius: 6,
     paddingVertical: 14,
     alignItems: 'center',
     borderWidth: 1.5,
@@ -97,8 +97,8 @@ export const styles = StyleSheet.create({
   guiltyText: {
     color: '#5c5a58',
     fontWeight: '900',
-    fontSize: 18,
-    letterSpacing: 3,
+    fontSize: 17,
+    letterSpacing: 0,
   },
   guiltyTextSelected: {
     color: colors.arcane.text.strong,
@@ -166,6 +166,30 @@ export const styles = StyleSheet.create({
   },
   consentTextReady: {
     color: colors.arcane.text.strong,
+  },
+  consentReadyIcon: {
+    width: VOTE_CONSENT_READY_ICON.size,
+    height: VOTE_CONSENT_READY_ICON.size,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#8fe0a8',
+    backgroundColor: '#153d24',
+    color: '#dfffe7',
+    fontSize: 16,
+    lineHeight: VOTE_CONSENT_READY_ICON.size - 2,
+    textAlign: 'center',
+    fontFamily: typography.fontFamily.bodyBold,
+    fontWeight: '900',
+  },
+  voteButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  voteHandImage: {
+    width: 34,
+    height: 34,
   },
   consentCount: {
     color: COLORS.boneFaded,

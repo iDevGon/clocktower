@@ -1,6 +1,6 @@
 import { useReducedMotion } from '@clocktower/ui';
 import { useEffect, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -11,8 +11,12 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { voteClockHand } from '../assets/ui';
 import { useGameStore } from '../stores/gameStore';
 import { COLORS, styles } from './VoteClockHand.styles';
+import { VOTE_CLOCK_ORNAMENT } from './votePresentation';
+
+const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 // Pre-generated smoke particle configurations
 const SMOKE_COUNT = 10;
@@ -157,18 +161,9 @@ export function VoteClockHand({
     transform: [{ rotate: `${handAngleSV.value}deg` }],
   }));
 
-  const handLength = radius * 0.85;
+  const handLength = radius * 0.92;
 
-  // Dagger proportions based on handLength
-  const daggerW = 24;
-  const tipH = Math.round(handLength * 0.1);
-  const bladeW = 6;
-  const bladeH = Math.round(handLength * 0.5);
-  const crossguardW = 18;
-  const crossguardH = 3;
-  const gripW = 3.5;
-  const gripH = handLength - tipH - bladeH - crossguardH - 3;
-  const pommelSize = 6;
+  const daggerW = Math.max(56, radius * 0.42);
 
   // Memoize smoke particle elements
   const smokeElements = useMemo(
@@ -204,92 +199,12 @@ export function VoteClockHand({
           daggerStyle,
         ]}
       >
-        {/* Blade tip */}
-        <View
+        <AnimatedImage
+          source={voteClockHand}
+          resizeMode="stretch"
           style={{
-            position: 'absolute',
-            top: 0,
-            alignSelf: 'center',
-            width: 0,
-            height: 0,
-            borderLeftWidth: bladeW / 2,
-            borderRightWidth: bladeW / 2,
-            borderBottomWidth: tipH,
-            borderLeftColor: 'transparent',
-            borderRightColor: 'transparent',
-            borderBottomColor: COLORS.daggerBlade,
-            zIndex: 2,
-          }}
-        />
-        {/* Blade body */}
-        <View
-          style={{
-            position: 'absolute',
-            top: tipH,
-            alignSelf: 'center',
-            width: bladeW,
-            height: bladeH,
-            backgroundColor: COLORS.daggerBlade,
-            borderWidth: 0.5,
-            borderColor: COLORS.daggerEdge,
-            borderTopWidth: 0,
-            zIndex: 2,
-          }}
-        />
-        {/* Blood groove */}
-        <View
-          style={{
-            position: 'absolute',
-            top: tipH + 6,
-            alignSelf: 'center',
-            width: 1.5,
-            height: bladeH - 10,
-            backgroundColor: '#3a0f14',
-            borderRadius: 1,
-            zIndex: 3,
-          }}
-        />
-        {/* Crossguard */}
-        <View
-          style={{
-            position: 'absolute',
-            top: tipH + bladeH,
-            alignSelf: 'center',
-            width: crossguardW,
-            height: crossguardH,
-            backgroundColor: COLORS.daggerCrossguard,
-            borderRadius: 1,
-            borderWidth: 0.5,
-            borderColor: COLORS.daggerCrossguardEdge,
-            zIndex: 2,
-          }}
-        />
-        {/* Grip */}
-        <View
-          style={{
-            position: 'absolute',
-            top: tipH + bladeH + crossguardH + 1,
-            alignSelf: 'center',
-            width: gripW,
-            height: gripH,
-            backgroundColor: COLORS.daggerGrip,
-            borderRadius: 1.5,
-            zIndex: 2,
-          }}
-        />
-        {/* Pommel */}
-        <View
-          style={{
-            position: 'absolute',
-            top: handLength - pommelSize,
-            alignSelf: 'center',
-            width: pommelSize,
-            height: pommelSize,
-            borderRadius: pommelSize / 2,
-            backgroundColor: COLORS.daggerPommel,
-            borderWidth: 0.5,
-            borderColor: COLORS.daggerPommelEdge,
-            zIndex: 2,
+            width: daggerW,
+            height: handLength,
           }}
         />
       </Animated.View>
@@ -304,7 +219,7 @@ export function VoteClockHand({
           },
         ]}
       >
-        <View style={styles.centerDot} />
+        {VOTE_CLOCK_ORNAMENT.showCenterDot && <View style={styles.centerDot} />}
       </View>
     </View>
   );

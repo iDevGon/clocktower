@@ -161,7 +161,7 @@ export function StorytellerChatModal({
             value={text}
             onChangeText={setText}
             placeholder="진행자에게 메시지..."
-            placeholderTextColor="#5c5a58"
+            placeholderTextColor="#746b60"
             returnKeyType="send"
             blurOnSubmit={false}
             onSubmitEditing={handleSend}

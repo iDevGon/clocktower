@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1620',
     borderWidth: 1,
     borderColor: '#5a3a7a',
-    borderRadius: 16,
+    borderRadius: 6,
     padding: 24,
   },
   tag: {

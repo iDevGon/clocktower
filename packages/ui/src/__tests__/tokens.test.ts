@@ -3,8 +3,8 @@ import { colors, typography } from '../tokens';
 
 describe('arcane design tokens', () => {
   it('빅토리아 아케인 팔레트를 제공한다', () => {
-    expect(colors.arcane.surface.base).toBe('#0d0703');
-    expect(colors.arcane.border.brass).toBe('#b78642');
+    expect(colors.arcane.surface.base).toBe('#0d0906');
+    expect(colors.arcane.border.brass).toBe('#8e7758');
     expect(colors.arcane.accent.prussianBlue).toBe('#2f4f8f');
     expect(colors.arcane.action.blood).toBe('#8d3529');
   });

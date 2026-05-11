@@ -45,18 +45,18 @@ export const styles = StyleSheet.create({
     gap: 10,
   },
   feedbackHistoryButton: {
-    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.arcane.accent.midnightInk,
     borderWidth: 1,
     borderColor: colors.arcane.accent.prussianBlue,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    gap: 4,
-  },
-  feedbackHistoryIcon: {
-    fontSize: 16,
+    borderRadius: 5,
+    width: 44,
+    height: 44,
+    shadowColor: colors.arcane.accent.sapphireLens,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
   },
   feedbackHistoryCount: {
     color: colors.arcane.accent.sapphireLens,
@@ -70,7 +70,10 @@ export const styles = StyleSheet.create({
     color: '#b0b4be',
   },
   deadSkull: {
-    fontSize: 28,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scrollView: {
     flex: 1,
@@ -168,7 +171,7 @@ export const styles = StyleSheet.create({
   },
   whisperBadge: {
     backgroundColor: colors.arcane.accent.prussianBlue,
-    borderRadius: 10,
+    borderRadius: 5,
     minWidth: 20,
     height: 20,
     alignItems: 'center',
@@ -245,7 +248,7 @@ export const styles = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -4,
-    borderRadius: 8,
+    borderRadius: 4,
     minWidth: 16,
     height: 16,
     alignItems: 'center',
@@ -266,7 +269,7 @@ export const styles = StyleSheet.create({
   /* ── Execution candidate card ── */
   executionCard: {
     backgroundColor: '#1a1a1e',
-    borderRadius: 12,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: '#c4707060',
     padding: 14,
@@ -304,7 +307,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#b85c5c',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 4,
   },
   slayerButtonText: {
     color: '#fff',
@@ -317,7 +320,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#3a5a7a',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 4,
   },
   savantButtonText: {
     color: '#fff',
@@ -330,7 +333,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#7a5a8a',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 4,
   },
   artistButtonText: {
     color: '#fff',
@@ -343,7 +346,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#5a3a7a',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 4,
   },
   jugglerButtonText: {
     color: '#fff',
@@ -356,7 +359,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#7a3a3a',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 4,
   },
   gunslingerButtonText: {
     color: '#fff',
@@ -366,26 +369,26 @@ export const styles = StyleSheet.create({
 
   /* ── Beggar token UI ── */
   beggarButton: {
-    backgroundColor: '#5a4a2a',
+    backgroundColor: colors.arcane.surface.parchment,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 4,
   },
   beggarButtonText: {
-    color: '#e8d8a8',
+    color: colors.arcane.text.strong,
     fontSize: 14,
     fontWeight: '700',
   },
   beggarTokenText: {
-    color: '#d8c888',
+    color: colors.arcane.text.label,
     fontSize: 14,
     fontWeight: '700',
-    backgroundColor: '#2a2418',
+    backgroundColor: colors.arcane.surface.ledger,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#5a4a2a',
+    borderColor: colors.arcane.border.brassDim,
   },
 
   /* ── Settings modal ── */
@@ -393,21 +396,21 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(13,7,3,0.78)',
   },
   settingsPanel: {
-    backgroundColor: '#1e1e24',
-    borderRadius: 12,
+    backgroundColor: colors.arcane.surface.apparatus,
+    borderRadius: 4,
     padding: 20,
     width: '85%',
     maxWidth: 400,
     borderWidth: 1,
-    borderColor: '#3a3a42',
+    borderColor: colors.arcane.border.brassDim,
   },
   settingsTitle: {
-    color: '#e0ddd8',
-    fontSize: 16,
-    fontWeight: '700',
+    color: colors.arcane.text.strong,
+    fontSize: 18,
+    fontFamily: typography.fontFamily.display,
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -418,13 +421,14 @@ export const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   settingsLabel: {
-    color: '#e0ddd8',
+    color: colors.arcane.text.primary,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   settingsDesc: {
-    color: '#706e6a',
+    color: colors.arcane.text.dead,
     fontSize: 11,
+    fontFamily: typography.fontFamily.body,
     marginTop: 2,
   },
   settingsLeaveButton: {
@@ -435,9 +439,9 @@ export const styles = StyleSheet.create({
     borderTopColor: 'rgba(200,80,80,0.25)',
   },
   settingsLeaveText: {
-    color: '#c45050',
+    color: colors.arcane.action.bloodHighlight,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   settingsCloseButton: {
     alignItems: 'center',
@@ -445,9 +449,9 @@ export const styles = StyleSheet.create({
     marginTop: 8,
   },
   settingsCloseText: {
-    color: '#e0ddd8',
+    color: colors.arcane.text.label,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bodyBold,
   },
 
   /* ── Bottom navigation bar ── */
@@ -467,12 +471,11 @@ export const styles = StyleSheet.create({
   },
   bottomNavItem: {
     alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 72,
     paddingVertical: 4,
-    paddingHorizontal: 12,
-  },
-  bottomNavIcon: {
-    fontSize: 20,
-    marginBottom: 2,
+    paddingHorizontal: 8,
+    gap: 3,
   },
   bottomNavLabel: {
     color: colors.arcane.text.muted,

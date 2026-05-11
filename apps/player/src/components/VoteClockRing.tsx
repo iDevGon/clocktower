@@ -1,6 +1,6 @@
 import { useReducedMotion } from '@clocktower/ui';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -11,7 +11,14 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import {
+  voteClockFace,
+  voteClockHand,
+  voteHandDown,
+  voteHandRaised,
+} from '../assets/ui';
 import { usePlayerStore } from '../stores/playerStore';
+import { PLAYER_VOTE_CLOCK_ORNAMENT } from './VoteClockRing.presentation';
 import {
   CENTER,
   COLORS,
@@ -19,31 +26,9 @@ import {
   RADIUS,
   RING_SIZE,
   styles,
-  TICK_COUNT,
 } from './VoteClockRing.styles';
 
-// Pre-computed tick mark data (avoid recalculating 60 trig ops per render)
-const TICK_DATA = Array.from({ length: TICK_COUNT }, (_, i) => {
-  const angle = (i / TICK_COUNT) * 2 * Math.PI - Math.PI / 2;
-  const isMajor = i % 5 === 0;
-  const tickLen = isMajor ? 8 : 4;
-  const tickWidth = isMajor ? 1.5 : 0.8;
-  const outerR = RADIUS + 4;
-  const x1 = CENTER + (outerR - tickLen) * Math.cos(angle);
-  const y1 = CENTER + (outerR - tickLen) * Math.sin(angle);
-  const x2 = CENTER + outerR * Math.cos(angle);
-  const y2 = CENTER + outerR * Math.sin(angle);
-  const length = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-  const deg = (angle * 180) / Math.PI + 90;
-  return {
-    left: x1 - tickWidth / 2,
-    top: y1,
-    width: tickWidth,
-    height: length,
-    backgroundColor: isMajor ? COLORS.brassDark : `${COLORS.iron}80`,
-    rotate: `${deg}deg`,
-  };
-});
+const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 // Pre-generated smoke particle configurations
 const SMOKE_COUNT = 10;
@@ -211,9 +196,38 @@ const PlayerNode = React.memo(function PlayerNode({
       >
         {node.name.charAt(0)}
       </Text>
-      {hasPassed && showVoted && <Text style={styles.voteEmoji}>✋🏻</Text>}
+      {hasPassed && showVoted && (
+        <View style={styles.voteIconBadge}>
+          <View style={[styles.voteStateBadge, styles.voteRaisedBadge]}>
+            <Image
+              source={voteHandRaised}
+              style={styles.voteStateImage}
+              resizeMode="contain"
+            />
+          </View>
+        </View>
+      )}
+      {hasPassed && !showVoted && isVoter && (
+        <View style={styles.voteIconBadge}>
+          <View style={[styles.voteStateBadge, styles.voteDownBadge]}>
+            <Image
+              source={voteHandDown}
+              style={styles.voteStateImage}
+              resizeMode="contain"
+            />
+          </View>
+        </View>
+      )}
       {!hasPassed && showPreselectedVote && (
-        <Text style={styles.preselectedVoteEmoji}>✋🏻</Text>
+        <View style={styles.preselectedVoteIconBadge}>
+          <View style={[styles.voteStateBadge, styles.votePendingBadge]}>
+            <Image
+              source={voteHandRaised}
+              style={styles.voteStateImage}
+              resizeMode="contain"
+            />
+          </View>
+        </View>
       )}
     </View>
   );
@@ -366,55 +380,31 @@ export function VoteClockRing() {
 
       <View style={styles.clockOuter}>
         <View style={styles.clockFace}>
-          <View style={styles.outerRing} />
-
-          {/* Tick marks (pre-computed) */}
-          {TICK_DATA.map((t, i) => (
-            <View
-              key={`t-${i}`}
-              style={{
-                position: 'absolute',
-                left: t.left,
-                top: t.top,
-                width: t.width,
-                height: t.height,
-                backgroundColor: t.backgroundColor,
-                transform: [{ rotate: t.rotate }],
-                transformOrigin: 'top',
-              }}
-            />
-          ))}
-
-          <View style={styles.innerRing} />
+          <Image
+            source={voteClockFace}
+            resizeMode="contain"
+            style={styles.clockFaceImage}
+          />
 
           {/* Dagger hand */}
           <Animated.View style={[styles.daggerContainer, daggerStyle]}>
-            {/* Blade tip (triangle) */}
-            <View
-              style={[styles.bladeTip, isUrgent && styles.bladeTipUrgent]}
+            <AnimatedImage
+              source={voteClockHand}
+              resizeMode="stretch"
+              style={[styles.daggerImage, isUrgent && styles.daggerImageUrgent]}
             />
-            {/* Blade body */}
-            <View style={[styles.blade, isUrgent && styles.bladeUrgent]} />
-            {/* Blood groove (fuller) */}
-            <View style={styles.bloodGroove} />
-            {/* Crossguard */}
-            <View
-              style={[styles.crossguard, isUrgent && styles.crossguardUrgent]}
-            />
-            {/* Grip */}
-            <View style={styles.grip} />
-            {/* Pommel */}
-            <View style={styles.pommel} />
           </Animated.View>
 
           {/* Center ornament */}
           <View style={styles.centerOrnament}>
-            <View
-              style={[
-                styles.centerDot,
-                isUrgent && { backgroundColor: COLORS.bloodGlow },
-              ]}
-            />
+            {PLAYER_VOTE_CLOCK_ORNAMENT.showCenterDot && (
+              <View
+                style={[
+                  styles.centerDot,
+                  isUrgent && { backgroundColor: COLORS.bloodGlow },
+                ]}
+              />
+            )}
           </View>
 
           {/* My turn timer — above center */}

@@ -145,7 +145,7 @@ export function AnimatedBorderCard({
   bgStart,
   bgMid,
   bgEnd,
-  borderRadius = 12,
+  borderRadius = 6,
   borderWidth = 1.5,
   style,
   children,

@@ -1,9 +1,10 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    backgroundColor: '#121214',
+    backgroundColor: colors.arcane.surface.base,
     paddingTop: 48,
   },
   header: {
@@ -13,16 +14,18 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderColor: '#2e2e34',
+    borderColor: colors.arcane.border.brassDim,
+    backgroundColor: colors.arcane.surface.apparatus,
   },
   title: {
-    color: '#e0ddd8',
-    fontSize: 16,
-    fontWeight: '600',
+    color: colors.arcane.text.strong,
+    fontSize: 17,
+    fontFamily: typography.fontFamily.display,
   },
   closeText: {
-    color: '#908e8a',
+    color: colors.arcane.text.label,
     fontSize: 15,
+    fontFamily: typography.fontFamily.bodyBold,
   },
   headerSpacer: {
     width: 40,
@@ -34,52 +37,53 @@ export const styles = StyleSheet.create({
   playerItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1e',
-    borderRadius: 12,
+    backgroundColor: colors.arcane.surface.apparatus,
+    borderRadius: 4,
     padding: 16,
     gap: 14,
     borderWidth: 1,
-    borderColor: '#2e2e34',
+    borderColor: colors.arcane.border.parchment,
   },
   playerItemPressed: {
-    backgroundColor: '#2e2e34',
+    backgroundColor: colors.arcane.surface.parchment,
   },
   playerAvatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#3a2020',
+    borderRadius: 4,
+    backgroundColor: colors.arcane.action.bloodPressed,
     borderWidth: 1,
-    borderColor: '#943c3c',
+    borderColor: colors.arcane.action.blood,
     alignItems: 'center',
     justifyContent: 'center',
   },
   playerAvatarText: {
-    color: '#c47070',
+    color: colors.arcane.action.bloodHighlight,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   playerName: {
-    color: '#e0ddd8',
+    color: colors.arcane.text.strong,
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: typography.fontFamily.bodyMedium,
   },
   playerItemDisabled: {
     opacity: 0.45,
   },
   playerAvatarDisabled: {
-    backgroundColor: '#2a2a2e',
-    borderColor: '#3a3a3e',
+    backgroundColor: colors.arcane.surface.ledger,
+    borderColor: colors.arcane.border.parchment,
   },
   playerAvatarTextDisabled: {
-    color: '#5c5a58',
+    color: colors.arcane.text.dead,
   },
   playerNameDisabled: {
-    color: '#5c5a58',
+    color: colors.arcane.text.dead,
   },
   alreadyNominatedHint: {
-    color: '#706e6a',
+    color: colors.arcane.text.muted,
     fontSize: 12,
+    fontFamily: typography.fontFamily.body,
     marginLeft: 'auto',
   },
 });

@@ -274,7 +274,7 @@ function ChatView({
           value={text}
           onChangeText={setText}
           placeholder="메시지를 입력하세요..."
-          placeholderTextColor="#5c5a58"
+          placeholderTextColor="#746b60"
           returnKeyType="send"
           onSubmitEditing={handleSend}
         />

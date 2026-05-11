@@ -1,18 +1,27 @@
 import { CountdownTimer, useReducedMotion } from '@clocktower/ui';
 import type { ComponentProps } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, Vibration, View } from 'react-native';
+import {
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  Vibration,
+  View,
+} from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { voteHandDown, voteHandRaised } from '../assets/ui';
 import { useGameActions } from '../hooks/useGameActions';
 import { useVoteProgress } from '../hooks/useVoteProgress';
 import { usePlayerStore } from '../stores/playerStore';
 import { EdgeVignette } from './EdgeVignette';
 import { VoteClockRing } from './VoteClockRing';
+import { VOTE_CONSENT_READY_ICON } from './VotePrompt.presentation';
 import { styles } from './VotePrompt.styles';
 
 type EVColors = ComponentProps<typeof EdgeVignette>['colors'];
@@ -258,14 +267,21 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
             accessibilityLabel="투표 준비 완료"
             accessibilityRole="button"
           >
-            <Text
-              style={[
-                styles.consentText,
-                isConsentReady && styles.consentTextReady,
-              ]}
-            >
-              {isConsentReady ? '✓ 투표 준비 완료' : '투표 준비 완료'}
-            </Text>
+            <View style={styles.voteButtonContent}>
+              {isConsentReady && (
+                <Text style={styles.consentReadyIcon}>
+                  {VOTE_CONSENT_READY_ICON.glyph}
+                </Text>
+              )}
+              <Text
+                style={[
+                  styles.consentText,
+                  isConsentReady && styles.consentTextReady,
+                ]}
+              >
+                투표 준비 완료
+              </Text>
+            </View>
           </Pressable>
           <Text style={styles.consentCount}>
             {consentCount}/{aliveCount}명 준비 완료
@@ -304,14 +320,21 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
             accessibilityLabel="찬성 투표"
             accessibilityRole="button"
           >
-            <Text
-              style={[
-                styles.guiltyText,
-                myPreselection === true && styles.guiltyTextSelected,
-              ]}
-            >
-              ✋🏻 찬성
-            </Text>
+            <View style={styles.voteButtonContent}>
+              <Image
+                source={myPreselection === true ? voteHandRaised : voteHandDown}
+                style={styles.voteHandImage}
+                resizeMode="contain"
+              />
+              <Text
+                style={[
+                  styles.guiltyText,
+                  myPreselection === true && styles.guiltyTextSelected,
+                ]}
+              >
+                {myPreselection === true ? '손 내리기' : '손 들기'}
+              </Text>
+            </View>
           </Pressable>
           {myPreselection == null && (
             <Text style={styles.noSelectionHint}>

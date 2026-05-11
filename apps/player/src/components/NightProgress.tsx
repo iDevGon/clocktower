@@ -1,6 +1,6 @@
 import type { Role } from '@clocktower/shared';
 import { getRoleById } from '@clocktower/shared';
-import { useReducedMotion } from '@clocktower/ui';
+import { colors, useReducedMotion } from '@clocktower/ui';
 import { useEffect } from 'react';
 import { Text, View } from 'react-native';
 import Animated, {
@@ -40,7 +40,7 @@ function ActiveGlow({ isMine }: { isMine: boolean }) {
     <Animated.View
       style={[
         styles.activeGlow,
-        { backgroundColor: isMine ? '#c4a050' : '#8090c0' },
+        { backgroundColor: isMine ? colors.phase.day : '#8090c0' },
         animStyle,
       ]}
     />

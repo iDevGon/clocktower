@@ -5,6 +5,7 @@ import type {
   PlayerStatus,
 } from '@clocktower/shared';
 import { getRoleById, NIGHT_ACTIONS, NIGHT_FEEDBACK } from '@clocktower/shared';
+import { colors } from '@clocktower/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import type { createGrimoireStyles } from '../styles/grimoire.styles';
@@ -267,13 +268,23 @@ export function NightPanel({
                       onPress={() => setBaristaTargetId(player.id)}
                       style={{
                         borderWidth: 1,
-                        borderColor: selected ? '#d4a84f' : '#3a3a42',
-                        backgroundColor: selected ? '#2b2418' : '#202026',
+                        borderColor: selected
+                          ? colors.arcane.border.brass
+                          : '#3a3a42',
+                        backgroundColor: selected
+                          ? colors.arcane.surface.parchment
+                          : '#202026',
                         paddingHorizontal: 10,
                         paddingVertical: 8,
                       }}
                     >
-                      <Text style={{ color: selected ? '#f0d48a' : '#c8c2b8' }}>
+                      <Text
+                        style={{
+                          color: selected
+                            ? colors.arcane.text.label
+                            : '#c8c2b8',
+                        }}
+                      >
                         {player.name}
                       </Text>
                     </Pressable>

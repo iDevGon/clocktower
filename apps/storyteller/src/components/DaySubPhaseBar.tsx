@@ -2,6 +2,7 @@ import type { DaySubPhase } from '@clocktower/shared';
 import { useEffect, useMemo, useState } from 'react';
 import { Platform, Pressable, Text, Vibration, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
+import type { DaySubPhaseBarVariant } from './DaySubPhaseBar.presentation';
 import {
   createDaySubPhaseBarStyles,
   SUB_PHASE_COLORS,
@@ -12,6 +13,13 @@ const DAY_SUB_PHASES: { label: string; value: DaySubPhase }[] = [
   { label: '공개 토론', value: 'discussion' },
   { label: '지목', value: 'nomination' },
 ];
+
+const DAY_SUB_PHASE_LABELS: Record<DaySubPhase, string> = {
+  whisper: '밀담',
+  discussion: '공개 토론',
+  nomination: '지목',
+  defense: '변론',
+};
 
 function formatTimer(remaining: number): string {
   const m = Math.floor(remaining / 60);
@@ -102,10 +110,13 @@ export function DaySubPhaseBar({
 }: DaySubPhaseBarProps) {
   const { fontSize, device } = useResponsive();
   const scale = fontSize.md / 12;
+  const variant: DaySubPhaseBarVariant =
+    device === 'desktop' ? 'consoleTop' : 'default';
   const styles = useMemo(
-    () => createDaySubPhaseBarStyles(scale, device),
-    [scale, device],
+    () => createDaySubPhaseBarStyles(scale, device, variant),
+    [scale, device, variant],
   );
+  const isConsoleTop = variant === 'consoleTop';
 
   const whisperRemaining = useClockRemaining(whisperClock ?? null);
   const discussionRemaining = useClockRemaining(discussionClock ?? null);
@@ -126,10 +137,10 @@ export function DaySubPhaseBar({
     (p) => p.value === currentSubPhase,
   );
   const active = currentIndex >= 0 ? DAY_SUB_PHASES[currentIndex] : null;
+  const activeColorKey = active?.value ?? currentSubPhase ?? 'whisper';
   const colors =
-    SUB_PHASE_COLORS[
-      (active?.value ?? 'whisper') as keyof typeof SUB_PHASE_COLORS
-    ] ?? SUB_PHASE_COLORS.whisper;
+    SUB_PHASE_COLORS[activeColorKey as keyof typeof SUB_PHASE_COLORS] ??
+    SUB_PHASE_COLORS.whisper;
 
   const handlePrev = () => {
     if (currentIndex <= 0) return;
@@ -144,6 +155,138 @@ export function DaySubPhaseBar({
   // 변론 타이머 표시 (defense 서브페이즈일 때)
   const showDefenseTimer =
     currentSubPhase === 'defense' && defenseRemaining !== null;
+  const activeRemaining = active ? getTimerRemaining(active.value) : null;
+  const currentRemaining =
+    currentSubPhase === 'defense' ? defenseRemaining : activeRemaining;
+  const currentLabel =
+    currentSubPhase && DAY_SUB_PHASE_LABELS[currentSubPhase]
+      ? DAY_SUB_PHASE_LABELS[currentSubPhase]
+      : '밀담';
+  const canPrev = currentIndex > 0;
+  const canNext = currentIndex >= 0 && currentIndex < DAY_SUB_PHASES.length - 1;
+
+  if (isConsoleTop) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.consoleShell}>
+          <View
+            style={[
+              styles.consoleCurrent,
+              { backgroundColor: colors.bg, borderColor: colors.border },
+            ]}
+          >
+            <Text style={styles.consoleEyebrow}>낮 진행</Text>
+            <View style={styles.consoleCurrentRow}>
+              <View
+                style={[
+                  styles.consoleCurrentDot,
+                  { backgroundColor: colors.dot },
+                ]}
+              />
+              <Text
+                style={[styles.consoleCurrentLabel, { color: colors.text }]}
+              >
+                {currentLabel}
+                {currentRemaining !== null && (
+                  <>
+                    {' '}
+                    <TimerText
+                      remaining={currentRemaining}
+                      activeColor={colors.text}
+                      isActive
+                    />
+                  </>
+                )}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.consoleStepList}>
+            {DAY_SUB_PHASES.map((phase, index) => {
+              const pc =
+                SUB_PHASE_COLORS[
+                  phase.value as keyof typeof SUB_PHASE_COLORS
+                ] ?? SUB_PHASE_COLORS.whisper;
+              const isActive = index === currentIndex;
+              const isPast = currentIndex >= 0 && index < currentIndex;
+              const remaining = getTimerRemaining(phase.value);
+
+              return (
+                <Pressable
+                  key={phase.value}
+                  onPress={() => onSetSubPhase(phase.value)}
+                  style={[
+                    styles.consoleStep,
+                    isActive && styles.consoleStepActive,
+                    isPast && styles.consoleStepPast,
+                    {
+                      borderColor: isActive ? pc.border : '#34313b',
+                    },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${phase.label} 서브페이즈로 이동`}
+                >
+                  <View
+                    style={[
+                      styles.consoleStepMarker,
+                      { backgroundColor: isActive ? pc.dot : '#3a3a46' },
+                    ]}
+                  />
+                  <View style={styles.consoleStepTextGroup}>
+                    <Text
+                      style={[
+                        styles.consoleStepLabel,
+                        isActive && styles.consoleStepLabelActive,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {phase.label}
+                    </Text>
+                    {remaining !== null && (
+                      <Text style={styles.consoleStepTimer}>
+                        {formatTimer(remaining)}
+                      </Text>
+                    )}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={styles.consoleActions}>
+            <Pressable
+              onPress={handlePrev}
+              style={[
+                styles.consoleActionButton,
+                !canPrev && styles.consoleActionButtonDisabled,
+              ]}
+              disabled={!canPrev}
+              accessibilityLabel="이전 서브페이즈"
+              accessibilityRole="button"
+            >
+              <Text style={styles.consoleActionText}>이전</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleNext}
+              style={[
+                styles.consoleActionButton,
+                styles.consoleActionButtonPrimary,
+                { borderColor: colors.border },
+                !canNext && styles.consoleActionButtonDisabled,
+              ]}
+              disabled={!canNext}
+              accessibilityLabel="다음 서브페이즈"
+              accessibilityRole="button"
+            >
+              <Text style={[styles.consoleActionText, { color: colors.text }]}>
+                다음
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

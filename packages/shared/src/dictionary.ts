@@ -41,49 +41,28 @@ export const STATUS_ENTRIES: StatusEntry[] = [
     label: '중독',
     color: '#9b59b6',
     description:
-      '독살범에 의해 중독된 상태입니다. 중독된 플레이어의 능력은 오늘 밤과 내일 낮 동안 무효화됩니다. 중독된 플레이어는 자신이 중독된 사실을 알 수 없습니다. 정보 역할이 중독되면 거짓 정보를 받을 수 있습니다.',
+      '그리모어에 올리는 Poisoned 표식입니다. 중독된 플레이어의 능력은 무효화되며, 정보 역할이 중독되면 거짓 정보를 받을 수 있습니다.',
   },
   {
     id: 'drunk',
     label: '취함',
-    color: '#e67e22',
+    color: '#b07f5c',
     description:
-      '주정뱅이 상태입니다. 주정뱅이는 자신이 주정뱅이인 것을 모르며, 다른 마을주민 역할이라고 생각합니다. 하지만 실제로는 능력이 없으며, 받는 정보는 모두 거짓일 수 있습니다.',
-  },
-  {
-    id: 'no_dashii_poisoned',
-    label: '노 다시 중독',
-    color: '#9b59b6',
-    description:
-      '노 다시의 가장 가까운 마을주민 이웃입니다. 생사와 관계없이 노 다시가 능력을 유지하는 동안 중독됩니다.',
-  },
-  {
-    id: 'vigormortis_poisoned',
-    label: '비고르모르티스 중독',
-    color: '#9b59b6',
-    description:
-      '비고르모르티스가 죽인 하수인의 마을주민 이웃입니다. 해당 하수인이 능력을 유지하는 동안 중독됩니다.',
-  },
-  {
-    id: 'vigormortis_retained',
-    label: '비고르모르티스 유지',
-    color: '#8e44ad',
-    description:
-      '비고르모르티스에게 죽은 하수인입니다. 비고르모르티스가 살아 있고 능력이 있으면 죽은 뒤에도 능력을 유지합니다.',
+      '그리모어에 올리는 Drunk 표식입니다. 취한 플레이어의 능력은 무효화되며, 자신이 취한 사실을 알 수 없습니다.',
   },
   {
     id: 'protected',
     label: '보호',
     color: '#2ecc71',
     description:
-      '수도사에 의해 보호된 상태입니다. 보호된 플레이어는 이번 밤에 악마의 공격으로 사망하지 않습니다. 보호는 매 밤 새로 지정해야 하며, 다른 사망 원인(처형 등)은 막지 못합니다.',
+      '수도사가 선택한 플레이어에게 올리는 보호 표식입니다. 해당 밤 악마의 공격으로 사망하지 않습니다.',
   },
   {
     id: 'cursed',
-    label: '저주',
+    label: '붉은 청어',
     color: '#8e44ad',
     description:
-      '점쟁이의 Red Herring(미끼)으로 지정된 상태입니다. 이 플레이어는 점쟁이에게 악마로 감지됩니다. 실제로는 선한 플레이어이지만, 점쟁이의 능력 결과를 왜곡합니다.',
+      '점쟁이의 Red Herring 표식입니다. 이 플레이어는 점쟁이에게 악마로 감지됩니다.',
   },
   {
     id: 'master',
@@ -104,7 +83,7 @@ export const STATUS_ENTRIES: StatusEntry[] = [
     label: '광기',
     color: '#d35400',
     description:
-      '세레노버스에 의한 광기 상태입니다. 지정된 선한 역할이라고 주장하지 않으면 이야기꾼에 의해 처형될 수 있습니다.',
+      '세레노버스가 선택한 플레이어에게 올리는 Mad 표식입니다. 지정된 선한 역할이라고 주장하지 않으면 이야기꾼에 의해 처형될 수 있습니다.',
   },
   {
     id: 'good_twin',
@@ -124,8 +103,49 @@ export const STATUS_ENTRIES: StatusEntry[] = [
     id: 'no_ability',
     label: '능력 소진',
     color: '#7f8c8d',
+    description: '1회성 능력을 이미 사용했음을 표시하는 No Ability 표식입니다.',
+  },
+  {
+    id: 'bone_collector_ability',
+    label: '능력 회복',
+    color: '#a68a64',
     description:
-      '1회성 능력을 이미 사용했습니다. 더 이상 밤에 깨어나지 않습니다.',
+      '유골 수집가가 죽은 플레이어에게 오늘 능력을 되돌려줄 때 올리는 표식입니다.',
+  },
+  {
+    id: 'barista_sober_healthy',
+    label: '맑음/건강',
+    color: '#4aa890',
+    description:
+      '바리스타가 선택한 플레이어에게 올리는 Sober & Healthy 표식입니다. 중독과 취함을 무시합니다.',
+  },
+  {
+    id: 'barista_acts_twice',
+    label: '2회 발동',
+    color: '#5a8ec8',
+    description:
+      '바리스타가 선택한 플레이어에게 올리는 Acts Twice 표식입니다. 오늘 밤 능력을 두 번 처리할 수 있습니다.',
+  },
+  {
+    id: 'no_dashii_poisoned',
+    label: '중독 (노 다시)',
+    color: '#9b59b6',
+    description:
+      '노 다시의 가장 가까운 마을주민 이웃에게 올리는 Poisoned 표식입니다. 생사와 관계없이 노 다시가 능력을 유지하는 동안 적용됩니다.',
+  },
+  {
+    id: 'vigormortis_poisoned',
+    label: '중독 (비고르모르티스)',
+    color: '#9b59b6',
+    description:
+      '비고르모르티스가 죽인 하수인의 마을주민 이웃에게 올리는 Poisoned 표식입니다.',
+  },
+  {
+    id: 'vigormortis_retained',
+    label: '능력 유지',
+    color: '#8e44ad',
+    description:
+      '비고르모르티스에게 죽은 하수인에게 올리는 Has Ability 표식입니다. 비고르모르티스가 살아 있고 능력이 있으면 죽은 뒤에도 능력을 유지합니다.',
   },
 ];
 
@@ -147,7 +167,7 @@ export const PHASE_ENTRIES: PhaseEntry[] = [
   {
     id: 'day',
     name: '낮',
-    color: '#c4a050',
+    color: '#a68a64',
     description:
       '낮에는 플레이어들이 토론하고 누가 악인인지 추리합니다. 밀담(비밀 대화), 공개 토론, 지목의 세 단계로 나뉩니다.',
   },
@@ -178,7 +198,7 @@ export const DAY_SUB_PHASE_ENTRIES: PhaseEntry[] = [
   {
     id: 'discussion',
     name: '공개 토론',
-    color: '#c4a050',
+    color: '#a68a64',
     description:
       '모든 플레이어가 공개적으로 토론하는 시간입니다. 밤에 일어난 일, 자신의 역할, 받은 정보 등을 공유하며 악인을 추리합니다. 거짓말도 자유롭게 할 수 있습니다.',
   },

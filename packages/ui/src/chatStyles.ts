@@ -1,7 +1,8 @@
 import { StyleSheet } from 'react-native';
-import { colors } from './tokens';
+import { colors, typography } from './tokens';
 
 type ChatAccent = keyof typeof colors.chat;
+const arcane = colors.arcane;
 
 /**
  * Creates chat styles parameterized by accent theme.
@@ -13,7 +14,7 @@ export function createChatStyles(accent: ChatAccent) {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: colors.surface.base,
+      backgroundColor: arcane.surface.base,
     },
     header: {
       flexDirection: 'row',
@@ -22,7 +23,8 @@ export function createChatStyles(accent: ChatAccent) {
       paddingHorizontal: 16,
       paddingVertical: 12,
       borderBottomWidth: 1,
-      borderColor: colors.border.default,
+      borderColor: arcane.border.brassDim,
+      backgroundColor: arcane.surface.apparatus,
     },
     closeButton: {
       paddingVertical: 4,
@@ -31,12 +33,12 @@ export function createChatStyles(accent: ChatAccent) {
     closeText: {
       color: theme.accent,
       fontSize: 14,
-      fontWeight: '600',
+      fontFamily: typography.fontFamily.bodyBold,
     },
     headerTitle: {
-      color: colors.text.primary,
-      fontSize: 16,
-      fontWeight: 'bold',
+      color: arcane.text.strong,
+      fontSize: 17,
+      fontFamily: typography.fontFamily.display,
     },
     headerSpacer: {
       width: 60,
@@ -53,8 +55,9 @@ export function createChatStyles(accent: ChatAccent) {
       paddingVertical: 48,
     },
     emptyText: {
-      color: colors.text.tertiary,
+      color: arcane.text.dead,
       fontSize: 14,
+      fontFamily: typography.fontFamily.body,
     },
     messageBubbleRow: {
       flexDirection: 'row',
@@ -65,39 +68,40 @@ export function createChatStyles(accent: ChatAccent) {
     },
     messageBubble: {
       maxWidth: '75%',
-      borderRadius: 12,
+      borderRadius: 4,
       paddingHorizontal: 14,
       paddingVertical: 8,
+      borderWidth: 1,
     },
     messageBubbleMine: {
       backgroundColor: theme.bubbleMine,
-      borderBottomRightRadius: 4,
+      borderColor: theme.accent,
     },
     messageBubbleOther: {
-      backgroundColor: colors.surface.elevated,
-      borderBottomLeftRadius: 4,
-      borderWidth: 1,
+      backgroundColor: arcane.surface.apparatus,
       borderColor: theme.otherBorderColor,
     },
     senderLabel: {
       color: theme.senderLabel,
       fontSize: 11,
-      fontWeight: '700',
+      fontFamily: typography.fontFamily.bodyBold,
       marginBottom: 2,
     },
     messageText: {
-      color: colors.text.primary,
+      color: arcane.text.primary,
       fontSize: 14,
       lineHeight: 20,
+      fontFamily: typography.fontFamily.body,
     },
     messageTextMine: {
       color: theme.textMine,
     },
     messageTime: {
-      color: colors.text.tertiary,
+      color: arcane.text.dead,
       fontSize: 10,
       marginTop: 4,
       textAlign: 'right',
+      fontFamily: typography.fontFamily.bodyMedium,
     },
     inputRow: {
       flexDirection: 'row',
@@ -105,36 +109,41 @@ export function createChatStyles(accent: ChatAccent) {
       paddingHorizontal: 12,
       paddingVertical: 8,
       borderTopWidth: 1,
-      borderColor: colors.border.default,
+      borderColor: arcane.border.brassDim,
+      backgroundColor: arcane.surface.apparatus,
       gap: 8,
     },
     input: {
       flex: 1,
-      backgroundColor: colors.surface.elevated,
+      backgroundColor: arcane.surface.base,
       borderWidth: 1,
-      borderColor: colors.border.default,
-      borderRadius: 20,
+      borderColor: arcane.border.parchment,
+      borderRadius: 4,
       paddingHorizontal: 16,
       paddingVertical: 10,
-      color: colors.text.primary,
+      color: arcane.text.primary,
       fontSize: 14,
+      fontFamily: typography.fontFamily.body,
     },
     sendButton: {
       backgroundColor: theme.accent,
-      borderRadius: 20,
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: arcane.border.brassDim,
       paddingHorizontal: 16,
       paddingVertical: 10,
     },
     sendButtonDisabled: {
-      backgroundColor: colors.border.default,
+      backgroundColor: arcane.surface.ledger,
+      borderColor: arcane.border.parchment,
     },
     sendText: {
-      color: colors.surface.base,
+      color: arcane.surface.base,
       fontSize: 14,
-      fontWeight: 'bold',
+      fontFamily: typography.fontFamily.bodyBold,
     },
     sendTextDisabled: {
-      color: colors.text.tertiary,
+      color: arcane.text.dead,
     },
   });
 }

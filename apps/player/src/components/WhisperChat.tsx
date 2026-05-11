@@ -186,9 +186,7 @@ export function WhisperChat({
             },
           ]}
         >
-          <Text style={{ color: '#706e6a', fontSize: 14, fontWeight: '600' }}>
-            밀담 시간이 종료되었습니다
-          </Text>
+          <Text style={styles.inputClosedText}>밀담 시간이 종료되었습니다</Text>
         </View>
       ) : (
         <>
@@ -208,7 +206,7 @@ export function WhisperChat({
               value={text}
               onChangeText={setText}
               placeholder="메시지를 입력하세요..."
-              placeholderTextColor="#5c5a58"
+              placeholderTextColor="#746b60"
               returnKeyType="send"
               blurOnSubmit={false}
               onSubmitEditing={handleSend}

@@ -1,3 +1,4 @@
+import { colors, typography } from '@clocktower/ui';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { usePlayerStore } from '../stores/playerStore';
 
@@ -44,27 +45,30 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: 'rgba(13,7,3,0.78)',
     padding: 20,
   },
   panel: {
     width: '100%',
     maxWidth: 340,
-    backgroundColor: '#1e1e22',
+    backgroundColor: colors.arcane.surface.apparatus,
     borderWidth: 1,
-    borderColor: '#3a3a42',
+    borderColor: colors.arcane.border.brassDim,
+    borderRadius: 4,
+    overflow: 'hidden',
   },
   title: {
-    color: '#e0ddd8',
+    color: colors.arcane.text.strong,
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: typography.fontFamily.display,
     textAlign: 'center',
     paddingTop: 20,
   },
   message: {
-    color: '#b6b0a6',
+    color: colors.arcane.text.muted,
     fontSize: 14,
     lineHeight: 21,
+    fontFamily: typography.fontFamily.body,
     textAlign: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
@@ -72,7 +76,7 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: '#3a3a42',
+    borderTopColor: colors.arcane.border.brassDim,
   },
   button: {
     flex: 1,
@@ -80,21 +84,21 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   rejectButton: {
-    backgroundColor: '#282329',
+    backgroundColor: colors.arcane.surface.ledger,
     borderRightWidth: 1,
-    borderRightColor: '#3a3a42',
+    borderRightColor: colors.arcane.border.brassDim,
   },
   acceptButton: {
-    backgroundColor: '#1f332d',
+    backgroundColor: colors.arcane.accent.midnightInk,
   },
   buttonText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   rejectText: {
-    color: '#c8c2b8',
+    color: colors.arcane.text.muted,
   },
   acceptText: {
-    color: '#8ee0c0',
+    color: colors.arcane.accent.sapphireLens,
   },
 });

@@ -1,4 +1,4 @@
-import { createChatStyles } from '@clocktower/ui';
+import { colors, createChatStyles, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 const chatStyles = createChatStyles('storyteller');
@@ -7,13 +7,13 @@ export const styles = StyleSheet.create({
   ...chatStyles,
   modalContainer: {
     flex: 1,
-    backgroundColor: '#121214',
+    backgroundColor: colors.arcane.surface.base,
     paddingTop: 48,
   },
   backText: {
-    color: '#8a6a8a',
+    color: colors.arcane.accent.sapphireLens,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   // Player list
   playerList: {
@@ -24,8 +24,12 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderColor: '#1e1e22',
+    marginHorizontal: 12,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: colors.arcane.border.parchment,
+    borderRadius: 4,
+    backgroundColor: colors.arcane.surface.apparatus,
   },
   playerInfo: {
     flex: 1,
@@ -36,30 +40,32 @@ export const styles = StyleSheet.create({
     gap: 8,
   },
   playerName: {
-    color: '#e0ddd8',
+    color: colors.arcane.text.strong,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   playerNameDead: {
-    color: '#6a6a6a',
+    color: colors.arcane.text.dead,
   },
   deadBadge: {
-    color: '#c44',
+    color: colors.arcane.action.bloodHighlight,
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   roleBadge: {
-    color: '#888',
+    color: colors.arcane.text.label,
     fontSize: 11,
+    fontFamily: typography.fontFamily.bodyMedium,
   },
   lastMessage: {
-    color: '#7a7a7a',
+    color: colors.arcane.text.muted,
     fontSize: 13,
     marginTop: 4,
+    fontFamily: typography.fontFamily.body,
   },
   unreadBadge: {
-    backgroundColor: '#c44',
-    borderRadius: 10,
+    backgroundColor: colors.arcane.action.blood,
+    borderRadius: 6,
     minWidth: 20,
     height: 20,
     alignItems: 'center',
@@ -67,17 +73,17 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   unreadText: {
-    color: '#fff',
+    color: colors.arcane.text.strong,
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   // Chat view overrides (sender label uses greenish tint for player names)
   senderLabel: {
     ...chatStyles.senderLabel,
-    color: '#8a8a6a',
+    color: colors.arcane.text.label,
   },
   messageBubbleOther: {
     ...chatStyles.messageBubbleOther,
-    borderColor: '#2e2e34',
+    borderColor: colors.arcane.border.parchment,
   },
 });

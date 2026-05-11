@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   },
   panel: {
     backgroundColor: colors.surface.elevated,
-    borderRadius: 12,
+    borderRadius: 6,
     padding: 20,
     width: '85%',
     maxWidth: 420,
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   answerButton: {
     flex: 1,
     paddingVertical: 16,
-    borderRadius: 10,
+    borderRadius: 5,
     borderWidth: 1,
     alignItems: 'center',
   },

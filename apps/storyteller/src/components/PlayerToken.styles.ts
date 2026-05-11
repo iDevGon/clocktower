@@ -1,5 +1,6 @@
 import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
+import { VOTE_TOKEN_BADGE } from './votePresentation';
 
 export const styles = StyleSheet.create({
   token: {
@@ -70,8 +71,30 @@ export const styles = StyleSheet.create({
   },
   voteBadgeText: {
     position: 'absolute',
-    top: -8,
-    right: -8,
+    top: VOTE_TOKEN_BADGE.edgeOffset,
+    right: VOTE_TOKEN_BADGE.edgeOffset,
+    width: VOTE_TOKEN_BADGE.size,
+    height: VOTE_TOKEN_BADGE.size,
+    padding: 1,
+    borderRadius: VOTE_TOKEN_BADGE.borderRadius,
+    borderWidth: 1,
+    borderColor: VOTE_TOKEN_BADGE.raised.borderColor,
+    backgroundColor: VOTE_TOKEN_BADGE.raised.backgroundColor,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.arcane.action.bloodHighlight,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: 5,
+    elevation: 8,
+  },
+  voteBadgePending: {
+    borderColor: VOTE_TOKEN_BADGE.pending.borderColor,
+    backgroundColor: VOTE_TOKEN_BADGE.pending.backgroundColor,
+  },
+  voteBadgeImage: {
+    width: VOTE_TOKEN_BADGE.iconSize,
+    height: VOTE_TOKEN_BADGE.iconSize,
   },
   nominationBadge: {
     position: 'absolute',

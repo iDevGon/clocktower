@@ -1,4 +1,4 @@
-import { BaseToast, DictionaryModal } from '@clocktower/ui';
+import { BaseToast, DictionaryModal, SpriteIcon } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { arcaneUiSprite, uiIcon } from '../src/assets/ui';
 import { DeadVignette } from '../src/components/DeadVignette';
 import { ExileVoteModal } from '../src/components/ExileVoteModal';
 import { FeedbackHistoryModal } from '../src/components/FeedbackHistoryModal';
@@ -52,6 +53,7 @@ const DAY_SUB_PHASE_LABELS: Record<string, string> = {
   nomination: '지목',
   defense: '변론',
 };
+const PLAYER_UI_SPRITE_TILE_SIZE = 128;
 
 export default function GameScreen() {
   const router = useRouter();
@@ -399,7 +401,13 @@ export default function GameScreen() {
                 accessibilityLabel="이야기꾼과 채팅"
                 accessibilityRole="button"
               >
-                <Text style={styles.feedbackHistoryIcon}>💬</Text>
+                <SpriteIcon
+                  source={arcaneUiSprite}
+                  index={uiIcon.chat}
+                  size={30}
+                  tileSize={PLAYER_UI_SPRITE_TILE_SIZE}
+                  opacity={isAlive ? 1 : 0.58}
+                />
                 {chatUnreadCount > 0 && (
                   <View
                     style={[
@@ -417,9 +425,15 @@ export default function GameScreen() {
               </Pressable>
             )}
             {!isAlive && (
-              <Text style={styles.deadSkull} accessibilityLabel="사망자 목록">
-                💀
-              </Text>
+              <View style={styles.deadSkull} accessibilityLabel="사망 상태">
+                <SpriteIcon
+                  source={arcaneUiSprite}
+                  index={uiIcon.verdict}
+                  size={32}
+                  tileSize={PLAYER_UI_SPRITE_TILE_SIZE}
+                  opacity={0.7}
+                />
+              </View>
             )}
             <Pressable
               onPress={() => setSettingsVisible(true)}
@@ -430,7 +444,13 @@ export default function GameScreen() {
               accessibilityLabel="설정"
               accessibilityRole="button"
             >
-              <Text style={styles.feedbackHistoryIcon}>⚙️</Text>
+              <SpriteIcon
+                source={arcaneUiSprite}
+                index={uiIcon.settings}
+                size={30}
+                tileSize={PLAYER_UI_SPRITE_TILE_SIZE}
+                opacity={isAlive ? 1 : 0.58}
+              />
             </Pressable>
           </View>
         </View>
@@ -643,7 +663,13 @@ export default function GameScreen() {
               accessibilityLabel="좌석 배치"
               accessibilityRole="button"
             >
-              <Text style={styles.bottomNavIcon}>🪑</Text>
+              <SpriteIcon
+                source={arcaneUiSprite}
+                index={uiIcon.seating}
+                size={30}
+                tileSize={PLAYER_UI_SPRITE_TILE_SIZE}
+                opacity={isAlive ? 1 : 0.55}
+              />
               <Text
                 style={[
                   styles.bottomNavLabel,
@@ -660,7 +686,13 @@ export default function GameScreen() {
             accessibilityLabel="받은 정보"
             accessibilityRole="button"
           >
-            <Text style={styles.bottomNavIcon}>📜</Text>
+            <SpriteIcon
+              source={arcaneUiSprite}
+              index={uiIcon.log}
+              size={30}
+              tileSize={PLAYER_UI_SPRITE_TILE_SIZE}
+              opacity={isAlive ? 1 : 0.55}
+            />
             <Text
               style={[
                 styles.bottomNavLabel,
@@ -676,7 +708,13 @@ export default function GameScreen() {
             accessibilityLabel="역할 사전"
             accessibilityRole="button"
           >
-            <Text style={styles.bottomNavIcon}>📖</Text>
+            <SpriteIcon
+              source={arcaneUiSprite}
+              index={uiIcon.dictionary}
+              size={30}
+              tileSize={PLAYER_UI_SPRITE_TILE_SIZE}
+              opacity={isAlive ? 1 : 0.55}
+            />
             <Text
               style={[
                 styles.bottomNavLabel,

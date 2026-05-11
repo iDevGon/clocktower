@@ -82,7 +82,7 @@ export const styles = StyleSheet.create({
   },
   badge: {
     backgroundColor: '#6a8a6a',
-    borderRadius: 12,
+    borderRadius: 6,
     minWidth: 24,
     height: 24,
     alignItems: 'center',

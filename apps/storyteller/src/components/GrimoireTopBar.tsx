@@ -1,5 +1,6 @@
-import { colors } from '@clocktower/ui';
+import { colors, SpriteIcon } from '@clocktower/ui';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { arcaneUiSprite, uiIcon } from '../assets/ui';
 import type { createGrimoireStyles } from '../styles/grimoire.styles';
 
 interface GrimoireTopBarProps {
@@ -45,7 +46,7 @@ export function GrimoireTopBar({
       </Text>
       {onMenuPress && (
         <Pressable onPress={onMenuPress} style={localStyles.menuButton}>
-          <Text style={localStyles.menuIcon}>☰</Text>
+          <SpriteIcon source={arcaneUiSprite} index={uiIcon.menu} size={30} />
         </Pressable>
       )}
     </View>
@@ -54,11 +55,13 @@ export function GrimoireTopBar({
 
 const localStyles = StyleSheet.create({
   menuButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  menuIcon: {
-    color: colors.arcane.text.label,
-    fontSize: 18,
+    width: 42,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: colors.arcane.border.brassDim,
+    backgroundColor: colors.arcane.accent.midnightInk,
   },
 });

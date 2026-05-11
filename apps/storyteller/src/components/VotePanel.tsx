@@ -1,6 +1,7 @@
 import type { Nomination, Player } from '@clocktower/shared';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { voteHandDown, voteHandRaised } from '../assets/ui';
 import { IS_DEV } from '../constants';
 import { useResponsive } from '../hooks/useResponsive';
 import { useGameStore } from '../stores/gameStore';
@@ -179,30 +180,62 @@ export function VotePanel({
                   {player.name}
                 </Text>
                 {hasVoted ? (
-                  <Text style={[styles.votedBadge, styles.votedGuilty]}>
-                    ✋🏻
-                  </Text>
+                  <View style={[styles.voteStateBadge, styles.voteStateRaised]}>
+                    <Image
+                      source={voteHandRaised}
+                      style={styles.voteStateImage}
+                      resizeMode="contain"
+                    />
+                  </View>
                 ) : hasConfirmed ? (
                   confirmed ? (
-                    <Text style={[styles.votedBadge, styles.votedGuilty]}>
-                      ✋🏻
-                    </Text>
+                    <View
+                      style={[styles.voteStateBadge, styles.voteStateRaised]}
+                    >
+                      <Image
+                        source={voteHandRaised}
+                        style={styles.voteStateImage}
+                        resizeMode="contain"
+                      />
+                    </View>
                   ) : (
-                    <Text style={styles.votedBadge}>-</Text>
+                    <View style={[styles.voteStateBadge, styles.voteStateDown]}>
+                      <Image
+                        source={voteHandDown}
+                        style={styles.voteStateImage}
+                        resizeMode="contain"
+                      />
+                    </View>
                   )
                 ) : preselection === true ? (
-                  <Text style={[styles.votedBadge, styles.preselectedGuilty]}>
-                    ✋🏻?
-                  </Text>
+                  <View
+                    style={[styles.voteStateBadge, styles.voteStatePending]}
+                  >
+                    <Image
+                      source={voteHandRaised}
+                      style={styles.voteStateImage}
+                      resizeMode="contain"
+                    />
+                  </View>
                 ) : IS_DEV ? (
                   <Pressable
                     onPress={() => onCastVote(player.id, true)}
                     style={styles.guiltyButton}
                   >
-                    <Text style={styles.guiltyText}>✋🏻</Text>
+                    <Image
+                      source={voteHandRaised}
+                      style={styles.voteStateImage}
+                      resizeMode="contain"
+                    />
                   </Pressable>
                 ) : (
-                  <Text style={styles.votedBadge}>-</Text>
+                  <View style={[styles.voteStateBadge, styles.voteStateDown]}>
+                    <Image
+                      source={voteHandDown}
+                      style={styles.voteStateImage}
+                      resizeMode="contain"
+                    />
+                  </View>
                 )}
               </View>
             );

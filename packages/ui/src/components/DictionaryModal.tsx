@@ -19,6 +19,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { colors, typography } from '../tokens';
 import { AbilityText } from './AbilityText';
 import { RoleTips } from './RoleTips';
 
@@ -26,7 +27,7 @@ type TabId = 'roles' | 'statuses' | 'rules' | 'flow';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'roles', label: '역할' },
-  { id: 'statuses', label: '상태' },
+  { id: 'statuses', label: '표식' },
   { id: 'rules', label: '규칙' },
   { id: 'flow', label: '진행순서' },
 ];
@@ -88,17 +89,13 @@ function GroupedRolesTab() {
                       {role.name}
                     </Text>
                     <Text
-                      style={{
-                        fontSize: 9,
-                        fontWeight: '700',
-                        color: editionColor,
-                        borderWidth: 1,
-                        borderColor: editionColor,
-                        borderRadius: 3,
-                        paddingHorizontal: 4,
-                        paddingVertical: 1,
-                        overflow: 'hidden',
-                      }}
+                      style={[
+                        tabStyles.editionBadge,
+                        {
+                          color: editionColor,
+                          borderColor: editionColor,
+                        },
+                      ]}
                     >
                       {editionLabel}
                     </Text>
@@ -345,25 +342,29 @@ export function DictionaryModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(13,7,3,0.82)',
     justifyContent: 'flex-end',
   },
   dismissArea: {
     flex: 1,
   },
   containerGrouped: {
-    backgroundColor: '#1a1a1e',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    backgroundColor: colors.arcane.surface.apparatus,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
     height: '85%',
+    borderTopWidth: 1,
+    borderColor: colors.arcane.border.brassDim,
   },
   containerFlat: {
-    backgroundColor: '#1a1a1e',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    backgroundColor: colors.arcane.surface.apparatus,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
     maxHeight: '90%',
     minHeight: 300,
     flex: 1,
+    borderTopWidth: 1,
+    borderColor: colors.arcane.border.brassDim,
   },
   header: {
     flexDirection: 'row',
@@ -372,28 +373,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderColor: '#2e2e34',
+    borderColor: colors.arcane.border.brassDim,
   },
   title: {
-    color: '#e0ddd8',
-    fontSize: 17,
-    fontWeight: '700',
+    color: colors.arcane.text.strong,
+    fontSize: 18,
+    fontFamily: typography.fontFamily.display,
   },
   closeButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#2a2a30',
+    backgroundColor: colors.arcane.surface.ledger,
+    borderWidth: 1,
+    borderColor: colors.arcane.border.parchment,
   },
   closeText: {
-    color: '#908e8a',
+    color: colors.arcane.text.label,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   tabBar: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderColor: '#2e2e34',
+    borderColor: colors.arcane.border.brassDim,
   },
   tab: {
     flex: 1,
@@ -402,15 +405,16 @@ const styles = StyleSheet.create({
   },
   tabActive: {
     borderBottomWidth: 2,
-    borderBottomColor: '#5dade2',
+    borderBottomColor: colors.arcane.accent.sapphireLens,
+    backgroundColor: colors.arcane.accent.midnightInk,
   },
   tabText: {
-    color: '#5c5a58',
+    color: colors.arcane.text.dead,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   tabTextActive: {
-    color: '#5dade2',
+    color: colors.arcane.accent.sapphireLens,
   },
   scrollView: {
     flex: 1,
@@ -444,21 +448,21 @@ const tabStyles = StyleSheet.create({
     fontWeight: '700',
   },
   teamCount: {
-    color: '#5c5a58',
+    color: colors.arcane.text.dead,
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: typography.fontFamily.bodyMedium,
   },
   sectionTitle: {
-    color: '#e0ddd8',
+    color: colors.arcane.text.strong,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: typography.fontFamily.display,
     marginBottom: 4,
   },
   card: {
-    backgroundColor: '#121214',
-    borderRadius: 10,
+    backgroundColor: colors.arcane.surface.base,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#2e2e34',
+    borderColor: colors.arcane.border.parchment,
     padding: 14,
   },
   cardHeader: {
@@ -469,11 +473,11 @@ const tabStyles = StyleSheet.create({
   },
   roleName: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   editionBadge: {
     fontSize: 9,
-    fontWeight: '700',
+    fontFamily: typography.fontFamily.bodyBold,
     borderWidth: 1,
     borderRadius: 3,
     paddingHorizontal: 4,
@@ -486,20 +490,21 @@ const tabStyles = StyleSheet.create({
     borderRadius: 5,
   },
   abilityText: {
-    color: '#908e8a',
+    color: colors.arcane.text.muted,
     fontSize: 13,
     lineHeight: 20,
+    fontFamily: typography.fontFamily.body,
   },
   ruleTitle: {
-    color: '#c4a050',
+    color: colors.arcane.text.label,
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: typography.fontFamily.bodyBold,
     marginBottom: 6,
   },
   flowStep: {
-    color: '#5dade2',
+    color: colors.arcane.accent.sapphireLens,
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: typography.fontFamily.bodyBold,
     marginBottom: 6,
   },
 });

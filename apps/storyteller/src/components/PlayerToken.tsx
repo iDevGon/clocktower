@@ -7,10 +7,12 @@ import {
   type PlayerStatus,
   TEAM_COLORS,
 } from '@clocktower/shared';
-import { colors } from '@clocktower/ui';
+import { colors, SpriteIcon } from '@clocktower/ui';
 import { useCallback, useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Image, Modal, Pressable, Text, View } from 'react-native';
+import { arcaneUiSprite, uiIcon, voteHandRaised } from '../assets/ui';
 import { useResponsive } from '../hooks/useResponsive';
+import { PLAYER_TOKEN_ROLE_TEXT } from './PlayerToken.presentation';
 import { styles } from './PlayerToken.styles';
 
 const TEAM_BORDER_COLORS = {
@@ -181,7 +183,9 @@ export function PlayerToken({
                 color: team ? TEAM_COLORS[team] : colors.arcane.text.muted,
               },
             ]}
-            numberOfLines={1}
+            numberOfLines={PLAYER_TOKEN_ROLE_TEXT.numberOfLines}
+            adjustsFontSizeToFit={PLAYER_TOKEN_ROLE_TEXT.adjustsFontSizeToFit}
+            minimumFontScale={PLAYER_TOKEN_ROLE_TEXT.minimumFontScale}
           >
             {player.isTraveller
               ? `${player.role.name} (${player.travellerAlignment === 'evil' ? '악' : '선'})`
@@ -200,7 +204,9 @@ export function PlayerToken({
                 color: colors.team.traveller,
               },
             ]}
-            numberOfLines={1}
+            numberOfLines={PLAYER_TOKEN_ROLE_TEXT.numberOfLines}
+            adjustsFontSizeToFit={PLAYER_TOKEN_ROLE_TEXT.adjustsFontSizeToFit}
+            minimumFontScale={PLAYER_TOKEN_ROLE_TEXT.minimumFontScale}
           >
             여행자 (미배정)
           </Text>
@@ -210,9 +216,9 @@ export function PlayerToken({
             <Text style={[styles.dead, { fontSize: scaledFont.sm }]}>사망</Text>
           </View>
         )}
-        {statuses && statuses.length > 0 && (
+        {((statuses && statuses.length > 0) || isExecutionCandidate) && (
           <View style={styles.statusRow}>
-            {statuses.map((status) => (
+            {statuses?.map((status) => (
               <Pressable
                 key={status}
                 onPress={(e) => {
@@ -230,54 +236,65 @@ export function PlayerToken({
                 </Text>
               </Pressable>
             ))}
+            {isExecutionCandidate && (
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: colors.arcane.action.blood },
+                ]}
+              >
+                <Text style={[styles.statusText, { fontSize: scaledFont.xs }]}>
+                  처형 예정
+                </Text>
+              </View>
+            )}
           </View>
         )}
         {voteIndicator === 'guilty' && (
-          <Text style={[styles.voteBadgeText, { fontSize: scaledFont.lg }]}>
-            ✋🏻
-          </Text>
+          <View style={styles.voteBadgeText}>
+            <Image
+              source={voteHandRaised}
+              style={styles.voteBadgeImage}
+              resizeMode="contain"
+            />
+          </View>
         )}
         {voteIndicator !== 'guilty' &&
           (voteIndicator === 'preselected_guilty' || isPreselected) && (
-            <Text
-              style={[
-                styles.voteBadgeText,
-                { fontSize: scaledFont.md, opacity: 0.5 },
-              ]}
-            >
-              ✋🏻?
-            </Text>
-          )}
-        {isExecutionCandidate && (
-          <View style={[styles.statusRow, { marginTop: 1 }]}>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: colors.arcane.action.blood },
-              ]}
-            >
-              <Text style={[styles.statusText, { fontSize: scaledFont.xs }]}>
-                처형 예정
-              </Text>
+            <View style={[styles.voteBadgeText, styles.voteBadgePending]}>
+              <Image
+                source={voteHandRaised}
+                style={styles.voteBadgeImage}
+                resizeMode="contain"
+              />
             </View>
+          )}
+        {hasNominated && (
+          <View style={styles.nominationBadge}>
+            <SpriteIcon
+              source={arcaneUiSprite}
+              index={uiIcon.nominate}
+              size={Math.round(s * 0.2)}
+            />
           </View>
         )}
-        {hasNominated && (
-          <Text style={[styles.nominationBadge, { fontSize: scaledFont.md }]}>
-            👆
-          </Text>
-        )}
         {wasNominated && (
-          <Text
-            style={[styles.nominationTargetBadge, { fontSize: scaledFont.md }]}
-          >
-            🎯
-          </Text>
+          <View style={styles.nominationTargetBadge}>
+            <SpriteIcon
+              source={arcaneUiSprite}
+              index={uiIcon.verdict}
+              size={Math.round(s * 0.2)}
+            />
+          </View>
         )}
         {memo && memo.length > 0 && (
-          <Text style={[styles.memoBadge, { fontSize: scaledFont.sm }]}>
-            📝
-          </Text>
+          <View style={styles.memoBadge}>
+            <SpriteIcon
+              source={arcaneUiSprite}
+              index={uiIcon.memo}
+              size={Math.round(s * 0.18)}
+            />
+          </View>
         )}
       </View>
 

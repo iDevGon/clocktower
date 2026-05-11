@@ -61,9 +61,9 @@ export function createNightOrderPanelStyles(
     stepper: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: s(isDesktop ? 24 : isTablet ? 20 : 12),
-      paddingVertical: s(isDesktop ? 14 : isTablet ? 12 : 10),
-      gap: s(isDesktop ? 16 : isTablet ? 14 : 10),
+      paddingHorizontal: s(isDesktop ? 28 : isTablet ? 20 : 12),
+      paddingVertical: s(isDesktop ? 18 : isTablet ? 12 : 10),
+      gap: s(isDesktop ? 18 : isTablet ? 14 : 10),
     },
     navButton: {
       width: s(isDesktop ? 48 : isTablet ? 44 : 44),
@@ -89,9 +89,9 @@ export function createNightOrderPanelStyles(
       flex: 1,
       borderRadius: s(6),
       borderWidth: 1,
-      paddingHorizontal: s(isDesktop ? 20 : isTablet ? 16 : 14),
-      paddingVertical: s(isDesktop ? 14 : isTablet ? 12 : 10),
-      minHeight: s(isDesktop ? 72 : isTablet ? 64 : 56),
+      paddingHorizontal: s(isDesktop ? 26 : isTablet ? 16 : 14),
+      paddingVertical: s(isDesktop ? 18 : isTablet ? 12 : 10),
+      minHeight: s(isDesktop ? 118 : isTablet ? 64 : 56),
       justifyContent: 'center',
     },
     activeCardIdle: {
@@ -116,12 +116,12 @@ export function createNightOrderPanelStyles(
       borderRadius: s(4),
     },
     activeRoleName: {
-      fontSize: s(isDesktop ? 17 : isTablet ? 15 : 14),
+      fontSize: s(isDesktop ? 19 : isTablet ? 15 : 14),
       fontFamily: typography.fontFamily.display,
       fontWeight: '700',
     },
     activeRoleTeam: {
-      fontSize: s(isDesktop ? 11 : isTablet ? 10 : 9),
+      fontSize: s(isDesktop ? 12 : isTablet ? 10 : 9),
       fontFamily: typography.fontFamily.bodyMedium,
       fontWeight: '500',
       textTransform: 'uppercase',
@@ -135,7 +135,7 @@ export function createNightOrderPanelStyles(
       backgroundColor: '#00000024',
       paddingHorizontal: s(8),
       paddingVertical: s(3),
-      borderRadius: s(10),
+      borderRadius: s(5),
     },
     timerDot: {
       width: s(6),
@@ -151,9 +151,9 @@ export function createNightOrderPanelStyles(
       fontVariant: ['tabular-nums'],
     },
     activeAbility: {
-      marginTop: s(6),
-      fontSize: s(isDesktop ? 13 : isTablet ? 12 : 11),
-      lineHeight: s(isDesktop ? 20 : isTablet ? 18 : 17),
+      marginTop: s(isDesktop ? 10 : 6),
+      fontSize: s(isDesktop ? 15 : isTablet ? 12 : 11),
+      lineHeight: s(isDesktop ? 23 : isTablet ? 18 : 17),
       color: colors.arcane.text.primary,
       fontFamily: typography.fontFamily.body,
     },
@@ -187,8 +187,8 @@ export function createNightOrderPanelStyles(
 
     /* ---- role list (scrollable pills below stepper) ---- */
     roleList: {
-      paddingHorizontal: s(isDesktop ? 24 : isTablet ? 20 : 12),
-      paddingBottom: s(isDesktop ? 12 : isTablet ? 10 : 8),
+      paddingHorizontal: s(isDesktop ? 28 : isTablet ? 20 : 12),
+      paddingBottom: s(isDesktop ? 16 : isTablet ? 10 : 8),
       gap: s(isDesktop ? 6 : 5),
     },
     roleChip: {

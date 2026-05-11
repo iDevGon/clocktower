@@ -1,21 +1,26 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
+
+const arcane = colors.arcane;
 
 export function createNominateStyles(scale: number) {
   const s = (v: number) => Math.round(v * scale);
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#121214',
+      backgroundColor: arcane.surface.base,
     },
     header: {
       paddingHorizontal: s(16),
       paddingVertical: s(16),
       borderBottomWidth: 1,
-      borderColor: '#2e2e34',
+      borderColor: arcane.border.brassDim,
+      backgroundColor: arcane.surface.apparatus,
     },
     instruction: {
-      color: '#908e8a',
+      color: arcane.text.label,
       fontSize: s(14),
+      fontFamily: typography.fontFamily.bodyBold,
       marginBottom: s(4),
     },
     selectionRow: {
@@ -25,21 +30,22 @@ export function createNominateStyles(scale: number) {
     },
     selectionBox: {
       flex: 1,
-      backgroundColor: '#1a1a1e',
-      borderRadius: 8,
+      backgroundColor: arcane.surface.ledger,
+      borderRadius: 4,
       padding: s(12),
       borderWidth: 1,
-      borderColor: '#2e2e34',
+      borderColor: arcane.border.parchment,
     },
     selectionLabel: {
-      color: '#5c5a58',
+      color: arcane.text.dead,
       fontSize: s(12),
+      fontFamily: typography.fontFamily.bodyMedium,
       marginBottom: s(4),
     },
     selectionValue: {
-      color: '#e0ddd8',
+      color: arcane.text.strong,
       fontSize: s(16),
-      fontWeight: '600',
+      fontFamily: typography.fontFamily.bodyBold,
     },
     listContainer: {
       flex: 1,
@@ -47,26 +53,30 @@ export function createNominateStyles(scale: number) {
     footer: {
       padding: s(16),
       borderTopWidth: 1,
-      borderColor: '#2e2e34',
+      borderColor: arcane.border.brassDim,
+      backgroundColor: arcane.surface.apparatus,
     },
     submitButton: {
       paddingVertical: s(16),
-      borderRadius: 12,
+      borderRadius: 4,
       alignItems: 'center',
+      borderWidth: 1,
     },
     submitButtonActive: {
-      backgroundColor: '#943c3c',
+      backgroundColor: arcane.action.blood,
+      borderColor: arcane.action.bloodHighlight,
     },
     submitButtonPressed: {
-      backgroundColor: '#7a3030',
+      backgroundColor: arcane.action.bloodPressed,
     },
     submitButtonDisabled: {
-      backgroundColor: '#242428',
+      backgroundColor: arcane.surface.ledger,
+      borderColor: arcane.border.parchment,
     },
     submitButtonText: {
-      color: '#e0ddd8',
+      color: arcane.text.strong,
       fontSize: s(18),
-      fontWeight: 'bold',
+      fontFamily: typography.fontFamily.bodyBold,
     },
   });
 }

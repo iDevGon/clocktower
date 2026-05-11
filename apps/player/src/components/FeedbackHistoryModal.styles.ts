@@ -1,17 +1,27 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(13,7,3,0.82)',
     justifyContent: 'flex-end',
   },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
   container: {
-    backgroundColor: '#1a1a1e',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    backgroundColor: colors.arcane.surface.apparatus,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
     maxHeight: '85%',
     minHeight: 300,
+    borderTopWidth: 1,
+    borderColor: colors.arcane.border.brassDim,
   },
   header: {
     flexDirection: 'row',
@@ -20,31 +30,34 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderColor: '#2e2e34',
+    borderColor: colors.arcane.border.brassDim,
   },
   title: {
-    color: '#e0ddd8',
-    fontSize: 17,
-    fontWeight: '700',
+    color: colors.arcane.text.strong,
+    fontSize: 18,
+    fontFamily: typography.fontFamily.display,
   },
   closeButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#2a2a30',
+    backgroundColor: colors.arcane.surface.ledger,
+    borderWidth: 1,
+    borderColor: colors.arcane.border.parchment,
   },
   closeText: {
-    color: '#908e8a',
+    color: colors.arcane.text.label,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   empty: {
     alignItems: 'center',
     paddingVertical: 40,
   },
   emptyText: {
-    color: '#5c5a58',
+    color: colors.arcane.text.dead,
     fontSize: 14,
+    fontFamily: typography.fontFamily.body,
   },
   list: {
     flex: 1,
@@ -65,12 +78,12 @@ export const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#8090c0',
+    backgroundColor: colors.arcane.accent.sapphireLens,
   },
   dayLabel: {
-    color: '#8090c0',
+    color: colors.arcane.accent.sapphireLens,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: typography.fontFamily.bodyBold,
   },
   feedbackWrapper: {
     marginLeft: 16,

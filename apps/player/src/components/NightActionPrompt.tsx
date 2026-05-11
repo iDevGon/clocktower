@@ -145,6 +145,7 @@ export function NightActionPrompt({
       <ScrollView
         style={styles.playerScroll}
         contentContainerStyle={styles.playerList}
+        nestedScrollEnabled
         showsVerticalScrollIndicator={true}
         persistentScrollbar={true}
       >

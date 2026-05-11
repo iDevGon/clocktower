@@ -159,7 +159,7 @@ export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
   poisoned: '중독',
   drunk: '취함',
   protected: '보호',
-  cursed: '저주',
+  cursed: '붉은 청어',
   master: '주인',
   misregistered: '위장',
   witch_cursed: '마녀 저주',
@@ -177,7 +177,7 @@ export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
 
 export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
   poisoned: '#9b59b6',
-  drunk: '#e67e22',
+  drunk: '#b07f5c',
   protected: '#2ecc71',
   cursed: '#8e44ad',
   master: '#3a7ca5',
@@ -187,7 +187,7 @@ export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
   good_twin: '#27ae60',
   evil_twin: '#c0392b',
   no_ability: '#7f8c8d',
-  bone_collector_ability: '#d4a84f',
+  bone_collector_ability: '#a68a64',
   barista_sober_healthy: '#4aa890',
   barista_acts_twice: '#5a8ec8',
   no_dashii_poisoned: '#9b59b6',
@@ -201,7 +201,7 @@ export const PLAYER_STATUS_DESCRIPTIONS: Record<PlayerStatus, string> = {
   drunk: '주정뱅이. 본인은 자신의 역할을 모르며, 능력이 무효화됩니다.',
   protected:
     '수도사에 의해 보호됨. 이 플레이어는 오늘 밤 악마에게 죽지 않습니다.',
-  cursed: '점쟁이의 저주. 점쟁이에게 악마로 감지됩니다.',
+  cursed: '점쟁이의 Red Herring 표식. 점쟁이에게 악마로 감지됩니다.',
   master: '집사의 주인. 이 주인이 투표해야만 집사도 투표할 수 있습니다.',
   misregistered:
     '진영 위장. 은둔자는 악으로, 첩자는 선으로 정보 능력에 감지됩니다.',

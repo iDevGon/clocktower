@@ -141,7 +141,7 @@ export const GAMEPLAY_TIPS: GameTip[] = [
   },
   {
     category: 'night',
-    text: '점쟁이는 저주 대상에 주의하세요. 결과가 항상 정확하진 않습니다.',
+    text: '점쟁이는 붉은 청어 대상에 주의하세요. 결과가 항상 정확하진 않습니다.',
     frequency: 1.0,
     roleId: 'fortune_teller',
   },

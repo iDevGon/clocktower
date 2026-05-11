@@ -73,7 +73,7 @@ export function RoleMixModal({
             value={searchText}
             onChangeText={onSearchChange}
             placeholder="역할 검색…"
-            placeholderTextColor="#5a5a5e"
+            placeholderTextColor="#746b60"
             style={st.searchInput}
             autoCapitalize="none"
             autoCorrect={false}

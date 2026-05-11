@@ -37,7 +37,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(64, 160, 160, 0.12)',
     borderWidth: 1,
     borderColor: 'rgba(64, 160, 160, 0.3)',
-    borderRadius: 10,
+    borderRadius: 5,
     paddingHorizontal: 20,
     paddingVertical: 12,
   },

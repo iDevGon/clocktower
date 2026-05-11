@@ -188,7 +188,7 @@ export default function JoinScreen() {
       <StatusBar style="light" />
 
       <LinearGradient
-        colors={['#0d0703', '#170906', '#231008', '#0d0703']}
+        colors={['#0d0906', '#15100c', '#1d130d', '#0d0906']}
         locations={[0, 0.35, 0.72, 1]}
         style={styles.backgroundGradient}
       />
@@ -217,9 +217,9 @@ export default function JoinScreen() {
               <LinearGradient
                 colors={[
                   'transparent',
-                  '#b78642',
+                  '#8e7758',
                   '#8d3529',
-                  '#b78642',
+                  '#8e7758',
                   'transparent',
                 ]}
                 start={{ x: 0, y: 0.5 }}
@@ -293,7 +293,7 @@ export default function JoinScreen() {
             disabled={isJoining}
           >
             <LinearGradient
-              colors={['#5e1d18', '#8d3529', '#b78642']}
+              colors={['#5e1d18', '#8d3529', '#8e5f58']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.joinButtonGradient}
@@ -307,7 +307,7 @@ export default function JoinScreen() {
         </View>
 
         <View style={styles.tipContainer}>
-          <RotatingGameTip tips={tips} color="#c8ae86" glowColor="#8d3529" />
+          <RotatingGameTip tips={tips} color="#a99a86" glowColor="#8d3529" />
         </View>
         <View style={styles.bottomRule} />
       </View>

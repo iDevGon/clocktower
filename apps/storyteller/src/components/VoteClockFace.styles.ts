@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import { VOTE_CLOCK_LAYER } from './votePresentation';
 
 const COLORS = {
   brass: '#8b2020',
@@ -11,10 +12,7 @@ export const styles = StyleSheet.create({
   root: {
     pointerEvents: 'none',
     overflow: 'visible',
-  },
-  tick: {
-    position: 'absolute',
-    transformOrigin: 'top',
+    zIndex: VOTE_CLOCK_LAYER.face,
   },
 });
 
@@ -44,6 +42,20 @@ export function clockFaceBgStyle(
     height: size,
     borderRadius: size / 2,
     backgroundColor: `${COLORS.midnight}90`,
+  };
+}
+
+export function clockFaceImageStyle(
+  centerX: number,
+  centerY: number,
+  size: number,
+) {
+  return {
+    position: 'absolute' as const,
+    left: centerX - size / 2,
+    top: centerY - size / 2,
+    width: size,
+    height: size,
   };
 }
 

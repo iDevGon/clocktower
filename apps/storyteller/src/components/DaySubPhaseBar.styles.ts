@@ -1,39 +1,53 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
+import type { DaySubPhaseBarVariant } from './DaySubPhaseBar.presentation';
+import { DAY_SUB_PHASE_CONSOLE_LAYOUT } from './DaySubPhaseBar.presentation';
 
 export const SUB_PHASE_COLORS = {
   whisper: {
-    bg: '#2a2418',
-    border: '#5a4a28',
-    text: '#c0a050',
-    dot: '#a08838',
+    bg: colors.arcane.surface.parchment,
+    border: colors.arcane.border.brassDim,
+    text: colors.arcane.text.label,
+    dot: colors.arcane.border.brass,
   },
   discussion: {
-    bg: '#282820',
-    border: '#58582a',
-    text: '#b8b848',
-    dot: '#989830',
+    bg: colors.arcane.accent.midnightInk,
+    border: colors.arcane.accent.prussianBlue,
+    text: colors.arcane.accent.sapphireLens,
+    dot: colors.arcane.accent.sapphireLens,
   },
   nomination: {
-    bg: '#2e2218',
-    border: '#6a4a20',
-    text: '#d0a040',
-    dot: '#b88830',
+    bg: colors.arcane.action.bloodPressed,
+    border: colors.arcane.action.blood,
+    text: colors.arcane.action.bloodHighlight,
+    dot: '#c47252',
+  },
+  defense: {
+    bg: '#241926',
+    border: '#725b85',
+    text: '#d7b7ef',
+    dot: '#b48ad0',
   },
 } as const;
 
 export function createDaySubPhaseBarStyles(
   scale: number,
   device: 'phone' | 'tablet' | 'desktop',
+  variant: DaySubPhaseBarVariant = 'default',
 ) {
   const s = (v: number) => Math.round(v * scale);
   const isDesktop = device === 'desktop';
   const isTablet = device === 'tablet';
+  const isConsoleTop = variant === 'consoleTop';
 
   return StyleSheet.create({
     container: {
+      minHeight: isConsoleTop
+        ? s(DAY_SUB_PHASE_CONSOLE_LAYOUT.minHeight)
+        : undefined,
       borderBottomWidth: 1,
-      borderColor: '#1e1e24',
-      backgroundColor: '#101014',
+      borderColor: isConsoleTop ? colors.arcane.border.brassDim : '#1e1e24',
+      backgroundColor: isConsoleTop ? '#100c08' : '#101014',
     },
 
     /* ---- progress bar ---- */
@@ -76,7 +90,7 @@ export function createDaySubPhaseBarStyles(
     /* ---- active sub-phase card ---- */
     activeCard: {
       flex: 1,
-      borderRadius: s(8),
+      borderRadius: s(4),
       borderWidth: 1,
       paddingHorizontal: s(isDesktop ? 16 : isTablet ? 14 : 12),
       paddingVertical: s(isDesktop ? 10 : isTablet ? 8 : 6),
@@ -128,6 +142,128 @@ export function createDaySubPhaseBarStyles(
     },
     chipTextPast: {
       color: '#404048',
+    },
+
+    /* ---- desktop console top ---- */
+    consoleShell: {
+      minHeight: s(DAY_SUB_PHASE_CONSOLE_LAYOUT.minHeight),
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      gap: s(10),
+      paddingHorizontal: s(12),
+      paddingVertical: s(7),
+      backgroundColor: '#0f0b08',
+    },
+    consoleCurrent: {
+      width: s(166),
+      borderRadius: s(DAY_SUB_PHASE_CONSOLE_LAYOUT.cornerRadius),
+      borderWidth: 1,
+      paddingHorizontal: s(10),
+      paddingVertical: s(8),
+      justifyContent: 'center',
+      gap: s(3),
+    },
+    consoleEyebrow: {
+      color: colors.arcane.text.dead,
+      fontFamily: typography.fontFamily.bodyBold,
+      fontSize: s(10),
+      letterSpacing: 0.8,
+    },
+    consoleCurrentRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: s(8),
+      minWidth: 0,
+    },
+    consoleCurrentDot: {
+      width: s(8),
+      height: s(20),
+      borderRadius: s(2),
+    },
+    consoleCurrentLabel: {
+      flex: 1,
+      fontFamily: typography.fontFamily.bodyBold,
+      fontSize: s(16),
+      lineHeight: s(20),
+    },
+    consoleStepList: {
+      flex: 1,
+      minWidth: 0,
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      gap: s(7),
+    },
+    consoleStep: {
+      flex: 1,
+      minHeight: s(DAY_SUB_PHASE_CONSOLE_LAYOUT.stepMinHeight),
+      borderRadius: s(DAY_SUB_PHASE_CONSOLE_LAYOUT.cornerRadius),
+      borderWidth: 1,
+      borderColor: '#34313b',
+      backgroundColor: '#121118',
+      paddingHorizontal: s(10),
+      paddingVertical: s(6),
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: s(9),
+    },
+    consoleStepActive: {
+      backgroundColor: '#191b28',
+    },
+    consoleStepPast: {
+      opacity: 0.58,
+    },
+    consoleStepMarker: {
+      width: s(7),
+      height: s(20),
+      borderRadius: s(2),
+    },
+    consoleStepTextGroup: {
+      flex: 1,
+      minWidth: 0,
+      gap: s(2),
+    },
+    consoleStepLabel: {
+      color: colors.arcane.text.muted,
+      fontFamily: typography.fontFamily.bodyMedium,
+      fontSize: s(12),
+      lineHeight: s(16),
+    },
+    consoleStepLabelActive: {
+      color: colors.arcane.text.primary,
+      fontFamily: typography.fontFamily.bodyBold,
+    },
+    consoleStepTimer: {
+      color: colors.arcane.text.dead,
+      fontFamily: typography.fontFamily.body,
+      fontSize: s(10),
+      lineHeight: s(13),
+    },
+    consoleActions: {
+      width: s(150),
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      gap: s(7),
+    },
+    consoleActionButton: {
+      minWidth: s(DAY_SUB_PHASE_CONSOLE_LAYOUT.actionButtonMinWidth),
+      borderRadius: s(DAY_SUB_PHASE_CONSOLE_LAYOUT.cornerRadius),
+      borderWidth: 1,
+      borderColor: '#34313b',
+      backgroundColor: '#121118',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: s(10),
+    },
+    consoleActionButtonPrimary: {
+      backgroundColor: colors.arcane.surface.parchment,
+    },
+    consoleActionButtonDisabled: {
+      opacity: 0.34,
+    },
+    consoleActionText: {
+      color: colors.arcane.text.muted,
+      fontFamily: typography.fontFamily.bodyBold,
+      fontSize: s(12),
     },
   });
 }

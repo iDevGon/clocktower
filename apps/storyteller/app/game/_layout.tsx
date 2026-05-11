@@ -1,13 +1,17 @@
+import { colors, typography } from '@clocktower/ui';
 import { Stack } from 'expo-router';
 
 export default function GameLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: '#1a1a1e' },
-        headerTintColor: '#e0ddd8',
-        headerTitleStyle: { fontWeight: '700' },
-        contentStyle: { backgroundColor: '#121214' },
+        headerStyle: { backgroundColor: colors.arcane.surface.apparatus },
+        headerTintColor: colors.arcane.text.strong,
+        headerTitleStyle: {
+          fontFamily: typography.fontFamily.display,
+          color: colors.arcane.text.strong,
+        },
+        contentStyle: { backgroundColor: colors.arcane.surface.base },
       }}
     >
       <Stack.Screen

@@ -1,3 +1,4 @@
+import { colors, typography } from '@clocktower/ui';
 import { useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useResponsive } from '../../src/hooks/useResponsive';
@@ -8,7 +9,7 @@ function createWhisperStyles(scale: number) {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#121214',
+      backgroundColor: colors.arcane.surface.base,
     },
     list: {
       padding: s(16),
@@ -18,25 +19,26 @@ function createWhisperStyles(scale: number) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: s(12),
-      backgroundColor: '#1a1a1e',
+      backgroundColor: colors.arcane.surface.apparatus,
       borderWidth: 1,
-      borderColor: '#2a3d2a',
-      borderRadius: 8,
+      borderColor: colors.arcane.border.parchment,
+      borderRadius: 4,
       paddingHorizontal: s(16),
       paddingVertical: s(12),
     },
     player: {
-      color: '#e0ddd8',
+      color: colors.arcane.text.strong,
       fontSize: s(16),
-      fontWeight: '600',
+      fontFamily: typography.fontFamily.bodyBold,
     },
     arrow: {
-      color: '#6a8a6a',
+      color: colors.arcane.text.label,
       fontSize: s(16),
     },
     empty: {
-      color: '#5c5a58',
+      color: colors.arcane.text.dead,
       fontSize: s(14),
+      fontFamily: typography.fontFamily.body,
       textAlign: 'center',
       marginTop: s(40),
     },

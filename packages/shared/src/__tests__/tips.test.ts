@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   CHARACTER_TIPS,
   getCharacterTips,
@@ -26,6 +26,26 @@ const ALL_CATEGORIES: TipCategory[] = [
 const PLAYER_CATEGORIES: TipCategory[] = ALL_CATEGORIES.filter(
   (c) => c !== 'storyteller',
 );
+
+function collectWeightedGameTipResults(
+  categories: TipCategory | TipCategory[],
+  playerRoleId?: string,
+  playerTeam?: Parameters<typeof getRandomGameTip>[2],
+): Set<string> {
+  const allResults = new Set<string>();
+  const randomSpy = vi.spyOn(Math, 'random');
+
+  try {
+    for (let i = 0; i < 1000; i++) {
+      randomSpy.mockReturnValue(i / 1000);
+      allResults.add(getRandomGameTip(categories, playerRoleId, playerTeam));
+    }
+  } finally {
+    randomSpy.mockRestore();
+  }
+
+  return allResults;
+}
 
 describe('GAMEPLAY_TIPS 데이터', () => {
   it('모든 팁은 비어있지 않은 text를 가진다', () => {
@@ -128,44 +148,33 @@ describe('getRandomGameTip', () => {
   });
 
   it('roleId를 전달하면 해당 역할의 CHARACTER_TIPS playTips도 후보에 포함된다', () => {
-    // imp의 playTips가 있으므로 여러 번 호출 시 한 번은 나올 수 있음
     const impPlayTips = CHARACTER_TIPS.imp.playTips;
-    const allResults = new Set<string>();
-    for (let i = 0; i < 200; i++) {
-      allResults.add(getRandomGameTip('general', 'imp'));
-    }
-    // imp의 playTips 중 하나가 결과에 포함되어야 함
+    const allResults = collectWeightedGameTipResults('general', 'imp');
     const hasPlayTip = impPlayTips.some((tip) => allResults.has(tip));
     expect(hasPlayTip).toBe(true);
   });
 
   it('선 진영 플레이어에게는 악 역할의 counterTips가 후보에 포함된다', () => {
     const impCounterTips = CHARACTER_TIPS.imp.counterTips;
-    const allResults = new Set<string>();
-    for (let i = 0; i < 200; i++) {
-      allResults.add(getRandomGameTip('general', 'empath', 'townsfolk'));
-    }
+    const allResults = collectWeightedGameTipResults(
+      'general',
+      'empath',
+      'townsfolk',
+    );
     const hasCounterTip = impCounterTips.some((tip) => allResults.has(tip));
     expect(hasCounterTip).toBe(true);
   });
 
   it('악 진영 플레이어에게는 선 역할의 counterTips가 후보에 포함된다', () => {
     const empathCounterTips = CHARACTER_TIPS.empath.counterTips;
-    const allResults = new Set<string>();
-    for (let i = 0; i < 200; i++) {
-      allResults.add(getRandomGameTip('general', 'imp', 'demon'));
-    }
+    const allResults = collectWeightedGameTipResults('general', 'imp', 'demon');
     const hasCounterTip = empathCounterTips.some((tip) => allResults.has(tip));
     expect(hasCounterTip).toBe(true);
   });
 
   it('자기 역할의 counterTips는 후보에서 제외된다', () => {
     const impCounterTips = CHARACTER_TIPS.imp.counterTips;
-    const allResults = new Set<string>();
-    for (let i = 0; i < 200; i++) {
-      allResults.add(getRandomGameTip('general', 'imp', 'demon'));
-    }
-    // imp 자신의 counterTips는 나오면 안 됨
+    const allResults = collectWeightedGameTipResults('general', 'imp', 'demon');
     const hasSelfCounterTip = impCounterTips.some((tip) => allResults.has(tip));
     expect(hasSelfCounterTip).toBe(false);
   });

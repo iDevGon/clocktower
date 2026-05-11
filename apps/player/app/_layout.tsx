@@ -3,7 +3,15 @@ import { useFonts } from 'expo-font';
 import * as NavigationBar from 'expo-navigation-bar';
 import { Stack } from 'expo-router';
 import * as SystemUI from 'expo-system-ui';
-import { DevSettings, Platform, View } from 'react-native';
+import { useEffect } from 'react';
+import {
+  DevSettings,
+  Image,
+  type ImageSourcePropType,
+  Platform,
+  View,
+} from 'react-native';
+import { arcaneUiSprite } from '../src/assets/ui';
 import { useSettingsStore } from '../src/stores/settingsStore';
 
 const IS_DEV = process.env.EXPO_PUBLIC_DEV_MODE === 'true';
@@ -24,6 +32,12 @@ const rootStyle = {
   ...(Platform.OS === 'web' ? { userSelect: 'none' as const } : {}),
 };
 
+function prefetchImageSource(source: ImageSourcePropType): void {
+  const uri = Image.resolveAssetSource(source)?.uri;
+  if (!uri) return;
+  void Image.prefetch(uri).catch(() => undefined);
+}
+
 export default function RootLayout() {
   const lowPowerMode = useSettingsStore((s) => s.lowPowerMode);
   const [fontsLoaded, fontError] = useFonts({
@@ -38,6 +52,10 @@ export default function RootLayout() {
     [typography.fontFamily
       .display]: require('../assets/fonts/SchoolSafeStarrySky-Bold.ttf'),
   });
+
+  useEffect(() => {
+    prefetchImageSource(arcaneUiSprite);
+  }, []);
 
   if (!fontsLoaded && !fontError) {
     return null;

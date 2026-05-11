@@ -39,6 +39,7 @@ interface DraggablePlayerTokenProps {
   onPositionChange?: (x: number, y: number) => void;
   onSwap?: (fromIndex: number, toIndex: number) => void;
   positionIndex?: number;
+  zIndex?: number;
 }
 
 export type { VoteIndicator } from './PlayerToken';
@@ -65,6 +66,7 @@ export function DraggablePlayerToken({
   onPositionChange,
   onSwap,
   positionIndex,
+  zIndex = 1,
 }: DraggablePlayerTokenProps) {
   const reduced = useReducedMotion();
   const responsive = useResponsive();
@@ -149,7 +151,7 @@ export function DraggablePlayerToken({
     left: translateX.value - half,
     top: translateY.value - half,
     transform: [{ scale: scale.value }],
-    zIndex: scale.value > 1 ? 100 : 1,
+    zIndex: scale.value > 1 ? Math.max(zIndex + 20, 100) : zIndex,
     overflow: 'visible' as const,
   }));
 

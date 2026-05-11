@@ -1,3 +1,4 @@
+import { colors, typography } from '@clocktower/ui';
 import { useMemo } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
@@ -31,29 +32,30 @@ export function ActionModal({
     return StyleSheet.create({
       overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        backgroundColor: 'rgba(13, 7, 3, 0.78)',
         justifyContent: 'center',
         alignItems: 'center',
       },
       container: {
-        backgroundColor: '#1e1e22',
-        borderRadius: 12,
-        width: Math.min(s(280), screenWidth * 0.85),
+        backgroundColor: colors.arcane.surface.apparatus,
+        borderRadius: 4,
+        width: Math.min(s(320), screenWidth * 0.88),
         maxHeight: '80%',
         borderWidth: 1,
-        borderColor: '#3a3a42',
+        borderColor: colors.arcane.border.brassDim,
       },
       title: {
-        color: '#e0ddd8',
-        fontSize: s(16),
-        fontWeight: '700',
+        color: colors.arcane.text.strong,
+        fontSize: s(18),
+        fontFamily: typography.fontFamily.display,
         textAlign: 'center',
-        paddingTop: s(16),
+        paddingTop: s(18),
         paddingHorizontal: s(16),
       },
       message: {
-        color: '#908e8a',
+        color: colors.arcane.text.muted,
         fontSize: s(13),
+        fontFamily: typography.fontFamily.body,
         textAlign: 'center',
         paddingHorizontal: s(16),
         paddingTop: s(6),
@@ -66,26 +68,28 @@ export function ActionModal({
         paddingVertical: s(12),
         paddingHorizontal: s(16),
         borderTopWidth: 1,
-        borderColor: '#2a2a30',
+        borderColor: colors.arcane.border.parchment,
       },
       optionDestructive: {},
       optionText: {
-        color: '#c0bdb8',
+        color: colors.arcane.text.primary,
         fontSize: s(15),
+        fontFamily: typography.fontFamily.bodyMedium,
         textAlign: 'center',
       },
       optionTextDestructive: {
-        color: '#e05050',
+        color: colors.arcane.action.bloodHighlight,
       },
       cancelButton: {
         paddingVertical: s(14),
         borderTopWidth: 1,
-        borderColor: '#3a3a42',
+        borderColor: colors.arcane.border.brassDim,
+        backgroundColor: colors.arcane.surface.ledger,
       },
       cancelText: {
-        color: '#7070c4',
+        color: colors.arcane.accent.sapphireLens,
         fontSize: s(15),
-        fontWeight: '600',
+        fontFamily: typography.fontFamily.bodyBold,
         textAlign: 'center',
       },
     });

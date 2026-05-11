@@ -1,4 +1,5 @@
 import type { Phase } from '@clocktower/shared';
+import { colors } from '@clocktower/ui';
 import { StyleSheet, Text, View } from 'react-native';
 
 const PHASE_CONFIG: Record<
@@ -7,7 +8,7 @@ const PHASE_CONFIG: Record<
 > = {
   setup: { label: '준비', color: '#908e8a', dotColor: '#908e8a' },
   night: { label: '밤', color: '#8090c0', dotColor: '#8090c0' },
-  day: { label: '낮', color: '#c4a050', dotColor: '#c4a050' },
+  day: { label: '낮', color: colors.phase.day, dotColor: colors.phase.day },
   vote: { label: '투표', color: '#c47070', dotColor: '#c47070' },
   ended: { label: '게임 종료', color: '#b85c5c', dotColor: '#b85c5c' },
 };

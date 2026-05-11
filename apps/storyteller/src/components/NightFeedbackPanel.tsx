@@ -308,7 +308,7 @@ export function NightFeedbackPanel({
                   >
                     {targetNames} →{' '}
                     {ftAction.fortuneTellerResult
-                      ? '예 (악마/저주 포함)'
+                      ? '예 (악마/붉은 청어 포함)'
                       : '아니오'}
                     {isPoisoned ? ' (중독 반전 적용됨)' : ''}
                   </Text>
@@ -392,12 +392,12 @@ export function NightFeedbackPanel({
               style={[
                 styles.drunkBanner,
                 {
-                  backgroundColor: 'rgba(230,126,34,0.15)',
-                  borderColor: '#e67e22',
+                  backgroundColor: 'rgba(176,127,92,0.14)',
+                  borderColor: '#b07f5c',
                 },
               ]}
             >
-              <Text style={[styles.drunkBannerText, { color: '#e67e22' }]}>
+              <Text style={[styles.drunkBannerText, { color: '#b07f5c' }]}>
                 인접 악한 쌍: {chefHint.evilPairCount}개
                 {chefHint.evilPairNames.length > 0
                   ? ` (${chefHint.evilPairNames.map((pair) => pair.join('-')).join(', ')})`

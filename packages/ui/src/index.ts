@@ -30,6 +30,8 @@ export {
   SmokeParticles,
   STORYTELLER_SMOKE_PARTICLES,
 } from './components/SmokeParticles';
+export type { SpriteIconProps } from './components/SpriteIcon';
+export { SpriteIcon } from './components/SpriteIcon';
 export { colors, typography } from './tokens';
 // Utils
 export {

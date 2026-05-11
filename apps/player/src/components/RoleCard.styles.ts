@@ -104,7 +104,7 @@ export const styles = StyleSheet.create({
     left: -4,
     right: -4,
     bottom: -4,
-    borderRadius: 16,
+    borderRadius: 8,
   },
   shimmerContainer: {
     position: 'absolute',

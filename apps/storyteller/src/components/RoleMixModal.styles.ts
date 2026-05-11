@@ -1,46 +1,51 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
+
+const arcane = colors.arcane;
 
 export function createRoleMixModalStyles(s: (v: number) => number) {
   return StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      backgroundColor: 'rgba(13, 7, 3, 0.78)',
       justifyContent: 'center',
       alignItems: 'center',
     },
     modal: {
-      backgroundColor: '#1e1e22',
-      borderRadius: 12,
+      backgroundColor: arcane.surface.apparatus,
+      borderRadius: 4,
       width: '90%',
       maxHeight: '80%',
-      borderWidth: 2,
-      borderColor: '#a569bd',
+      borderWidth: 1,
+      borderColor: '#725b85',
     },
     header: {
       paddingHorizontal: s(16),
       paddingTop: s(16),
       paddingBottom: s(12),
       borderBottomWidth: 1,
-      borderBottomColor: '#3a3a42',
+      borderBottomColor: arcane.border.brassDim,
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
     },
     headerTitle: {
-      color: '#e0ddd8',
+      color: arcane.text.strong,
       fontSize: s(18),
-      fontWeight: '700',
+      fontFamily: typography.fontFamily.display,
     },
     resetButton: {
       paddingVertical: s(4),
       paddingHorizontal: s(10),
       borderRadius: 4,
-      backgroundColor: '#3a2020',
+      backgroundColor: arcane.action.bloodPressed,
+      borderWidth: 1,
+      borderColor: arcane.action.blood,
     },
     resetText: {
-      color: '#c47070',
+      color: arcane.action.bloodHighlight,
       fontSize: s(12),
-      fontWeight: '600',
+      fontFamily: typography.fontFamily.bodyBold,
     },
     searchInput: {
       marginHorizontal: s(12),
@@ -48,12 +53,13 @@ export function createRoleMixModalStyles(s: (v: number) => number) {
       marginBottom: s(4),
       paddingVertical: s(8),
       paddingHorizontal: s(12),
-      backgroundColor: '#252528',
-      borderRadius: 8,
+      backgroundColor: arcane.surface.base,
+      borderRadius: 4,
       borderWidth: 1,
-      borderColor: '#3a3a3e',
-      color: '#e0ddd8',
+      borderColor: arcane.border.parchment,
+      color: arcane.text.primary,
       fontSize: s(14),
+      fontFamily: typography.fontFamily.body,
     },
     scrollContent: {
       paddingHorizontal: s(12),
@@ -64,7 +70,7 @@ export function createRoleMixModalStyles(s: (v: number) => number) {
     },
     teamLabel: {
       fontSize: s(14),
-      fontWeight: '700',
+      fontFamily: typography.fontFamily.bodyBold,
       marginBottom: s(6),
     },
     checkbox: {
@@ -77,9 +83,9 @@ export function createRoleMixModalStyles(s: (v: number) => number) {
       justifyContent: 'center',
     },
     checkmark: {
-      color: '#1e1e22',
+      color: arcane.surface.base,
       fontSize: s(12),
-      fontWeight: '900',
+      fontFamily: typography.fontFamily.bodyBold,
       lineHeight: s(14),
     },
     roleContent: {
@@ -91,24 +97,25 @@ export function createRoleMixModalStyles(s: (v: number) => number) {
       gap: s(6),
     },
     roleName: {
-      color: '#e0ddd8',
+      color: arcane.text.primary,
       fontSize: s(14),
-      fontWeight: '600',
+      fontFamily: typography.fontFamily.bodyBold,
     },
     roleAbility: {
-      color: '#787674',
+      color: arcane.text.muted,
       fontSize: s(11),
       lineHeight: s(15),
+      fontFamily: typography.fontFamily.body,
     },
     footer: {
       paddingVertical: s(14),
       borderTopWidth: 1,
-      borderTopColor: '#3a3a42',
+      borderTopColor: arcane.border.brassDim,
     },
     footerText: {
-      color: '#7070c4',
+      color: arcane.accent.sapphireLens,
       fontSize: s(15),
-      fontWeight: '600',
+      fontFamily: typography.fontFamily.bodyBold,
       textAlign: 'center',
     },
   });
@@ -126,7 +133,11 @@ export function roleItemStyle(
     paddingHorizontal: s(10),
     marginBottom: s(2),
     borderRadius: 6,
-    backgroundColor: isSelected ? '#2a1a2a' : pressed ? '#2a2a30' : '#252528',
+    backgroundColor: isSelected
+      ? '#241926'
+      : pressed
+        ? arcane.surface.parchment
+        : arcane.surface.ledger,
   };
 }
 
@@ -136,8 +147,8 @@ export function checkboxStyle(s: (v: number) => number, isSelected: boolean) {
     height: s(18),
     borderRadius: 4,
     borderWidth: 2,
-    borderColor: isSelected ? '#a569bd' : '#5a5a5e',
-    backgroundColor: isSelected ? '#a569bd' : 'transparent',
+    borderColor: isSelected ? '#d7b7ef' : arcane.text.dead,
+    backgroundColor: isSelected ? '#d7b7ef' : 'transparent',
     marginRight: s(10),
     alignItems: 'center' as const,
     justifyContent: 'center' as const,

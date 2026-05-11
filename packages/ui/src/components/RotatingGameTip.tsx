@@ -141,7 +141,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   glowWrap: {
-    borderRadius: 8,
+    borderRadius: 4,
     paddingVertical: 8,
     paddingHorizontal: 12,
   },

@@ -361,7 +361,7 @@ const groupStyles = StyleSheet.create({
   },
   confirmButton: {
     backgroundColor: '#5a4a8a',
-    borderRadius: 12,
+    borderRadius: 6,
     paddingVertical: 14,
     alignItems: 'center',
   },

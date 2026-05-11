@@ -30,7 +30,7 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(80,30,30,0.15)',
     borderWidth: 1,
     borderColor: 'rgba(140,50,50,0.25)',
-    borderRadius: 10,
+    borderRadius: 5,
     paddingHorizontal: 20,
     paddingVertical: 12,
     minWidth: 200,

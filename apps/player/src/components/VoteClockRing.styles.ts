@@ -1,23 +1,16 @@
 import { StyleSheet } from 'react-native';
+import {
+  PLAYER_VOTE_CLOCK_LAYER,
+  PLAYER_VOTE_NODE_BADGE,
+  PLAYER_VOTE_STATE_BADGE,
+} from './VoteClockRing.presentation';
 
 export const RING_SIZE = 240;
 export const NODE_SIZE = 32;
 export const CENTER = RING_SIZE / 2;
 export const RADIUS = RING_SIZE / 2 - NODE_SIZE / 2 - 6;
-export const HAND_LENGTH = RADIUS - 24;
-export const TICK_COUNT = 60;
-export const INNER_RING_RADIUS = RADIUS - 20;
-
-// Dagger proportions
-export const DAGGER_W = 24;
-export const BLADE_W = 6;
-export const TIP_H = Math.round(HAND_LENGTH * 0.1);
-export const BLADE_H = Math.round(HAND_LENGTH * 0.5);
-export const CROSSGUARD_W = 18;
-export const CROSSGUARD_H = 3;
-export const GRIP_W = 3.5;
-export const GRIP_H = HAND_LENGTH - TIP_H - BLADE_H - CROSSGUARD_H - 3;
-export const POMMEL_SIZE = 6;
+export const HAND_LENGTH = RADIUS - 8;
+export const DAGGER_W = 64;
 
 export const COLORS = {
   brass: '#8b2020',
@@ -36,24 +29,12 @@ export const COLORS = {
   active: '#d4a030',
   activeGlow: '#f0c040',
   activeDark: '#7a5a10',
-  // Guilty = saturated red, Innocent = saturated blue
+  // Guilty = saturated red
   guilty: '#e05050',
   guiltyBg: '#e0505040',
-  innocent: '#5090e0',
-  innocentBg: '#5090e040',
   // My node = warm gold
   myGold: '#c8a040',
   myGoldGlow: '#c8a04060',
-  // Dagger
-  daggerBlade: '#6a2028',
-  daggerEdge: '#a04040',
-  daggerBladeUrgent: '#8a2830',
-  daggerEdgeUrgent: '#c04848',
-  daggerCrossguard: '#5a4035',
-  daggerCrossguardEdge: '#7a5a48',
-  daggerGrip: '#2a1518',
-  daggerPommel: '#4a2828',
-  daggerPommelEdge: '#6a3838',
   smoke: '#c43c3c',
 };
 
@@ -83,28 +64,12 @@ export const styles = StyleSheet.create({
     borderRadius: RING_SIZE / 2,
     overflow: 'visible',
   },
-  outerRing: {
+  clockFaceImage: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: RING_SIZE / 2,
-    borderWidth: 2.5,
-    borderColor: COLORS.brassDark,
-    shadowColor: COLORS.brass,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    width: RING_SIZE,
+    height: RING_SIZE,
+    zIndex: PLAYER_VOTE_CLOCK_LAYER.face,
   },
-  innerRing: {
-    position: 'absolute',
-    left: CENTER - INNER_RING_RADIUS,
-    top: CENTER - INNER_RING_RADIUS,
-    width: INNER_RING_RADIUS * 2,
-    height: INNER_RING_RADIUS * 2,
-    borderRadius: INNER_RING_RADIUS,
-    borderWidth: 0.8,
-    borderColor: `${COLORS.brassDark}40`,
-  },
-  // Dagger hand
   daggerContainer: {
     position: 'absolute',
     left: CENTER - DAGGER_W / 2,
@@ -113,97 +78,29 @@ export const styles = StyleSheet.create({
     height: HAND_LENGTH,
     alignItems: 'center',
     transformOrigin: `${DAGGER_W / 2}px ${HAND_LENGTH}px`,
-    zIndex: 10,
+    zIndex: PLAYER_VOTE_CLOCK_LAYER.hand,
+    elevation: PLAYER_VOTE_CLOCK_LAYER.hand,
   },
-  bladeTip: {
-    position: 'absolute',
-    top: 0,
-    width: 0,
-    height: 0,
-    borderLeftWidth: BLADE_W / 2,
-    borderRightWidth: BLADE_W / 2,
-    borderBottomWidth: TIP_H,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: COLORS.daggerBlade,
-    zIndex: 2,
+  daggerImage: {
+    width: DAGGER_W,
+    height: HAND_LENGTH,
   },
-  bladeTipUrgent: {
-    borderBottomColor: COLORS.daggerBladeUrgent,
+  daggerImageUrgent: {
+    opacity: 0.92,
   },
-  blade: {
-    position: 'absolute',
-    top: TIP_H,
-    width: BLADE_W,
-    height: BLADE_H,
-    backgroundColor: COLORS.daggerBlade,
-    borderWidth: 0.5,
-    borderColor: COLORS.daggerEdge,
-    borderTopWidth: 0,
-    zIndex: 2,
-  },
-  bladeUrgent: {
-    backgroundColor: COLORS.daggerBladeUrgent,
-    borderColor: COLORS.daggerEdgeUrgent,
-  },
-  bloodGroove: {
-    position: 'absolute',
-    top: TIP_H + 6,
-    width: 1.5,
-    height: BLADE_H - 10,
-    backgroundColor: '#3a0f14',
-    borderRadius: 1,
-    zIndex: 3,
-  },
-  crossguard: {
-    position: 'absolute',
-    top: TIP_H + BLADE_H,
-    width: CROSSGUARD_W,
-    height: CROSSGUARD_H,
-    backgroundColor: COLORS.daggerCrossguard,
-    borderRadius: 1,
-    borderWidth: 0.5,
-    borderColor: COLORS.daggerCrossguardEdge,
-    zIndex: 2,
-  },
-  crossguardUrgent: {
-    backgroundColor: '#6a4840',
-    borderColor: '#8a6858',
-  },
-  grip: {
-    position: 'absolute',
-    top: TIP_H + BLADE_H + CROSSGUARD_H + 1,
-    width: GRIP_W,
-    height: GRIP_H,
-    backgroundColor: COLORS.daggerGrip,
-    borderRadius: 1.5,
-    zIndex: 2,
-  },
-  pommel: {
-    position: 'absolute',
-    top: HAND_LENGTH - POMMEL_SIZE,
-    width: POMMEL_SIZE,
-    height: POMMEL_SIZE,
-    borderRadius: POMMEL_SIZE / 2,
-    backgroundColor: COLORS.daggerPommel,
-    borderWidth: 0.5,
-    borderColor: COLORS.daggerPommelEdge,
-    zIndex: 2,
-  },
-  // Center ornament
   centerOrnament: {
     position: 'absolute',
     left: CENTER - 8,
     top: CENTER - 8,
     width: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: 4,
     backgroundColor: '#1a0e10',
     borderWidth: 1.5,
     borderColor: '#5a2828',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 11,
+    zIndex: PLAYER_VOTE_CLOCK_LAYER.center,
   },
   centerDot: {
     width: 6,
@@ -217,7 +114,7 @@ export const styles = StyleSheet.create({
     top: CENTER - 32,
     width: 56,
     alignItems: 'center',
-    zIndex: 12,
+    zIndex: PLAYER_VOTE_CLOCK_LAYER.timer,
   },
   myTurnTimerText: {
     color: COLORS.active,
@@ -234,7 +131,7 @@ export const styles = StyleSheet.create({
     top: CENTER + 18,
     width: 56,
     alignItems: 'center',
-    zIndex: 12,
+    zIndex: PLAYER_VOTE_CLOCK_LAYER.timer,
   },
   timerText: {
     color: COLORS.bone,
@@ -249,7 +146,7 @@ export const styles = StyleSheet.create({
   smokeLayer: {
     ...StyleSheet.absoluteFillObject,
     overflow: 'visible',
-    zIndex: 1,
+    zIndex: PLAYER_VOTE_CLOCK_LAYER.smoke,
   },
   // Player nodes
   node: {
@@ -260,7 +157,7 @@ export const styles = StyleSheet.create({
     borderColor: COLORS.iron,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 5,
+    zIndex: PLAYER_VOTE_CLOCK_LAYER.node,
   },
   deadNode: {
     opacity: 0.25,
@@ -307,18 +204,9 @@ export const styles = StyleSheet.create({
     backgroundColor: COLORS.guiltyBg,
     borderWidth: 2.5,
   },
-  innocentNode: {
-    borderColor: COLORS.innocent,
-    backgroundColor: COLORS.innocentBg,
-    borderWidth: 2.5,
-  },
   preselectedGuiltyNode: {
     borderColor: `${COLORS.guilty}50`,
     backgroundColor: `${COLORS.guilty}15`,
-  },
-  preselectedInnocentNode: {
-    borderColor: `${COLORS.innocent}50`,
-    backgroundColor: `${COLORS.innocent}15`,
   },
   pastNode: {
     opacity: 0.35,
@@ -339,19 +227,52 @@ export const styles = StyleSheet.create({
   myText: {
     color: COLORS.myGold,
   },
-  // Vote indicator emoji
-  voteEmoji: {
+  voteIconBadge: {
     position: 'absolute',
-    bottom: -6,
-    right: -6,
-    fontSize: 12,
+    bottom: PLAYER_VOTE_NODE_BADGE.edgeOffset,
+    right: PLAYER_VOTE_NODE_BADGE.edgeOffset,
   },
-  preselectedVoteEmoji: {
+  preselectedVoteIconBadge: {
     position: 'absolute',
-    bottom: -6,
-    right: -6,
+    bottom: PLAYER_VOTE_NODE_BADGE.edgeOffset,
+    right: PLAYER_VOTE_NODE_BADGE.edgeOffset,
+  },
+  voteStateBadge: {
+    width: PLAYER_VOTE_NODE_BADGE.size,
+    height: PLAYER_VOTE_NODE_BADGE.size,
+    padding: 1,
+    borderRadius: PLAYER_VOTE_NODE_BADGE.borderRadius,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voteRaisedBadge: {
+    backgroundColor: PLAYER_VOTE_STATE_BADGE.raised.backgroundColor,
+    borderColor: PLAYER_VOTE_STATE_BADGE.raised.borderColor,
+  },
+  votePendingBadge: {
+    backgroundColor: PLAYER_VOTE_STATE_BADGE.pending.backgroundColor,
+    borderColor: PLAYER_VOTE_STATE_BADGE.pending.borderColor,
+  },
+  voteDownBadge: {
+    backgroundColor: PLAYER_VOTE_STATE_BADGE.down.backgroundColor,
+    borderColor: PLAYER_VOTE_STATE_BADGE.down.borderColor,
+  },
+  voteStateText: {
+    color: PLAYER_VOTE_STATE_BADGE.down.color,
     fontSize: 10,
-    opacity: 0.5,
+    fontWeight: '900',
+    lineHeight: 12,
+  },
+  voteRaisedText: {
+    color: PLAYER_VOTE_STATE_BADGE.raised.color,
+  },
+  votePendingText: {
+    color: PLAYER_VOTE_STATE_BADGE.pending.color,
+  },
+  voteStateImage: {
+    width: PLAYER_VOTE_NODE_BADGE.iconSize,
+    height: PLAYER_VOTE_NODE_BADGE.iconSize,
   },
   legend: {
     flexDirection: 'row',

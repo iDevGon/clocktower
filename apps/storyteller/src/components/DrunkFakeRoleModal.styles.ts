@@ -1,38 +1,42 @@
+import { colors, typography } from '@clocktower/ui';
 import { StyleSheet } from 'react-native';
+
+const arcane = colors.arcane;
 
 export function createDrunkFakeRoleModalStyles(s: (v: number) => number) {
   return StyleSheet.create({
     overlay: {
       flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      backgroundColor: 'rgba(13, 7, 3, 0.78)',
       justifyContent: 'center',
       alignItems: 'center',
     },
     modal: {
-      backgroundColor: '#1e1e22',
-      borderRadius: 12,
+      backgroundColor: arcane.surface.apparatus,
+      borderRadius: 4,
       width: '90%',
       maxHeight: '80%',
-      borderWidth: 2,
-      borderColor: '#e67e22',
+      borderWidth: 1,
+      borderColor: arcane.border.brassDim,
     },
     header: {
       paddingHorizontal: s(16),
       paddingTop: s(16),
       paddingBottom: s(12),
       borderBottomWidth: 1,
-      borderBottomColor: '#3a3a42',
+      borderBottomColor: arcane.border.brassDim,
     },
     headerTitle: {
-      color: '#e67e22',
+      color: arcane.text.label,
       fontSize: s(18),
-      fontWeight: '700',
+      fontFamily: typography.fontFamily.display,
       textAlign: 'center',
       marginBottom: s(4),
     },
     headerDesc: {
-      color: '#908e8a',
+      color: arcane.text.muted,
       fontSize: s(13),
+      fontFamily: typography.fontFamily.body,
       textAlign: 'center',
     },
     searchInput: {
@@ -41,21 +45,22 @@ export function createDrunkFakeRoleModalStyles(s: (v: number) => number) {
       marginBottom: s(4),
       paddingHorizontal: s(12),
       paddingVertical: s(10),
-      backgroundColor: '#28282e',
-      borderRadius: 8,
+      backgroundColor: arcane.surface.base,
+      borderRadius: 4,
       borderWidth: 1,
-      borderColor: '#3a3a42',
-      color: '#e0ddd8',
+      borderColor: arcane.border.parchment,
+      color: arcane.text.primary,
       fontSize: s(14),
+      fontFamily: typography.fontFamily.body,
     },
     listContent: {
       paddingHorizontal: s(12),
       paddingVertical: s(8),
     },
     randomButtonText: {
-      color: '#a0a0c0',
+      color: arcane.accent.sapphireLens,
       fontSize: s(14),
-      fontWeight: '600',
+      fontFamily: typography.fontFamily.bodyBold,
     },
     itemRow: {
       flexDirection: 'row',
@@ -63,35 +68,37 @@ export function createDrunkFakeRoleModalStyles(s: (v: number) => number) {
       justifyContent: 'space-between',
     },
     itemName: {
-      color: '#e0ddd8',
+      color: arcane.text.primary,
       fontSize: s(15),
-      fontWeight: '600',
+      fontFamily: typography.fontFamily.bodyBold,
     },
     currentBadge: {
-      color: '#e67e22',
+      color: arcane.text.label,
       fontSize: s(11),
-      fontWeight: '600',
+      fontFamily: typography.fontFamily.bodyBold,
     },
     abilityText: {
-      color: '#787674',
+      color: arcane.text.muted,
       fontSize: s(12),
       lineHeight: s(17),
+      fontFamily: typography.fontFamily.body,
     },
     emptyText: {
-      color: '#908e8a',
+      color: arcane.text.dead,
       fontSize: s(14),
+      fontFamily: typography.fontFamily.body,
       textAlign: 'center',
       paddingVertical: s(20),
     },
     footer: {
       paddingVertical: s(14),
       borderTopWidth: 1,
-      borderTopColor: '#3a3a42',
+      borderTopColor: arcane.border.brassDim,
     },
     footerText: {
-      color: '#7070c4',
+      color: arcane.accent.sapphireLens,
       fontSize: s(15),
-      fontWeight: '600',
+      fontFamily: typography.fontFamily.bodyBold,
       textAlign: 'center',
     },
   });
@@ -101,10 +108,10 @@ export function randomButtonStyle(s: (v: number) => number, pressed: boolean) {
   return {
     marginBottom: s(8),
     padding: s(12),
-    backgroundColor: pressed ? '#303040' : '#252530',
-    borderRadius: 8,
+    backgroundColor: pressed ? arcane.surface.parchment : arcane.surface.ledger,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#4a4a5a',
+    borderColor: arcane.border.parchment,
     alignItems: 'center' as const,
   };
 }
@@ -118,10 +125,14 @@ export function roleItemStyle(
     paddingVertical: s(12),
     paddingHorizontal: s(12),
     marginBottom: s(4),
-    backgroundColor: isCurrentFake ? '#3a2a18' : '#252528',
-    borderRadius: 8,
+    backgroundColor: isCurrentFake
+      ? arcane.surface.parchment
+      : arcane.surface.ledger,
+    borderRadius: 4,
     borderLeftWidth: 3,
-    borderLeftColor: isCurrentFake ? '#e67e22' : '#555',
-    ...(pressed ? { backgroundColor: '#353538' } : {}),
+    borderLeftColor: isCurrentFake
+      ? arcane.text.label
+      : arcane.border.parchment,
+    ...(pressed ? { backgroundColor: arcane.surface.parchment } : {}),
   };
 }

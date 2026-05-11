@@ -64,7 +64,12 @@ import { TwoPlayerPickerModal } from '../../src/components/TwoPlayerPickerModal'
 import { VoteClockFace } from '../../src/components/VoteClockFace';
 import { VoteClockHand } from '../../src/components/VoteClockHand';
 import { VotePanel } from '../../src/components/VotePanel';
-import type { StorytellerShortcutAction } from '../../src/hooks/storytellerShortcuts';
+import { VOTE_CLOCK_LAYER } from '../../src/components/votePresentation';
+import {
+  getNextDaySubPhase,
+  getPhaseAdvanceShortcutResult,
+  type StorytellerShortcutAction,
+} from '../../src/hooks/storytellerShortcuts';
 import { useGameActions } from '../../src/hooks/useGameActions';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import { useStorytellerKeyboardShortcuts } from '../../src/hooks/useStorytellerKeyboardShortcuts';
@@ -580,6 +585,26 @@ export default function GrimoireScreen() {
         tip: getRandomTipText('storyteller'),
       });
     }
+  };
+
+  const showNightCompleteModal = () => {
+    showModal('밤이 끝났습니다', [
+      {
+        text: '낮으로 전환',
+        onPress: () => handleSetPhase('day'),
+      },
+      { text: '계속 진행', style: 'cancel' },
+    ]);
+  };
+
+  const showDayCompleteModal = () => {
+    showModal('다음 날 밤으로 진행', [
+      {
+        text: '밤으로 전환',
+        onPress: () => handleSetPhase('night'),
+      },
+      { text: '취소', style: 'cancel' },
+    ]);
   };
 
   const handleStatusMenu = (playerId: string, playerName: string) => {
@@ -1179,11 +1204,24 @@ export default function GrimoireScreen() {
     }
 
     switch (action) {
-      case 'advanceNightRole':
-        if (gameState.phase === 'night') {
+      case 'advanceNightRole': {
+        const phaseAdvanceResult = getPhaseAdvanceShortcutResult({
+          phase: gameState.phase,
+          nightOrderComplete,
+          daySubPhase: gameState.daySubPhase,
+        });
+        if (phaseAdvanceResult === 'confirmDayTransition') {
+          showNightCompleteModal();
+        } else if (phaseAdvanceResult === 'confirmNightTransition') {
+          showDayCompleteModal();
+        } else if (phaseAdvanceResult === 'advanceDaySubPhase') {
+          const nextSubPhase = getNextDaySubPhase(gameState.daySubPhase);
+          if (nextSubPhase) setDaySubPhase(nextSubPhase);
+        } else if (phaseAdvanceResult === 'advanceNightRole') {
           setNightAdvanceRequestId((id) => id + 1);
         }
         break;
+      }
       case 'openNomination':
         router.push('/game/nominate');
         break;
@@ -1344,7 +1382,12 @@ export default function GrimoireScreen() {
 
   const tokenCanvasElement = (
     <View
-      style={styles.tokenArea}
+      style={[
+        styles.tokenArea,
+        gameState.phase === 'night' && styles.tokenAreaNight,
+        gameState.phase === 'day' && styles.tokenAreaDay,
+        gameState.phase === 'vote' && styles.tokenAreaVote,
+      ]}
       onLayout={(e) => {
         const { width, height } = e.nativeEvent.layout;
         setAreaSize({ width, height });
@@ -1392,6 +1435,7 @@ export default function GrimoireScreen() {
               }
               onPositionChange={(x, y) => handlePositionChange(player.id, x, y)}
               onSwap={handleSwap}
+              zIndex={hasActiveVote ? VOTE_CLOCK_LAYER.token : undefined}
             />
           );
         })}
@@ -1542,23 +1586,12 @@ export default function GrimoireScreen() {
       currentPhase={gameState.phase}
       onSetPhase={handleSetPhase}
       disableNext={gameState.phase === 'night' && !nightOrderComplete}
+      variant={isDesktopConsole ? 'rail' : 'default'}
       onConfirmNext={() => {
         if (gameState.phase === 'night') {
-          showModal('밤이 끝났습니다', [
-            {
-              text: '낮으로 전환',
-              onPress: () => handleSetPhase('day'),
-            },
-            { text: '계속 진행', style: 'cancel' },
-          ]);
+          showNightCompleteModal();
         } else if (gameState.phase === 'day') {
-          showModal('다음 날 밤으로 진행', [
-            {
-              text: '밤으로 전환',
-              onPress: () => handleSetPhase('night'),
-            },
-            { text: '취소', style: 'cancel' },
-          ]);
+          showDayCompleteModal();
         } else if (gameState.phase === 'ended') {
           showModal('새 게임을 시작하시겠습니까?', [
             {
@@ -1640,6 +1673,7 @@ export default function GrimoireScreen() {
       scale={scale}
     />
   );
+  const shouldFocusVoteClock = isDesktopConsole && !!voteClock;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -1656,17 +1690,19 @@ export default function GrimoireScreen() {
             <>
               {daySubPhaseElement}
               {tokenCanvasElement}
-              {votePanelsElement}
+              {nightPanelElement}
+              {!shouldFocusVoteClock && votePanelsElement}
               {executionStateElement}
               {gameEndBannerElement}
             </>
           }
-          rightPanel={nightPanelElement}
+          rightPanel={null}
           phaseControls={phaseBarElement}
           hintBars={hintBarsElement}
           bottomBar={bottomBarElement}
           logOpen={desktopLogOpen}
           logs={logs}
+          isVoteFocusMode={shouldFocusVoteClock}
         />
       ) : (
         <>
@@ -1710,7 +1746,7 @@ export default function GrimoireScreen() {
             left: 16,
             right: 16,
             backgroundColor: '#1e1a2e',
-            borderRadius: 12,
+            borderRadius: 6,
             borderWidth: 1,
             borderColor: '#3a2a4a',
             padding: 14,
@@ -1737,7 +1773,7 @@ export default function GrimoireScreen() {
               style={{
                 flex: 1,
                 backgroundColor: '#4a2020',
-                borderRadius: 8,
+                borderRadius: 4,
                 paddingVertical: 8,
                 alignItems: 'center',
                 borderWidth: 1,
@@ -1755,7 +1791,7 @@ export default function GrimoireScreen() {
               style={{
                 flex: 1,
                 backgroundColor: '#1a2e1a',
-                borderRadius: 8,
+                borderRadius: 4,
                 paddingVertical: 8,
                 alignItems: 'center',
                 borderWidth: 1,
@@ -1824,7 +1860,7 @@ export default function GrimoireScreen() {
         visible={sweetheartDiedPending}
         title="사랑꾼 사망"
         description={`${sweetheartDiedName ?? '사랑꾼'}이(가) 사망했습니다. 취하게 할 플레이어를 선택하세요.`}
-        themeColor="#e67e22"
+        themeColor="#b07f5c"
         candidates={sweetheartDrunkCandidates}
         onSelectPlayer={handleSweetheartDrunkSelect}
         onClose={clearSweetheartDied}
@@ -1836,7 +1872,7 @@ export default function GrimoireScreen() {
         visible={mayorNightDeathPending}
         title="시장 밤 사망"
         description={`${mayorNightDeathName ?? '시장'}이(가) 밤에 사망했습니다. 대신 사망할 플레이어를 선택하거나 닫기를 눌러 시장을 사망시키세요.`}
-        themeColor="#c4a050"
+        themeColor="#a68a64"
         candidates={mayorRedirectCandidates}
         onSelectPlayer={handleMayorRedirectSelect}
         onClose={clearMayorNightDeath}
@@ -1924,10 +1960,10 @@ export default function GrimoireScreen() {
         scale={scale}
       />
 
-      {/* 점쟁이 저주 대상 (Red Herring) 선택 모달 */}
+      {/* 점쟁이 붉은 청어 (Red Herring) 선택 모달 */}
       <PlayerPickerModal
         visible={showRedHerringModal}
-        title="점쟁이 저주 대상 (Red Herring)"
+        title="점쟁이 붉은 청어 (Red Herring)"
         description="점쟁이에게 악마로 감지될 선한 플레이어를 선택하세요"
         themeColor="#9b59b6"
         candidates={redHerringCandidates}
@@ -2003,7 +2039,7 @@ export default function GrimoireScreen() {
               value={memoText}
               onChangeText={setMemoText}
               placeholder="메모를 입력하세요..."
-              placeholderTextColor="#5c5a58"
+              placeholderTextColor="#746b60"
               multiline
               autoFocus
             />
@@ -2047,7 +2083,7 @@ export default function GrimoireScreen() {
               value={generalMemoText}
               onChangeText={setGeneralMemoText}
               placeholder="메모를 입력하세요..."
-              placeholderTextColor="#5c5a58"
+              placeholderTextColor="#746b60"
               multiline
               autoFocus
             />

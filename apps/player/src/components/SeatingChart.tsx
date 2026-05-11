@@ -1,4 +1,5 @@
 import type { Phase, PlayerInfo } from '@clocktower/shared';
+import { colors } from '@clocktower/ui';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Dimensions, Modal, Pressable, Text, View } from 'react-native';
 import { styles as s } from './SeatingChart.styles';
@@ -73,7 +74,7 @@ export function SeatingChart({
       const hasGhostVote = showDeath && !player.deadVoteUsed;
 
       const borderColor = isMe
-        ? '#c4a050'
+        ? colors.phase.day
         : hasGhostVote
           ? '#5aa0d0'
           : '#3a3a42';

@@ -1,10 +1,11 @@
-import { colors, typography } from '@clocktower/ui';
+import { colors, SpriteIcon, typography } from '@clocktower/ui';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { arcaneUiSprite, uiIcon } from '../assets/ui';
 import { IS_DEV } from '../constants';
 
 interface BottomBarItem {
   label: string;
-  icon: string;
+  icon: number;
   onPress: () => void;
   badge?: string;
   visible?: boolean;
@@ -49,47 +50,47 @@ export function GrimoireBottomBar({
   const items: BottomBarItem[] = [
     {
       label: '밀담 로그',
-      icon: '🤝🏻',
+      icon: uiIcon.whisper,
       onPress: onWhispersPress,
       badge: activeWhispersCount > 0 ? `${activeWhispersCount}` : undefined,
       visible: phase === 'day' && daySubPhase === 'whisper',
     },
     {
       label: '지목',
-      icon: '👆',
+      icon: uiIcon.nominate,
       onPress: onNominatePress,
       visible: IS_DEV && phase === 'day' && daySubPhase === 'nomination',
     },
     {
       label: '처단자',
-      icon: '⚔️',
+      icon: uiIcon.verdict,
       onPress: onSlayerForceAck,
       visible: IS_DEV && slayerWaitingAck,
       highlight: true,
     },
     {
       label: '사전',
-      icon: '📖',
+      icon: uiIcon.dictionary,
       onPress: onDictionaryPress,
       visible: true,
     },
     {
       label: '메모',
-      icon: '📝',
+      icon: uiIcon.memo,
       onPress: onMemoPress,
       badge: hasMemo ? '·' : undefined,
       visible: true,
     },
     {
       label: '채팅',
-      icon: '💬',
+      icon: uiIcon.chat,
       onPress: onChatPress,
       badge: totalChatUnread > 0 ? `${totalChatUnread}` : undefined,
       visible: true,
     },
     {
       label: '로그',
-      icon: '📜',
+      icon: uiIcon.log,
       onPress: onLogPress,
       visible: true,
     },
@@ -110,7 +111,12 @@ export function GrimoireBottomBar({
           ]}
         >
           <View style={st.iconWrap}>
-            <Text style={[st.icon, { fontSize: s(18) }]}>{item.icon}</Text>
+            <SpriteIcon
+              source={arcaneUiSprite}
+              index={item.icon}
+              size={s(28)}
+              opacity={item.highlight ? 1 : 0.92}
+            />
             {item.badge && (
               <View
                 style={[
@@ -159,9 +165,6 @@ const st = StyleSheet.create({
   iconWrap: {
     position: 'relative',
   },
-  icon: {
-    textAlign: 'center',
-  },
   badge: {
     position: 'absolute',
     top: -4,
@@ -169,7 +172,7 @@ const st = StyleSheet.create({
   },
   badgeCount: {
     backgroundColor: colors.arcane.action.blood,
-    borderRadius: 8,
+    borderRadius: 4,
     minWidth: 16,
     height: 16,
     alignItems: 'center',
