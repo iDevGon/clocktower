@@ -16,6 +16,17 @@ import type {
   WhisperMessage,
 } from './types';
 
+export interface EvilInfoPayload {
+  /** 악마에게: 하수인 이름 목록 */
+  minionNames?: string[];
+  /** 하수인/악한 여행자에게: 악마 이름 */
+  demonName?: string;
+  /** 하수인에게: 다른 하수인 이름 목록 */
+  otherMinionNames?: string[];
+  /** 악마에게: 게임에 없는 선한 역할 3개 (블러프용) */
+  bluffRoles?: { id: string; name: string }[];
+}
+
 export interface ServerToClientEvents {
   'game:state': (state: GameState) => void;
   'game:phase': (phase: Phase) => void;
@@ -72,16 +83,7 @@ export interface ServerToClientEvents {
     nominatorId: string;
     nominatorName: string;
   }) => void;
-  'evil:info': (data: {
-    /** 악마에게: 하수인 이름 목록 */
-    minionNames?: string[];
-    /** 하수인에게: 악마 이름 */
-    demonName?: string;
-    /** 하수인에게: 다른 하수인 이름 목록 */
-    otherMinionNames?: string[];
-    /** 악마에게: 게임에 없는 선한 역할 3개 (블러프용) */
-    bluffRoles?: { id: string; name: string }[];
-  }) => void;
+  'evil:info': (data: EvilInfoPayload) => void;
   'whisper:activeChats': (chats: ActiveWhisperChat[]) => void;
   'whisper:clockStart': (data: { durationMs: number }) => void;
   'discussion:clockStart': (data: { durationMs: number }) => void;
@@ -368,6 +370,7 @@ export interface ClientToServerEvents {
         playerName: string;
         guiltyVotes: number;
       };
+      evilInfo?: EvilInfoPayload | null;
     }) => void,
   ) => void;
   'vote:cast': (

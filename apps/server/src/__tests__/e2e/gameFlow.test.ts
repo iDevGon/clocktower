@@ -495,6 +495,36 @@ describe('E2E: rejoin 상태 복원', () => {
     expect(rejoinRes.executionCandidate?.playerName).toBe('Player2');
     expect(rejoinRes.executionCandidate?.guiltyVotes).toBeGreaterThanOrEqual(3);
   }, 15000);
+
+  it('rejoin 시 하수인의 악마와 다른 하수인 정보가 포함된다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'imp' },
+      { roleId: 'poisoner' },
+      { roleId: 'spy' },
+      { roleId: 'washerwoman' },
+      { roleId: 'librarian' },
+      { roleId: 'investigator' },
+      { roleId: 'chef' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'undertaker' },
+    ]);
+
+    const newSocket = await ctx.connectPlayer();
+    const rejoinRes = await new Promise<{
+      success: boolean;
+      evilInfo?: {
+        demonName?: string;
+        otherMinionNames?: string[];
+      } | null;
+    }>((resolve) => {
+      newSocket.emit('game:rejoin', { playerId: playerIds[1] }, resolve);
+    });
+
+    expect(rejoinRes.success).toBe(true);
+    expect(rejoinRes.evilInfo?.demonName).toBe('Player1');
+    expect(rejoinRes.evilInfo?.otherMinionNames).toContain('Player3');
+  }, 15000);
 });
 
 describe('E2E: 유령 투표 제한', () => {

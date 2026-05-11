@@ -30,6 +30,7 @@ function handleRejoin(socket: AppSocket) {
       nightProgress: res.nightProgress ?? null,
       nightCount: res.nightCount ?? usePlayerStore.getState().nightCount,
       gamePlayers: res.gamePlayers ?? usePlayerStore.getState().gamePlayers,
+      evilInfo: res.evilInfo ?? null,
       nomination: res.nomination ?? null,
       executionCandidate: res.executionCandidate ?? null,
     });

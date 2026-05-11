@@ -1,5 +1,6 @@
 import {
   type ClientToServerEvents,
+  type EvilInfoPayload,
   getRoleById,
   hasPoisonStatus,
   type Player,
@@ -63,6 +64,41 @@ function toPlayerInfo(player: Player) {
 function getRejoinNightCount(state: { phase: string; day: number }): number {
   if (state.phase === 'night') return state.day;
   return Math.max(0, state.day - 1);
+}
+
+function getEvilInfoForPlayer(
+  game: GameManager,
+  player: Player,
+): EvilInfoPayload | null {
+  const role = player.role;
+  if (!role) return null;
+
+  const state = game.getState();
+  const demons = state.players.filter((p) => p.role?.team === 'demon');
+  const minions = state.players.filter((p) => p.role?.team === 'minion');
+
+  if (role.team === 'demon') {
+    const bluffRoles = game.getBluffRoles();
+    return {
+      minionNames: minions.map((m) => m.name),
+      ...(bluffRoles.length > 0 ? { bluffRoles } : {}),
+    };
+  }
+
+  if (role.team === 'minion') {
+    return {
+      demonName: demons[0]?.name,
+      otherMinionNames: minions
+        .filter((m) => m.id !== player.id)
+        .map((m) => m.name),
+    };
+  }
+
+  if (player.isTraveller && player.travellerAlignment === 'evil') {
+    return { demonName: demons[0]?.name };
+  }
+
+  return null;
 }
 
 function emitDeathTriggers(
@@ -272,6 +308,7 @@ export function registerPlayerHandlers(
         butlerMasterName,
         nomination,
         executionCandidate,
+        evilInfo: getEvilInfoForPlayer(game, player),
       });
       // 설정 + 전체 상태 전송 (백그라운드 복귀 시 놓친 이벤트 보상)
       socket.emit('game:settings', state.settings);

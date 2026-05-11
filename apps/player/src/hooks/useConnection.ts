@@ -120,6 +120,7 @@ export function useConnection() {
           nightCount: res.nightCount ?? usePlayerStore.getState().nightCount,
           nightProgress: res.nightProgress ?? null,
           gamePlayers: res.gamePlayers ?? [],
+          evilInfo: res.evilInfo ?? null,
           butlerMasterName: res.butlerMasterName ?? null,
         });
         resolve(true);

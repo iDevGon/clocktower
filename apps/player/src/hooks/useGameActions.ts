@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useConnectionStore } from '../stores/connectionStore';
 import { usePlayerStore } from '../stores/playerStore';
+import { getOptimisticConsentReadyIds } from './voteConsentOptimistic';
 
 export function useGameActions() {
   const castVote = useCallback(() => {
@@ -211,6 +212,14 @@ export function useGameActions() {
   const consentReady = useCallback((ready: boolean) => {
     const socket = useConnectionStore.getState().socket;
     if (socket) {
+      const state = usePlayerStore.getState();
+      state.set({
+        voteConsentReadyIds: getOptimisticConsentReadyIds(
+          state.voteConsentReadyIds,
+          state.playerId,
+          ready,
+        ),
+      });
       socket.emit('vote:consentReady', { ready });
     }
   }, []);

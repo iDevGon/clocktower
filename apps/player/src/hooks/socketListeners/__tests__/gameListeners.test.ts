@@ -22,6 +22,7 @@ import type { AppSocket } from '../types';
 class FakeSocket {
   connected = true;
   handlers = new Map<string, (data: unknown) => void>();
+  rejoinResponse: unknown = { success: false };
 
   on(event: string, handler: (data: unknown) => void) {
     this.handlers.set(event, handler);
@@ -31,8 +32,10 @@ class FakeSocket {
     this.handlers.get(event)?.(data);
   }
 
-  emit() {
-    // noop for game:rejoin in these tests
+  emit(event: string, _data: unknown, callback?: (res: unknown) => void) {
+    if (event === 'game:rejoin') {
+      callback?.(this.rejoinResponse);
+    }
   }
 }
 
@@ -56,5 +59,28 @@ describe('attachGameListeners', () => {
     });
 
     expect(usePlayerStore.getState().eventToast?.message).toContain('임프');
+  });
+
+  it('재접속 응답의 하수인 악 진영 정보를 카드 상태에 복원한다', () => {
+    const socket = new FakeSocket();
+    socket.rejoinResponse = {
+      success: true,
+      playerName: 'Player2',
+      roleId: 'poisoner',
+      phase: 'night',
+      evilInfo: {
+        demonName: 'Player1',
+        otherMinionNames: ['Player3'],
+      },
+    };
+    usePlayerStore.getState().set({ playerId: 'p2' });
+    attachGameListeners(socket as unknown as AppSocket);
+
+    socket.emitEvent('connect', undefined);
+
+    expect(usePlayerStore.getState().evilInfo).toEqual({
+      demonName: 'Player1',
+      otherMinionNames: ['Player3'],
+    });
   });
 });
