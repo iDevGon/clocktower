@@ -1542,17 +1542,16 @@ export class GameManager {
     nominator.hasNominatedToday = true;
     nominee.hasBeenNominatedToday = true;
 
-    // 성녀(Virgin) 트리거: 처음 지명당했을 때, 지명자가 마을주민이면 즉시 처형
-    // 중독/취한 성녀는 능력이 무효화됨
+    // 성녀(Virgin): 처음 지명당하면 능력은 소모된다.
+    // 중독/취한 성녀는 처형 효과만 무효화된다.
     let virginKill: string | undefined;
     if (
       !this.virginTriggered &&
       nominee.role?.id === 'virgin' &&
-      nominee.isAlive &&
-      !isPoisonedOrDrunk(nominee)
+      nominee.isAlive
     ) {
       this.virginTriggered = true;
-      if (nominator.role?.team === 'townsfolk') {
+      if (!isPoisonedOrDrunk(nominee) && nominator.role?.team === 'townsfolk') {
         virginKill = nominatorId;
       }
     }

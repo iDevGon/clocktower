@@ -418,6 +418,28 @@ describe('GameManager', () => {
       expect(result.virginKill).toBeUndefined();
     });
 
+    it('성결자: 외지인이 먼저 지명해도 능력은 소모된다', () => {
+      const { gm, players } = createTestGame(5);
+      gm.assignRole(players[0].id, 'washerwoman');
+      gm.assignRole(players[1].id, 'virgin');
+      gm.assignRole(players[2].id, 'recluse');
+      gm.assignRole(players[3].id, 'poisoner');
+      gm.assignRole(players[4].id, 'imp');
+      gm.start();
+      gm.setPhase('day');
+
+      const outsiderResult = gm.nominate(players[2].id, players[1].id);
+      expect(outsiderResult.success).toBe(true);
+      expect(outsiderResult.virginKill).toBeUndefined();
+
+      gm.setPhase('night');
+      gm.setPhase('day');
+
+      const townsfolkResult = gm.nominate(players[0].id, players[1].id);
+      expect(townsfolkResult.success).toBe(true);
+      expect(townsfolkResult.virginKill).toBeUndefined();
+    });
+
     it('성결자: 중독된 성결자는 능력 미발동', () => {
       const { gm, players } = createTestGame(5);
       gm.assignRole(players[0].id, 'washerwoman');
@@ -432,6 +454,29 @@ describe('GameManager', () => {
       const result = gm.nominate(players[0].id, players[1].id);
       expect(result.success).toBe(true);
       expect(result.virginKill).toBeUndefined();
+    });
+
+    it('성결자: 중독 중 첫 지명도 능력을 소모한다', () => {
+      const { gm, players } = createTestGame(5);
+      gm.assignRole(players[0].id, 'washerwoman');
+      gm.assignRole(players[1].id, 'virgin');
+      gm.assignRole(players[2].id, 'fortune_teller');
+      gm.assignRole(players[3].id, 'poisoner');
+      gm.assignRole(players[4].id, 'imp');
+      gm.start();
+      gm.setPhase('day');
+      gm.setPlayerStatuses(players[1].id, ['poisoned']);
+
+      const poisonedResult = gm.nominate(players[0].id, players[1].id);
+      expect(poisonedResult.success).toBe(true);
+      expect(poisonedResult.virginKill).toBeUndefined();
+
+      gm.setPhase('night');
+      gm.setPhase('day');
+
+      const soberResult = gm.nominate(players[2].id, players[1].id);
+      expect(soberResult.success).toBe(true);
+      expect(soberResult.virginKill).toBeUndefined();
     });
   });
 
