@@ -444,4 +444,14 @@ describe('CHARACTER_TIPS 데이터', () => {
       );
     }
   });
+
+  it('캐릭터 팁에는 에디션 축약어를 직접 노출하지 않는다', () => {
+    const forbiddenEditionAbbreviations = /\b(?:TB|S&V|BMR)\b/;
+
+    for (const tips of Object.values(CHARACTER_TIPS)) {
+      for (const text of [...tips.playTips, ...tips.counterTips]) {
+        expect(text).not.toMatch(forbiddenEditionAbbreviations);
+      }
+    }
+  });
 });
