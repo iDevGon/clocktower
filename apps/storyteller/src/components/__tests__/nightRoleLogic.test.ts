@@ -201,6 +201,56 @@ describe('nightRoleLogic', () => {
     ).toBeNull();
   });
 
+  it.each([
+    'poisoned',
+    'drunk',
+  ] as const)('%s 상태의 군인은 임프 처치 면역을 제공하지 않는다', (status) => {
+    const demon = player({
+      id: 'demon',
+      role: {
+        id: 'imp',
+        name: '임프',
+        team: 'demon',
+        ability: '',
+        edition: 'trouble_brewing',
+      },
+    });
+    const malfunctioningSoldier = player({
+      id: 'soldier',
+      statuses: [status],
+      role: {
+        id: 'soldier',
+        name: '군인',
+        team: 'townsfolk',
+        ability: '',
+        edition: 'trouble_brewing',
+      },
+    });
+
+    expect(
+      getKillActionBlockReason('imp', demon, malfunctioningSoldier),
+    ).toBeNull();
+  });
+
+  it.each([
+    'poisoned',
+    'drunk',
+  ] as const)('%s 상태의 수도사는 보호 처리 능력이 무효다', (status) => {
+    const malfunctioningMonk = player({
+      id: 'monk',
+      statuses: [status],
+      role: {
+        id: 'monk',
+        name: '수도승',
+        team: 'townsfolk',
+        ability: '',
+        edition: 'trouble_brewing',
+      },
+    });
+
+    expect(isAbilityMalfunctioning(malfunctioningMonk)).toBe(true);
+  });
+
   it('같은 대상도 밤 행동 항목별 처리 상태를 따로 가진다', () => {
     const firstAction = {
       playerId: 'poisoner',
