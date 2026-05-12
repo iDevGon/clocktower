@@ -55,6 +55,20 @@ export interface FeedbackHistoryEntry {
   timestamp: number;
 }
 
+export interface VoteHistoryEntry {
+  id: string;
+  round: number;
+  nominatorId: string;
+  nominatorName: string;
+  nomineeId: string;
+  nomineeName: string;
+  guilty: boolean;
+  votes: Record<string, boolean>;
+  eligibleVoterIds: string[];
+  voterNames: Record<string, string>;
+  timestamp: number;
+}
+
 interface VoteClock {
   startedAt: number;
   durationMs: number;
@@ -83,6 +97,8 @@ interface PlayerState {
   drunkAs: string | null;
   nightFeedback: NightFeedbackPayload | null;
   feedbackHistory: FeedbackHistoryEntry[];
+  seatingRoleNotes: Record<string, string>;
+  voteHistory: VoteHistoryEntry[];
   nightCount: number;
   gamePlayers: PlayerInfo[];
   gameResult: GameResult | null;
@@ -204,6 +220,7 @@ interface PlayerState {
   kicked: boolean;
   set: (partial: Partial<PlayerState>) => void;
   addFeedback: (day: number, feedback: NightFeedbackPayload) => void;
+  setSeatingRoleNote: (playerId: string, note: string) => void;
   reset: () => void;
 }
 
@@ -225,6 +242,8 @@ const initialState = {
   drunkAs: null,
   nightFeedback: null,
   feedbackHistory: [],
+  seatingRoleNotes: {} as Record<string, string>,
+  voteHistory: [] as VoteHistoryEntry[],
   nightCount: 0,
   gamePlayers: [],
   gameResult: null,
@@ -323,6 +342,17 @@ export const usePlayerStore = create<PlayerState>()(
             { day, phase: 'night' as const, feedback, timestamp: Date.now() },
           ],
         })),
+      setSeatingRoleNote: (playerId, note) =>
+        set((s) => {
+          const trimmed = note.trim();
+          const next = { ...s.seatingRoleNotes };
+          if (trimmed) {
+            next[playerId] = trimmed;
+          } else {
+            delete next[playerId];
+          }
+          return { seatingRoleNotes: next };
+        }),
       reset: () => set(initialState),
     }),
     {
@@ -331,6 +361,8 @@ export const usePlayerStore = create<PlayerState>()(
       partialize: (state) => ({
         playerId: state.playerId,
         playerName: state.playerName,
+        seatingRoleNotes: state.seatingRoleNotes,
+        voteHistory: state.voteHistory,
       }),
     },
   ),

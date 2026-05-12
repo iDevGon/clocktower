@@ -35,8 +35,41 @@ export function attachVoteListeners(socket: AppSocket) {
     const prev = usePlayerStore.getState();
     const firstVoteVoters =
       prev.todayFirstVoteGuiltyVoters ?? Object.keys(data.votes);
+    const nomination = prev.nomination;
+    const eligibleVoterIds =
+      prev.voteOrder?.fullOrder?.map((p) => p.id) ??
+      (prev.voteOrder
+        ? [prev.voteOrder.nomineeId, ...prev.voteOrder.order.map((p) => p.id)]
+        : Object.keys(data.votes));
+    const voterNames = Object.fromEntries(
+      [
+        ...prev.gamePlayers,
+        ...(prev.voteOrder?.fullOrder ?? []),
+        ...(prev.voteOrder?.order ?? []),
+      ].map((p) => [p.id, p.name]),
+    );
+    const timestamp = Date.now();
+    const voteHistory = nomination
+      ? [
+          ...prev.voteHistory,
+          {
+            id: `${timestamp}-${prev.voteHistory.length + 1}`,
+            round: prev.voteHistory.length + 1,
+            nominatorId: nomination.nominatorId,
+            nominatorName: nomination.nominatorName,
+            nomineeId: nomination.nomineeId,
+            nomineeName: nomination.nomineeName,
+            guilty: data.guilty,
+            votes: data.votes,
+            eligibleVoterIds,
+            voterNames,
+            timestamp,
+          },
+        ]
+      : prev.voteHistory;
     usePlayerStore.getState().set({
       voteResult: data,
+      voteHistory,
       nomination: null,
       voteOrder: null,
       voteClock: null,

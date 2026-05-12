@@ -130,6 +130,8 @@ export function attachGameListeners(socket: AppSocket) {
             beggarTokens: 0,
             beggarAlignmentInfos: [],
             voteResult: null,
+            voteHistory: [],
+            seatingRoleNotes: {},
             executionCandidate: null,
             nominatedTodayIds: [],
           }

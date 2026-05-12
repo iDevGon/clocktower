@@ -202,6 +202,9 @@ export default function GameScreen() {
   const setLowPowerMode = useSettingsStore((s) => s.setLowPowerMode);
   const [ravenkeeperOverlay, setRavenkeeperOverlay] = useState(false);
   const feedbackHistory = usePlayerStore((s) => s.feedbackHistory);
+  const seatingRoleNotes = usePlayerStore((s) => s.seatingRoleNotes);
+  const voteHistory = usePlayerStore((s) => s.voteHistory);
+  const setSeatingRoleNote = usePlayerStore((s) => s.setSeatingRoleNote);
   const chatUnreadCount = useChatStore((s) => s.unreadCount);
   const totalUnread = useWhisperStore((s) =>
     Object.values(s.unreadCounts).reduce((a, b) => a + b, 0),
@@ -944,6 +947,9 @@ export default function GameScreen() {
         players={gamePlayers}
         myId={playerId}
         phase={currentPhase}
+        roleNotes={seatingRoleNotes}
+        voteHistory={voteHistory}
+        onSetRoleNote={setSeatingRoleNote}
         onClose={() => setSeatingChartVisible(false)}
       />
     </SafeAreaView>

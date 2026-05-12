@@ -30,6 +30,14 @@ describe('playerStore', () => {
     expect(usePlayerStore.getState().feedbackHistory).toHaveLength(2);
   });
 
+  it('좌석 예상 직업 메모를 저장하고 빈 값으로 삭제한다', () => {
+    usePlayerStore.getState().setSeatingRoleNote('p1', '임프');
+    expect(usePlayerStore.getState().seatingRoleNotes.p1).toBe('임프');
+
+    usePlayerStore.getState().setSeatingRoleNote('p1', '   ');
+    expect(usePlayerStore.getState().seatingRoleNotes.p1).toBeUndefined();
+  });
+
   it('reset: 초기 상태로 복원된다', () => {
     usePlayerStore
       .getState()

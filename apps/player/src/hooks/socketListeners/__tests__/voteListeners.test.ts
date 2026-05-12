@@ -54,4 +54,58 @@ describe('attachVoteListeners', () => {
     });
     expect(usePlayerStore.getState().executionHappenedToday).toBe(false);
   });
+
+  it('투표 결과를 좌석 배치에서 다시 볼 수 있도록 히스토리에 저장한다', () => {
+    const socket = new FakeSocket();
+    attachVoteListeners(socket as unknown as AppSocket);
+    usePlayerStore.getState().set({
+      gamePlayers: [
+        { id: 'p1', name: 'Alice', isAlive: true },
+        { id: 'p2', name: 'Bob', isAlive: true },
+        { id: 'p3', name: 'Carol', isAlive: true },
+      ],
+    });
+
+    socket.emitEvent('vote:start', {
+      nominatorId: 'p1',
+      nominatorName: 'Alice',
+      nomineeId: 'p2',
+      nomineeName: 'Bob',
+    });
+    socket.emitEvent('vote:order', {
+      nomineeId: 'p2',
+      order: [
+        { id: 'p3', name: 'Carol' },
+        { id: 'p1', name: 'Alice' },
+      ],
+      fullOrder: [
+        { id: 'p1', name: 'Alice', isAlive: true },
+        { id: 'p2', name: 'Bob', isAlive: true },
+        { id: 'p3', name: 'Carol', isAlive: true },
+      ],
+    });
+    socket.emitEvent('vote:result', {
+      nomineeId: 'p2',
+      nomineeName: 'Bob',
+      guilty: true,
+      votes: { p1: true, p3: false },
+      executionCandidate: {
+        playerId: 'p2',
+        playerName: 'Bob',
+        guiltyVotes: 1,
+      },
+    });
+
+    expect(usePlayerStore.getState().voteHistory).toMatchObject([
+      {
+        round: 1,
+        nominatorId: 'p1',
+        nominatorName: 'Alice',
+        nomineeId: 'p2',
+        nomineeName: 'Bob',
+        votes: { p1: true, p3: false },
+        eligibleVoterIds: ['p1', 'p2', 'p3'],
+      },
+    ]);
+  });
 });

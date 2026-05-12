@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 const source = readFileSync('src/components/FeedbackHistoryModal.tsx', 'utf8');
 
 describe('FeedbackHistoryModal scrolling', () => {
-  it('does not wrap the bottom sheet container in a Pressable that can steal scroll gestures', () => {
+  it('does not wrap the modal container in a Pressable that can steal scroll gestures', () => {
     expect(source).not.toContain('<Pressable style={styles.container}');
   });
 

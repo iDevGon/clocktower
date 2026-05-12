@@ -68,7 +68,16 @@ export const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     width: RING_SIZE,
     height: RING_SIZE,
+    opacity: 0.34,
     zIndex: PLAYER_VOTE_CLOCK_LAYER.face,
+  },
+  clockFaceVeil: {
+    ...StyleSheet.absoluteFillObject,
+    width: RING_SIZE,
+    height: RING_SIZE,
+    borderRadius: RING_SIZE / 2,
+    backgroundColor: 'rgba(4,5,8,0.38)',
+    zIndex: PLAYER_VOTE_CLOCK_LAYER.face + 1,
   },
   daggerContainer: {
     position: 'absolute',

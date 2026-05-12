@@ -385,6 +385,7 @@ export function VoteClockRing() {
             resizeMode="contain"
             style={styles.clockFaceImage}
           />
+          <View style={styles.clockFaceVeil} />
 
           {/* Dagger hand */}
           <Animated.View style={[styles.daggerContainer, daggerStyle]}>

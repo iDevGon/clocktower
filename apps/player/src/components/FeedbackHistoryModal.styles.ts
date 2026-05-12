@@ -5,7 +5,9 @@ export const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(13,7,3,0.82)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
   },
   backdrop: {
     position: 'absolute',
@@ -15,12 +17,14 @@ export const styles = StyleSheet.create({
     left: 0,
   },
   container: {
+    width: '100%',
+    maxWidth: 560,
+    flex: 1,
     backgroundColor: colors.arcane.surface.apparatus,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    maxHeight: '85%',
-    minHeight: 300,
-    borderTopWidth: 1,
+    borderRadius: 8,
+    marginVertical: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
     borderColor: colors.arcane.border.brassDim,
   },
   header: {
