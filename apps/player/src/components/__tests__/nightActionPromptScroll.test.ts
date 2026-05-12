@@ -12,3 +12,14 @@ describe('NightActionPrompt player list scrolling', () => {
     expect(playerScroll).toContain('nestedScrollEnabled');
   });
 });
+
+describe('NightActionPrompt allowed target counts', () => {
+  it('uses allowedTargetCounts when deciding whether a submission is complete', () => {
+    expect(source).toContain('allowedTargetCounts');
+    expect(source).toContain('allowedTargetCounts.includes(selected.length)');
+  });
+
+  it('uses the largest allowed target count as the selection cap', () => {
+    expect(source).toContain('Math.max(...allowedTargetCounts)');
+  });
+});

@@ -1316,6 +1316,107 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     excludeSelf: false,
   },
 
+  // ── Bad Moon Rising ──
+  grandmother: {
+    type: 'passive',
+    instruction: '진행자가 손주 플레이어와 캐릭터를 알려줍니다',
+    excludeSelf: false,
+  },
+  sailor: {
+    type: 'select_one',
+    instruction: '술을 마실 생존 플레이어 1명을 선택하세요',
+    excludeSelf: false,
+  },
+  chambermaid: {
+    type: 'select_two',
+    instruction:
+      '오늘 밤 자기 능력으로 깨어났는지 확인할 생존 플레이어 2명을 선택하세요',
+    excludeSelf: true,
+  },
+  exorcist: {
+    type: 'select_one',
+    instruction: '오늘 밤 깨어나지 못하게 할 플레이어 1명을 선택하세요',
+    excludeSelf: true,
+  },
+  innkeeper: {
+    type: 'select_two',
+    instruction: '오늘 밤 사망할 수 없게 할 플레이어 2명을 선택하세요',
+    excludeSelf: false,
+  },
+  gambler: {
+    type: 'passive',
+    instruction: '플레이어와 캐릭터 추측은 진행자가 수동으로 처리합니다',
+    excludeSelf: false,
+  },
+  gossip: {
+    type: 'passive',
+    instruction: '낮 공개 발언 결과는 진행자가 수동으로 처리합니다',
+    excludeSelf: false,
+  },
+  courtier: {
+    type: 'passive',
+    instruction: '취하게 할 캐릭터 선택은 진행자가 수동으로 처리합니다',
+    excludeSelf: false,
+  },
+  professor: {
+    type: 'select_one',
+    instruction: '부활시킬 사망 플레이어를 선택하세요',
+    excludeSelf: true,
+    includeDeadTargets: true,
+  },
+  lunatic: {
+    type: 'passive',
+    instruction: '가짜 악마 행동은 진행자가 수동으로 안내합니다',
+    excludeSelf: false,
+  },
+  tinker: {
+    type: 'passive',
+    instruction: '돌연 사망 여부는 진행자가 수동으로 처리합니다',
+    excludeSelf: false,
+  },
+  moonchild: {
+    type: 'passive',
+    instruction: '달의 자손 공개 선택 결과는 진행자가 수동으로 처리합니다',
+    excludeSelf: false,
+  },
+  godfather: {
+    type: 'select_one',
+    instruction: '외지인이 낮에 사망했다면 죽일 플레이어를 선택하세요',
+    excludeSelf: false,
+  },
+  devils_advocate: {
+    type: 'select_one',
+    instruction: '내일 처형되어도 사망하지 않을 생존 플레이어를 선택하세요',
+    excludeSelf: false,
+  },
+  assassin: {
+    type: 'select_one',
+    instruction: '암살할 플레이어를 선택하세요 (1회 사용)',
+    excludeSelf: false,
+  },
+  zombuul: {
+    type: 'select_one',
+    instruction: '오늘 낮에 아무도 사망하지 않았다면 죽일 플레이어를 선택하세요',
+    excludeSelf: false,
+  },
+  pukka: {
+    type: 'select_one',
+    instruction: '중독시킬 플레이어를 선택하세요',
+    excludeSelf: false,
+  },
+  shabaloth: {
+    type: 'select_two',
+    instruction: '죽일 플레이어 2명을 선택하세요',
+    excludeSelf: false,
+  },
+  po: {
+    type: 'select_one',
+    instruction:
+      '죽일 플레이어 1명 또는, 지난밤 아무도 선택하지 않았다면 3명을 선택하세요',
+    excludeSelf: false,
+    allowedTargetCounts: [1, 3],
+  },
+
   // ── 여행자 (Traveller) ──
   bureaucrat: {
     type: 'select_one',

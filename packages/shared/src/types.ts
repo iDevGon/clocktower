@@ -71,6 +71,8 @@ export interface NightActionDef {
   excludeTraveller?: boolean;
   /** 죽은 플레이어도 대상으로 선택할 수 있는 역할 */
   includeDeadTargets?: boolean;
+  /** 선택 가능한 대상 수 목록. 예: 포는 1명 또는 3명 */
+  allowedTargetCounts?: number[];
 }
 
 export interface NightAction {

@@ -875,3 +875,49 @@ describe('BMR 밤 진행 순서', () => {
     );
   });
 });
+
+describe('BMR 밤 행동 정의', () => {
+  it('BMR 밤 행동 역할이 NIGHT_ACTIONS에 정의되어 있다', () => {
+    const bmrActionRoles = [
+      'sailor',
+      'chambermaid',
+      'exorcist',
+      'innkeeper',
+      'professor',
+      'godfather',
+      'devils_advocate',
+      'assassin',
+      'zombuul',
+      'pukka',
+      'shabaloth',
+      'po',
+      'grandmother',
+      'courtier',
+      'gambler',
+      'gossip',
+      'lunatic',
+      'tinker',
+      'moonchild',
+      'apprentice',
+    ];
+    for (const id of bmrActionRoles) {
+      expect(NIGHT_ACTIONS[id]).toBeDefined();
+    }
+  });
+
+  it('포는 1명 또는 3명을 선택할 수 있다', () => {
+    expect(NIGHT_ACTIONS.po?.type).toBe('select_one');
+    expect(NIGHT_ACTIONS.po?.allowedTargetCounts).toEqual([1, 3]);
+  });
+
+  it('객실 청소부는 자신을 제외한 생존 플레이어 2명을 선택한다', () => {
+    expect(NIGHT_ACTIONS.chambermaid).toMatchObject({
+      type: 'select_two',
+      excludeSelf: true,
+    });
+  });
+
+  it('교수는 사망 플레이어도 대상으로 선택할 수 있다', () => {
+    expect(NIGHT_ACTIONS.professor?.includeDeadTargets).toBe(true);
+  });
+});

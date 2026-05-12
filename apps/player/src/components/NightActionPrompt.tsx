@@ -109,7 +109,10 @@ export function NightActionPrompt({
     );
   }
 
-  const maxTargets = actionDef.type === 'select_two' ? 2 : 1;
+  const allowedTargetCounts =
+    actionDef.allowedTargetCounts ??
+    (actionDef.type === 'select_two' ? [2] : [1]);
+  const maxTargets = Math.max(...allowedTargetCounts);
   const availablePlayers = players.filter((p) => {
     if (actionDef.excludeSelf && p.id === myPlayerId) return false;
     if (actionDef.excludeTraveller && p.isTraveller) return false;
@@ -128,7 +131,7 @@ export function NightActionPrompt({
     });
   };
 
-  const canSubmit = selected.length === maxTargets;
+  const canSubmit = allowedTargetCounts.includes(selected.length);
 
   const isPhilosopherChannelled =
     role.id === 'philosopher' && effectiveRole.id !== role.id;
