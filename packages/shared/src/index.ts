@@ -1,3 +1,4 @@
+export * from './bmrAdjudication.js';
 export * from './characterTips.js';
 export * from './dictionary.js';
 export * from './events.js';
