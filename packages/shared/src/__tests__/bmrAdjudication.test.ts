@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  getBmrDeathWarnings,
   type BmrDeathWarningKind,
+  getBmrDeathWarnings,
 } from '../bmrAdjudication.js';
 import {
   PLAYER_STATUS_COLORS,
