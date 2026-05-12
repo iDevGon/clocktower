@@ -157,7 +157,23 @@ export type PlayerStatus =
   | 'no_ability'
   | 'bone_collector_ability'
   | 'barista_sober_healthy'
-  | 'barista_acts_twice';
+  | 'barista_acts_twice'
+  | 'innkeeper_protected'
+  | 'devils_advocate_protected'
+  | 'tea_lady_protected'
+  | 'sailor_drunk'
+  | 'innkeeper_drunk'
+  | 'courtier_drunk'
+  | 'minstrel_drunk'
+  | 'goon_drunk'
+  | 'pukka_poisoned'
+  | 'zombuul_registers_dead'
+  | 'fool_spent'
+  | 'assassin_spent'
+  | 'professor_spent'
+  | 'courtier_spent'
+  | 'po_chose_no_one'
+  | 'shabaloth_marked_dead';
 
 export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
   poisoned: '중독',
@@ -177,6 +193,22 @@ export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
   no_dashii_poisoned: '노 다시 중독',
   vigormortis_poisoned: '비고르모르티스 중독',
   vigormortis_retained: '비고르모르티스 유지',
+  innkeeper_protected: '여관 주인 보호',
+  devils_advocate_protected: '악마의 변호사 보호',
+  tea_lady_protected: '찻집 여인 보호',
+  sailor_drunk: '선원 취함',
+  innkeeper_drunk: '여관 주인 취함',
+  courtier_drunk: '궁정대신 취함',
+  minstrel_drunk: '음유시인 취함',
+  goon_drunk: '건달 취함',
+  pukka_poisoned: '푸카 중독',
+  zombuul_registers_dead: '좀비얼 사망 위장',
+  fool_spent: '어릿광대 능력 소모',
+  assassin_spent: '암살자 능력 소모',
+  professor_spent: '교수 능력 소모',
+  courtier_spent: '궁정대신 능력 소모',
+  po_chose_no_one: '포 휴식',
+  shabaloth_marked_dead: '사발로스 사망 표식',
 };
 
 export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
@@ -197,6 +229,22 @@ export const PLAYER_STATUS_COLORS: Record<PlayerStatus, string> = {
   no_dashii_poisoned: '#9b59b6',
   vigormortis_poisoned: '#9b59b6',
   vigormortis_retained: '#8e44ad',
+  innkeeper_protected: '#2f8f74',
+  devils_advocate_protected: '#8e5a3c',
+  tea_lady_protected: '#4f9d69',
+  sailor_drunk: '#b07f5c',
+  innkeeper_drunk: '#b07f5c',
+  courtier_drunk: '#b07f5c',
+  minstrel_drunk: '#b07f5c',
+  goon_drunk: '#b07f5c',
+  pukka_poisoned: '#9b59b6',
+  zombuul_registers_dead: '#5d5f6f',
+  fool_spent: '#7f8c8d',
+  assassin_spent: '#7f8c8d',
+  professor_spent: '#7f8c8d',
+  courtier_spent: '#7f8c8d',
+  po_chose_no_one: '#7b4c9a',
+  shabaloth_marked_dead: '#6f2f3a',
 };
 
 export const PLAYER_STATUS_DESCRIPTIONS: Record<PlayerStatus, string> = {
@@ -230,12 +278,37 @@ export const PLAYER_STATUS_DESCRIPTIONS: Record<PlayerStatus, string> = {
     '비고르모르티스가 죽인 하수인의 마을주민 이웃입니다. 해당 하수인이 능력을 유지하는 동안 중독됩니다.',
   vigormortis_retained:
     '비고르모르티스에게 죽은 하수인입니다. 비고르모르티스가 살아 있고 능력이 있으면 죽은 뒤에도 능력을 유지합니다.',
+  innkeeper_protected:
+    '여관 주인이 오늘 밤 사망하지 않도록 보호한 대상입니다. 암살자는 이 보호를 무시합니다.',
+  devils_advocate_protected:
+    '악마의 변호사가 다음 낮 처형 사망을 막도록 선택한 대상입니다.',
+  tea_lady_protected:
+    '찻집 여인 조건으로 사망하지 않을 수 있는 생존 이웃입니다. 암살자는 이 보호를 무시합니다.',
+  sailor_drunk: '선원 능력으로 황혼까지 취한 플레이어입니다.',
+  innkeeper_drunk: '여관 주인 능력으로 황혼까지 취한 플레이어입니다.',
+  courtier_drunk: '궁정대신 능력으로 정해진 기간 동안 취한 캐릭터입니다.',
+  minstrel_drunk: '음유시인 능력으로 다음 날 황혼까지 취한 플레이어입니다.',
+  goon_drunk: '건달을 그날 밤 처음 선택해 황혼까지 취한 플레이어입니다.',
+  pukka_poisoned:
+    '푸카가 중독시킨 대상입니다. 이후 푸카 효과로 사망하고 건강해질 수 있습니다.',
+  zombuul_registers_dead:
+    '좀비얼이 실제로는 살아있지만 사망한 것으로 등록된 상태입니다.',
+  fool_spent: '어릿광대의 첫 사망 방지 능력이 이미 소모되었습니다.',
+  assassin_spent: '암살자의 게임당 1회 사망 능력이 이미 소모되었습니다.',
+  professor_spent: '교수의 게임당 1회 부활 능력이 이미 소모되었습니다.',
+  courtier_spent:
+    '궁정대신의 게임당 1회 취하게 하는 능력이 이미 소모되었습니다.',
+  po_chose_no_one:
+    '포가 직전 실제 행동에서 아무도 선택하지 않아 다음 행동에서 3명을 선택해야 합니다.',
+  shabaloth_marked_dead:
+    '사발로스가 선택해 사망시킨 대상입니다. 다음 밤 토해내 부활할 수 있습니다.',
 };
 
 export const POISON_STATUSES: PlayerStatus[] = [
   'poisoned',
   'no_dashii_poisoned',
   'vigormortis_poisoned',
+  'pukka_poisoned',
 ];
 
 export function hasPoisonStatus(statuses: PlayerStatus[]): boolean {
