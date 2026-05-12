@@ -1,10 +1,15 @@
 import type {
+  BmrDeathMethod,
   NightAction,
   NightFeedbackPayload,
   Player,
   PlayerStatus,
 } from '@clocktower/shared';
-import { getRoleById, NIGHT_FEEDBACK } from '@clocktower/shared';
+import {
+  getBmrDeathWarnings,
+  getRoleById,
+  NIGHT_FEEDBACK,
+} from '@clocktower/shared';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
@@ -35,6 +40,16 @@ const ROLE_TARGET_ACTIONS: Record<string, TargetActionConfig> = {
   vigormortis: { label: '사망 처리', doneLabel: '사망', isKill: true },
   no_dashii: { label: '사망 처리', doneLabel: '사망', isKill: true },
   vortox: { label: '사망 처리', doneLabel: '사망', isKill: true },
+  zombuul: { label: '사망 처리', doneLabel: '사망', isKill: true },
+  pukka: { label: '사망 처리', doneLabel: '사망', isKill: true },
+  shabaloth: { label: '사망 처리', doneLabel: '사망', isKill: true },
+  po: { label: '사망 처리', doneLabel: '사망', isKill: true },
+  assassin: { label: '사망 처리', doneLabel: '사망', isKill: true },
+  godfather: { label: '사망 처리', doneLabel: '사망', isKill: true },
+  gossip: { label: '사망 처리', doneLabel: '사망', isKill: true },
+  gambler: { label: '사망 처리', doneLabel: '사망', isKill: true },
+  moonchild: { label: '사망 처리', doneLabel: '사망', isKill: true },
+  grandmother: { label: '사망 처리', doneLabel: '사망', isKill: true },
   poisoner: { label: '중독 처리', doneLabel: '중독됨', status: 'poisoned' },
   monk: { label: '보호 처리', doneLabel: '보호됨', status: 'protected' },
   snake_charmer: { label: '확인', doneLabel: '확인' },
@@ -54,6 +69,33 @@ const ROLE_TARGET_ACTIONS: Record<string, TargetActionConfig> = {
 
 /** 행동 로그에서 제외할 역할 (피드백 패널에서 별도 처리) */
 const HIDDEN_ACTION_ROLES = new Set(['ravenkeeper']);
+
+function getBmrDeathMethod(roleId: string): BmrDeathMethod {
+  switch (roleId) {
+    case 'assassin':
+      return 'assassin';
+    case 'godfather':
+      return 'godfather';
+    case 'gossip':
+      return 'gossip';
+    case 'gambler':
+      return 'gambler';
+    case 'moonchild':
+      return 'moonchild';
+    case 'grandmother':
+      return 'grandmother';
+    case 'pukka':
+      return 'pukka_delayed';
+    case 'shabaloth':
+      return 'shabaloth';
+    case 'po':
+      return 'po';
+    case 'zombuul':
+      return 'demon';
+    default:
+      return 'manual';
+  }
+}
 
 interface NightActionLogProps {
   actions: NightAction[];
@@ -286,6 +328,16 @@ export function NightActionLog({
                         : isActionPlayerMalfunctioning
                           ? 'actor_malfunctioning'
                           : null;
+                      const bmrWarnings = actionConfig.isKill
+                        ? getBmrDeathWarnings({
+                            roleId: action.roleId,
+                            method: getBmrDeathMethod(action.roleId),
+                            timing: 'night',
+                            actor: actionPlayer,
+                            target: targetPlayer,
+                            targetStatuses,
+                          })
+                        : [];
 
                       if (blockReason === 'actor_malfunctioning') {
                         return (
@@ -321,6 +373,25 @@ export function NightActionLog({
                         ? processedTargets.has(targetKey) ||
                           !isPlayerAlive(targetId)
                         : processedTargets.has(targetKey);
+                      const warningBadges =
+                        bmrWarnings.length > 0 ? (
+                          <View key={`${targetId}-warnings`}>
+                            {bmrWarnings.map((warning) => (
+                              <View
+                                key={warning.kind}
+                                style={[
+                                  styles.bmrWarningBadge,
+                                  warning.severity === 'bypass' &&
+                                    styles.bmrWarningBypass,
+                                ]}
+                              >
+                                <Text style={styles.bmrWarningText}>
+                                  {warning.message}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        ) : null;
                       if (action.roleId === 'pit_hag') {
                         return (
                           <Pressable
@@ -539,34 +610,36 @@ export function NightActionLog({
                       }
 
                       return (
-                        <Pressable
-                          key={targetId}
-                          onPress={() =>
-                            !alreadyDone &&
-                            handleTargetAction(
-                              action,
-                              i,
-                              targetId,
-                              actionConfig,
-                            )
-                          }
-                          style={[
-                            styles.killButton,
-                            alreadyDone && styles.killButtonDone,
-                          ]}
-                          disabled={alreadyDone}
-                        >
-                          <Text
+                        <View key={targetId} style={styles.targetActionGroup}>
+                          {warningBadges}
+                          <Pressable
+                            onPress={() =>
+                              !alreadyDone &&
+                              handleTargetAction(
+                                action,
+                                i,
+                                targetId,
+                                actionConfig,
+                              )
+                            }
                             style={[
-                              styles.killText,
-                              alreadyDone && styles.killTextDone,
+                              styles.killButton,
+                              alreadyDone && styles.killButtonDone,
                             ]}
+                            disabled={alreadyDone}
                           >
-                            {alreadyDone
-                              ? `${getPlayerName(targetId)} ${actionConfig.doneLabel}`
-                              : `${getPlayerName(targetId)} ${actionConfig.label}`}
-                          </Text>
-                        </Pressable>
+                            <Text
+                              style={[
+                                styles.killText,
+                                alreadyDone && styles.killTextDone,
+                              ]}
+                            >
+                              {alreadyDone
+                                ? `${getPlayerName(targetId)} ${actionConfig.doneLabel}`
+                                : `${getPlayerName(targetId)} ${actionConfig.label}`}
+                            </Text>
+                          </Pressable>
+                        </View>
                       );
                     })}
                   </View>

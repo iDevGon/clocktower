@@ -66,6 +66,26 @@ export function createNightActionLogStyles(scale: number) {
       gap: s(6),
       marginTop: s(6),
     },
+    targetActionGroup: {
+      gap: s(6),
+    },
+    bmrWarningBadge: {
+      borderWidth: 1,
+      borderColor: 'rgba(209, 170, 105, 0.45)',
+      backgroundColor: 'rgba(209, 170, 105, 0.12)',
+      borderRadius: s(6),
+      paddingHorizontal: s(8),
+      paddingVertical: s(5),
+    },
+    bmrWarningBypass: {
+      borderColor: 'rgba(184, 92, 92, 0.5)',
+      backgroundColor: 'rgba(184, 92, 92, 0.12)',
+    },
+    bmrWarningText: {
+      color: '#e0ddd8',
+      fontSize: s(11),
+      lineHeight: s(15),
+    },
     killButton: {
       backgroundColor: '#3a1a1a',
       borderWidth: 1,
