@@ -1396,7 +1396,8 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
   },
   zombuul: {
     type: 'select_one',
-    instruction: '오늘 낮에 아무도 사망하지 않았다면 죽일 플레이어를 선택하세요',
+    instruction:
+      '오늘 낮에 아무도 사망하지 않았다면 죽일 플레이어를 선택하세요',
     excludeSelf: false,
   },
   pukka: {
