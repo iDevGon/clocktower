@@ -202,7 +202,7 @@ export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
   minstrel_drunk: '음유시인 취함',
   goon_drunk: '건달 취함',
   pukka_poisoned: '푸카 중독',
-  zombuul_registers_dead: '좀비얼 사망 위장',
+  zombuul_registers_dead: '좀버얼 사망 위장',
   fool_spent: '어릿광대 능력 소모',
   assassin_spent: '암살자 능력 소모',
   professor_spent: '교수 능력 소모',
@@ -292,7 +292,7 @@ export const PLAYER_STATUS_DESCRIPTIONS: Record<PlayerStatus, string> = {
   pukka_poisoned:
     '푸카가 중독시킨 대상입니다. 이후 푸카 효과로 사망하고 건강해질 수 있습니다.',
   zombuul_registers_dead:
-    '좀비얼이 실제로는 살아있지만 사망한 것으로 등록된 상태입니다.',
+    '좀버얼이 실제로는 살아있지만 사망한 것으로 등록된 상태입니다.',
   fool_spent: '어릿광대의 첫 사망 방지 능력이 이미 소모되었습니다.',
   assassin_spent: '암살자의 게임당 1회 사망 능력이 이미 소모되었습니다.',
   professor_spent: '교수의 게임당 1회 부활 능력이 이미 소모되었습니다.',

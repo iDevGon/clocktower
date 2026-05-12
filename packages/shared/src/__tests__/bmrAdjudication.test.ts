@@ -207,12 +207,12 @@ describe('getBmrDeathWarnings', () => {
     ).toContain('fool_first_death');
   });
 
-  it('좀비얼 첫 사망은 사망 위장 선택지를 반환한다', () => {
+  it('좀버얼 첫 사망은 사망 위장 선택지를 반환한다', () => {
     const target = player({
       id: 'zombuul',
       role: {
         id: 'zombuul',
-        name: '좀비얼',
+        name: '좀버얼',
         team: 'demon',
         ability: '',
         edition: 'bad_moon_rising',

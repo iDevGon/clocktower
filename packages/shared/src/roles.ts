@@ -605,7 +605,7 @@ export const BAD_MOON_RISING_ROLES: Role[] = [
   // 악마 (4)
   {
     id: 'zombuul',
-    name: '좀비얼',
+    name: '좀버얼',
     team: 'demon',
     ability:
       '매일 밤*, 오늘 낮에 누구도 사망하지 않았다면, 플레이어 1명을 선택합니다: 그는 사망합니다. 당신이 처음으로 사망할 때, 실제로는 생존해 있지만 사망한 상태로 위장합니다.',

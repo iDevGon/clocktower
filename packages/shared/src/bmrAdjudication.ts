@@ -170,7 +170,7 @@ export function getBmrDeathWarnings({
       kind: 'zombuul_registers_dead',
       severity: 'choice',
       message:
-        '좀비얼의 첫 사망은 실제 사망 대신 사망한 것으로 위장될 수 있습니다.',
+        '좀버얼의 첫 사망은 실제 사망 대신 사망한 것으로 위장될 수 있습니다.',
     });
   }
 
