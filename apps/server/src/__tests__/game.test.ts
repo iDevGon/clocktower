@@ -225,6 +225,43 @@ describe('GameManager', () => {
       expect(kills).toEqual([players[0].id, players[1].id]);
       expect(gm.flushPendingNightKills()).toEqual([]);
     });
+
+    it('좀버얼 사망 위장 상태는 공개 상태만 사망으로 표시한다', () => {
+      const { gm, players } = createTestGame(5);
+      gm.assignRole(players[0].id, 'washerwoman');
+      gm.assignRole(players[1].id, 'empath');
+      gm.assignRole(players[2].id, 'fortune_teller');
+      gm.assignRole(players[3].id, 'poisoner');
+      gm.assignRole(players[4].id, 'zombuul');
+      gm.start();
+
+      gm.setPlayerStatuses(players[4].id, ['zombuul_registers_dead']);
+
+      expect(gm.getPlayer(players[4].id)?.isAlive).toBe(true);
+      expect(
+        gm.getState().players.find((p) => p.id === players[4].id)?.isAlive,
+      ).toBe(false);
+      expect(gm.checkWinCondition()).toBeNull();
+    });
+
+    it('사망 위장 중인 좀버얼은 유령 투표권으로만 투표한다', () => {
+      const { gm, players } = createTestGame(5);
+      gm.assignRole(players[0].id, 'washerwoman');
+      gm.assignRole(players[1].id, 'empath');
+      gm.assignRole(players[2].id, 'fortune_teller');
+      gm.assignRole(players[3].id, 'poisoner');
+      gm.assignRole(players[4].id, 'zombuul');
+      gm.start();
+      gm.setPhase('day');
+      gm.setPlayerStatuses(players[4].id, ['zombuul_registers_dead']);
+
+      expect(gm.castVote(players[4].id).success).toBe(true);
+      expect(gm.getPlayer(players[4].id)?.deadVoteUsed).toBe(true);
+      expect(gm.castVote(players[4].id).success).toBe(false);
+      expect(gm.getClockwiseVoteOrder(players[0].id)).not.toContain(
+        players[4].id,
+      );
+    });
   });
 
   describe('점쟁이 Red Herring', () => {

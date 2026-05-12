@@ -54,6 +54,10 @@ function filterSoberHealthyBlockedStatuses(
   );
 }
 
+function isPubliclyAlive(player: Player): boolean {
+  return player.isAlive && !player.statuses.includes('zombuul_registers_dead');
+}
+
 /**
  * 정보 능력에서 플레이어가 악으로 감지되는지 판정합니다.
  * - 은둔자(outsider) + misregistered → 악으로 감지
@@ -490,6 +494,10 @@ export class GameManager {
     }
     return {
       ...this.state,
+      players: this.state.players.map((player) => ({
+        ...player,
+        isAlive: isPubliclyAlive(player),
+      })),
       butlerMasters:
         Object.keys(butlerMasters).length > 0 ? butlerMasters : undefined,
     };
@@ -1571,7 +1579,7 @@ export class GameManager {
   isGhostVoteUsed(playerId: string): boolean {
     const player = this.getPlayer(playerId);
     if (!player) return false;
-    if (player.isAlive) return false;
+    if (isPubliclyAlive(player)) return false;
     return player.deadVoteUsed || this.ghostVotesUsed.has(playerId);
   }
 
@@ -1581,7 +1589,7 @@ export class GameManager {
       return { success: false, error: '플레이어를 찾을 수 없습니다' };
 
     // 거지: 투표 토큰이 필요. 토큰이 없으면 투표 불가
-    if (player.role?.id === 'beggar' && player.isAlive) {
+    if (player.role?.id === 'beggar' && isPubliclyAlive(player)) {
       if (!this.consumeBeggarToken(playerId)) {
         return {
           success: false,
@@ -1590,7 +1598,7 @@ export class GameManager {
       }
     }
 
-    if (!player.isAlive) {
+    if (!isPubliclyAlive(player)) {
       if (player.deadVoteUsed || this.ghostVotesUsed.has(playerId))
         return {
           success: false,
@@ -1831,7 +1839,7 @@ export class GameManager {
       const playerId = order[idx];
       const player = this.getPlayer(playerId);
       // 사망 플레이어도 원래 자리 순서대로 투표 (deadVoteUsed면 제외)
-      if (player && (player.isAlive || !player.deadVoteUsed)) {
+      if (player && (isPubliclyAlive(player) || !player.deadVoteUsed)) {
         result.push(playerId);
       }
     }

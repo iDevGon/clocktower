@@ -560,6 +560,7 @@ export function registerStorytellerHandlers(
           return isOnlyWhenDead
             ? !p.isAlive && game.hasPendingNightKill(p.id)
             : p.isAlive ||
+                p.statuses.includes('zombuul_registers_dead') ||
                 p.statuses.includes('vigormortis_retained') ||
                 p.statuses.includes('bone_collector_ability');
         });

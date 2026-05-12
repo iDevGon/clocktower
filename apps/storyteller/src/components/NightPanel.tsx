@@ -154,7 +154,9 @@ export function NightPanel({
           (p.role?.id === 'drunk' && p.drunkAs === activeNightRoleId)) &&
         (isOnlyWhenDead
           ? !p.isAlive
-          : p.isAlive || p.statuses.includes('vigormortis_retained')),
+          : p.isAlive ||
+            p.statuses.includes('zombuul_registers_dead') ||
+            p.statuses.includes('vigormortis_retained')),
     );
   }, [activeNightRoleId, players, nightWakeUpTargets]);
 

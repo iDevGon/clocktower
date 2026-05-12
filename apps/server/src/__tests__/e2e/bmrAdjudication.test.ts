@@ -46,4 +46,31 @@ describe('E2E: 피로물든달 판정 보조', () => {
     expect(ctx.app.game.getState().phase).toBe('night');
     expect(ctx.app.game.getPlayer(playerIds[1])?.isAlive).toBe(true);
   });
+
+  it('사망 위장 중인 좀버얼은 공개 상태가 사망이어도 밤에 행동할 수 있다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'washerwoman' },
+      { roleId: 'empath' },
+      { roleId: 'chef' },
+      { roleId: 'poisoner' },
+      { roleId: 'zombuul' },
+    ]);
+
+    ctx.app.game.setPlayerStatuses(playerIds[4], ['zombuul_registers_dead']);
+
+    expect(ctx.app.game.getPlayer(playerIds[4])?.isAlive).toBe(true);
+    expect(
+      ctx.app.game.getState().players.find((p) => p.id === playerIds[4])
+        ?.isAlive,
+    ).toBe(false);
+
+    const wakeTargetsPromise = waitForEvent<{ candidateIds: string[] }>(
+      ctx.storyteller,
+      'night:wakeUpTargets',
+    );
+    ctx.storyteller.emit('night:setActiveRole', 'zombuul');
+    const wakeTargets = await wakeTargetsPromise;
+
+    expect(wakeTargets.candidateIds).toContain(playerIds[4]);
+  });
 });
