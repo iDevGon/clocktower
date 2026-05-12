@@ -1,5 +1,6 @@
 import {
   ALL_TRAVELLER_ROLES,
+  type BmrDeathWarningKind,
   type GameSettings,
   getBmrDeathWarnings,
   getNightOrderForEdition,
@@ -512,37 +513,95 @@ export default function GrimoireScreen() {
     addLog(getDay(), getPhase(), `${getPlayerName(playerId)} 사망`, 'death');
   };
 
-  const getDeathWarningText = (
+  const applyPlayerStatus = (playerId: string, status: PlayerStatus) => {
+    const current = playerStatuses[playerId] ?? [];
+    if (!current.includes(status)) {
+      useGameStore.getState().addPlayerStatus(playerId, status);
+      syncPlayerStatuses(playerId, [...current, status]);
+    }
+    addLog(
+      getDay(),
+      getPhase(),
+      `${getPlayerName(playerId)} ${PLAYER_STATUS_LABELS[status]}`,
+    );
+  };
+
+  const getDeathWarnings = (
     playerId: string,
     method: 'manual' | 'execution',
     timing: 'day' | 'night',
   ) => {
     const target = gameState?.players.find((p) => p.id === playerId);
-    if (!target) return null;
-    const warnings = getBmrDeathWarnings({
+    if (!target) return [];
+    return getBmrDeathWarnings({
       roleId: method,
       method,
       timing,
       target,
       targetStatuses: playerStatuses[playerId] ?? target.statuses,
     });
+  };
+
+  const getDeathWarningText = (
+    playerId: string,
+    method: 'manual' | 'execution',
+    timing: 'day' | 'night',
+  ) => {
+    const warnings = getDeathWarnings(playerId, method, timing);
     if (warnings.length === 0) return null;
     return warnings.map((warning) => `- ${warning.message}`).join('\n');
   };
 
-  const showDeathWarningModal = (playerId: string, warningText: string) => {
-    showModal(
-      '사망 판정 확인',
-      [
-        {
-          text: '그래도 사망 처리',
-          style: 'destructive',
-          onPress: () => performKill(playerId),
-        },
-        { text: '취소', style: 'cancel' },
-      ],
-      warningText,
+  const hasDeathWarningKind = (
+    playerId: string,
+    method: 'manual' | 'execution',
+    timing: 'day' | 'night',
+    kind: BmrDeathWarningKind,
+  ) =>
+    getDeathWarnings(playerId, method, timing).some(
+      (warning) => warning.kind === kind,
     );
+
+  const showDeathWarningModal = (playerId: string, warningText: string) => {
+    const options: ActionModalOption[] = [
+      {
+        text: '생존 처리',
+        onPress: () =>
+          addLog(
+            getDay(),
+            getPhase(),
+            `${getPlayerName(playerId)} 사망 판정: 생존 처리`,
+          ),
+      },
+    ];
+
+    const timing = getPhase() === 'night' ? 'night' : 'day';
+    if (hasDeathWarningKind(playerId, 'manual', timing, 'fool_first_death')) {
+      options.push({
+        text: '어릿광대 능력 소모 후 생존',
+        onPress: () => applyPlayerStatus(playerId, 'fool_spent'),
+      });
+    }
+
+    if (
+      hasDeathWarningKind(playerId, 'manual', timing, 'zombuul_registers_dead')
+    ) {
+      options.push({
+        text: '좀버얼 사망 위장 처리',
+        onPress: () => applyPlayerStatus(playerId, 'zombuul_registers_dead'),
+      });
+    }
+
+    options.push(
+      {
+        text: '그래도 사망 처리',
+        style: 'destructive',
+        onPress: () => performKill(playerId),
+      },
+      { text: '취소', style: 'cancel' },
+    );
+
+    showModal('사망 판정 확인', options, warningText);
   };
 
   const kill = (playerId: string) => {
@@ -555,19 +614,7 @@ export default function GrimoireScreen() {
     performKill(playerId);
   };
 
-  const setPlayerStatus = (playerId: string, status: PlayerStatus) => {
-    const store = useGameStore.getState();
-    const current = playerStatuses[playerId] ?? [];
-    if (!current.includes(status)) {
-      store.addPlayerStatus(playerId, status);
-      syncPlayerStatuses(playerId, [...current, status]);
-    }
-    addLog(
-      getDay(),
-      getPhase(),
-      `${getPlayerName(playerId)} ${PLAYER_STATUS_LABELS[status]}`,
-    );
-  };
+  const setPlayerStatus = applyPlayerStatus;
 
   const revive = (playerId: string) => {
     rawRevive(playerId);
@@ -611,7 +658,10 @@ export default function GrimoireScreen() {
     }
   };
 
-  const handleSetPhase = (phase: Parameters<typeof setPhase>[0]) => {
+  const handleSetPhase = (
+    phase: Parameters<typeof setPhase>[0],
+    options?: Parameters<typeof setPhase>[1],
+  ) => {
     if (phase === 'night') {
       useGameStore.getState().clearNightActions();
       useGameStore.getState().setActiveNightRoleId(null);
@@ -625,7 +675,7 @@ export default function GrimoireScreen() {
     if (gameState?.phase === 'ended' && phase !== 'ended') {
       useGameStore.getState().setGameResult(null);
     }
-    setPhase(phase);
+    setPhase(phase, options);
     addLog(
       phase === 'day' ? getDay() + 1 : getDay(),
       phase,
@@ -661,6 +711,7 @@ export default function GrimoireScreen() {
 
   const showDayCompleteModal = () => {
     const warningText = getExecutionTransitionWarningText();
+    const candidateId = executionCandidateData?.playerId;
     showModal(
       warningText ? '처형 판정 확인' : '다음 날 밤으로 진행',
       [
@@ -668,6 +719,51 @@ export default function GrimoireScreen() {
           text: '밤으로 전환',
           onPress: () => handleSetPhase('night'),
         },
+        ...(warningText
+          ? [
+              {
+                text: '생존 처리 후 밤으로 전환',
+                onPress: () => handleSetPhase('night', { skipExecution: true }),
+              },
+              ...(candidateId &&
+              hasDeathWarningKind(
+                candidateId,
+                'execution',
+                'day',
+                'fool_first_death',
+              )
+                ? [
+                    {
+                      text: '어릿광대 능력 소모 후 밤으로 전환',
+                      onPress: () => {
+                        applyPlayerStatus(candidateId, 'fool_spent');
+                        handleSetPhase('night', { skipExecution: true });
+                      },
+                    },
+                  ]
+                : []),
+              ...(candidateId &&
+              hasDeathWarningKind(
+                candidateId,
+                'execution',
+                'day',
+                'zombuul_registers_dead',
+              )
+                ? [
+                    {
+                      text: '좀버얼 사망 위장 후 밤으로 전환',
+                      onPress: () => {
+                        applyPlayerStatus(
+                          candidateId,
+                          'zombuul_registers_dead',
+                        );
+                        handleSetPhase('night', { skipExecution: true });
+                      },
+                    },
+                  ]
+                : []),
+            ]
+          : []),
         { text: '취소', style: 'cancel' },
       ],
       warningText ?? undefined,

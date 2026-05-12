@@ -470,7 +470,10 @@ export interface StorytellerToServerEvents {
   'game:start': (
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
-  'game:setPhase': (phase: Phase) => void;
+  'game:setPhase': (
+    phase: Phase,
+    options?: { skipExecution?: boolean },
+  ) => void;
   'day:setSubPhase': (subPhase: DaySubPhase) => void;
   'game:assignRole': (data: {
     playerId: string;

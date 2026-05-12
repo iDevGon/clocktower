@@ -69,7 +69,8 @@ export function useGameActions() {
   );
 
   const setPhase = useCallback(
-    (phase: Phase) => socket?.emit('game:setPhase', phase),
+    (phase: Phase, options?: { skipExecution?: boolean }) =>
+      socket?.emit('game:setPhase', phase, options),
     [socket],
   );
 

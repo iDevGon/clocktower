@@ -305,61 +305,65 @@ export function registerStorytellerHandlers(
       callback({ success: true });
     });
 
-    socket.on('game:setPhase', (phase) => {
+    socket.on('game:setPhase', (phase, options) => {
       // 밤 전환 시 → 최다 투표 후보 처형 실행
       if (phase === 'night') {
         const candidate = game.getExecutionCandidate();
         if (candidate) {
-          const candidatePlayer = game.getPlayer(candidate.playerId);
-          game.kill(candidate.playerId);
-          game.markExecution();
-          const killedPlayer = game.getPlayer(candidate.playerId);
-          emitDeathTriggers(candidatePlayer, storytellerIo, {
-            isNight: false,
-          });
-          if (killedPlayer) {
-            // 처형 알림을 먼저 전송 (사망 알림보다 먼저)
-            playerIo.emit('execution:announced', {
-              executedId: candidate.playerId,
-              executedName: killedPlayer.name,
-              reason: 'execution',
-              detail: `${killedPlayer.name}이(가) 투표로 처형되었습니다`,
+          if (options?.skipExecution) {
+            game.markExecution();
+          } else {
+            const candidatePlayer = game.getPlayer(candidate.playerId);
+            game.kill(candidate.playerId);
+            game.markExecution();
+            const killedPlayer = game.getPlayer(candidate.playerId);
+            emitDeathTriggers(candidatePlayer, storytellerIo, {
+              isNight: false,
             });
-            storytellerIo.emit('execution:announced', {
-              executedId: candidate.playerId,
-              executedName: killedPlayer.name,
-              reason: 'execution',
-              detail: `${killedPlayer.name}이(가) 투표로 처형되었습니다`,
-            });
-            playerIo.emit('game:playerUpdate', killedPlayer);
-          }
-          // 처형 후 승리 조건 체크
-          const executedRoleId = killedPlayer?.role?.id;
-          const winResult = game.checkWinCondition(
-            executedRoleId,
-            candidate.playerId,
-          );
-          if (winResult) {
-            winResult.cause = 'execution';
-            playerIo.emit('game:end', winResult);
-            playerIo.emit('game:phase', 'ended');
-            storytellerIo.emit('game:end', winResult);
-            storytellerIo.emit('game:state', game.getStorytellerState());
-            return;
-          }
-          emitPromotionIfAny(game, playerIo, storytellerIo);
-          const butcher = game.getButcherExtraNominator();
-          if (butcher) {
-            game.consumeButcherExtraNominationWindow();
-            game.returnToNomination();
-            playerIo.emit('game:phase', 'day');
-            playerIo.emit('day:subPhase', 'nomination');
-            storytellerIo.emit('butcher:extraNomination', {
-              butcherId: butcher.id,
-              butcherName: butcher.name,
-            });
-            storytellerIo.emit('game:state', game.getStorytellerState());
-            return;
+            if (killedPlayer) {
+              // 처형 알림을 먼저 전송 (사망 알림보다 먼저)
+              playerIo.emit('execution:announced', {
+                executedId: candidate.playerId,
+                executedName: killedPlayer.name,
+                reason: 'execution',
+                detail: `${killedPlayer.name}이(가) 투표로 처형되었습니다`,
+              });
+              storytellerIo.emit('execution:announced', {
+                executedId: candidate.playerId,
+                executedName: killedPlayer.name,
+                reason: 'execution',
+                detail: `${killedPlayer.name}이(가) 투표로 처형되었습니다`,
+              });
+              playerIo.emit('game:playerUpdate', killedPlayer);
+            }
+            // 처형 후 승리 조건 체크
+            const executedRoleId = killedPlayer?.role?.id;
+            const winResult = game.checkWinCondition(
+              executedRoleId,
+              candidate.playerId,
+            );
+            if (winResult) {
+              winResult.cause = 'execution';
+              playerIo.emit('game:end', winResult);
+              playerIo.emit('game:phase', 'ended');
+              storytellerIo.emit('game:end', winResult);
+              storytellerIo.emit('game:state', game.getStorytellerState());
+              return;
+            }
+            emitPromotionIfAny(game, playerIo, storytellerIo);
+            const butcher = game.getButcherExtraNominator();
+            if (butcher) {
+              game.consumeButcherExtraNominationWindow();
+              game.returnToNomination();
+              playerIo.emit('game:phase', 'day');
+              playerIo.emit('day:subPhase', 'nomination');
+              storytellerIo.emit('butcher:extraNomination', {
+                butcherId: butcher.id,
+                butcherName: butcher.name,
+              });
+              storytellerIo.emit('game:state', game.getStorytellerState());
+              return;
+            }
           }
         }
 

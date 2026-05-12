@@ -12,6 +12,11 @@ describe('grimoire BMR death warnings', () => {
     expect(source).toContain('getBmrDeathWarnings');
     expect(source).toContain('showDeathWarningModal');
     expect(source).toContain("getDeathWarningText(playerId, 'manual'");
+    expect(source).toContain('생존 처리');
+    expect(source).toContain("applyPlayerStatus(playerId, 'fool_spent')");
+    expect(source).toContain(
+      "applyPlayerStatus(playerId, 'zombuul_registers_dead')",
+    );
     expect(source).toContain('그래도 사망 처리');
   });
 
@@ -20,6 +25,7 @@ describe('grimoire BMR death warnings', () => {
     expect(source).toContain(
       "getDeathWarningText(candidateId, 'execution', 'day')",
     );
+    expect(source).toContain('skipExecution: true');
     expect(source).toContain('처형 판정 확인');
   });
 });
