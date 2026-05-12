@@ -164,8 +164,8 @@ export function FeedbackDisplay({ feedback, compact }: FeedbackDisplayProps) {
     case 'grimoire':
       return (
         <View style={bannerStyle}>
-          {!compact && <Text style={labelStyle}>마법서</Text>}
-          {compact && <Text style={compactStyles.grimoireTitle}>마법서</Text>}
+          {!compact && <Text style={labelStyle}>마도서</Text>}
+          {compact && <Text style={compactStyles.grimoireTitle}>마도서</Text>}
           <View style={sharedStyles.grimoireList}>
             {feedback.entries.map((entry) => (
               <View

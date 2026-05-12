@@ -593,7 +593,7 @@ export interface StorytellerToServerEvents {
   }) => void;
   /** 희생양 처형 교체: 현재 처형 후보를 희생양으로 교체 */
   'scapegoat:swap': (data: { scapegoatId: string }) => void;
-  /** 유골 수집가가 죽은 플레이어의 능력을 황혼까지 복구 */
+  /** 뼈 수집가가 죽은 플레이어의 능력을 황혼까지 복구 */
   'boneCollector:restore': (data: {
     boneCollectorId: string;
     targetPlayerId: string;

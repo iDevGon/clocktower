@@ -174,7 +174,7 @@ export class GameManager {
   private vigormortisPoisonTargets = new Map<string, string>();
   // 사악한 쌍둥이 매핑 (evilTwinId → goodTwinId)
   private evilTwinPairs = new Map<string, string>();
-  // 백정: 첫 처형 후 추가 지명 1회
+  // 푸주한: 첫 처형 후 추가 지명 1회
   private butcherExtraNominationAvailable = false;
   private butcherExtraNominationUsed = false;
   private butcherExtraNominatorId: string | null = null;

@@ -167,7 +167,7 @@ export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
   good_twin: '선한 쌍둥이',
   evil_twin: '악한 쌍둥이',
   no_ability: '능력 소진',
-  bone_collector_ability: '유골 수집가 능력',
+  bone_collector_ability: '뼈 수집가 능력',
   barista_sober_healthy: '바리스타 맑음/건강',
   barista_acts_twice: '바리스타 2회 발동',
   no_dashii_poisoned: '노 다시 중독',
@@ -212,10 +212,10 @@ export const PLAYER_STATUS_DESCRIPTIONS: Record<PlayerStatus, string> = {
   good_twin:
     '사악한 쌍둥이의 선한 쌍둥이. 이 플레이어가 처형되면 악 팀이 승리합니다.',
   evil_twin:
-    '사악한 쌍둥이. 선한 쌍둥이가 살아 있는 동안 처형으로 사망하지 않습니다.',
+    '사악한 쌍둥이. 선/악 쌍둥이가 둘 다 살아있는 한 선한 팀은 승리할 수 없습니다.',
   no_ability: '1회성 능력을 이미 사용했습니다.',
   bone_collector_ability:
-    '유골 수집가가 오늘 능력을 되돌려준 죽은 플레이어입니다.',
+    '뼈 수집가가 오늘 능력을 되돌려준 죽은 플레이어입니다.',
   barista_sober_healthy:
     '바리스타가 부여한 맑은 정신/건강 상태입니다. 중독과 취함을 무시합니다.',
   barista_acts_twice:

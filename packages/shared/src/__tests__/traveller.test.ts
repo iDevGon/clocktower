@@ -10,6 +10,91 @@ import {
 } from '../roles.js';
 
 describe('여행자 역할 정의', () => {
+  it('여행자 명칭과 설명은 한국어 시트 문구와 일치한다', () => {
+    const expectedTravellers = {
+      apprentice: {
+        name: '수습생',
+        ability:
+          '당신의 첫 번째 밤에 선한 팀이라면 주민의 능력을, 악한 팀이라면 하수인의 능력을 얻습니다.',
+      },
+      barista: {
+        name: '바리스타',
+        ability:
+          '매일 밤, 황혼이 될 때까지 플레이어 1명으로 하여금, 1) 맨정신 및 건강한 상태로 진실된 정보만 얻게 만들거나 2) 능력이 2번 작동하게 합니다. 그는 둘 중 무엇을 적용받는지 알게 됩니다.',
+      },
+      beggar: {
+        name: '거지',
+        ability:
+          '투표하려면 투표 토큰이 필요합니다. 사망한 플레이어에게서 투표 토큰을 받으면, 그의 소속을 알아냅니다. 당신은 맨정신이며 건강합니다.',
+      },
+      bishop: {
+        name: '주교',
+        ability:
+          '이야기꾼만이 누군가를 지목할 수 있습니다. 매일 낮, 상대 팀 플레이어 1명 이상이 지목되어야 합니다.',
+      },
+      bone_collector: {
+        name: '뼈 수집가',
+        ability:
+          '게임당 1번, 밤에, 사망한 플레이어 1명을 선택합니다. 그는 황혼까지 자기 능력을 되찾습니다.',
+      },
+      bureaucrat: {
+        name: '관료',
+        ability:
+          '매일 밤, (당신을 제외하고) 플레이어 1명을 선택합니다: 다음 날, 그의 투표는 3표로 계산합니다.',
+      },
+      butcher_traveller: {
+        name: '푸주한',
+        ability:
+          '매일 낮, 첫 번째 처형이 끝난 후, 당신은 한 번 더 지목할 수 있습니다.',
+      },
+      deviant: {
+        name: '이단아',
+        ability: '오늘 웃음을 선사했다면, 추방으로 사망할 수 없습니다.',
+      },
+      gunslinger: {
+        name: '총잡이',
+        ability:
+          '매일 낮, 첫 번째 투표를 집계한 후, 투표에 참여한 플레이어 1명을 선택할 수 있습니다. 그는 사망합니다.',
+      },
+      harlot: {
+        name: '매춘부',
+        ability:
+          '매일 밤*, 생존한 플레이어 1명을 선택합니다: 그가 동의한다면, 그의 캐릭터를 알게 되지만 둘 다 사망할 수도 있습니다.',
+      },
+      judge: {
+        name: '판사',
+        ability:
+          '게임당 1번, 다른 플레이어가 누군가를 지목했을 때, 이번 처형의 성패를 당신이 단독으로 선택할 수 있습니다.',
+      },
+      matron: {
+        name: '가정교사',
+        ability:
+          '매일 낮, 플레이어 2명의 자리를 맞바꿀 수 있습니다(낮마다 총 3번까지 가능). 플레이어들은 자기 자리를 떠나 1:1로 대화할 수 없습니다.',
+      },
+      scapegoat: {
+        name: '희생양',
+        ability:
+          '당신의 팀 소속 플레이어 1명이 처형당하면, 당신이 대신 처형당할 수도 있습니다.',
+      },
+      thief: {
+        name: '도둑',
+        ability:
+          '매일 밤, (당신을 제외하고) 플레이어 1명을 선택합니다. 다음 날, 그의 투표는 음수로 계산합니다.',
+      },
+      voudon: {
+        name: '부두술사',
+        ability:
+          '오직 사망한 플레이어와 당신만 투표할 수 있습니다. 투표 토큰 없이도 투표할 수 있으며, 50% 이상의 찬성표를 요구하지 않습니다.',
+      },
+    };
+
+    for (const traveller of ALL_TRAVELLER_ROLES) {
+      expect(traveller).toMatchObject(
+        expectedTravellers[traveller.id as keyof typeof expectedTravellers],
+      );
+    }
+  });
+
   it('ALL_TRAVELLER_ROLES에 모든 에디션 여행자가 포함된다', () => {
     const expectedCount =
       TROUBLE_BREWING_TRAVELLERS.length +

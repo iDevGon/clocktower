@@ -148,7 +148,7 @@ interface PlayerState {
     scapegoatId: string;
     scapegoatName: string;
   } | null;
-  /** 창녀 방문 동의 요청 */
+  /** 매춘부 방문 동의 요청 */
   harlotConsentRequest: {
     harlotId: string;
     harlotName: string;

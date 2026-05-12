@@ -44,7 +44,7 @@ describe('attachGameListeners', () => {
     usePlayerStore.getState().reset();
   });
 
-  it('창녀 본인에게는 동의한 대상의 역할명을 표시한다', () => {
+  it('매춘부 본인에게는 동의한 대상의 역할명을 표시한다', () => {
     const socket = new FakeSocket();
     attachGameListeners(socket as unknown as AppSocket);
     usePlayerStore.getState().set({ playerId: 'harlot' });

@@ -754,7 +754,7 @@ describe('GameManager - 여행자 시스템', () => {
       expect(blocked.success).toBe(false);
     });
 
-    it('유골 수집가는 죽은 플레이어 1명에게 오늘 능력을 되돌려준다', () => {
+    it('뼈 수집가는 죽은 플레이어 1명에게 오늘 능력을 되돌려준다', () => {
       const { gm, players } = createStartedGame();
       const collector = gm.addTraveller('Bone Collector');
       expect(collector).not.toBeNull();
@@ -897,7 +897,7 @@ describe('GameManager - 여행자 시스템', () => {
       expect(gm.shouldRequestDeviantExileJudgement()).toBe(false);
     });
 
-    it('취하거나 중독된 창녀는 동의를 받아도 실제 역할명을 받지 않는다', () => {
+    it('취하거나 중독된 매춘부는 동의를 받아도 실제 역할명을 받지 않는다', () => {
       const { gm, players } = createStartedGame();
       const harlot = gm.addTraveller('Harlot');
       expect(harlot).not.toBeNull();

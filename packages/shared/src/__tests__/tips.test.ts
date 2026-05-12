@@ -309,6 +309,50 @@ describe('getCharacterTips (characterTips)', () => {
 });
 
 describe('CHARACTER_TIPS 데이터', () => {
+  it('성결자 팁은 첫 지목으로 능력이 소모됨을 안내한다', () => {
+    expect(CHARACTER_TIPS.virgin.playTips).toContain(
+      '능력은 첫 번째 지목 때 소모됩니다. 외지인, 하수인, 악마, 여행자가 먼저 지목하면 처형은 없지만 이후 주민이 지목해도 발동하지 않습니다.',
+    );
+  });
+
+  it('사악한 쌍둥이 팁은 선 팀 승리 불가 조건을 안내한다', () => {
+    expect(CHARACTER_TIPS.evil_twin.playTips).toContain(
+      '선/악 쌍둥이가 둘 다 살아있는 한, 선 팀은 승리할 수 없습니다. 악마가 처형되어도 게임이 계속됩니다.',
+    );
+  });
+
+  it('보르톡스 팁은 현자의 정보도 거짓 정보 대상임을 안내한다', () => {
+    const vortoxTips = [
+      ...CHARACTER_TIPS.vortox.playTips,
+      ...CHARACTER_TIPS.vortox.counterTips,
+    ];
+    expect(vortoxTips.join('\n')).not.toContain(
+      '현자, 변종 등 마을주민 능력이 아닌 역할은 보르톡스의 영향을 받지 않아 정확한 정보를 제공합니다.',
+    );
+    expect(vortoxTips).toContain(
+      '현자처럼 주민 능력으로 얻는 정보도 거짓이어야 합니다. 보르톡스 게임에서는 주민 정보의 반대 가능성을 기준으로 검토하세요.',
+    );
+  });
+
+  it('여행자 팁은 현재 한국어 명칭을 사용한다', () => {
+    const travellerTips = [
+      ...CHARACTER_TIPS.butcher_traveller.playTips,
+      ...CHARACTER_TIPS.butcher_traveller.counterTips,
+      ...CHARACTER_TIPS.harlot.playTips,
+      ...CHARACTER_TIPS.harlot.counterTips,
+      ...CHARACTER_TIPS.deviant.playTips,
+      ...CHARACTER_TIPS.deviant.counterTips,
+      ...CHARACTER_TIPS.apprentice.playTips,
+      ...CHARACTER_TIPS.apprentice.counterTips,
+      ...CHARACTER_TIPS.matron.playTips,
+      ...CHARACTER_TIPS.matron.counterTips,
+      ...CHARACTER_TIPS.voudon.playTips,
+      ...CHARACTER_TIPS.voudon.counterTips,
+    ].join('\n');
+
+    expect(travellerTips).not.toMatch(/백정|창녀|기인|견습생|사감|부두\b/);
+  });
+
   it('sweetheart (Sects & Violets) 역할의 팁이 존재한다', () => {
     const tips = CHARACTER_TIPS.sweetheart;
     expect(tips).toBeDefined();

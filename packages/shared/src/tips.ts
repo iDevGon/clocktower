@@ -207,7 +207,7 @@ export const GAMEPLAY_TIPS: GameTip[] = [
   },
   {
     category: 'day',
-    text: '마을주민이 성결자를 지명하면 지명자가 처형됩니다.',
+    text: '성결자는 첫 지목 때 능력이 소모되며, 주민이 지목한 경우에만 지목자가 처형됩니다.',
     frequency: 1.0,
     roleId: 'virgin',
   },

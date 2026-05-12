@@ -1915,8 +1915,8 @@ export default function GrimoireScreen() {
 
       <ConfirmModal
         visible={!!deviantExileJudgement}
-        title="기인 추방 판정"
-        message={`${deviantExileJudgement?.targetName ?? '기인'}의 추방 투표가 통과했습니다. 오늘 웃기지 않았다고 판단하여 추방할까요?`}
+        title="이단아 추방 판정"
+        message={`${deviantExileJudgement?.targetName ?? '이단아'}의 추방 투표가 통과했습니다. 오늘 웃기지 않았다고 판단하여 추방할까요?`}
         confirmText="추방"
         cancelText="살림"
         confirmStyle="destructive"

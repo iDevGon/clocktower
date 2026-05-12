@@ -617,8 +617,8 @@ describe('S&V GameManager', () => {
     });
   });
 
-  describe('사악한 쌍둥이 처형 면역', () => {
-    it('사악한 쌍둥이는 선한 쌍둥이가 살아있으면 처형 면역 대상이다', () => {
+  describe('사악한 쌍둥이 상태', () => {
+    it('사악한 쌍둥이는 선한 쌍둥이가 살아있으면 선 팀 승리를 막는다', () => {
       const { gm, players } = createSVGame(7);
       gm.assignRole(players[0].id, 'clockmaker');
       gm.assignRole(players[1].id, 'dreamer');

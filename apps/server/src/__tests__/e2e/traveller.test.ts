@@ -349,7 +349,7 @@ describe('E2E: S&V 여행자 진행 이벤트', () => {
     expect(result.targetRoleName).toBeDefined();
   }, 20000);
 
-  it('취한 창녀는 방문 동의를 받아도 실제 역할명을 받지 않는다', async () => {
+  it('취한 매춘부는 방문 동의를 받아도 실제 역할명을 받지 않는다', async () => {
     const { playerIds } = await setupFullGame(ctx);
     const harlot = await addTravellerWithRole(ctx, 'Harlot', 'harlot', 'good');
     ctx.app.game.setPlayerStatuses(harlot.playerId, ['drunk']);

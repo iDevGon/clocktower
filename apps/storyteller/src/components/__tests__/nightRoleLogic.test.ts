@@ -65,7 +65,7 @@ describe('nightRoleLogic', () => {
             travellerAlignment: 'evil',
             role: {
               id: 'harlot',
-              name: '창녀',
+              name: '매춘부',
               team: 'traveller',
               ability: '',
               edition: 'sects_and_violets',

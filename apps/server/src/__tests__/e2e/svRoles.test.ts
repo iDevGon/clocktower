@@ -115,6 +115,61 @@ describe('E2E: S&V 낮 능력 검증', () => {
     expect(result.success).toBe(true);
   }, 15000);
 
+  it('사악한 쌍둥이도 처형 후보가 되면 실제로 처형된다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'clockmaker' },
+      { roleId: 'dreamer' },
+      { roleId: 'flowergirl' },
+      { roleId: 'oracle' },
+      { roleId: 'seamstress' },
+      { roleId: 'evil_twin' },
+      { roleId: 'fang_gu' },
+    ]);
+
+    const twinStatePromise = waitForEvent(
+      ctx.storyteller as Socket,
+      'game:state',
+    );
+    ctx.storyteller.emit('evilTwin:assignGoodTwin', {
+      evilTwinPlayerId: playerIds[5],
+      goodTwinPlayerId: playerIds[0],
+    });
+    await twinStatePromise;
+    await advanceToDay(ctx);
+
+    const voteStartPromise = waitForEvent(
+      ctx.players[5] as Socket,
+      'vote:start',
+    );
+    ctx.storyteller.emit('vote:nominate', {
+      nominatorId: playerIds[0],
+      nomineeId: playerIds[5],
+    });
+    await voteStartPromise;
+
+    for (let i = 0; i < 4; i++) {
+      await new Promise<void>((resolve) => {
+        ctx.players[i].emit('vote:cast', () => resolve());
+      });
+    }
+
+    const voteResultPromise = waitForEvent(
+      ctx.players[0] as Socket,
+      'vote:result',
+    );
+    ctx.storyteller.emit('vote:close');
+    await voteResultPromise;
+
+    const executionPromise = waitForEvent<{ executedId: string }>(
+      ctx.players[0] as Socket,
+      'execution:announced',
+    );
+    ctx.storyteller.emit('game:setPhase', 'night');
+
+    const execution = await executionPromise;
+    expect(execution.executedId).toBe(playerIds[5]);
+  }, 15000);
+
   it('마녀 저주 사망은 처형으로 기록하지 않는다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [
       { roleId: 'clockmaker' },

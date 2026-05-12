@@ -292,7 +292,7 @@ export function attachGameListeners(socket: AppSocket) {
           : '방문에 동의했습니다';
     usePlayerStore.getState().set({ harlotConsentRequest: null });
     usePlayerStore.getState().showEventToast({
-      title: '창녀 방문 결과',
+      title: '매춘부 방문 결과',
       message,
     });
   });

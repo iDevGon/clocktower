@@ -388,7 +388,7 @@ export function useSocketConnection() {
           const gs = useGameStore.getState().gameState;
           const msg = `${data.butcherName}이(가) 추가 지명을 할 수 있습니다`;
           useGameStore.getState().showEventToast({
-            title: '백정 추가 지명',
+            title: '푸주한 추가 지명',
             message: msg,
           });
           useLogStore.getState().addLog(gs?.day ?? 0, 'day', msg, 'ability');
@@ -396,7 +396,7 @@ export function useSocketConnection() {
         newSocket.on('deviant:exileJudgement', (data) => {
           useGameStore.getState().setDeviantExileJudgement(data);
           useGameStore.getState().showEventToast({
-            title: '기인 추방 판정',
+            title: '이단아 추방 판정',
             message: `${data.targetName} 추방 투표가 통과했습니다`,
           });
         });
@@ -408,7 +408,7 @@ export function useSocketConnection() {
               : `${data.targetName}이(가) ${data.harlotName}의 방문에 동의했습니다`
             : `${data.targetName}이(가) ${data.harlotName}의 방문을 거절했습니다`;
           useGameStore.getState().showEventToast({
-            title: '창녀 방문 결과',
+            title: '매춘부 방문 결과',
             message: msg,
           });
           useLogStore.getState().addLog(gs?.day ?? 0, 'night', msg, 'ability');

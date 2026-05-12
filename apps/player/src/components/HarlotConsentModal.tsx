@@ -15,7 +15,7 @@ export function HarlotConsentModal({ onRespond }: HarlotConsentModalProps) {
     <Modal visible transparent animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.panel}>
-          <Text style={styles.title}>창녀 방문 요청</Text>
+          <Text style={styles.title}>매춘부 방문 요청</Text>
           <Text style={styles.message}>
             {request.harlotName}이(가) 당신을 방문했습니다. 동의하면 당신의
             캐릭터를 알게 됩니다.

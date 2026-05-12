@@ -50,8 +50,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     id: 'washerwoman',
     name: '세탁부',
     team: 'townsfolk',
-    ability:
-      '게임 시작 시, 2명의 플레이어 중 1명이 특정 마을주민임을 알게 됩니다.',
+    ability: '게임 시작 시, 플레이어 2명 중 1명이 특정 주민임을 알게 됩니다.',
     edition: 'trouble_brewing',
   },
   {
@@ -59,15 +58,14 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     name: '사서',
     team: 'townsfolk',
     ability:
-      '게임 시작 시, 2명의 플레이어 중 1명이 특정 외지인임을 알게 됩니다. (또는 외지인이 없음을 알 수 있습니다.)',
+      '게임 시작 시, 플레이어 2명 중 1명이 특정 외지인임을 알게 됩니다. 또는, 게임에 참여하는 외지인이 없음을 알게 됩니다.',
     edition: 'trouble_brewing',
   },
   {
     id: 'investigator',
     name: '수사관',
     team: 'townsfolk',
-    ability:
-      '게임 시작 시, 2명의 플레이어 중 1명이 특정 하수인임을 알게 됩니다.',
+    ability: '게임 시작 시, 플레이어 2명 중 1명이 특정 하수인임을 알게 됩니다.',
     edition: 'trouble_brewing',
   },
   {
@@ -75,14 +73,14 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     name: '요리사',
     team: 'townsfolk',
     ability:
-      '게임 시작 시, 서로 이웃한 악한 플레이어 쌍이 몇 개인지 알게 됩니다.',
+      '게임 시작 시, 서로 이웃하게 앉은 악한 플레이어가 몇 쌍 있는지 알게 됩니다.',
     edition: 'trouble_brewing',
   },
   {
     id: 'empath',
     name: '초공감자',
     team: 'townsfolk',
-    ability: '매일 밤, 살아있는 양쪽 이웃 중 몇 명이 악한지 알게 됩니다.',
+    ability: '매일 밤, 이웃 생존자 2명 중 몇 명이나 악한지를 알게 됩니다.',
     edition: 'trouble_brewing',
   },
   {
@@ -90,14 +88,15 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     name: '점쟁이',
     team: 'townsfolk',
     ability:
-      '매일 밤, 2명의 플레이어를 선택합니다: 둘 중 악마가 있는지 알게 됩니다. 당신에게 악마로 감지되는 선한 플레이어가 1명 있습니다.',
+      '매일 밤, 플레이어 2명을 선택합니다: 그중 악마가 있는지를 알게 됩니다. 단, 선한 플레이어 중 1명이 당신에게는 악마로 감지되어 보입니다.',
     edition: 'trouble_brewing',
   },
   {
     id: 'undertaker',
     name: '장의사',
     team: 'townsfolk',
-    ability: '매일 밤*, 오늘 처형으로 사망한 캐릭터가 누구인지 알게 됩니다.',
+    ability:
+      '매일 밤*, 오늘 낮에 처형으로 사망한 플레이어의 캐릭터를 알게 됩니다.',
     edition: 'trouble_brewing',
   },
   {
@@ -105,7 +104,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     name: '수도사',
     team: 'townsfolk',
     ability:
-      '매일 밤*, 플레이어 1명을 선택합니다 (본인 제외): 그 플레이어는 오늘 밤 악마로부터 안전합니다.',
+      '매일 밤*, (당신을 제외하고) 플레이어 1명을 선택합니다: 그는 오늘 밤 악마로부터 안전합니다.',
     edition: 'trouble_brewing',
   },
   {
@@ -113,14 +112,15 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     name: '까마귀지기',
     team: 'townsfolk',
     ability:
-      '밤에 사망하면, 깨어나서 플레이어 1명을 선택합니다: 그 플레이어의 캐릭터를 알게 됩니다.',
+      '밤에 사망하면, 깨어나서 플레이어 1명을 선택합니다: 그의 캐릭터를 알게 됩니다.',
     edition: 'trouble_brewing',
   },
   {
     id: 'virgin',
     name: '성결자',
     team: 'townsfolk',
-    ability: '처음 지명당했을 때, 지명자가 마을주민이면 즉시 처형됩니다.',
+    ability:
+      '처음으로 지목당했을 때, 당신을 지목한 플레이어가 주민이라면, 그는 즉시 처형됩니다.',
     edition: 'trouble_brewing',
   },
   {
@@ -128,7 +128,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     name: '처단자',
     team: 'townsfolk',
     ability:
-      '게임 중 1회, 낮에 공개적으로 플레이어 1명을 선택합니다: 그 플레이어가 악마이면 사망합니다.',
+      '게임당 1번, 낮에, 공개적으로 플레이어 1명을 선택합니다: 그가 악마면 그는 사망합니다.',
     edition: 'trouble_brewing',
   },
   {
@@ -143,7 +143,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     name: '시장',
     team: 'townsfolk',
     ability:
-      '생존자가 3명이고 처형이 없으면 당신 팀이 승리합니다. 밤에 사망하면 다른 플레이어가 대신 사망할 수 있습니다.',
+      '3명만 생존한 상황에서 처형이 일어나지 않았다면, 당신의 팀이 승리합니다. 만약 밤에 사망한다면, 그 대신 다른 플레이어 1명이 사망할 수 있습니다.',
     edition: 'trouble_brewing',
   },
 
@@ -153,7 +153,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     name: '집사',
     team: 'outsider',
     ability:
-      '매일 밤, 플레이어 1명을 선택합니다 (본인 제외): 내일, 그 플레이어가 투표할 때만 당신도 투표할 수 있습니다.',
+      '매일 밤, (당신을 제외하고) 플레이어 1명을 선택합니다: 다음 낮에 그가 투표에 참여하는 경우에만, 당신도 투표에 참여할 수 있습니다.',
     edition: 'trouble_brewing',
   },
   {
@@ -161,7 +161,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     name: '주정뱅이',
     team: 'outsider',
     ability:
-      '자신이 주정뱅이인 것을 모릅니다. 마을주민 캐릭터라고 생각하지만 아닙니다.',
+      '당신은 자신이 주정뱅이라는 사실을 모릅니다. 대신, 주민 캐릭터라고 착각하지만, 실제로는 주정뱅이입니다.',
     edition: 'trouble_brewing',
   },
   {
@@ -169,14 +169,14 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     name: '은둔자',
     team: 'outsider',
     ability:
-      '사망한 경우에도 악한 것으로, 하수인이나 악마로 감지될 수 있습니다.',
+      '당신은 악한 팀 소속의 특정 하수인 또는 악마로 위장될 수도 있습니다(사망한 상태에서도).',
     edition: 'trouble_brewing',
   },
   {
     id: 'saint',
     name: '성자',
     team: 'outsider',
-    ability: '처형으로 사망하면 당신 팀이 패배합니다.',
+    ability: '당신이 처형으로 사망하면, 당신의 선한 팀이 패배합니다.',
     edition: 'trouble_brewing',
   },
 
@@ -186,7 +186,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     name: '독살범',
     team: 'minion',
     ability:
-      '매일 밤, 플레이어 1명을 선택합니다: 오늘 밤과 내일 낮 동안 중독됩니다.',
+      '매일 밤, 플레이어 1명을 선택합니다: 그는 오늘 밤과 내일 낮 동안 중독됩니다.',
     edition: 'trouble_brewing',
   },
   {
@@ -194,21 +194,22 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     name: '첩자',
     team: 'minion',
     ability:
-      '매일 밤, 마법서를 봅니다. 사망한 경우에도 선한 것으로, 마을주민이나 외지인으로 감지될 수 있습니다.',
+      '매일 밤, 마도서를 확인합니다. 당신은 선한 팀 소속의 특정 주민 또는 외지인으로 감지될 수도 있습니다(사망한 상태에서도).',
     edition: 'trouble_brewing',
   },
   {
     id: 'scarlet_woman',
     name: '탕녀',
     team: 'minion',
-    ability: '생존자가 5명 이상이고 악마가 사망하면, 당신이 악마가 됩니다.',
+    ability:
+      '플레이어가 5명 이상 생존해있는 사이(여행자는 제외) 악마가 사망하면, 당신이 악마가 됩니다.',
     edition: 'trouble_brewing',
   },
   {
     id: 'baron',
     name: '남작',
     team: 'minion',
-    ability: '게임에 외지인이 추가됩니다. [외지인 +2]',
+    ability: '외지인이 추가로 게임에 참여합니다. [외지인 +2명]',
     edition: 'trouble_brewing',
   },
 
@@ -218,7 +219,7 @@ export const TROUBLE_BREWING_ROLES: Role[] = [
     name: '임프',
     team: 'demon',
     ability:
-      '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 자신을 선택하면 하수인 1명이 임프가 됩니다.',
+      '매일 밤*, 플레이어 1명을 선택합니다: 그는 사망합니다. 이 방법으로 자결하면, 하수인 1명이 임프가 됩니다.',
     edition: 'trouble_brewing',
   },
 ];
@@ -238,7 +239,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '꿈꾸는 자',
     team: 'townsfolk',
     ability:
-      '매일 밤, 플레이어 1명을 선택합니다(자신과 여행자 제외): 선한 역할 1개와 악한 역할 1개를 보여주며, 그중 하나가 해당 플레이어의 실제 역할입니다.',
+      '매일 밤, 당신과 여행자를 제외하고 플레이어 1명을 선택합니다: 선한 캐릭터 1개와 악한 캐릭터 1개를 알게 됩니다. 둘 중 하나가 그의 정체입니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -246,7 +247,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '뱀 조련사',
     team: 'townsfolk',
     ability:
-      '매일 밤, 플레이어 1명을 선택합니다 (이전과 다른 사람): 그 플레이어가 악마이면 서로 역할과 진영을 교환하고, 새로운 뱀 조련사(원래 악마)는 중독됩니다.',
+      '매일 밤, 생존한 플레이어 1명을 선택합니다: 악마를 선택했다면, 악마는 당신과 소속 및 캐릭터를 맞바꾼 다음 중독됩니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -254,28 +255,29 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '수학자',
     team: 'townsfolk',
     ability:
-      '매일 밤, 지난 낮/밤 동안 능력이 잘못 작동한 플레이어 수를 알게 됩니다.',
+      '매일 밤, 새벽부터 지금까지 다른 플레이어의 능력 때문에 능력이 이상하게 작동한 플레이어가 몇 명인지 알게 됩니다.',
     edition: 'sects_and_violets',
   },
   {
     id: 'flowergirl',
     name: '꽃팔이 소녀',
     team: 'townsfolk',
-    ability: '매일 밤*, 악마가 오늘 투표했는지 여부를 알게 됩니다.',
+    ability: '매일 밤*, 오늘 낮에 악마가 투표했는지를 알게 됩니다.',
     edition: 'sects_and_violets',
   },
   {
     id: 'town_crier',
     name: '포고꾼',
     team: 'townsfolk',
-    ability: '매일 밤*, 하수인이 오늘 지명했는지 여부를 알게 됩니다.',
+    ability: '매일 밤*, 오늘 낮에 하수인이 지명에 나섰는지를 알게 됩니다.',
     edition: 'sects_and_violets',
   },
   {
     id: 'oracle',
     name: '예언자',
     team: 'townsfolk',
-    ability: '매일 밤*, 죽은 플레이어 중 몇 명이 악한지 알게 됩니다.',
+    ability:
+      '매일 밤*, 사망한 플레이어 가운데 몇 명이나 악한 팀인지 알게 됩니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -283,7 +285,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '백치천재',
     team: 'townsfolk',
     ability:
-      '매일 낮, 이야기꾼로부터 2개의 정보를 받습니다. 하나는 참이고 하나는 거짓입니다.',
+      '매일 낮, 이야기꾼으로부터 이야기에 도움되는 정보 2가지를 얻습니다: 그중 하나는 진실이고 다른 하나는 거짓입니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -291,7 +293,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '재봉사',
     team: 'townsfolk',
     ability:
-      '게임 중 1회, 밤에 2명의 플레이어를 선택합니다 (본인 제외): 둘이 같은 진영인지 알게 됩니다.',
+      '게임당 1번, 밤에, (당신을 제외하고) 플레이어 2명을 선택합니다: 그들이 같은 소속인지 아닌지를 알게 됩니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -299,14 +301,15 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '철학자',
     team: 'townsfolk',
     ability:
-      '게임 중 1회, 밤에 선한 역할을 선택합니다: 그 역할의 능력을 얻습니다. 해당 역할의 플레이어가 있으면 그 플레이어는 중독됩니다.',
+      '게임당 1번, 밤에, 선한 캐릭터 1개를 선택합니다: 그의 능력을 얻습니다. 그 캐릭터가 이미 게임에 참여하고 있다면, 그는 취합니다.',
     edition: 'sects_and_violets',
   },
   {
     id: 'artist',
     name: '화가',
     team: 'townsfolk',
-    ability: '게임 중 1회, 낮에 이야기꾼에게 예/아니오 질문을 할 수 있습니다.',
+    ability:
+      '게임당 1번, 낮에, 이야기꾼에게 예/아니오로 답할 수 있는 질문을 합니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -314,7 +317,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '곡예사',
     team: 'townsfolk',
     ability:
-      '첫째 날, 공개적으로 플레이어-역할 조합을 최대 5개 추측합니다. 그날 밤 정확한 추측 수를 알게 됩니다.',
+      '첫 번째 낮에, 공개적으로 플레이어/역할 조합을 5개까지 추측할 수 있습니다. 그날 밤, 그중 몇 개나 맞혔는지를 알게 됩니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -322,7 +325,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '현자',
     team: 'townsfolk',
     ability:
-      '악마에 의해 사망하면, 2명의 플레이어를 알게 됩니다: 둘 중 하나가 악마입니다.',
+      '악마가 당신을 죽이면, 플레이어 2명을 알게 됩니다. 그중 1명이 악마입니다.',
     edition: 'sects_and_violets',
   },
 
@@ -331,15 +334,14 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     id: 'mutant',
     name: '변종',
     team: 'outsider',
-    ability:
-      '자신이 외지인이라고 "밝히면", 처형될 수 있습니다. (이야기꾼 재량)',
+    ability: '당신이 외지인이라는 사실에 미쳐 있다면, 처형당할 수도 있습니다.',
     edition: 'sects_and_violets',
   },
   {
     id: 'sweetheart',
     name: '사랑꾼',
     team: 'outsider',
-    ability: '사망하면, 1명의 플레이어가 다음 황혼부터 취한 상태가 됩니다.',
+    ability: '당신이 사망하면, 그때부터 플레이어 1명이 취한 상태가 됩니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -347,7 +349,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '이발사',
     team: 'outsider',
     ability:
-      '사망하면, 악마가 오늘 밤에 2명의 플레이어를 선택할 수 있습니다: 그 둘의 역할을 교환합니다.',
+      '오늘 또는 오늘 밤에 사망했다면, 악마는 플레이어 2명을 선택합니다(다른 악마는 제외): 그 두 명의 캐릭터를 맞바꿀 수 있습니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -355,7 +357,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '얼뜨기',
     team: 'outsider',
     ability:
-      '사망하면, 살아있는 플레이어 1명을 선택합니다: 그 플레이어가 악하면 당신 팀이 패배합니다.',
+      '당신이 사망하면, 생존한 플레이어 1명을 공개적으로 선택합니다: 그가 악한 플레이어라면, 당신의 팀이 패배합니다.',
     edition: 'sects_and_violets',
   },
 
@@ -365,7 +367,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '사악한 쌍둥이',
     team: 'minion',
     ability:
-      '당신과 선한 플레이어 1명은 서로가 쌍둥이임을 알게 됩니다. 선한 쌍둥이가 살아 있는 동안 처형으로 사망하지 않습니다.',
+      '당신과 선한 쌍둥이는 서로를 알아봅니다. 선한 쌍둥이가 처형당하면, 악한 팀이 승리합니다. 선/악 쌍둥이가 둘 다 살아있는 한, 선한 팀은 승리할 수 없습니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -373,7 +375,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '마녀',
     team: 'minion',
     ability:
-      '매일 밤, 플레이어 1명을 선택합니다: 그 플레이어가 내일 지명하면 즉시 사망합니다.',
+      '매일 밤, 플레이어 1명을 선택합니다: 그가 다음 낮에 누군가를 지목한다면, 그는 사망합니다. 플레이어가 3명만 남았다면, 이 능력은 무효입니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -381,7 +383,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '세레노버스',
     team: 'minion',
     ability:
-      '매일 밤, 플레이어 1명과 선한 역할을 선택합니다: 그 플레이어가 내일 그 역할이라고 주장하지 않으면 처형될 수 있습니다.',
+      '매일 밤, 플레이어 1명과 선한 캐릭터 1개를 선택합니다: 내일 낮, 그 플레이어가 그 캐릭터라고 주장하지 않으면 처형될 수도 있습니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -389,7 +391,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '마귀할멈',
     team: 'minion',
     ability:
-      '매일 밤*, 플레이어 1명과 현재 게임에 없는 역할을 선택합니다: 그 플레이어가 그 역할이 됩니다. 악마가 만들어지면 그날 밤 사망은 이야기꾼이 임의로 정합니다.',
+      '매일 밤*, 플레이어 1명과 현재 게임에 참여하지 않은 캐릭터 1개를 선택합니다: 그 플레이어가 그 캐릭터로 바뀝니다. 이 능력으로 악마를 만들었다면, 오늘 밤 예측불허의 죽음이 찾아옵니다.',
     edition: 'sects_and_violets',
   },
 
@@ -399,7 +401,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '팡 구',
     team: 'demon',
     ability:
-      '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 첫 번째 외지인 사망 시, 그 외지인이 대신 팡 구가 되고 당신은 사망합니다.',
+      '매일 밤*, 플레이어 1명을 선택합니다: 그는 사망합니다. 이 방법으로 첫 번째 외지인이 사망하면, 그가 팡 구가 되고 당신이 사망합니다. [외지인 +1명]',
     edition: 'sects_and_violets',
   },
   {
@@ -407,7 +409,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '비고르모르티스',
     team: 'demon',
     ability:
-      '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 하수인을 죽이면 그 하수인의 능력이 유지되고, 그 하수인의 마을주민 이웃 1명이 중독됩니다.',
+      '매일 밤*, 플레이어 1명을 선택합니다: 그는 사망합니다. 죽은 하수인은 능력을 유지하며, 그의 양쪽 주민 이웃은 중독됩니다. [외지인 -1명]',
     edition: 'sects_and_violets',
   },
   {
@@ -415,7 +417,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '노 다시',
     team: 'demon',
     ability:
-      '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 가장 가까운 마을주민 이웃 2명이 중독됩니다.',
+      '매일 밤*, 플레이어 1명을 선택합니다: 그는 사망합니다. 당신의 이웃 주민 2명은 중독됩니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -423,7 +425,7 @@ export const SECTS_AND_VIOLETS_ROLES: Role[] = [
     name: '보르톡스',
     team: 'demon',
     ability:
-      '매일 밤*, 플레이어 1명을 선택합니다: 그 플레이어가 사망합니다. 마을주민의 정보는 모두 거짓입니다. 낮이 끝날 때 아무도 처형되지 않으면 악한 팀이 승리합니다.',
+      '매일 밤*, 플레이어 1명을 선택합니다: 그는 사망합니다. 주민의 능력은 거짓 정보만 제공합니다. 매일 낮, 누구도 처형되지 않으면 악한 팀이 승리합니다.',
     edition: 'sects_and_violets',
   },
 ];
@@ -436,7 +438,7 @@ export const TROUBLE_BREWING_TRAVELLERS: TravellerRole[] = [
     name: '희생양',
     team: 'traveller',
     ability:
-      '당신과 같은 진영의 플레이어가 처형되면, 대신 당신이 처형될 수 있습니다.',
+      '당신의 팀 소속 플레이어 1명이 처형당하면, 당신이 대신 처형당할 수도 있습니다.',
     edition: 'trouble_brewing',
   },
   {
@@ -444,7 +446,7 @@ export const TROUBLE_BREWING_TRAVELLERS: TravellerRole[] = [
     name: '총잡이',
     team: 'traveller',
     ability:
-      '매일, 첫 번째 투표가 집계된 후, 투표한 플레이어 1명을 선택할 수 있습니다: 그 플레이어가 사망합니다.',
+      '매일 낮, 첫 번째 투표를 집계한 후, 투표에 참여한 플레이어 1명을 선택할 수 있습니다. 그는 사망합니다.',
     edition: 'trouble_brewing',
   },
   {
@@ -452,7 +454,7 @@ export const TROUBLE_BREWING_TRAVELLERS: TravellerRole[] = [
     name: '거지',
     team: 'traveller',
     ability:
-      '투표하려면 투표 토큰을 사용해야 합니다. 죽은 플레이어가 당신에게 투표 토큰을 주면 그 플레이어의 진영을 알게 됩니다. 당신은 항상 맑은 정신이고 건강합니다.',
+      '투표하려면 투표 토큰이 필요합니다. 사망한 플레이어에게서 투표 토큰을 받으면, 그의 소속을 알아냅니다. 당신은 맨정신이며 건강합니다.',
     edition: 'trouble_brewing',
   },
   {
@@ -460,7 +462,7 @@ export const TROUBLE_BREWING_TRAVELLERS: TravellerRole[] = [
     name: '관료',
     team: 'traveller',
     ability:
-      '매일 밤, 플레이어 1명을 선택합니다 (본인 제외): 내일 그 플레이어의 투표는 3표로 계산됩니다.',
+      '매일 밤, (당신을 제외하고) 플레이어 1명을 선택합니다: 다음 날, 그의 투표는 3표로 계산합니다.',
     edition: 'trouble_brewing',
   },
   {
@@ -468,7 +470,7 @@ export const TROUBLE_BREWING_TRAVELLERS: TravellerRole[] = [
     name: '도둑',
     team: 'traveller',
     ability:
-      '매일 밤, 플레이어 1명을 선택합니다 (본인 제외): 내일 그 플레이어의 투표는 음수로 계산됩니다.',
+      '매일 밤, (당신을 제외하고) 플레이어 1명을 선택합니다. 다음 날, 그의 투표는 음수로 계산합니다.',
     edition: 'trouble_brewing',
   },
 ];
@@ -476,9 +478,10 @@ export const TROUBLE_BREWING_TRAVELLERS: TravellerRole[] = [
 export const SECTS_AND_VIOLETS_TRAVELLERS: TravellerRole[] = [
   {
     id: 'butcher_traveller',
-    name: '백정',
+    name: '푸주한',
     team: 'traveller',
-    ability: '매일, 첫 번째 처형 후, 다시 지목할 수 있습니다.',
+    ability:
+      '매일 낮, 첫 번째 처형이 끝난 후, 당신은 한 번 더 지목할 수 있습니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -486,15 +489,15 @@ export const SECTS_AND_VIOLETS_TRAVELLERS: TravellerRole[] = [
     name: '뼈 수집가',
     team: 'traveller',
     ability:
-      '게임 중 1회, 밤에 죽은 플레이어 1명을 선택합니다: 그 플레이어는 황혼까지 능력을 되찾습니다.',
+      '게임당 1번, 밤에, 사망한 플레이어 1명을 선택합니다. 그는 황혼까지 자기 능력을 되찾습니다.',
     edition: 'sects_and_violets',
   },
   {
     id: 'harlot',
-    name: '창녀',
+    name: '매춘부',
     team: 'traveller',
     ability:
-      '매일 밤*, 살아있는 플레이어 1명을 선택합니다: 그 플레이어가 동의하면 그 플레이어의 캐릭터를 알게 되지만, 둘 다 사망할 수 있습니다.',
+      '매일 밤*, 생존한 플레이어 1명을 선택합니다: 그가 동의한다면, 그의 캐릭터를 알게 되지만 둘 다 사망할 수도 있습니다.',
     edition: 'sects_and_violets',
   },
   {
@@ -502,14 +505,14 @@ export const SECTS_AND_VIOLETS_TRAVELLERS: TravellerRole[] = [
     name: '바리스타',
     team: 'traveller',
     ability:
-      '매일 밤, 황혼까지, 1) 플레이어 1명이 맑은 정신이 되어 정확한 정보를 받거나, 2) 그 플레이어의 능력이 두 번 작동합니다. 그 플레이어는 어떤 효과인지 알게 됩니다.',
+      '매일 밤, 황혼이 될 때까지 플레이어 1명으로 하여금, 1) 맨정신 및 건강한 상태로 진실된 정보만 얻게 만들거나 2) 능력이 2번 작동하게 합니다. 그는 둘 중 무엇을 적용받는지 알게 됩니다.',
     edition: 'sects_and_violets',
   },
   {
     id: 'deviant',
-    name: '기인',
+    name: '이단아',
     team: 'traveller',
-    ability: '오늘 웃겼다면, 추방으로 사망할 수 없습니다.',
+    ability: '오늘 웃음을 선사했다면, 추방으로 사망할 수 없습니다.',
     edition: 'sects_and_violets',
   },
 ];
@@ -517,26 +520,26 @@ export const SECTS_AND_VIOLETS_TRAVELLERS: TravellerRole[] = [
 export const BAD_MOON_RISING_TRAVELLERS: TravellerRole[] = [
   {
     id: 'apprentice',
-    name: '견습생',
+    name: '수습생',
     team: 'traveller',
     ability:
-      '첫째 밤, 마을주민 능력(선한 경우) 또는 하수인 능력(악한 경우)을 얻습니다.',
+      '당신의 첫 번째 밤에 선한 팀이라면 주민의 능력을, 악한 팀이라면 하수인의 능력을 얻습니다.',
     edition: 'bad_moon_rising',
   },
   {
     id: 'matron',
-    name: '사감',
+    name: '가정교사',
     team: 'traveller',
     ability:
-      '매일, 최대 3쌍의 플레이어 자리를 교환할 수 있습니다. 플레이어는 자리를 떠나 비밀 대화를 할 수 없습니다.',
+      '매일 낮, 플레이어 2명의 자리를 맞바꿀 수 있습니다(낮마다 총 3번까지 가능). 플레이어들은 자기 자리를 떠나 1:1로 대화할 수 없습니다.',
     edition: 'bad_moon_rising',
   },
   {
     id: 'voudon',
-    name: '부두',
+    name: '부두술사',
     team: 'traveller',
     ability:
-      '당신과 죽은 플레이어만 투표할 수 있습니다. 죽은 플레이어는 투표 토큰 없이 투표할 수 있습니다. 과반수가 필요하지 않습니다.',
+      '오직 사망한 플레이어와 당신만 투표할 수 있습니다. 투표 토큰 없이도 투표할 수 있으며, 50% 이상의 찬성표를 요구하지 않습니다.',
     edition: 'bad_moon_rising',
   },
   {
@@ -544,7 +547,7 @@ export const BAD_MOON_RISING_TRAVELLERS: TravellerRole[] = [
     name: '판사',
     team: 'traveller',
     ability:
-      '게임 중 1회, 다른 플레이어가 지목했을 때, 현재 처형을 성공 또는 실패로 결정할 수 있습니다.',
+      '게임당 1번, 다른 플레이어가 누군가를 지목했을 때, 이번 처형의 성패를 당신이 단독으로 선택할 수 있습니다.',
     edition: 'bad_moon_rising',
   },
   {
@@ -552,7 +555,7 @@ export const BAD_MOON_RISING_TRAVELLERS: TravellerRole[] = [
     name: '주교',
     team: 'traveller',
     ability:
-      '이야기꾼만 지목할 수 있습니다. 매일 상대 진영의 플레이어가 최소 1명은 지목되어야 합니다.',
+      '이야기꾼만이 누군가를 지목할 수 있습니다. 매일 낮, 상대 팀 플레이어 1명 이상이 지목되어야 합니다.',
     edition: 'bad_moon_rising',
   },
 ];
@@ -951,7 +954,7 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
   },
   spy: {
     type: 'passive',
-    instruction: '진행자가 마법서 정보를 알려줍니다',
+    instruction: '진행자가 마도서 정보를 알려줍니다',
     excludeSelf: false,
   },
 
@@ -1071,7 +1074,7 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
   },
   apprentice: {
     type: 'passive',
-    instruction: '진행자가 마을주민 또는 하수인 능력을 부여합니다',
+    instruction: '진행자가 주민 또는 하수인 능력을 부여합니다',
     excludeSelf: false,
   },
   bone_collector: {
