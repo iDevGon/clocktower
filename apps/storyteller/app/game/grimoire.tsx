@@ -1,6 +1,7 @@
 import {
   ALL_TRAVELLER_ROLES,
   type GameSettings,
+  getBmrDeathWarnings,
   getNightOrderForEdition,
   getRandomTipText,
   getRoleById,
@@ -443,12 +444,13 @@ export default function GrimoireScreen() {
   const [modal, setModal] = useState<{
     visible: boolean;
     title: string;
+    message?: string;
     options: ActionModalOption[];
   }>({ visible: false, title: '', options: [] });
 
   const showModal = useCallback(
-    (title: string, options: ActionModalOption[]) =>
-      setModal({ visible: true, title, options }),
+    (title: string, options: ActionModalOption[], message?: string) =>
+      setModal({ visible: true, title, message, options }),
     [],
   );
   const closeModal = useCallback(
@@ -505,9 +507,52 @@ export default function GrimoireScreen() {
   }, [players]);
   const getPlayerName = (id: string) => playerNameMap.get(id) ?? id;
 
-  const kill = (playerId: string) => {
+  const performKill = (playerId: string) => {
     rawKill(playerId);
     addLog(getDay(), getPhase(), `${getPlayerName(playerId)} 사망`, 'death');
+  };
+
+  const getDeathWarningText = (
+    playerId: string,
+    method: 'manual' | 'execution',
+    timing: 'day' | 'night',
+  ) => {
+    const target = gameState?.players.find((p) => p.id === playerId);
+    if (!target) return null;
+    const warnings = getBmrDeathWarnings({
+      roleId: method,
+      method,
+      timing,
+      target,
+      targetStatuses: playerStatuses[playerId] ?? target.statuses,
+    });
+    if (warnings.length === 0) return null;
+    return warnings.map((warning) => `- ${warning.message}`).join('\n');
+  };
+
+  const showDeathWarningModal = (playerId: string, warningText: string) => {
+    showModal(
+      '사망 판정 확인',
+      [
+        {
+          text: '그래도 사망 처리',
+          style: 'destructive',
+          onPress: () => performKill(playerId),
+        },
+        { text: '취소', style: 'cancel' },
+      ],
+      warningText,
+    );
+  };
+
+  const kill = (playerId: string) => {
+    const timing = getPhase() === 'night' ? 'night' : 'day';
+    const warningText = getDeathWarningText(playerId, 'manual', timing);
+    if (warningText) {
+      showDeathWarningModal(playerId, warningText);
+      return;
+    }
+    performKill(playerId);
   };
 
   const setPlayerStatus = (playerId: string, status: PlayerStatus) => {
@@ -615,13 +660,27 @@ export default function GrimoireScreen() {
   };
 
   const showDayCompleteModal = () => {
-    showModal('다음 날 밤으로 진행', [
-      {
-        text: '밤으로 전환',
-        onPress: () => handleSetPhase('night'),
-      },
-      { text: '취소', style: 'cancel' },
-    ]);
+    const warningText = getExecutionTransitionWarningText();
+    showModal(
+      warningText ? '처형 판정 확인' : '다음 날 밤으로 진행',
+      [
+        {
+          text: '밤으로 전환',
+          onPress: () => handleSetPhase('night'),
+        },
+        { text: '취소', style: 'cancel' },
+      ],
+      warningText ?? undefined,
+    );
+  };
+
+  const getExecutionTransitionWarningText = () => {
+    const candidateId = executionCandidateData?.playerId;
+    if (!candidateId) return null;
+    const target = gameState?.players.find((p) => p.id === candidateId);
+    const warningText = getDeathWarningText(candidateId, 'execution', 'day');
+    if (!warningText) return null;
+    return `${target?.name ?? executionCandidateData.playerName} 처형 예정자 판정 확인:\n${warningText}`;
   };
 
   const handleStatusMenu = (playerId: string, playerName: string) => {
@@ -1840,6 +1899,7 @@ export default function GrimoireScreen() {
       <ActionModal
         visible={modal.visible}
         title={modal.title}
+        message={modal.message}
         options={modal.options}
         onClose={closeModal}
       />
