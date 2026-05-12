@@ -389,4 +389,59 @@ describe('CHARACTER_TIPS 데이터', () => {
       expect(CHARACTER_TIPS).toHaveProperty(roleId);
     }
   });
+
+  it('Bad Moon Rising 전체 일반 역할의 팁이 정의되어 있다', () => {
+    const bmrRoles = [
+      'grandmother',
+      'sailor',
+      'chambermaid',
+      'exorcist',
+      'innkeeper',
+      'gambler',
+      'gossip',
+      'courtier',
+      'professor',
+      'minstrel',
+      'tea_lady',
+      'pacifist',
+      'fool',
+      'goon',
+      'lunatic',
+      'tinker',
+      'moonchild',
+      'godfather',
+      'devils_advocate',
+      'assassin',
+      'mastermind',
+      'zombuul',
+      'pukka',
+      'shabaloth',
+      'po',
+    ] as const;
+
+    for (const roleId of bmrRoles) {
+      expect(CHARACTER_TIPS).toHaveProperty(roleId);
+      expect(CHARACTER_TIPS[roleId].playTips.length).toBeGreaterThanOrEqual(3);
+      expect(CHARACTER_TIPS[roleId].counterTips.length).toBeGreaterThanOrEqual(
+        3,
+      );
+    }
+  });
+
+  it('Bad Moon Rising 여행자 팁이 정의되어 있다', () => {
+    const bmrTravellers = [
+      'apprentice',
+      'matron',
+      'voudon',
+      'judge',
+      'bishop',
+    ] as const;
+
+    for (const roleId of bmrTravellers) {
+      expect(CHARACTER_TIPS[roleId].playTips.length).toBeGreaterThanOrEqual(3);
+      expect(CHARACTER_TIPS[roleId].counterTips.length).toBeGreaterThanOrEqual(
+        3,
+      );
+    }
+  });
 });
