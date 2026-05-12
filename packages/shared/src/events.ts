@@ -27,6 +27,19 @@ export interface EvilInfoPayload {
   bluffRoles?: { id: string; name: string }[];
 }
 
+export type DeliveredFeedbackSource = 'manual' | 'auto';
+
+export interface DeliveredNightFeedback {
+  playerId: string;
+  playerName: string;
+  roleId: string | null;
+  roleName: string;
+  day: number;
+  timestamp: number;
+  feedback: NightFeedbackPayload;
+  source: DeliveredFeedbackSource;
+}
+
 export interface ServerToClientEvents {
   'game:state': (state: GameState) => void;
   'game:phase': (phase: Phase) => void;
@@ -220,6 +233,7 @@ export interface ServerToStorytellerEvents {
   'game:state': ServerToClientEvents['game:state'];
   'game:end': ServerToClientEvents['game:end'];
   'night:actionReceived': ServerToClientEvents['night:actionReceived'];
+  'night:feedbackSent': (data: DeliveredNightFeedback) => void;
   'whisper:activeChats': ServerToClientEvents['whisper:activeChats'];
   'whisper:clockStart': ServerToClientEvents['whisper:clockStart'];
   'discussion:clockStart': ServerToClientEvents['discussion:clockStart'];

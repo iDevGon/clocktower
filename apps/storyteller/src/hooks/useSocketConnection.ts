@@ -67,6 +67,17 @@ export function useSocketConnection() {
               'ability',
             );
         });
+        newSocket.on('night:feedbackSent', (entry) => {
+          useGameStore.getState().addDeliveredFeedback(entry);
+          useLogStore
+            .getState()
+            .addLog(
+              entry.day,
+              'night',
+              `정보 전달: ${entry.roleName}(${entry.playerName})`,
+              'ability',
+            );
+        });
         newSocket.on('whisper:activeChats', (chats) => {
           useGameStore.getState().setActiveWhispers(chats);
         });

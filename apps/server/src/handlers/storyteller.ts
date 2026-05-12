@@ -1,5 +1,7 @@
 import type {
   ClientToServerEvents,
+  DeliveredFeedbackSource,
+  NightFeedbackPayload,
   Player,
   Role,
   ServerToClientEvents,
@@ -17,6 +19,10 @@ import {
 } from '@clocktower/shared/logic';
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
+import {
+  buildTrueGrimoireFeedback,
+  shouldAutoSendSpyGrimoire,
+} from '../nightFeedback.js';
 import {
   clearPushTokens,
   sendPushNotification,
@@ -37,6 +43,29 @@ function getNightOrder(day: number, editionId?: string): string[] {
     return getNightOrderForEdition(editionId, day);
   }
   return day <= 1 ? FIRST_NIGHT_ORDER : OTHER_NIGHT_ORDER;
+}
+
+function emitDeliveredFeedbackRecord(
+  game: GameManager,
+  storytellerIo: StorytellerNamespace,
+  data: {
+    player: Player;
+    roleId: string | null;
+    feedback: NightFeedbackPayload;
+    source: DeliveredFeedbackSource;
+  },
+): void {
+  const role = data.roleId ? getRoleById(data.roleId) : null;
+  storytellerIo.emit('night:feedbackSent', {
+    playerId: data.player.id,
+    playerName: data.player.name,
+    roleId: data.roleId,
+    roleName: role?.name ?? data.roleId ?? '정보',
+    day: game.getState().day,
+    timestamp: Date.now(),
+    feedback: data.feedback,
+    source: data.source,
+  });
 }
 
 /** 탕녀 승계가 발생했으면 승계 플레이어에게 role:assign 전송 */
@@ -491,6 +520,17 @@ export function registerStorytellerHandlers(
         .to(playerId)
         .emit('night:feedback', { feedback: deliveredFeedback });
       console.log(`Feedback -> ${playerId}: ${JSON.stringify(feedback)}`);
+      const targetPlayer = game
+        .getState()
+        .players.find((player) => player.id === playerId);
+      if (targetPlayer) {
+        emitDeliveredFeedbackRecord(game, storytellerIo, {
+          player: targetPlayer,
+          roleId: game.getNightProgress().activeRoleId,
+          feedback: deliveredFeedback,
+          source: 'manual',
+        });
+      }
 
       // 대기열에 다음 플레이어가 있으면 순차 wakeUp
       const next = game.popNightWakeUp();
@@ -577,16 +617,16 @@ export function registerStorytellerHandlers(
         const spyPlayer = state.players.find(
           (p) => p.isAlive && p.role?.id === 'spy',
         );
-        if (spyPlayer) {
-          const entries = state.players.map((p) => ({
-            name: p.name,
-            roleName: p.role?.name ?? '???',
-            team: p.role?.team ?? ('townsfolk' as const),
-            isAlive: p.isAlive,
-            statuses: p.statuses ?? [],
-          }));
+        if (shouldAutoSendSpyGrimoire(spyPlayer)) {
+          const feedback = buildTrueGrimoireFeedback(state.players);
           playerIo.to(spyPlayer.id).emit('night:feedback', {
-            feedback: { type: 'grimoire', entries },
+            feedback,
+          });
+          emitDeliveredFeedbackRecord(game, storytellerIo, {
+            player: spyPlayer,
+            roleId,
+            feedback,
+            source: 'auto',
           });
         }
       }

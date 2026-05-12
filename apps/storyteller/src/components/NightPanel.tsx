@@ -11,7 +11,12 @@ import { Pressable, Text, View } from 'react-native';
 import type { createGrimoireStyles } from '../styles/grimoire.styles';
 import { NightActionLog, NightFeedbackPanel } from './NightActionLog';
 import { NightOrderPanel } from './NightOrderPanel';
-import { isDetectedAsEvil } from './nightRoleLogic';
+import {
+  formatNightRoleLabel,
+  getNightRolePlayerNames,
+} from './nightRoleDisplay';
+import { isAbilityMalfunctioning, isDetectedAsEvil } from './nightRoleLogic';
+import { SpyGrimoireComposer } from './SpyGrimoireComposer';
 
 interface NightPanelProps {
   day: number;
@@ -167,6 +172,18 @@ export function NightPanel({
   const selectedBaristaTarget = baristaTargetId
     ? players.find((p) => p.id === baristaTargetId)
     : null;
+  const activeNightRolePlayerNames = activeNightRoleId
+    ? getNightRolePlayerNames(players, activeNightRoleId)
+    : [];
+  const spyPlayer =
+    activeNightRoleId === 'spy'
+      ? players.find((p) => p.isAlive && p.role?.id === 'spy')
+      : undefined;
+  const hasSpyManualFeedback =
+    activeNightRoleId === 'spy' &&
+    spyPlayer != null &&
+    isAbilityMalfunctioning(spyPlayer);
+  const shouldShowFloatingTimer = hasNightFeedback || hasSpyManualFeedback;
 
   const handleBaristaApply = (effect: 'sober_healthy' | 'acts_twice') => {
     if (!baristaTargetId) return;
@@ -194,17 +211,19 @@ export function NightPanel({
       )}
       <View>
         {/* Floating timer - always visible above overlay */}
-        {hasNightFeedback &&
+        {shouldShowFloatingTimer &&
           activeNightRoleId &&
           (() => {
             const role = getRoleById(activeNightRoleId);
+            const roleLabel = formatNightRoleLabel(
+              role?.name ?? activeNightRoleId,
+              activeNightRolePlayerNames,
+            );
             const m = Math.floor(nightElapsed / 60);
             const sec = nightElapsed % 60;
             return (
               <View style={styles.nightFloatingTimer}>
-                <Text style={styles.nightFloatingTimerRole}>
-                  {role?.name ?? activeNightRoleId}
-                </Text>
+                <Text style={styles.nightFloatingTimerRole}>{roleLabel}</Text>
                 <Text style={styles.nightFloatingTimerTime}>
                   {m}:{sec.toString().padStart(2, '0')}
                 </Text>
@@ -232,6 +251,7 @@ export function NightPanel({
         <View style={styles.nightOrderRelative}>
           <NightOrderPanel
             day={day}
+            players={players}
             activeRoleIds={activeRoleIds}
             skippedRoleIds={skippedNightRoles}
             dormantRoleIds={dormantRoleIds}
@@ -325,6 +345,23 @@ export function NightPanel({
           )}
 
           {/* Feedback overlay - covers NightOrderPanel */}
+          {hasSpyManualFeedback &&
+            spyPlayer &&
+            !feedbackCollapsed &&
+            !isFeedbackSent && (
+              <View style={styles.nightFeedbackOverlay}>
+                <SpyGrimoireComposer
+                  players={players}
+                  spyPlayer={spyPlayer}
+                  onSend={onSendFeedback}
+                  onSent={() => {
+                    setFeedbackSentForRole(activeNightRoleId);
+                    setFeedbackCollapsed(true);
+                  }}
+                />
+              </View>
+            )}
+
           {hasNightFeedback && !feedbackCollapsed && !isFeedbackSent && (
             <View style={styles.nightFeedbackOverlay}>
               <NightFeedbackPanel

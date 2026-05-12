@@ -1,5 +1,6 @@
 import type {
   ActiveWhisperChat,
+  DeliveredNightFeedback,
   ExecutionStatus,
   GameResult,
   GameState,
@@ -30,10 +31,13 @@ interface VoteResult {
   executionMessage?: string;
 }
 
+export type DeliveredFeedbackHistoryEntry = DeliveredNightFeedback;
+
 interface GameStore {
   gameId: string | null;
   gameState: GameState | null;
   nightActions: NightAction[];
+  deliveredFeedbackHistory: DeliveredFeedbackHistoryEntry[];
   activeNightRoleId: string | null;
   activeWhispers: ActiveWhisperChat[];
   playerStatuses: Record<string, PlayerStatus[]>;
@@ -179,6 +183,8 @@ interface GameStore {
   ) => void;
   setGameState: (state: GameState) => void;
   addNightAction: (action: NightAction) => void;
+  addDeliveredFeedback: (entry: DeliveredFeedbackHistoryEntry) => void;
+  clearDeliveredFeedbackHistory: () => void;
   clearNightActions: () => void;
   setActiveNightRoleId: (roleId: string | null) => void;
   setActiveWhispers: (whispers: ActiveWhisperChat[]) => void;
@@ -233,6 +239,7 @@ export const useGameStore = create<GameStore>()(
       gameId: null,
       gameState: null,
       nightActions: [],
+      deliveredFeedbackHistory: [],
       activeNightRoleId: null,
       activeWhispers: [],
       playerStatuses: {},
@@ -383,6 +390,7 @@ export const useGameStore = create<GameStore>()(
                 activeChatPlayerId: null,
                 chatToast: null,
                 roleRevealShown: false,
+                deliveredFeedbackHistory: [],
               }
             : {}),
           ...(phaseChangedToVote
@@ -410,6 +418,12 @@ export const useGameStore = create<GameStore>()(
       },
       addNightAction: (action) =>
         set((s) => ({ nightActions: [...s.nightActions, action] })),
+      addDeliveredFeedback: (entry) =>
+        set((s) => ({
+          deliveredFeedbackHistory: [...s.deliveredFeedbackHistory, entry],
+        })),
+      clearDeliveredFeedbackHistory: () =>
+        set({ deliveredFeedbackHistory: [] }),
       clearNightActions: () => set({ nightActions: [] }),
       setActiveNightRoleId: (roleId) => set({ activeNightRoleId: roleId }),
       setActiveWhispers: (whispers) => set({ activeWhispers: whispers }),
@@ -519,6 +533,7 @@ export const useGameStore = create<GameStore>()(
           gameId: null,
           gameState: null,
           nightActions: [],
+          deliveredFeedbackHistory: [],
           activeNightRoleId: null,
           nightWakeUpTargets: [],
           activeWhispers: [],
@@ -571,6 +586,7 @@ export const useGameStore = create<GameStore>()(
         tokenPositions: state.tokenPositions,
         activeNightRoleId: state.activeNightRoleId,
         nightActions: state.nightActions,
+        deliveredFeedbackHistory: state.deliveredFeedbackHistory,
         playerOrder: state.playerOrder,
         playerMemos: state.playerMemos,
         generalMemo: state.generalMemo,

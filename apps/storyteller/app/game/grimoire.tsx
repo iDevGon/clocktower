@@ -37,6 +37,7 @@ import { ArtistRequestModal } from '../../src/components/ArtistRequestModal';
 import { ChatToast } from '../../src/components/ChatToast';
 import { ConfirmModal } from '../../src/components/ConfirmModal';
 import { DaySubPhaseBar } from '../../src/components/DaySubPhaseBar';
+import { DeliveredFeedbackHistoryModal } from '../../src/components/DeliveredFeedbackHistoryModal';
 import {
   type CircularPosition,
   DraggablePlayerToken,
@@ -172,6 +173,9 @@ export default function GrimoireScreen() {
     return hasSv ? 'sects_and_violets' : 'trouble_brewing';
   }, [players, svRoleIds]);
   const nightActions = useGameStore((s) => s.nightActions);
+  const deliveredFeedbackHistory = useGameStore(
+    (s) => s.deliveredFeedbackHistory,
+  );
   const activeWhispers = useGameStore((s) => s.activeWhispers);
   const activeNightRoleId = useGameStore((s) => s.activeNightRoleId);
   const nightWakeUpTargets = useGameStore((s) => s.nightWakeUpTargets);
@@ -1020,6 +1024,8 @@ export default function GrimoireScreen() {
   const [nightOrderComplete, setNightOrderComplete] = useState(false);
   const [nightAdvanceRequestId, setNightAdvanceRequestId] = useState(0);
   const [desktopLogOpen, setDesktopLogOpen] = useState(false);
+  const [deliveredFeedbackVisible, setDeliveredFeedbackVisible] =
+    useState(false);
 
   const [areaSize, setAreaSize] = useState({ width: 0, height: 0 });
 
@@ -1654,6 +1660,7 @@ export default function GrimoireScreen() {
       slayerWaitingAck={slayerWaitingAck}
       totalChatUnread={totalChatUnread}
       hasMemo={generalMemo.length > 0}
+      deliveredFeedbackCount={deliveredFeedbackHistory.length}
       onWhispersPress={() => router.push('/game/whispers')}
       onNominatePress={() => router.push('/game/nominate')}
       onSlayerForceAck={() => socket?.emit('slayer:forceAck')}
@@ -1670,6 +1677,7 @@ export default function GrimoireScreen() {
           router.push('/game/log');
         }
       }}
+      onDeliveredFeedbackPress={() => setDeliveredFeedbackVisible(true)}
       scale={scale}
     />
   );
@@ -1720,6 +1728,12 @@ export default function GrimoireScreen() {
       )}
 
       {settingsPanelElement}
+
+      <DeliveredFeedbackHistoryModal
+        visible={deliveredFeedbackVisible}
+        history={deliveredFeedbackHistory}
+        onClose={() => setDeliveredFeedbackVisible(false)}
+      />
 
       <StorytellerChatModal
         visible={chatModalVisible}

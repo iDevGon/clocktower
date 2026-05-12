@@ -3,6 +3,7 @@ import {
   getNightOrderForEdition,
   getRoleById,
   OTHER_NIGHT_ORDER,
+  type Player,
 } from '@clocktower/shared';
 import { AbilityText, colors } from '@clocktower/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -12,6 +13,10 @@ import {
   createNightOrderPanelStyles,
   TEAM_COLORS,
 } from './NightOrderPanel.styles';
+import {
+  formatNightRoleLabel,
+  getNightRolePlayerNames,
+} from './nightRoleDisplay';
 
 const TEAM_LABELS: Record<string, string> = {
   townsfolk: '마을주민',
@@ -21,6 +26,7 @@ const TEAM_LABELS: Record<string, string> = {
 };
 
 const EMPTY_STRING_ARRAY: string[] = [];
+const EMPTY_PLAYER_ARRAY: Player[] = [];
 
 function formatTimer(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -34,6 +40,7 @@ interface NightOrderPanelProps {
   skippedRoleIds?: string[];
   /** 게임에 존재하지만 현재 능력을 사용할 수 없는 역할 (예: 살아있는 까마귀지기) */
   dormantRoleIds?: string[];
+  players?: Player[];
   activeNightRoleId?: string | null;
   onActivateRole: (roleId: string | null) => void;
   onNightComplete?: () => void;
@@ -50,6 +57,7 @@ export function NightOrderPanel({
   activeRoleIds,
   skippedRoleIds = EMPTY_STRING_ARRAY,
   dormantRoleIds = EMPTY_STRING_ARRAY,
+  players = EMPTY_PLAYER_ARRAY,
   activeNightRoleId,
   onActivateRole,
   onNightComplete,
@@ -187,6 +195,13 @@ export function NightOrderPanel({
   const isDormant =
     activeIndex !== null ? dormantRoleIds.includes(order[activeIndex]) : false;
   const isActiveAbsent = !isInGame || isSkipped;
+  const activeRolePlayerNames =
+    activeIndex !== null
+      ? getNightRolePlayerNames(players, order[activeIndex])
+      : [];
+  const activeRoleLabel = activeRole
+    ? formatNightRoleLabel(activeRole.name, activeRolePlayerNames)
+    : '';
 
   return (
     <View style={styles.container}>
@@ -256,8 +271,9 @@ export function NightOrderPanel({
                   <View>
                     <Text
                       style={[styles.activeRoleName, { color: teamColor.text }]}
+                      numberOfLines={2}
                     >
-                      {activeRole.name}
+                      {activeRoleLabel}
                     </Text>
                     <Text
                       style={[styles.activeRoleTeam, { color: teamColor.text }]}

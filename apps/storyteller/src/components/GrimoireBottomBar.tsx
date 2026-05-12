@@ -19,6 +19,7 @@ interface GrimoireBottomBarProps {
   slayerWaitingAck: boolean;
   totalChatUnread: number;
   hasMemo: boolean;
+  deliveredFeedbackCount: number;
   onWhispersPress: () => void;
   onNominatePress: () => void;
   onSlayerForceAck: () => void;
@@ -26,6 +27,7 @@ interface GrimoireBottomBarProps {
   onMemoPress: () => void;
   onChatPress: () => void;
   onLogPress: () => void;
+  onDeliveredFeedbackPress: () => void;
   scale: number;
 }
 
@@ -36,6 +38,7 @@ export function GrimoireBottomBar({
   slayerWaitingAck,
   totalChatUnread,
   hasMemo,
+  deliveredFeedbackCount,
   onWhispersPress,
   onNominatePress,
   onSlayerForceAck,
@@ -43,6 +46,7 @@ export function GrimoireBottomBar({
   onMemoPress,
   onChatPress,
   onLogPress,
+  onDeliveredFeedbackPress,
   scale,
 }: GrimoireBottomBarProps) {
   const s = (v: number) => Math.round(v * scale);
@@ -86,6 +90,14 @@ export function GrimoireBottomBar({
       icon: uiIcon.chat,
       onPress: onChatPress,
       badge: totalChatUnread > 0 ? `${totalChatUnread}` : undefined,
+      visible: true,
+    },
+    {
+      label: '건넨정보',
+      icon: uiIcon.log,
+      onPress: onDeliveredFeedbackPress,
+      badge:
+        deliveredFeedbackCount > 0 ? `${deliveredFeedbackCount}` : undefined,
       visible: true,
     },
     {

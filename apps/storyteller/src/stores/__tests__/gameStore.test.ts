@@ -114,6 +114,28 @@ describe('gameStore', () => {
     });
   });
 
+  describe('deliveredFeedbackHistory', () => {
+    it('건넨정보 기록을 최신순으로 누적하고 새 게임에서 초기화한다', () => {
+      useGameStore.getState().setGameState(makeGameState({ id: 'game-old' }));
+      useGameStore.getState().addDeliveredFeedback({
+        playerId: 'p1',
+        playerName: 'Player1',
+        roleId: 'spy',
+        roleName: '첩자',
+        day: 1,
+        timestamp: 1000,
+        source: 'manual',
+        feedback: { type: 'number', value: 2 },
+      });
+
+      expect(useGameStore.getState().deliveredFeedbackHistory).toHaveLength(1);
+
+      useGameStore.getState().setGameState(makeGameState({ id: 'game-new' }));
+
+      expect(useGameStore.getState().deliveredFeedbackHistory).toEqual([]);
+    });
+  });
+
   describe('removePlayerStatus', () => {
     it('상태를 제거한다', () => {
       useGameStore.getState().setGameState(makeGameState());
