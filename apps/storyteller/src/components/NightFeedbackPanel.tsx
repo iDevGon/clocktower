@@ -23,7 +23,10 @@ import {
 } from './NightFeedbackPanel.styles';
 import { TEAM_COLORS } from './NightOrderPanel.styles';
 import { getPendingFeedbackIndex } from './nightFeedbackQueue';
-import { isAbilityMalfunctioning } from './nightRoleLogic';
+import {
+  getAbilityMalfunctionWarning,
+  isAbilityMalfunctioning,
+} from './nightRoleLogic';
 
 /** Map team → gradient colors for the animated border card */
 const TEAM_CARD_COLORS: Record<
@@ -188,6 +191,7 @@ export function NightFeedbackPanel({
     targetPlayer.statuses.includes('barista_sober_healthy');
   const isPoisoned = !isSoberHealthy && hasPoisonStatus(targetPlayer.statuses);
   const isMalfunctioning = isAbilityMalfunctioning(targetPlayer);
+  const malfunctionWarningText = getAbilityMalfunctionWarning(targetPlayer);
   const role = getRoleById(activeRoleId);
   const team = role?.team ?? 'townsfolk';
   const cardColors = TEAM_CARD_COLORS[team] ?? FALLBACK_CARD_COLORS;
@@ -261,9 +265,7 @@ export function NightFeedbackPanel({
                   isPoisoned && !isDrunk && { color: '#9b59b6' },
                 ]}
               >
-                {isDrunk
-                  ? '⚠️ 주정뱅이 - 가짜 정보를 제공하세요'
-                  : '⚠️ 중독 상태 - 가짜 정보를 제공하세요'}
+                {malfunctionWarningText}
               </Text>
             </View>
           )}

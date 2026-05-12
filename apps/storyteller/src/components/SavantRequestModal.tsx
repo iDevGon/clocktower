@@ -12,6 +12,7 @@ import {
 interface SavantRequestModalProps {
   visible: boolean;
   playerName: string;
+  warningText?: string | null;
   onSubmit: (trueInfo: string, falseInfo: string) => void;
   onClose: () => void;
 }
@@ -19,6 +20,7 @@ interface SavantRequestModalProps {
 export function SavantRequestModal({
   visible,
   playerName,
+  warningText,
   onSubmit,
   onClose,
 }: SavantRequestModalProps) {
@@ -50,6 +52,12 @@ export function SavantRequestModal({
         <Pressable style={styles.panel} onPress={(e) => e.stopPropagation?.()}>
           <Text style={styles.title}>백치천재 정보 전송</Text>
           <Text style={styles.subtitle}>{playerName}님에게 보낼 정보</Text>
+
+          {warningText ? (
+            <View style={styles.warningBox}>
+              <Text style={styles.warningText}>{warningText}</Text>
+            </View>
+          ) : null}
 
           <Text style={styles.fieldLabel}>참 정보</Text>
           <TextInput
@@ -129,6 +137,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 6,
     marginTop: 8,
+  },
+  warningBox: {
+    backgroundColor: 'rgba(184,92,92,0.14)',
+    borderColor: '#b85c5c',
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  warningText: {
+    color: '#f0b36a',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
   },
   input: {
     backgroundColor: colors.surface.base,

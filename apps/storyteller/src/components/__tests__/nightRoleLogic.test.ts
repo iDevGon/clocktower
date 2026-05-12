@@ -1,6 +1,7 @@
 import type { Player } from '@clocktower/shared';
 import { describe, expect, it } from 'vitest';
 import {
+  getAbilityMalfunctionWarning,
   getActionTargetKey,
   getChefHint,
   getEmpathHint,
@@ -167,6 +168,41 @@ describe('nightRoleLogic', () => {
         player({ id: 'p2', statuses: ['poisoned', 'barista_sober_healthy'] }),
       ),
     ).toBe(false);
+  });
+
+  it('중독/취함 정보 역할에 호스트 경고 문구를 제공한다', () => {
+    expect(
+      getAbilityMalfunctionWarning(
+        player({ id: 'savant', statuses: ['poisoned'] }),
+      ),
+    ).toBe(
+      '주의: 이 플레이어는 중독/취함 상태입니다. 규칙에 맞게 잘못된 정보를 제공하세요.',
+    );
+    expect(
+      getAbilityMalfunctionWarning(
+        player({
+          id: 'drunk-artist',
+          role: {
+            id: 'drunk',
+            name: '주정뱅이',
+            team: 'outsider',
+            ability: '',
+            edition: 'trouble_brewing',
+          },
+          drunkAs: 'artist',
+        }),
+      ),
+    ).toBe(
+      '주의: 이 플레이어는 중독/취함 상태입니다. 규칙에 맞게 잘못된 정보를 제공하세요.',
+    );
+    expect(
+      getAbilityMalfunctionWarning(
+        player({
+          id: 'barista',
+          statuses: ['poisoned', 'barista_sober_healthy'],
+        }),
+      ),
+    ).toBeNull();
   });
 
   it('악마 사망 처리 버튼은 행동자 무효와 군인 무효 상태를 반영한다', () => {

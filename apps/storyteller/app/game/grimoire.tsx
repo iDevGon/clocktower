@@ -49,6 +49,7 @@ import { GrimoireTopBar } from '../../src/components/GrimoireTopBar';
 import { HostDesktopConsoleFrame } from '../../src/components/HostDesktopConsoleFrame';
 import { NightPanel } from '../../src/components/NightPanel';
 import {
+  getAbilityMalfunctionWarning,
   getChefHint,
   getEmpathHint,
 } from '../../src/components/nightRoleLogic';
@@ -237,6 +238,18 @@ export default function GrimoireScreen() {
   const artistRequest = useGameStore((s) => s.artistRequest);
   const setArtistRequest = useGameStore((s) => s.setArtistRequest);
   const jugglerCorrectCount = useGameStore((s) => s.jugglerCorrectCount);
+  const savantWarningText = useMemo(() => {
+    if (!savantRequest) return null;
+    return getAbilityMalfunctionWarning(
+      players?.find((p) => p.id === savantRequest.playerId),
+    );
+  }, [players, savantRequest]);
+  const artistWarningText = useMemo(() => {
+    if (!artistRequest) return null;
+    return getAbilityMalfunctionWarning(
+      players?.find((p) => p.id === artistRequest.playerId),
+    );
+  }, [players, artistRequest]);
   const scapegoatOffer = useGameStore((s) => s.scapegoatOffer);
   const setScapegoatOffer = useGameStore((s) => s.setScapegoatOffer);
   const deviantExileJudgement = useGameStore((s) => s.deviantExileJudgement);
@@ -1994,6 +2007,7 @@ export default function GrimoireScreen() {
       <SavantRequestModal
         visible={!!savantRequest}
         playerName={savantRequest?.playerName ?? ''}
+        warningText={savantWarningText}
         onSubmit={(trueInfo, falseInfo) => {
           if (!savantRequest) return;
           // 서버가 50% 확률로 swap하므로 여기서는 그대로 보냄 (info1=참, info2=거짓)
@@ -2011,6 +2025,7 @@ export default function GrimoireScreen() {
       <ArtistRequestModal
         visible={!!artistRequest}
         playerName={artistRequest?.playerName ?? ''}
+        warningText={artistWarningText}
         onAnswer={(yes) => {
           if (!artistRequest) return;
           sendNightFeedback(artistRequest.playerId, {

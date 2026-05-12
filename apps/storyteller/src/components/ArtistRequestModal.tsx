@@ -4,6 +4,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 interface ArtistRequestModalProps {
   visible: boolean;
   playerName: string;
+  warningText?: string | null;
   onAnswer: (yes: boolean) => void;
   onClose: () => void;
 }
@@ -11,6 +12,7 @@ interface ArtistRequestModalProps {
 export function ArtistRequestModal({
   visible,
   playerName,
+  warningText,
   onAnswer,
   onClose,
 }: ArtistRequestModalProps) {
@@ -27,6 +29,12 @@ export function ArtistRequestModal({
           <Text style={styles.subtitle}>
             {playerName}님이 예/아니오 질문을 했습니다
           </Text>
+
+          {warningText ? (
+            <View style={styles.warningBox}>
+              <Text style={styles.warningText}>{warningText}</Text>
+            </View>
+          ) : null}
 
           <View style={styles.buttons}>
             <Pressable
@@ -85,6 +93,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginBottom: 12,
+  },
+  warningBox: {
+    backgroundColor: 'rgba(184,92,92,0.14)',
+    borderColor: '#b85c5c',
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 14,
+  },
+  warningText: {
+    color: '#f0b36a',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
   },
   answerButton: {
     flex: 1,

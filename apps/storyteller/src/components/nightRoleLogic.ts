@@ -27,6 +27,13 @@ export function isAbilityMalfunctioning(
   );
 }
 
+export function getAbilityMalfunctionWarning(
+  player?: Pick<Player, 'role' | 'statuses'> | null,
+): string | null {
+  if (!isAbilityMalfunctioning(player)) return null;
+  return '주의: 이 플레이어는 중독/취함 상태입니다. 규칙에 맞게 잘못된 정보를 제공하세요.';
+}
+
 export function getEffectiveAlignment(player: Player): 'good' | 'evil' | null {
   if (player.isTraveller) return player.travellerAlignment ?? null;
   if (player.alignment) return player.alignment;
