@@ -67,6 +67,26 @@ const aliveNames = players
 - Turborepo orchestrates builds. `^build` dependency ensures shared/ui builds before apps automatically
 - Use Vitest for testing. `pnpm test` (unit), `pnpm test:e2e` (socket E2E), `pnpm test:all` (all)
 
+## Clocktower Rule Automation
+
+- Original game rules that can be automated from current game state SHOULD be automated as much as possible.
+- Automation MUST NOT remove Storyteller judgment when the original game intentionally leaves room for choice, hidden information, ambiguity, or ruling discretion.
+- If full automation is difficult, risky, or impossible, implement a Storyteller-facing feature that lets the Storyteller resolve the rule manually with minimal friction.
+- Storyteller convenience matters: show relevant warnings, affected players, current statuses, previous selections, and suggested actions near the ruling control.
+- Important automated outcomes SHOULD be confirmable or reversible when an incorrect automatic resolution could materially affect the game.
+- When a character is drunk or poisoned, prefer showing a clear Storyteller warning and allowing false information / ineffective action handling instead of silently applying the normal ability.
+
+Concrete examples:
+
+- **Monk / Soldier protection**: If a sober and healthy Monk protects a player, warn when the Imp attempts to kill that protected target. If the target is a sober and healthy Soldier, warn that the Imp kill should not kill them. If the Monk or Soldier is drunk/poisoned, do not apply the protection automatically.
+- **Virgin**: When the Virgin is nominated for the first time, consume the Virgin ability regardless of whether the nominator is a Townsfolk. Only kill the nominator when the nominator is a Townsfolk and the Virgin is sober and healthy.
+- **Zombuul**: On first death, support public death display while keeping the Zombuul internally alive for night actions and Demon survival checks.
+- **Pukka**: When a sober and healthy Pukka selects a new player, automatically kill the previous Pukka-poisoned target and remove that target's Pukka poison, then apply Pukka poison to the new target. If the Pukka is drunk/poisoned, warn the Storyteller and avoid applying the automatic delayed death.
+- **Shabaloth**: Track players killed by Shabaloth. Since regurgitation can require Storyteller discretion, provide a clear Storyteller action to choose whether and whom to revive instead of guessing automatically.
+- **Innkeeper / Devil's Advocate / Tea Lady**: Track protection statuses and warn during death or execution confirmation. Still let the Storyteller override when another rule changes the result.
+- **Spy or Widow grimoire-like information**: If the character is drunk/poisoned, provide manual/fake information controls instead of automatically sending the true grimoire.
+- **Seating adjacency rules**: For abilities depending on neighbors, alive/dead public state, or alignment, display the relevant adjacent players and statuses in the ruling UI so the Storyteller does not need to inspect multiple screens.
+
 ## Socket Event Change Procedure
 
 When adding or modifying socket events, ALWAYS follow this order:
