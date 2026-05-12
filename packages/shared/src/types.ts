@@ -98,6 +98,7 @@ export type FeedbackType =
   | 'none'
   | 'number'
   | 'yes_no'
+  | 'player_and_role'
   | 'players_and_role'
   | 'dreamer_info'
   | 'players'
@@ -115,6 +116,7 @@ export interface NightFeedbackDef {
 export type NightFeedbackPayload =
   | { type: 'number'; value: number }
   | { type: 'yes_no'; value: boolean; targetNames?: string[] }
+  | { type: 'player_and_role'; playerName: string; roleName: string }
   | { type: 'players_and_role'; playerNames: string[]; roleName: string }
   | {
       type: 'dreamer_info';

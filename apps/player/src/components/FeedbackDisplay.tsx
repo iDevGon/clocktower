@@ -62,6 +62,20 @@ export function FeedbackDisplay({ feedback, compact }: FeedbackDisplayProps) {
           </Text>
         </View>
       );
+    case 'player_and_role':
+      return (
+        <View style={bannerStyle}>
+          {!compact && <Text style={labelStyle}>진행자 안내</Text>}
+          <Text style={sharedStyles.playersText}>
+            <Text style={sharedStyles.highlight}>{feedback.playerName}</Text>
+          </Text>
+          <Text style={sharedStyles.roleText}>
+            의 캐릭터는{' '}
+            <Text style={sharedStyles.highlight}>{feedback.roleName}</Text>
+            입니다
+          </Text>
+        </View>
+      );
     case 'players_and_role':
       return (
         <View style={bannerStyle}>

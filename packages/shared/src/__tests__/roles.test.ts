@@ -921,3 +921,17 @@ describe('BMR 밤 행동 정의', () => {
     expect(NIGHT_ACTIONS.professor?.includeDeadTargets).toBe(true);
   });
 });
+
+describe('BMR 밤 피드백 정의', () => {
+  it('할머니는 플레이어와 역할 피드백을 사용한다', () => {
+    expect(NIGHT_FEEDBACK.grandmother?.type).toBe('player_and_role');
+  });
+
+  it('객실 청소부는 숫자 피드백을 사용한다', () => {
+    expect(NIGHT_FEEDBACK.chambermaid?.type).toBe('number');
+  });
+
+  it('수습생은 역할 피드백을 사용한다', () => {
+    expect(NIGHT_FEEDBACK.apprentice?.type).toBe('role');
+  });
+});

@@ -1482,6 +1482,10 @@ export const NIGHT_FEEDBACK: Record<string, NightFeedbackDef> = {
   sage: { type: 'players' },
   savant: { type: 'savant_info' },
 
+  // ── Bad Moon Rising ──
+  grandmother: { type: 'player_and_role' },
+  chambermaid: { type: 'number' },
+
   // ── 여행자 (Traveller) ──
   apprentice: { type: 'role' },
   harlot: { type: 'role' },

@@ -9,6 +9,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
 import { NumberFeedback } from './feedback/NumberFeedback';
+import { PlayerAndRoleFeedback } from './feedback/PlayerAndRoleFeedback';
 import { PlayersAndRoleFeedback } from './feedback/PlayersAndRoleFeedback';
 import { RoleFeedback } from './feedback/RoleFeedback';
 import { useGameEditionRoles } from './feedback/useGameEditionRoles';
@@ -281,6 +282,8 @@ export function FeedbackComposer({
           onSend={onSend}
         />
       );
+    case 'player_and_role':
+      return <PlayerAndRoleFeedback players={players} onSend={onSend} />;
     case 'dreamer_info':
       return (
         <DreamerFeedback
