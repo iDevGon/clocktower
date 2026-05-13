@@ -282,6 +282,10 @@ export function NightActionLog({
                       ),
                   )
                 : [];
+            const poRestKey = `${i}-${action.playerId}-po-rest`;
+            const isPoRestProcessed =
+              processedTargets.has(poRestKey) ||
+              getCurrentStatuses(actionPlayer).includes('po_chose_no_one');
 
             return (
               <Pressable
@@ -372,6 +376,43 @@ export function NightActionLog({
                     </View>
                   </View>
                 )}
+                {action.roleId === 'po' &&
+                  !hasTargets &&
+                  actionConfig &&
+                  isActionPlayerMalfunctioning && (
+                    <View style={styles.targetActionGroup}>
+                      <View style={styles.bmrWarningBadge}>
+                        <Text style={styles.bmrWarningText}>
+                          포가 중독/취함 상태라 자동 휴식 미적용
+                        </Text>
+                      </View>
+                      <Pressable
+                        onPress={() => {
+                          if (isPoRestProcessed) return;
+                          onSetStatus?.(action.playerId, 'po_chose_no_one');
+                          setProcessedTargets((prev) =>
+                            new Set(prev).add(poRestKey),
+                          );
+                        }}
+                        style={[
+                          styles.killButton,
+                          isPoRestProcessed && styles.killButtonDone,
+                        ]}
+                        disabled={isPoRestProcessed}
+                      >
+                        <Text
+                          style={[
+                            styles.killText,
+                            isPoRestProcessed && styles.killTextDone,
+                          ]}
+                        >
+                          {isPoRestProcessed
+                            ? '포 휴식 처리됨'
+                            : '포 휴식 처리'}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  )}
                 {hasTargets && actionConfig && (
                   <View style={styles.killRow}>
                     {action.targets.map((targetId) => {
@@ -556,6 +597,51 @@ export function NightActionLog({
                                   {markDone
                                     ? `${getPlayerName(targetId)} 사발로스 표식`
                                     : `${getPlayerName(targetId)} 사발로스 표식 처리`}
+                                </Text>
+                              </Pressable>
+                            </View>
+                          );
+                        }
+
+                        if (action.roleId === 'po') {
+                          const poKillKey = `${targetKey}:po-manual-kill`;
+                          const killDone =
+                            processedTargets.has(poKillKey) ||
+                            !isPlayerAlive(targetId);
+
+                          return (
+                            <View
+                              key={targetId}
+                              style={styles.targetActionGroup}
+                            >
+                              <View style={styles.bmrWarningBadge}>
+                                <Text style={styles.bmrWarningText}>
+                                  포가 중독/취함 상태라 자동 판정 미적용
+                                </Text>
+                              </View>
+                              <Pressable
+                                onPress={() => {
+                                  if (killDone) return;
+                                  onKill?.(targetId);
+                                  setProcessedTargets((prev) =>
+                                    new Set(prev).add(poKillKey),
+                                  );
+                                }}
+                                style={[
+                                  styles.killButton,
+                                  killDone && styles.killButtonDone,
+                                ]}
+                                disabled={killDone}
+                              >
+                                <Text
+                                  style={[
+                                    styles.killText,
+                                    killDone && styles.killTextDone,
+                                  ]}
+                                >
+                                  {killDone
+                                    ? `${getPlayerName(targetId)} 사망`
+                                    : `${getPlayerName(targetId)} 사망 처리`}
                                 </Text>
                               </Pressable>
                             </View>

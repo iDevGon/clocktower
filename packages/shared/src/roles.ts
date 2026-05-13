@@ -1415,7 +1415,7 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     instruction:
       '죽일 플레이어 1명 또는, 지난밤 아무도 선택하지 않았다면 3명을 선택하세요',
     excludeSelf: false,
-    allowedTargetCounts: [1, 3],
+    allowedTargetCounts: [0, 1, 3],
   },
 
   // ── 여행자 (Traveller) ──

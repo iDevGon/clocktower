@@ -906,9 +906,9 @@ describe('BMR 밤 행동 정의', () => {
     }
   });
 
-  it('포는 1명 또는 3명을 선택할 수 있다', () => {
+  it('포는 0명, 1명 또는 3명을 선택할 수 있다', () => {
     expect(NIGHT_ACTIONS.po?.type).toBe('select_one');
-    expect(NIGHT_ACTIONS.po?.allowedTargetCounts).toEqual([1, 3]);
+    expect(NIGHT_ACTIONS.po?.allowedTargetCounts).toEqual([0, 1, 3]);
   });
 
   it('객실 청소부는 자신을 제외한 생존 플레이어 2명을 선택한다', () => {

@@ -820,6 +820,96 @@ describe('GameManager', () => {
     });
   });
 
+  describe('포', () => {
+    function createPoGame() {
+      const { gm, players } = createTestGame(5);
+      gm.assignRole(players[0].id, 'grandmother');
+      gm.assignRole(players[1].id, 'sailor');
+      gm.assignRole(players[2].id, 'gambler');
+      gm.assignRole(players[3].id, 'godfather');
+      gm.assignRole(players[4].id, 'po');
+      gm.start();
+      return { gm, players };
+    }
+
+    it('아무도 선택하지 않으면 다음 행동 3명 선택 상태를 남긴다', () => {
+      const { gm, players } = createPoGame();
+
+      const result = gm.resolvePoSelection(players[4].id, []);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        rested: true,
+        killedTargetIds: [],
+      });
+      expect(gm.getPlayer(players[4].id)?.statuses).toContain(
+        'po_chose_no_one',
+      );
+    });
+
+    it('대상을 선택하면 대상들을 사망시키고 휴식 상태를 제거한다', () => {
+      const { gm, players } = createPoGame();
+      gm.setPlayerStatuses(players[4].id, ['po_chose_no_one']);
+
+      const result = gm.resolvePoSelection(players[4].id, [
+        players[0].id,
+        players[1].id,
+        players[2].id,
+      ]);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        rested: false,
+        killedTargetIds: [players[0].id, players[1].id, players[2].id],
+      });
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(false);
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(false);
+      expect(gm.getPlayer(players[2].id)?.isAlive).toBe(false);
+      expect(gm.getPlayer(players[4].id)?.statuses).not.toContain(
+        'po_chose_no_one',
+      );
+      expect(gm.hasPendingNightKill(players[0].id)).toBe(true);
+      expect(gm.hasPendingNightKill(players[1].id)).toBe(true);
+      expect(gm.hasPendingNightKill(players[2].id)).toBe(true);
+    });
+
+    it('0명, 1명, 3명 외 선택 수는 자동 적용하지 않는다', () => {
+      const { gm, players } = createPoGame();
+
+      const result = gm.resolvePoSelection(players[4].id, [
+        players[0].id,
+        players[1].id,
+      ]);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: false,
+        reason: '포는 0명, 1명 또는 3명을 선택해야 합니다',
+      });
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(true);
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
+    });
+
+    it('포가 취함/중독이면 휴식과 사망을 자동 적용하지 않는다', () => {
+      const { gm, players } = createPoGame();
+      gm.setPlayerStatuses(players[4].id, ['drunk']);
+
+      const result = gm.resolvePoSelection(players[4].id, [players[0].id]);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: true,
+        reason: '포가 중독/취함 상태입니다',
+      });
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(true);
+      expect(gm.getPlayer(players[4].id)?.statuses).not.toContain(
+        'po_chose_no_one',
+      );
+    });
+  });
+
   describe('처단자', () => {
     it('처단자 사용 추적', () => {
       const { gm, players } = createStartedGame();

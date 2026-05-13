@@ -1476,6 +1476,85 @@ export class GameManager {
     };
   }
 
+  resolvePoSelection(
+    poId: string,
+    targetIds: string[],
+  ):
+    | {
+        success: true;
+        blocked: false;
+        rested: boolean;
+        killedTargetIds: string[];
+      }
+    | {
+        success: false;
+        blocked: boolean;
+        reason: string;
+      } {
+    const po = this.getPlayer(poId);
+    if (!po) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '포를 찾을 수 없습니다',
+      };
+    }
+
+    if (isPoisonedOrDrunk(po)) {
+      return {
+        success: false,
+        blocked: true,
+        reason: '포가 중독/취함 상태입니다',
+      };
+    }
+
+    if (![0, 1, 3].includes(targetIds.length)) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '포는 0명, 1명 또는 3명을 선택해야 합니다',
+      };
+    }
+
+    if (targetIds.length === 0) {
+      this.addStatus(po, 'po_chose_no_one');
+      return {
+        success: true,
+        blocked: false,
+        rested: true,
+        killedTargetIds: [],
+      };
+    }
+
+    const targets = targetIds
+      .map((targetId) => this.getPlayer(targetId))
+      .filter((target): target is Player => target != null);
+    if (targets.length === 0) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '대상을 찾을 수 없습니다',
+      };
+    }
+
+    this.removeStatus(po, 'po_chose_no_one');
+    const killedTargetIds: string[] = [];
+    for (const target of targets) {
+      this.kill(target.id);
+      if (this.state.phase === 'night') {
+        this.addPendingNightKill(target.id);
+      }
+      killedTargetIds.push(target.id);
+    }
+
+    return {
+      success: true,
+      blocked: false,
+      rested: false,
+      killedTargetIds,
+    };
+  }
+
   // ── 도둑/관료 투표 가중치 ──
 
   /** 도둑(-1)과 관료(3)의 밤 행동 타깃에 따른 투표 가중치 맵 반환 */

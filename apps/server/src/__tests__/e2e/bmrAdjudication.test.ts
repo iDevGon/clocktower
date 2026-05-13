@@ -129,4 +129,35 @@ describe('E2E: 피로물든달 판정 보조', () => {
       'shabaloth_marked_dead',
     );
   });
+
+  it('포 밤 행동은 휴식 선택과 다음 3명 처치를 게임 상태에 반영한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'gambler' },
+      { roleId: 'godfather' },
+      { roleId: 'po' },
+    ]);
+
+    const restStatePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.players[4].emit('night:action', { targets: [] });
+    await restStatePromise;
+
+    expect(ctx.app.game.getPlayer(playerIds[4])?.statuses).toContain(
+      'po_chose_no_one',
+    );
+
+    const killStatePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.players[4].emit('night:action', {
+      targets: [playerIds[0], playerIds[1], playerIds[2]],
+    });
+    await killStatePromise;
+
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[1])?.isAlive).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[2])?.isAlive).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[4])?.statuses).not.toContain(
+      'po_chose_no_one',
+    );
+  });
 });

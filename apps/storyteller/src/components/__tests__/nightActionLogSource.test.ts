@@ -45,4 +45,12 @@ describe('NightActionLog BMR wiring', () => {
     expect(source).toContain('onRemoveStatus?.');
     expect(source).toContain('shabaloth_marked_dead');
   });
+
+  it('포가 중독/취함이면 휴식과 처치 수동 판정 컨트롤을 제공한다', () => {
+    expect(source).toContain('포가 중독/취함 상태라 자동 휴식 미적용');
+    expect(source).toContain('포 휴식 처리');
+    expect(source).toContain('포가 중독/취함 상태라 자동 판정 미적용');
+    expect(source).toContain('po_chose_no_one');
+    expect(source).toContain('po-manual-kill');
+  });
 });
