@@ -1555,6 +1555,81 @@ export class GameManager {
     };
   }
 
+  resolveProfessorSelection(
+    professorId: string,
+    targetId: string,
+  ):
+    | {
+        success: true;
+        blocked: false;
+        revived: boolean;
+        revivedTargetId?: string;
+      }
+    | {
+        success: false;
+        blocked: boolean;
+        reason: string;
+      } {
+    const professor = this.getPlayer(professorId);
+    if (!professor) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '교수를 찾을 수 없습니다',
+      };
+    }
+
+    if (professor.statuses.includes('professor_spent')) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '교수 능력은 이미 소모되었습니다',
+      };
+    }
+
+    const target = this.getPlayer(targetId);
+    if (!target) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '대상을 찾을 수 없습니다',
+      };
+    }
+
+    if (target.isAlive) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '교수는 사망한 플레이어만 선택할 수 있습니다',
+      };
+    }
+
+    if (isPoisonedOrDrunk(professor)) {
+      return {
+        success: false,
+        blocked: true,
+        reason: '교수가 중독/취함 상태입니다',
+      };
+    }
+
+    this.addStatus(professor, 'professor_spent');
+    if (target.role?.team !== 'townsfolk') {
+      return {
+        success: true,
+        blocked: false,
+        revived: false,
+      };
+    }
+
+    this.revive(target.id);
+    return {
+      success: true,
+      blocked: false,
+      revived: true,
+      revivedTargetId: target.id,
+    };
+  }
+
   // ── 도둑/관료 투표 가중치 ──
 
   /** 도둑(-1)과 관료(3)의 밤 행동 타깃에 따른 투표 가중치 맵 반환 */

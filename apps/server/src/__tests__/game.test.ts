@@ -910,6 +910,102 @@ describe('GameManager', () => {
     });
   });
 
+  describe('교수', () => {
+    function createProfessorGame() {
+      const { gm, players } = createTestGame(5);
+      gm.assignRole(players[0].id, 'professor');
+      gm.assignRole(players[1].id, 'grandmother');
+      gm.assignRole(players[2].id, 'sailor');
+      gm.assignRole(players[3].id, 'godfather');
+      gm.assignRole(players[4].id, 'po');
+      gm.start();
+      return { gm, players };
+    }
+
+    it('사망한 마을주민을 선택하면 부활시키고 능력을 소모한다', () => {
+      const { gm, players } = createProfessorGame();
+      gm.kill(players[1].id);
+
+      const result = gm.resolveProfessorSelection(players[0].id, players[1].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        revived: true,
+        revivedTargetId: players[1].id,
+      });
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
+      expect(gm.getPlayer(players[0].id)?.statuses).toContain(
+        'professor_spent',
+      );
+    });
+
+    it('사망한 마을주민이 아닌 대상을 선택하면 능력만 소모하고 부활시키지 않는다', () => {
+      const { gm, players } = createProfessorGame();
+      gm.kill(players[3].id);
+
+      const result = gm.resolveProfessorSelection(players[0].id, players[3].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        revived: false,
+      });
+      expect(gm.getPlayer(players[3].id)?.isAlive).toBe(false);
+      expect(gm.getPlayer(players[0].id)?.statuses).toContain(
+        'professor_spent',
+      );
+    });
+
+    it('살아있는 대상은 자동 판정하지 않는다', () => {
+      const { gm, players } = createProfessorGame();
+
+      const result = gm.resolveProfessorSelection(players[0].id, players[1].id);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: false,
+        reason: '교수는 사망한 플레이어만 선택할 수 있습니다',
+      });
+      expect(gm.getPlayer(players[0].id)?.statuses).not.toContain(
+        'professor_spent',
+      );
+    });
+
+    it('교수가 취함/중독이면 부활과 능력 소모를 자동 적용하지 않는다', () => {
+      const { gm, players } = createProfessorGame();
+      gm.kill(players[1].id);
+      gm.setPlayerStatuses(players[0].id, ['drunk']);
+
+      const result = gm.resolveProfessorSelection(players[0].id, players[1].id);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: true,
+        reason: '교수가 중독/취함 상태입니다',
+      });
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(false);
+      expect(gm.getPlayer(players[0].id)?.statuses).not.toContain(
+        'professor_spent',
+      );
+    });
+
+    it('이미 능력을 소모한 교수는 자동 판정하지 않는다', () => {
+      const { gm, players } = createProfessorGame();
+      gm.kill(players[1].id);
+      gm.setPlayerStatuses(players[0].id, ['professor_spent']);
+
+      const result = gm.resolveProfessorSelection(players[0].id, players[1].id);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: false,
+        reason: '교수 능력은 이미 소모되었습니다',
+      });
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(false);
+    });
+  });
+
   describe('처단자', () => {
     it('처단자 사용 추적', () => {
       const { gm, players } = createStartedGame();

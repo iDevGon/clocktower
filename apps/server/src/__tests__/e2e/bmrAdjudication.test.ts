@@ -160,4 +160,24 @@ describe('E2E: 피로물든달 판정 보조', () => {
       'po_chose_no_one',
     );
   });
+
+  it('교수 밤 행동은 사망한 마을주민을 부활시키고 능력을 소모한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'professor' },
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'godfather' },
+      { roleId: 'po' },
+    ]);
+    ctx.app.game.kill(playerIds[1]);
+
+    const statePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.players[0].emit('night:action', { targets: [playerIds[1]] });
+    await statePromise;
+
+    expect(ctx.app.game.getPlayer(playerIds[1])?.isAlive).toBe(true);
+    expect(ctx.app.game.getPlayer(playerIds[0])?.statuses).toContain(
+      'professor_spent',
+    );
+  });
 });

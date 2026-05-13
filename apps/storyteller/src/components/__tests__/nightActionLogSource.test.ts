@@ -53,4 +53,13 @@ describe('NightActionLog BMR wiring', () => {
     expect(source).toContain('po_chose_no_one');
     expect(source).toContain('po-manual-kill');
   });
+
+  it('교수 부활과 무효 수동 판정 컨트롤을 제공한다', () => {
+    expect(source).toContain("professor: { label: '부활 처리'");
+    expect(source).toContain('교수가 중독/취함 상태라 자동 부활 미적용');
+    expect(source).toContain('교수 능력 소모 처리');
+    expect(source).toContain('onSetStatus?.');
+    expect(source).toContain('professor_spent');
+    expect(source).toContain('professor-manual-revive');
+  });
 });

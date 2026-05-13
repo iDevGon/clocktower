@@ -50,6 +50,7 @@ const ROLE_TARGET_ACTIONS: Record<string, TargetActionConfig> = {
   gambler: { label: '사망 처리', doneLabel: '사망', isKill: true },
   moonchild: { label: '사망 처리', doneLabel: '사망', isKill: true },
   grandmother: { label: '사망 처리', doneLabel: '사망', isKill: true },
+  professor: { label: '부활 처리', doneLabel: '부활됨' },
   poisoner: { label: '중독 처리', doneLabel: '중독됨', status: 'poisoned' },
   monk: { label: '보호 처리', doneLabel: '보호됨', status: 'protected' },
   snake_charmer: { label: '확인', doneLabel: '확인' },
@@ -764,6 +765,93 @@ export function NightActionLog({
                                 : `${getPlayerName(targetId)} 광기 역할 지정`}
                             </Text>
                           </Pressable>
+                        );
+                      }
+
+                      if (action.roleId === 'professor') {
+                        const reviveKey = `${targetKey}:professor-manual-revive`;
+                        const spentKey = `${i}-${action.playerId}-professor-spent`;
+                        const reviveDone =
+                          processedTargets.has(reviveKey) ||
+                          isPlayerAlive(targetId);
+                        const spentDone =
+                          processedTargets.has(spentKey) ||
+                          getCurrentStatuses(actionPlayer).includes(
+                            'professor_spent',
+                          );
+                        const isTownsfolk =
+                          targetPlayer?.role?.team === 'townsfolk';
+
+                        return (
+                          <View key={targetId} style={styles.targetActionGroup}>
+                            {isActionPlayerMalfunctioning && (
+                              <View style={styles.bmrWarningBadge}>
+                                <Text style={styles.bmrWarningText}>
+                                  교수가 중독/취함 상태라 자동 부활 미적용
+                                </Text>
+                              </View>
+                            )}
+                            {!isTownsfolk && (
+                              <View style={styles.bmrWarningBadge}>
+                                <Text style={styles.bmrWarningText}>
+                                  대상이 마을주민이 아니면 자동 부활하지 않음
+                                </Text>
+                              </View>
+                            )}
+                            <Pressable
+                              onPress={() => {
+                                if (reviveDone) return;
+                                onRevive?.(targetId);
+                                setProcessedTargets((prev) =>
+                                  new Set(prev).add(reviveKey),
+                                );
+                              }}
+                              style={[
+                                styles.killButton,
+                                reviveDone && styles.killButtonDone,
+                              ]}
+                              disabled={reviveDone}
+                            >
+                              <Text
+                                style={[
+                                  styles.killText,
+                                  reviveDone && styles.killTextDone,
+                                ]}
+                              >
+                                {reviveDone
+                                  ? `${getPlayerName(targetId)} 부활됨`
+                                  : `${getPlayerName(targetId)} 부활 처리`}
+                              </Text>
+                            </Pressable>
+                            <Pressable
+                              onPress={() => {
+                                if (spentDone) return;
+                                onSetStatus?.(
+                                  action.playerId,
+                                  'professor_spent',
+                                );
+                                setProcessedTargets((prev) =>
+                                  new Set(prev).add(spentKey),
+                                );
+                              }}
+                              style={[
+                                styles.killButton,
+                                spentDone && styles.killButtonDone,
+                              ]}
+                              disabled={spentDone}
+                            >
+                              <Text
+                                style={[
+                                  styles.killText,
+                                  spentDone && styles.killTextDone,
+                                ]}
+                              >
+                                {spentDone
+                                  ? '교수 능력 소모됨'
+                                  : '교수 능력 소모 처리'}
+                              </Text>
+                            </Pressable>
+                          </View>
                         );
                       }
 
