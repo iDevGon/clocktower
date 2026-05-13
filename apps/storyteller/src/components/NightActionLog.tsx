@@ -145,6 +145,8 @@ export function NightActionLog({
     players.find((p) => p.id === id)?.name ?? id;
   const isPlayerAlive = (id: string) =>
     players.find((p) => p.id === id)?.isAlive ?? false;
+  const getCurrentStatuses = (player?: Player) =>
+    player ? (playerStatuses?.[player.id] ?? player.statuses ?? []) : [];
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [sentIndices, setSentIndices] = useState<Set<number>>(new Set());
   const [processedTargets, setProcessedTargets] = useState<Set<string>>(
@@ -340,6 +342,86 @@ export function NightActionLog({
                         : [];
 
                       if (blockReason === 'actor_malfunctioning') {
+                        if (action.roleId === 'pukka') {
+                          const previousPukkaTarget = players.find((player) =>
+                            getCurrentStatuses(player).includes(
+                              'pukka_poisoned',
+                            ),
+                          );
+                          const previousKillKey = `${targetKey}:pukka-previous-kill`;
+                          const poisonKey = `${targetKey}:pukka-poison`;
+                          const previousKillDone =
+                            previousPukkaTarget != null &&
+                            (processedTargets.has(previousKillKey) ||
+                              !isPlayerAlive(previousPukkaTarget.id));
+                          const poisonDone = processedTargets.has(poisonKey);
+
+                          return (
+                            <View
+                              key={targetId}
+                              style={styles.targetActionGroup}
+                            >
+                              <View style={styles.bmrWarningBadge}>
+                                <Text style={styles.bmrWarningText}>
+                                  푸카가 중독/취함 상태라 자동 판정 미적용
+                                </Text>
+                              </View>
+                              {previousPukkaTarget != null && (
+                                <Pressable
+                                  onPress={() => {
+                                    if (previousKillDone) return;
+                                    onKill?.(previousPukkaTarget.id);
+                                    setProcessedTargets((prev) =>
+                                      new Set(prev).add(previousKillKey),
+                                    );
+                                  }}
+                                  style={[
+                                    styles.killButton,
+                                    previousKillDone && styles.killButtonDone,
+                                  ]}
+                                  disabled={previousKillDone}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.killText,
+                                      previousKillDone && styles.killTextDone,
+                                    ]}
+                                  >
+                                    {previousKillDone
+                                      ? `${previousPukkaTarget.name} 이전 푸카 중독 대상 사망`
+                                      : `${previousPukkaTarget.name} 이전 푸카 중독 대상 사망 처리`}
+                                  </Text>
+                                </Pressable>
+                              )}
+                              <Pressable
+                                onPress={() => {
+                                  if (poisonDone) return;
+                                  onSetStatus?.(targetId, 'pukka_poisoned');
+                                  setProcessedTargets((prev) =>
+                                    new Set(prev).add(poisonKey),
+                                  );
+                                }}
+                                style={[
+                                  styles.killButton,
+                                  poisonDone && styles.killButtonDone,
+                                ]}
+                                disabled={poisonDone}
+                              >
+                                <Text
+                                  style={[
+                                    styles.killText,
+                                    poisonDone && styles.killTextDone,
+                                  ]}
+                                >
+                                  {poisonDone
+                                    ? `${getPlayerName(targetId)} 푸카 중독됨`
+                                    : `${getPlayerName(targetId)} 푸카 중독 처리`}
+                                </Text>
+                              </Pressable>
+                            </View>
+                          );
+                        }
+
                         return (
                           <View key={targetId} style={styles.protectedBadge}>
                             <Text style={styles.protectedText}>

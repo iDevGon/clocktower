@@ -31,4 +31,10 @@ describe('NightActionLog BMR wiring', () => {
     expect(source).toContain('bmrWarningBadge');
     expect(source).toContain('warning.message');
   });
+
+  it('푸카가 중독/취함이면 수동 판정 컨트롤을 제공한다', () => {
+    expect(source).toContain('푸카가 중독/취함 상태라 자동 판정 미적용');
+    expect(source).toContain('이전 푸카 중독 대상 사망 처리');
+    expect(source).toContain("onSetStatus?.(targetId, 'pukka_poisoned')");
+  });
 });
