@@ -1353,6 +1353,69 @@ export class GameManager {
     this.nightActionTargets.set(playerId, targets);
   }
 
+  resolvePukkaSelection(
+    pukkaId: string,
+    targetId: string,
+  ):
+    | {
+        success: true;
+        blocked: false;
+        poisonedTargetId: string;
+        killedTargetId?: string;
+      }
+    | {
+        success: false;
+        blocked: boolean;
+        previousTargetId?: string;
+        reason: string;
+      } {
+    const pukka = this.getPlayer(pukkaId);
+    if (!pukka) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '푸카를 찾을 수 없습니다',
+      };
+    }
+
+    const target = this.getPlayer(targetId);
+    if (!target) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '대상을 찾을 수 없습니다',
+      };
+    }
+
+    const previousTarget = this.state.players.find((p) =>
+      p.statuses.includes('pukka_poisoned'),
+    );
+    if (isPoisonedOrDrunk(pukka)) {
+      return {
+        success: false,
+        blocked: true,
+        ...(previousTarget && { previousTargetId: previousTarget.id }),
+        reason: '푸카가 중독/취함 상태입니다',
+      };
+    }
+
+    if (previousTarget) {
+      this.removeStatus(previousTarget, 'pukka_poisoned');
+      this.kill(previousTarget.id);
+      if (this.state.phase === 'night') {
+        this.addPendingNightKill(previousTarget.id);
+      }
+    }
+    this.addStatus(target, 'pukka_poisoned');
+
+    return {
+      success: true,
+      blocked: false,
+      ...(previousTarget && { killedTargetId: previousTarget.id }),
+      poisonedTargetId: target.id,
+    };
+  }
+
   // ── 도둑/관료 투표 가중치 ──
 
   /** 도둑(-1)과 관료(3)의 밤 행동 타깃에 따른 투표 가중치 맵 반환 */

@@ -513,6 +513,12 @@ export function registerPlayerHandlers(
             }
           }
 
+          if (effectiveRoleId === 'pukka' && targets.length > 0) {
+            game.resolvePukkaSelection(playerId, targets[0]);
+            storytellerIo.emit('game:state', game.getStorytellerState());
+            playerIo.emit('game:state', game.getState());
+          }
+
           const reportRoleId = effectiveRoleId;
           // 점쟁이 판정: 선택된 2명 중 악마/Red Herring 포함 여부
           const fortuneTellerResult =

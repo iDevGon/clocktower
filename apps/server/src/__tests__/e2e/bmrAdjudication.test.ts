@@ -73,4 +73,35 @@ describe('E2E: 피로물든달 판정 보조', () => {
 
     expect(wakeTargets.candidateIds).toContain(playerIds[4]);
   });
+
+  it('푸카 밤 행동은 이전 중독 대상을 사망시키고 새 대상을 중독시킨다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'gambler' },
+      { roleId: 'godfather' },
+      { roleId: 'pukka' },
+    ]);
+
+    const firstStatePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.players[4].emit('night:action', { targets: [playerIds[0]] });
+    await firstStatePromise;
+
+    expect(ctx.app.game.getPlayer(playerIds[0])?.statuses).toContain(
+      'pukka_poisoned',
+    );
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(true);
+
+    const secondStatePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.players[4].emit('night:action', { targets: [playerIds[1]] });
+    await secondStatePromise;
+
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[0])?.statuses).not.toContain(
+      'pukka_poisoned',
+    );
+    expect(ctx.app.game.getPlayer(playerIds[1])?.statuses).toContain(
+      'pukka_poisoned',
+    );
+  });
 });

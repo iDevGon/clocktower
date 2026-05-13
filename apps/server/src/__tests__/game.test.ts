@@ -682,6 +682,73 @@ describe('GameManager', () => {
     });
   });
 
+  describe('푸카', () => {
+    function createPukkaGame() {
+      const { gm, players } = createTestGame(5);
+      gm.assignRole(players[0].id, 'grandmother');
+      gm.assignRole(players[1].id, 'sailor');
+      gm.assignRole(players[2].id, 'gambler');
+      gm.assignRole(players[3].id, 'godfather');
+      gm.assignRole(players[4].id, 'pukka');
+      gm.start();
+      return { gm, players };
+    }
+
+    it('첫 선택 대상에게 푸카 중독을 부여한다', () => {
+      const { gm, players } = createPukkaGame();
+
+      const result = gm.resolvePukkaSelection(players[4].id, players[0].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        poisonedTargetId: players[0].id,
+      });
+      expect(gm.getPlayer(players[0].id)?.statuses).toContain('pukka_poisoned');
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(true);
+    });
+
+    it('다음 선택 시 이전 푸카 중독 대상은 사망하고 건강해진다', () => {
+      const { gm, players } = createPukkaGame();
+      gm.resolvePukkaSelection(players[4].id, players[0].id);
+
+      const result = gm.resolvePukkaSelection(players[4].id, players[1].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        killedTargetId: players[0].id,
+        poisonedTargetId: players[1].id,
+      });
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(false);
+      expect(gm.hasPendingNightKill(players[0].id)).toBe(true);
+      expect(gm.getPlayer(players[0].id)?.statuses).not.toContain(
+        'pukka_poisoned',
+      );
+      expect(gm.getPlayer(players[1].id)?.statuses).toContain('pukka_poisoned');
+    });
+
+    it('푸카가 취함/중독이면 이전 대상 사망과 새 중독을 자동 적용하지 않는다', () => {
+      const { gm, players } = createPukkaGame();
+      gm.resolvePukkaSelection(players[4].id, players[0].id);
+      gm.setPlayerStatuses(players[4].id, ['drunk']);
+
+      const result = gm.resolvePukkaSelection(players[4].id, players[1].id);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: true,
+        previousTargetId: players[0].id,
+        reason: '푸카가 중독/취함 상태입니다',
+      });
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(true);
+      expect(gm.getPlayer(players[0].id)?.statuses).toContain('pukka_poisoned');
+      expect(gm.getPlayer(players[1].id)?.statuses).not.toContain(
+        'pukka_poisoned',
+      );
+    });
+  });
+
   describe('처단자', () => {
     it('처단자 사용 추적', () => {
       const { gm, players } = createStartedGame();
