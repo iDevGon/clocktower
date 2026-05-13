@@ -81,6 +81,15 @@ const ROLE_TARGET_ACTIONS: Record<string, TargetActionConfig> = {
 /** 행동 로그에서 제외할 역할 (피드백 패널에서 별도 처리) */
 const HIDDEN_ACTION_ROLES = new Set(['ravenkeeper']);
 
+const BMR_DISCRETIONARY_DEATH_NOTES: Partial<Record<string, string>> = {
+  gossip:
+    '험담꾼 발언이 사실이었다면 오늘 밤 이야기꾼이 플레이어 1명을 사망시킬 수 있습니다.',
+  gambler:
+    '도박사 추측이 틀렸다면 도박사가 사망합니다. 정답 여부를 확인한 뒤 처리하세요.',
+  moonchild:
+    '달의 자손이 선택한 플레이어가 선한 팀이면 오늘 밤 그 플레이어가 사망합니다.',
+};
+
 function getBmrDeathMethod(roleId: string): BmrDeathMethod {
   switch (roleId) {
     case 'assassin':
@@ -424,6 +433,13 @@ export function NightActionLog({
                       </Pressable>
                     </View>
                   )}
+                {BMR_DISCRETIONARY_DEATH_NOTES[action.roleId] && (
+                  <View style={styles.bmrWarningBadge}>
+                    <Text style={styles.bmrWarningText}>
+                      {BMR_DISCRETIONARY_DEATH_NOTES[action.roleId]}
+                    </Text>
+                  </View>
+                )}
                 {hasTargets && actionConfig && (
                   <View style={styles.killRow}>
                     {action.targets.map((targetId) => {

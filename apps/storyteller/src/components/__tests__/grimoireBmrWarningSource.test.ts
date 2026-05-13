@@ -25,6 +25,9 @@ describe('grimoire BMR death warnings', () => {
     expect(source).toContain(
       "getDeathWarningText(candidateId, 'execution', 'day')",
     );
+    expect(source).toContain('players: gameState?.players');
+    expect(source).toContain('pacifist_may_save_good');
+    expect(source).toContain('평화주의자 생존 처리');
     expect(source).toContain('skipExecution: true');
     expect(source).toContain('처형 판정 확인');
   });

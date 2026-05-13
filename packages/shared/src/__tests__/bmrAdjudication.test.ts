@@ -228,4 +228,53 @@ describe('getBmrDeathWarnings', () => {
       }),
     ).toContain('zombuul_registers_dead');
   });
+
+  it('맑고 건강한 평화주의자가 있으면 선한 플레이어 처형 생존 선택지를 반환한다', () => {
+    const target = player({ id: 'target', alignment: 'good' });
+    const pacifist = player({
+      id: 'pacifist',
+      role: {
+        id: 'pacifist',
+        name: '평화주의자',
+        team: 'townsfolk',
+        ability: '',
+        edition: 'bad_moon_rising',
+      },
+    });
+
+    expect(
+      warningKinds({
+        roleId: 'execution',
+        method: 'execution',
+        timing: 'day',
+        target,
+        players: [target, pacifist],
+      }),
+    ).toContain('pacifist_may_save_good');
+  });
+
+  it('취한 평화주의자는 선한 플레이어 처형 생존 선택지를 반환하지 않는다', () => {
+    const target = player({ id: 'target', alignment: 'good' });
+    const pacifist = player({
+      id: 'pacifist',
+      role: {
+        id: 'pacifist',
+        name: '평화주의자',
+        team: 'townsfolk',
+        ability: '',
+        edition: 'bad_moon_rising',
+      },
+      statuses: ['drunk'],
+    });
+
+    expect(
+      warningKinds({
+        roleId: 'execution',
+        method: 'execution',
+        timing: 'day',
+        target,
+        players: [target, pacifist],
+      }),
+    ).not.toContain('pacifist_may_save_good');
+  });
 });

@@ -1,5 +1,6 @@
 import {
   ALL_TRAVELLER_ROLES,
+  BAD_MOON_RISING_ROLES,
   type BmrDeathWarningKind,
   type GameSettings,
   getBmrDeathWarnings,
@@ -170,11 +171,17 @@ export default function GrimoireScreen() {
     () => new Set(SECTS_AND_VIOLETS_ROLES.map((r) => r.id)),
     [],
   );
+  const bmrRoleIds = useMemo(
+    () => new Set(BAD_MOON_RISING_ROLES.map((r) => r.id)),
+    [],
+  );
   const detectedEditionId = useMemo(() => {
     if (!players) return 'trouble_brewing';
+    const hasBmr = players.some((p) => p.role && bmrRoleIds.has(p.role.id));
+    if (hasBmr) return 'bad_moon_rising';
     const hasSv = players.some((p) => p.role && svRoleIds.has(p.role.id));
     return hasSv ? 'sects_and_violets' : 'trouble_brewing';
-  }, [players, svRoleIds]);
+  }, [players, bmrRoleIds, svRoleIds]);
   const nightActions = useGameStore((s) => s.nightActions);
   const deliveredFeedbackHistory = useGameStore(
     (s) => s.deliveredFeedbackHistory,
@@ -554,6 +561,7 @@ export default function GrimoireScreen() {
       timing,
       target,
       targetStatuses: playerStatuses[playerId] ?? target.statuses,
+      players: gameState?.players,
     });
   };
 
@@ -740,6 +748,21 @@ export default function GrimoireScreen() {
                 text: '생존 처리 후 밤으로 전환',
                 onPress: () => handleSetPhase('night', { skipExecution: true }),
               },
+              ...(candidateId &&
+              hasDeathWarningKind(
+                candidateId,
+                'execution',
+                'day',
+                'pacifist_may_save_good',
+              )
+                ? [
+                    {
+                      text: '평화주의자 생존 처리 후 밤으로 전환',
+                      onPress: () =>
+                        handleSetPhase('night', { skipExecution: true }),
+                    },
+                  ]
+                : []),
               ...(candidateId &&
               hasDeathWarningKind(
                 candidateId,

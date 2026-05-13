@@ -26,6 +26,7 @@ export type BmrDeathWarningKind =
   | 'innkeeper_protected'
   | 'devils_advocate_protected'
   | 'tea_lady_protected'
+  | 'pacifist_may_save_good'
   | 'fool_first_death'
   | 'zombuul_registers_dead';
 
@@ -40,8 +41,20 @@ export interface BmrDeathWarningContext {
   method: BmrDeathMethod;
   timing: BmrDeathTiming;
   actor?: Pick<Player, 'role' | 'statuses'> | null;
-  target?: Pick<Player, 'role' | 'statuses'> | null;
+  target?: Pick<
+    Player,
+    'role' | 'statuses' | 'alignment' | 'isTraveller' | 'travellerAlignment'
+  > | null;
   targetStatuses?: PlayerStatus[];
+  players?: Pick<
+    Player,
+    | 'role'
+    | 'statuses'
+    | 'isAlive'
+    | 'alignment'
+    | 'isTraveller'
+    | 'travellerAlignment'
+  >[];
 }
 
 function isSoberHealthy(player?: Pick<Player, 'role' | 'statuses'> | null) {
@@ -81,12 +94,40 @@ function hasProtectionStatus(statuses: PlayerStatus[]): boolean {
   );
 }
 
+function getEffectiveAlignment(
+  player?: Pick<
+    Player,
+    'role' | 'alignment' | 'isTraveller' | 'travellerAlignment'
+  > | null,
+): 'good' | 'evil' | null {
+  if (!player) return null;
+  if (player.isTraveller) return player.travellerAlignment ?? null;
+  if (player.alignment) return player.alignment;
+  if (!player.role) return null;
+  return player.role.team === 'minion' || player.role.team === 'demon'
+    ? 'evil'
+    : 'good';
+}
+
+function hasActiveSoberHealthyRole(
+  players: Pick<Player, 'role' | 'statuses' | 'isAlive'>[] | undefined,
+  roleId: string,
+) {
+  return (players ?? []).some(
+    (player) =>
+      player.isAlive &&
+      player.role?.id === roleId &&
+      !isAbilityMalfunctioning(player),
+  );
+}
+
 export function getBmrDeathWarnings({
   method,
   timing,
   actor,
   target,
   targetStatuses,
+  players,
 }: BmrDeathWarningContext): BmrDeathWarning[] {
   const warnings: BmrDeathWarning[] = [];
   const statuses = statusesOf(target, targetStatuses);
@@ -148,6 +189,20 @@ export function getBmrDeathWarnings({
       kind: 'tea_lady_protected',
       severity: 'block',
       message: '찻집 여인 조건으로 이 대상은 사망하지 않을 수 있습니다.',
+    });
+  }
+
+  if (
+    timing === 'day' &&
+    method === 'execution' &&
+    getEffectiveAlignment(target) === 'good' &&
+    hasActiveSoberHealthyRole(players, 'pacifist')
+  ) {
+    warnings.push({
+      kind: 'pacifist_may_save_good',
+      severity: 'choice',
+      message:
+        '맑고 건강한 평화주의자가 있으면 선한 플레이어는 처형되어도 사망하지 않을 수 있습니다.',
     });
   }
 
