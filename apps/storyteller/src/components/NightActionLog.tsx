@@ -103,7 +103,9 @@ interface NightActionLogProps {
   playerStatuses?: Record<string, PlayerStatus[]>;
   onSendFeedback: (playerId: string, feedback: NightFeedbackPayload) => void;
   onKill?: (playerId: string) => void;
+  onRevive?: (playerId: string) => void;
   onSetStatus?: (playerId: string, status: PlayerStatus) => void;
+  onRemoveStatus?: (playerId: string, status: PlayerStatus) => void;
   playerOrder?: string[];
   onFangGuJump?: (oldDemonId: string, newDemonId: string) => void;
   onSnakeCharmerSwap?: (snakeCharmerId: string, demonId: string) => void;
@@ -129,7 +131,9 @@ export function NightActionLog({
   playerStatuses,
   onSendFeedback,
   onKill,
+  onRevive,
   onSetStatus,
+  onRemoveStatus,
   playerOrder,
   onFangGuJump,
   onSnakeCharmerSwap,
@@ -268,6 +272,16 @@ export function NightActionLog({
             const actionPlayer = players.find((p) => p.id === action.playerId);
             const isActionPlayerMalfunctioning =
               isAbilityMalfunctioning(actionPlayer);
+            const shabalothReviveCandidates =
+              action.roleId === 'shabaloth'
+                ? players.filter(
+                    (player) =>
+                      !player.isAlive &&
+                      getCurrentStatuses(player).includes(
+                        'shabaloth_marked_dead',
+                      ),
+                  )
+                : [];
 
             return (
               <Pressable
@@ -309,6 +323,55 @@ export function NightActionLog({
                   )}
                   {isSent && <Text style={styles.sentBadge}>전송됨</Text>}
                 </View>
+                {shabalothReviveCandidates.length > 0 && (
+                  <View style={styles.targetActionGroup}>
+                    <View style={styles.bmrWarningBadge}>
+                      <Text style={styles.bmrWarningText}>
+                        사발로스가 토해내 부활시킬 수 있는 대상
+                      </Text>
+                    </View>
+                    <View style={styles.killRow}>
+                      {shabalothReviveCandidates.map((player) => {
+                        const reviveKey = `${i}-${action.playerId}-shabaloth-revive-${player.id}`;
+                        const alreadyRevived =
+                          processedTargets.has(reviveKey) || player.isAlive;
+
+                        return (
+                          <Pressable
+                            key={player.id}
+                            onPress={() => {
+                              if (alreadyRevived) return;
+                              onRevive?.(player.id);
+                              onRemoveStatus?.(
+                                player.id,
+                                'shabaloth_marked_dead',
+                              );
+                              setProcessedTargets((prev) =>
+                                new Set(prev).add(reviveKey),
+                              );
+                            }}
+                            style={[
+                              styles.killButton,
+                              alreadyRevived && styles.killButtonDone,
+                            ]}
+                            disabled={alreadyRevived}
+                          >
+                            <Text
+                              style={[
+                                styles.killText,
+                                alreadyRevived && styles.killTextDone,
+                              ]}
+                            >
+                              {alreadyRevived
+                                ? `${player.name} 부활됨`
+                                : `${player.name} 부활 처리`}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
                 {hasTargets && actionConfig && (
                   <View style={styles.killRow}>
                     {action.targets.map((targetId) => {
@@ -416,6 +479,83 @@ export function NightActionLog({
                                   {poisonDone
                                     ? `${getPlayerName(targetId)} 푸카 중독됨`
                                     : `${getPlayerName(targetId)} 푸카 중독 처리`}
+                                </Text>
+                              </Pressable>
+                            </View>
+                          );
+                        }
+
+                        if (action.roleId === 'shabaloth') {
+                          const shabalothKillKey = `${targetKey}:shabaloth-manual-kill`;
+                          const shabalothMarkKey = `${targetKey}:shabaloth-manual-mark`;
+                          const killDone =
+                            processedTargets.has(shabalothKillKey) ||
+                            !isPlayerAlive(targetId);
+                          const markDone =
+                            processedTargets.has(shabalothMarkKey) ||
+                            targetStatuses.includes('shabaloth_marked_dead');
+
+                          return (
+                            <View
+                              key={targetId}
+                              style={styles.targetActionGroup}
+                            >
+                              <View style={styles.bmrWarningBadge}>
+                                <Text style={styles.bmrWarningText}>
+                                  사발로스가 중독/취함 상태라 자동 판정 미적용
+                                </Text>
+                              </View>
+                              <Pressable
+                                onPress={() => {
+                                  if (killDone) return;
+                                  onKill?.(targetId);
+                                  setProcessedTargets((prev) =>
+                                    new Set(prev).add(shabalothKillKey),
+                                  );
+                                }}
+                                style={[
+                                  styles.killButton,
+                                  killDone && styles.killButtonDone,
+                                ]}
+                                disabled={killDone}
+                              >
+                                <Text
+                                  style={[
+                                    styles.killText,
+                                    killDone && styles.killTextDone,
+                                  ]}
+                                >
+                                  {killDone
+                                    ? `${getPlayerName(targetId)} 사망`
+                                    : `${getPlayerName(targetId)} 사망 처리`}
+                                </Text>
+                              </Pressable>
+                              <Pressable
+                                onPress={() => {
+                                  if (markDone) return;
+                                  onSetStatus?.(
+                                    targetId,
+                                    'shabaloth_marked_dead',
+                                  );
+                                  setProcessedTargets((prev) =>
+                                    new Set(prev).add(shabalothMarkKey),
+                                  );
+                                }}
+                                style={[
+                                  styles.killButton,
+                                  markDone && styles.killButtonDone,
+                                ]}
+                                disabled={markDone}
+                              >
+                                <Text
+                                  style={[
+                                    styles.killText,
+                                    markDone && styles.killTextDone,
+                                  ]}
+                                >
+                                  {markDone
+                                    ? `${getPlayerName(targetId)} 사발로스 표식`
+                                    : `${getPlayerName(targetId)} 사발로스 표식 처리`}
                                 </Text>
                               </Pressable>
                             </View>

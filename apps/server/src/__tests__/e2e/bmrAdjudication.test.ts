@@ -104,4 +104,29 @@ describe('E2E: 피로물든달 판정 보조', () => {
       'pukka_poisoned',
     );
   });
+
+  it('사발로스 밤 행동은 선택한 대상들을 사망시키고 표식을 남긴다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'gambler' },
+      { roleId: 'godfather' },
+      { roleId: 'shabaloth' },
+    ]);
+
+    const statePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.players[4].emit('night:action', {
+      targets: [playerIds[0], playerIds[1]],
+    });
+    await statePromise;
+
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[1])?.isAlive).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[0])?.statuses).toContain(
+      'shabaloth_marked_dead',
+    );
+    expect(ctx.app.game.getPlayer(playerIds[1])?.statuses).toContain(
+      'shabaloth_marked_dead',
+    );
+  });
 });

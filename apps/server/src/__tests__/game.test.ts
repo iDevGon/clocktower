@@ -216,6 +216,15 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[0].id)?.isAlive).toBe(true);
     });
 
+    it('밤 사망 대기 중인 플레이어를 부활시키면 사망 알림 대기에서도 제거한다', () => {
+      const { gm, players } = createStartedGame();
+      gm.addPendingNightKill(players[0].id);
+
+      gm.revive(players[0].id);
+
+      expect(gm.hasPendingNightKill(players[0].id)).toBe(false);
+    });
+
     it('pendingNightKill 추가/플러시', () => {
       const { gm, players } = createStartedGame();
       gm.addPendingNightKill(players[0].id);
@@ -745,6 +754,68 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[0].id)?.statuses).toContain('pukka_poisoned');
       expect(gm.getPlayer(players[1].id)?.statuses).not.toContain(
         'pukka_poisoned',
+      );
+    });
+  });
+
+  describe('사발로스', () => {
+    function createShabalothGame() {
+      const { gm, players } = createTestGame(5);
+      gm.assignRole(players[0].id, 'grandmother');
+      gm.assignRole(players[1].id, 'sailor');
+      gm.assignRole(players[2].id, 'gambler');
+      gm.assignRole(players[3].id, 'godfather');
+      gm.assignRole(players[4].id, 'shabaloth');
+      gm.start();
+      return { gm, players };
+    }
+
+    it('선택한 대상들을 사망시키고 사발로스 사망 표식을 남긴다', () => {
+      const { gm, players } = createShabalothGame();
+
+      const result = gm.resolveShabalothSelection(players[4].id, [
+        players[0].id,
+        players[1].id,
+      ]);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        killedTargetIds: [players[0].id, players[1].id],
+      });
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(false);
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(false);
+      expect(gm.getPlayer(players[0].id)?.statuses).toContain(
+        'shabaloth_marked_dead',
+      );
+      expect(gm.getPlayer(players[1].id)?.statuses).toContain(
+        'shabaloth_marked_dead',
+      );
+      expect(gm.hasPendingNightKill(players[0].id)).toBe(true);
+      expect(gm.hasPendingNightKill(players[1].id)).toBe(true);
+    });
+
+    it('사발로스가 취함/중독이면 대상 사망과 표식을 자동 적용하지 않는다', () => {
+      const { gm, players } = createShabalothGame();
+      gm.setPlayerStatuses(players[4].id, ['poisoned']);
+
+      const result = gm.resolveShabalothSelection(players[4].id, [
+        players[0].id,
+        players[1].id,
+      ]);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: true,
+        reason: '사발로스가 중독/취함 상태입니다',
+      });
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(true);
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
+      expect(gm.getPlayer(players[0].id)?.statuses).not.toContain(
+        'shabaloth_marked_dead',
+      );
+      expect(gm.getPlayer(players[1].id)?.statuses).not.toContain(
+        'shabaloth_marked_dead',
       );
     });
   });

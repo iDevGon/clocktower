@@ -37,7 +37,9 @@ interface NightPanelProps {
   onNightComplete: () => void;
   onSendFeedback: (playerId: string, feedback: NightFeedbackPayload) => void;
   onKill: (playerId: string) => void;
+  onRevive?: (playerId: string) => void;
   onSetStatus: (playerId: string, status: PlayerStatus) => void;
+  onRemoveStatus?: (playerId: string, status: PlayerStatus) => void;
   onFangGuJump?: (oldDemonId: string, newDemonId: string) => void;
   onSnakeCharmerSwap?: (snakeCharmerId: string, demonId: string) => void;
   onVigormortisKillMinion?: (
@@ -89,7 +91,9 @@ export function NightPanel({
   onNightComplete,
   onSendFeedback,
   onKill,
+  onRevive,
   onSetStatus,
+  onRemoveStatus,
   onFangGuJump,
   onSnakeCharmerSwap,
   onVigormortisKillMinion,
@@ -202,7 +206,9 @@ export function NightPanel({
           playerStatuses={playerStatuses}
           onSendFeedback={onSendFeedback}
           onKill={onKill}
+          onRevive={onRevive}
           onSetStatus={onSetStatus}
+          onRemoveStatus={onRemoveStatus}
           playerOrder={playerOrder}
           onFangGuJump={onFangGuJump}
           onSnakeCharmerSwap={onSnakeCharmerSwap}

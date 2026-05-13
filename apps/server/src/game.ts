@@ -947,6 +947,7 @@ export class GameManager {
     const player = this.getPlayer(playerId);
     if (player) {
       player.isAlive = true;
+      this.removePendingNightKill(playerId);
       this.syncContinuousPoisoning();
     }
   }
@@ -1413,6 +1414,65 @@ export class GameManager {
       blocked: false,
       ...(previousTarget && { killedTargetId: previousTarget.id }),
       poisonedTargetId: target.id,
+    };
+  }
+
+  resolveShabalothSelection(
+    shabalothId: string,
+    targetIds: string[],
+  ):
+    | {
+        success: true;
+        blocked: false;
+        killedTargetIds: string[];
+      }
+    | {
+        success: false;
+        blocked: boolean;
+        reason: string;
+      } {
+    const shabaloth = this.getPlayer(shabalothId);
+    if (!shabaloth) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '사발로스를 찾을 수 없습니다',
+      };
+    }
+
+    const targets = targetIds
+      .map((targetId) => this.getPlayer(targetId))
+      .filter((target): target is Player => target != null);
+    if (targets.length === 0) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '대상을 찾을 수 없습니다',
+      };
+    }
+
+    if (isPoisonedOrDrunk(shabaloth)) {
+      return {
+        success: false,
+        blocked: true,
+        reason: '사발로스가 중독/취함 상태입니다',
+      };
+    }
+
+    const killedTargetIds: string[] = [];
+    for (const target of targets) {
+      this.kill(target.id);
+      this.addStatus(target, 'shabaloth_marked_dead');
+      if (this.state.phase === 'night') {
+        this.addPendingNightKill(target.id);
+      }
+      killedTargetIds.push(target.id);
+    }
+
+    return {
+      success: true,
+      blocked: false,
+      killedTargetIds,
     };
   }
 
