@@ -585,6 +585,7 @@ export const lobbyDynamic = {
     selected: boolean,
     disabled: boolean,
     pressed: boolean,
+    editionColor: string,
     s: (v: number) => number,
   ) => ({
     paddingVertical: s(6),
@@ -593,7 +594,7 @@ export const lobbyDynamic = {
     backgroundColor: disabled
       ? arcane.surface.ledger
       : selected
-        ? arcane.accent.prussianBlue
+        ? editionColor
         : pressed
           ? arcane.surface.parchment
           : arcane.surface.ledger,
@@ -601,20 +602,21 @@ export const lobbyDynamic = {
     borderColor: disabled
       ? arcane.border.parchment
       : selected
-        ? arcane.accent.sapphireLens
-        : arcane.border.brassDim,
+        ? editionColor
+        : editionColor,
     opacity: disabled ? 0.5 : 1,
   }),
   editionButtonText: (
     selected: boolean,
     disabled: boolean,
+    editionColor: string,
     s: (v: number) => number,
   ) => ({
     color: disabled
       ? arcane.text.dead
       : selected
         ? arcane.text.strong
-        : arcane.text.muted,
+        : editionColor,
     fontSize: s(13),
     fontFamily: typography.fontFamily.bodyBold,
     fontWeight: '600' as const,

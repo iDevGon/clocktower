@@ -1,6 +1,7 @@
 import type { Player } from '@clocktower/shared';
 import {
   ALL_ROLES,
+  EDITION_COLORS,
   EDITIONS,
   getRoleById,
   getRolesForEdition,
@@ -357,6 +358,7 @@ export default function LobbyScreen() {
               selectedEditionId === edition.id,
               !!edition.disabled,
               pressed,
+              EDITION_COLORS[edition.id],
               s,
             ),
             mode === 'desktop' && styles.desktopEditionButton,
@@ -366,6 +368,7 @@ export default function LobbyScreen() {
             style={lobbyDynamic.editionButtonText(
               selectedEditionId === edition.id,
               !!edition.disabled,
+              EDITION_COLORS[edition.id],
               s,
             )}
             numberOfLines={1}
