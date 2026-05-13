@@ -222,7 +222,7 @@ export function registerVoteHandlers(
       const virgin = game.getPlayer(nomineeId);
       const nominator = game.getPlayer(nominatorId);
       game.kill(result.virginKill);
-      game.markExecution();
+      game.markExecution(result.virginKill);
       emitDeathTriggers(nominator, storytellerIo, { isNight: false });
       playerIo.emit('virgin:triggered', {
         virginName: virgin?.name ?? nomineeId,

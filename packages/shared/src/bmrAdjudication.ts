@@ -58,7 +58,9 @@ function isAbilityMalfunctioning(
   if (!player || isSoberHealthy(player)) return false;
   return (
     player.role?.id === 'drunk' ||
-    player.statuses.includes('drunk') ||
+    player.statuses.some(
+      (status) => status === 'drunk' || status.endsWith('_drunk'),
+    ) ||
     hasPoisonStatus(player.statuses)
   );
 }

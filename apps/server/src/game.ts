@@ -35,10 +35,16 @@ function isSoberHealthy(player: Player): boolean {
   );
 }
 
+function isDrunkStatus(status: PlayerStatus): boolean {
+  return status === 'drunk' || status.endsWith('_drunk');
+}
+
 /** 플레이어가 중독 또는 취함 상태인지 확인 (능력 무효화 판정용) */
 function isPoisonedOrDrunk(player: Player): boolean {
   if (isSoberHealthy(player)) return false;
-  return hasPoisonStatus(player.statuses) || player.statuses.includes('drunk');
+  return (
+    hasPoisonStatus(player.statuses) || player.statuses.some(isDrunkStatus)
+  );
 }
 
 function filterSoberHealthyBlockedStatuses(
@@ -50,7 +56,7 @@ function filterSoberHealthyBlockedStatuses(
     player.role?.id === 'beggar' || unique.includes('barista_sober_healthy');
   if (!soberHealthy) return unique;
   return unique.filter(
-    (status) => status !== 'drunk' && !POISON_STATUSES.includes(status),
+    (status) => !isDrunkStatus(status) && !POISON_STATUSES.includes(status),
   );
 }
 
@@ -182,6 +188,8 @@ export class GameManager {
   private butcherExtraNominationAvailable = false;
   private butcherExtraNominationUsed = false;
   private butcherExtraNominatorId: string | null = null;
+  // 건달: 매일 밤 처음 자신을 선택한 플레이어 1명만 취하게 함
+  private goonSelectedTonight = false;
   // 뼈 수집가: 게임 중 1회 복구 대상 추적
   private boneCollectorUsed = new Set<string>();
   private boneCollectorRestoredTargets = new Map<string, string>();
@@ -208,7 +216,7 @@ export class GameManager {
   private addStatus(player: Player, status: PlayerStatus): void {
     if (
       isSoberHealthy(player) &&
-      (status === 'drunk' || POISON_STATUSES.includes(status))
+      (isDrunkStatus(status) || POISON_STATUSES.includes(status))
     ) {
       return;
     }
@@ -262,6 +270,34 @@ export class GameManager {
         order[(idx - i + order.length) % order.length],
       );
       if (player?.role?.team === 'townsfolk') {
+        if (!neighborIds.includes(player.id)) neighborIds.push(player.id);
+        break;
+      }
+    }
+    return neighborIds;
+  }
+
+  private getLivingNeighborIds(sourcePlayerId: string): string[] {
+    const order =
+      this.state.playerOrder.length > 0
+        ? this.state.playerOrder
+        : this.state.players.map((p) => p.id);
+    const idx = order.indexOf(sourcePlayerId);
+    if (idx === -1) return [];
+
+    const neighborIds: string[] = [];
+    for (let i = 1; i < order.length; i++) {
+      const player = this.getPlayer(order[(idx + i) % order.length]);
+      if (player && isPubliclyAlive(player)) {
+        neighborIds.push(player.id);
+        break;
+      }
+    }
+    for (let i = 1; i < order.length; i++) {
+      const player = this.getPlayer(
+        order[(idx - i + order.length) % order.length],
+      );
+      if (player && isPubliclyAlive(player)) {
         if (!neighborIds.includes(player.id)) neighborIds.push(player.id);
         break;
       }
@@ -340,9 +376,62 @@ export class GameManager {
     }
   }
 
+  private syncTeaLadyProtection(): void {
+    for (const player of this.state.players) {
+      this.removeStatus(player, 'tea_lady_protected');
+    }
+
+    for (const teaLady of this.state.players) {
+      if (
+        !isPubliclyAlive(teaLady) ||
+        teaLady.role?.id !== 'tea_lady' ||
+        isPoisonedOrDrunk(teaLady)
+      ) {
+        continue;
+      }
+
+      const neighborIds = this.getLivingNeighborIds(teaLady.id);
+      if (neighborIds.length !== 2) continue;
+      const neighbors = neighborIds
+        .map((id) => this.getPlayer(id))
+        .filter((player): player is Player => player != null);
+      if (
+        neighbors.length === 2 &&
+        neighbors.every(
+          (player) => this.getEffectiveAlignment(player) === 'good',
+        )
+      ) {
+        for (const neighbor of neighbors) {
+          this.addStatus(neighbor, 'tea_lady_protected');
+        }
+      }
+    }
+  }
+
   private syncContinuousPoisoning(): void {
     this.syncVigormortisPoisoning();
     this.syncNoDashiiPoisoning();
+    this.syncTeaLadyProtection();
+  }
+
+  private applyGoonSelectionEffect(actor: Player, target: Player): void {
+    if (this.state.phase !== 'night') return;
+    if (this.goonSelectedTonight) return;
+    if (actor.id === target.id) return;
+    if (
+      !isPubliclyAlive(target) ||
+      target.role?.id !== 'goon' ||
+      isPoisonedOrDrunk(target)
+    ) {
+      return;
+    }
+
+    const actorAlignment = this.getEffectiveAlignment(actor);
+    if (actorAlignment) {
+      target.alignment = actorAlignment;
+    }
+    this.addStatus(actor, 'goon_drunk');
+    this.goonSelectedTonight = true;
   }
 
   create(): string {
@@ -390,6 +479,7 @@ export class GameManager {
     this.butcherExtraNominationAvailable = false;
     this.butcherExtraNominationUsed = false;
     this.butcherExtraNominatorId = null;
+    this.goonSelectedTonight = false;
     this.boneCollectorUsed.clear();
     this.boneCollectorRestoredTargets.clear();
     this.pendingHarlotConsents.clear();
@@ -479,6 +569,7 @@ export class GameManager {
     this.butcherExtraNominationAvailable = false;
     this.butcherExtraNominationUsed = false;
     this.butcherExtraNominatorId = null;
+    this.goonSelectedTonight = false;
     this.boneCollectorUsed.clear();
     this.boneCollectorRestoredTargets.clear();
     this.pendingHarlotConsents.clear();
@@ -804,6 +895,7 @@ export class GameManager {
       this.butcherExtraNominationAvailable = false;
       this.butcherExtraNominationUsed = false;
       this.butcherExtraNominatorId = null;
+      this.goonSelectedTonight = false;
       this.boneCollectorRestoredTargets.clear();
       this.pendingHarlotConsents.clear();
       this.pendingNightKills = [];
@@ -824,6 +916,12 @@ export class GameManager {
             s !== 'poisoned' &&
             s !== 'protected' &&
             s !== 'cerenovus_mad' &&
+            s !== 'innkeeper_protected' &&
+            s !== 'devils_advocate_protected' &&
+            s !== 'sailor_drunk' &&
+            s !== 'innkeeper_drunk' &&
+            s !== 'goon_drunk' &&
+            s !== 'minstrel_drunk' &&
             !TEMPORARY_TRAVELLER_STATUSES.includes(s),
         );
         p.statuses = filterSoberHealthyBlockedStatuses(p, p.statuses);
@@ -1388,6 +1486,7 @@ export class GameManager {
       };
     }
 
+    this.applyGoonSelectionEffect(pukka, target);
     const previousTarget = this.state.players.find((p) =>
       p.statuses.includes('pukka_poisoned'),
     );
@@ -1451,6 +1550,9 @@ export class GameManager {
       };
     }
 
+    for (const target of targets) {
+      this.applyGoonSelectionEffect(shabaloth, target);
+    }
     if (isPoisonedOrDrunk(shabaloth)) {
       return {
         success: false,
@@ -1500,14 +1602,6 @@ export class GameManager {
       };
     }
 
-    if (isPoisonedOrDrunk(po)) {
-      return {
-        success: false,
-        blocked: true,
-        reason: '포가 중독/취함 상태입니다',
-      };
-    }
-
     if (![0, 1, 3].includes(targetIds.length)) {
       return {
         success: false,
@@ -1517,6 +1611,14 @@ export class GameManager {
     }
 
     if (targetIds.length === 0) {
+      if (isPoisonedOrDrunk(po)) {
+        return {
+          success: false,
+          blocked: true,
+          reason: '포가 중독/취함 상태입니다',
+        };
+      }
+
       this.addStatus(po, 'po_chose_no_one');
       return {
         success: true,
@@ -1534,6 +1636,17 @@ export class GameManager {
         success: false,
         blocked: false,
         reason: '대상을 찾을 수 없습니다',
+      };
+    }
+
+    for (const target of targets) {
+      this.applyGoonSelectionEffect(po, target);
+    }
+    if (isPoisonedOrDrunk(po)) {
+      return {
+        success: false,
+        blocked: true,
+        reason: '포가 중독/취함 상태입니다',
       };
     }
 
@@ -1604,6 +1717,7 @@ export class GameManager {
       };
     }
 
+    this.applyGoonSelectionEffect(professor, target);
     if (isPoisonedOrDrunk(professor)) {
       return {
         success: false,
@@ -1627,6 +1741,294 @@ export class GameManager {
       blocked: false,
       revived: true,
       revivedTargetId: target.id,
+    };
+  }
+
+  resolveInnkeeperSelection(
+    innkeeperId: string,
+    targetIds: string[],
+  ):
+    | {
+        success: true;
+        blocked: false;
+        protectedTargetIds: string[];
+      }
+    | {
+        success: false;
+        blocked: boolean;
+        reason: string;
+      } {
+    const innkeeper = this.getPlayer(innkeeperId);
+    if (!innkeeper) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '여관 주인을 찾을 수 없습니다',
+      };
+    }
+
+    const targets = targetIds
+      .map((targetId) => this.getPlayer(targetId))
+      .filter((target): target is Player => target != null);
+    if (targets.length !== 2) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '여관 주인은 플레이어 2명을 선택해야 합니다',
+      };
+    }
+
+    for (const target of targets) {
+      this.applyGoonSelectionEffect(innkeeper, target);
+    }
+    if (isPoisonedOrDrunk(innkeeper)) {
+      return {
+        success: false,
+        blocked: true,
+        reason: '여관 주인이 중독/취함 상태입니다',
+      };
+    }
+
+    for (const player of this.state.players) {
+      this.removeStatus(player, 'innkeeper_protected');
+    }
+    for (const target of targets) {
+      this.addStatus(target, 'innkeeper_protected');
+    }
+
+    return {
+      success: true,
+      blocked: false,
+      protectedTargetIds: targets.map((target) => target.id),
+    };
+  }
+
+  resolveDevilsAdvocateSelection(
+    devilsAdvocateId: string,
+    targetId: string,
+  ):
+    | {
+        success: true;
+        blocked: false;
+        protectedTargetId: string;
+      }
+    | {
+        success: false;
+        blocked: boolean;
+        reason: string;
+      } {
+    const devilsAdvocate = this.getPlayer(devilsAdvocateId);
+    if (!devilsAdvocate) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '악마의 변호사를 찾을 수 없습니다',
+      };
+    }
+
+    const target = this.getPlayer(targetId);
+    if (!target) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '대상을 찾을 수 없습니다',
+      };
+    }
+
+    this.applyGoonSelectionEffect(devilsAdvocate, target);
+    if (isPoisonedOrDrunk(devilsAdvocate)) {
+      return {
+        success: false,
+        blocked: true,
+        reason: '악마의 변호사가 중독/취함 상태입니다',
+      };
+    }
+
+    for (const player of this.state.players) {
+      this.removeStatus(player, 'devils_advocate_protected');
+    }
+    this.addStatus(target, 'devils_advocate_protected');
+
+    return {
+      success: true,
+      blocked: false,
+      protectedTargetId: target.id,
+    };
+  }
+
+  resolveAssassinSelection(
+    assassinId: string,
+    targetId: string,
+  ):
+    | {
+        success: true;
+        blocked: false;
+        killedTargetId: string;
+      }
+    | {
+        success: false;
+        blocked: boolean;
+        reason: string;
+      } {
+    const assassin = this.getPlayer(assassinId);
+    if (!assassin) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '암살자를 찾을 수 없습니다',
+      };
+    }
+
+    if (assassin.statuses.includes('assassin_spent')) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '암살자 능력은 이미 소모되었습니다',
+      };
+    }
+
+    const target = this.getPlayer(targetId);
+    if (!target) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '대상을 찾을 수 없습니다',
+      };
+    }
+
+    this.applyGoonSelectionEffect(assassin, target);
+    if (isPoisonedOrDrunk(assassin)) {
+      return {
+        success: false,
+        blocked: true,
+        reason: '암살자가 중독/취함 상태입니다',
+      };
+    }
+
+    this.addStatus(assassin, 'assassin_spent');
+    this.kill(target.id);
+    if (this.state.phase === 'night') {
+      this.addPendingNightKill(target.id);
+    }
+
+    return {
+      success: true,
+      blocked: false,
+      killedTargetId: target.id,
+    };
+  }
+
+  resolveGodfatherSelection(
+    godfatherId: string,
+    targetId: string,
+  ):
+    | {
+        success: true;
+        blocked: false;
+        killedTargetId: string;
+      }
+    | {
+        success: false;
+        blocked: boolean;
+        reason: string;
+      } {
+    const godfather = this.getPlayer(godfatherId);
+    if (!godfather) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '대부를 찾을 수 없습니다',
+      };
+    }
+
+    const target = this.getPlayer(targetId);
+    if (!target) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '대상을 찾을 수 없습니다',
+      };
+    }
+
+    this.applyGoonSelectionEffect(godfather, target);
+    if (isPoisonedOrDrunk(godfather)) {
+      return {
+        success: false,
+        blocked: true,
+        reason: '대부가 중독/취함 상태입니다',
+      };
+    }
+
+    this.kill(target.id);
+    if (this.state.phase === 'night') {
+      this.addPendingNightKill(target.id);
+    }
+
+    return {
+      success: true,
+      blocked: false,
+      killedTargetId: target.id,
+    };
+  }
+
+  resolveZombuulSelection(
+    zombuulId: string,
+    targetId: string,
+  ):
+    | {
+        success: true;
+        blocked: false;
+        killedTargetId: string;
+      }
+    | {
+        success: false;
+        blocked: boolean;
+        reason: string;
+      } {
+    const zombuul = this.getPlayer(zombuulId);
+    if (!zombuul) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '좀버얼을 찾을 수 없습니다',
+      };
+    }
+
+    if (this.executionToday) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '오늘 낮에 사망이 있어 좀버얼 자동 처리를 건너뜁니다',
+      };
+    }
+
+    const target = this.getPlayer(targetId);
+    if (!target) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '대상을 찾을 수 없습니다',
+      };
+    }
+
+    this.applyGoonSelectionEffect(zombuul, target);
+    if (isPoisonedOrDrunk(zombuul)) {
+      return {
+        success: false,
+        blocked: true,
+        reason: '좀버얼이 중독/취함 상태입니다',
+      };
+    }
+
+    this.kill(target.id);
+    if (this.state.phase === 'night') {
+      this.addPendingNightKill(target.id);
+    }
+
+    return {
+      success: true,
+      blocked: false,
+      killedTargetId: target.id,
     };
   }
 
@@ -1733,16 +2135,37 @@ export class GameManager {
 
   // ── 처형 기록 (시장 승리 조건용) ──
 
-  markExecution(): void {
+  markExecution(executedPlayerId?: string): void {
     const wasExecutionToday = this.executionToday;
     this.executionToday = true;
     if (!wasExecutionToday) {
       this.openButcherExtraNomination();
     }
+    if (executedPlayerId) {
+      this.applyMinstrelExecutionEffect(executedPlayerId);
+    }
   }
 
   hadExecutionToday(): boolean {
     return this.executionToday;
+  }
+
+  private applyMinstrelExecutionEffect(executedPlayerId: string): void {
+    const executedPlayer = this.getPlayer(executedPlayerId);
+    if (executedPlayer?.role?.team !== 'minion') return;
+
+    const activeMinstrel = this.state.players.find(
+      (player) =>
+        isPubliclyAlive(player) &&
+        player.role?.id === 'minstrel' &&
+        !isPoisonedOrDrunk(player),
+    );
+    if (!activeMinstrel) return;
+
+    for (const player of this.state.players) {
+      if (player.id === activeMinstrel.id) continue;
+      this.addStatus(player, 'minstrel_drunk');
+    }
   }
 
   private findActiveButcher(): Player | undefined {

@@ -1006,6 +1006,299 @@ describe('GameManager', () => {
     });
   });
 
+  describe('피로물든달 선택형 밤 행동', () => {
+    function createBmrActionGame() {
+      const { gm, players } = createTestGame(7);
+      gm.assignRole(players[0].id, 'innkeeper');
+      gm.assignRole(players[1].id, 'devils_advocate');
+      gm.assignRole(players[2].id, 'assassin');
+      gm.assignRole(players[3].id, 'zombuul');
+      gm.assignRole(players[4].id, 'godfather');
+      gm.assignRole(players[5].id, 'grandmother');
+      gm.assignRole(players[6].id, 'po');
+      gm.start();
+      return { gm, players };
+    }
+
+    it('여관 주인은 선택한 두 플레이어에게 밤 보호를 부여한다', () => {
+      const { gm, players } = createBmrActionGame();
+
+      const result = gm.resolveInnkeeperSelection(players[0].id, [
+        players[5].id,
+        players[6].id,
+      ]);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        protectedTargetIds: [players[5].id, players[6].id],
+      });
+      expect(gm.getPlayer(players[5].id)?.statuses).toContain(
+        'innkeeper_protected',
+      );
+      expect(gm.getPlayer(players[6].id)?.statuses).toContain(
+        'innkeeper_protected',
+      );
+    });
+
+    it('여관 주인이 취함/중독이면 보호를 자동 적용하지 않는다', () => {
+      const { gm, players } = createBmrActionGame();
+      gm.setPlayerStatuses(players[0].id, ['poisoned']);
+
+      const result = gm.resolveInnkeeperSelection(players[0].id, [
+        players[5].id,
+        players[6].id,
+      ]);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: true,
+        reason: '여관 주인이 중독/취함 상태입니다',
+      });
+      expect(gm.getPlayer(players[5].id)?.statuses).not.toContain(
+        'innkeeper_protected',
+      );
+      expect(gm.getPlayer(players[6].id)?.statuses).not.toContain(
+        'innkeeper_protected',
+      );
+    });
+
+    it('악마의 변호사는 선택한 플레이어에게 처형 보호를 부여한다', () => {
+      const { gm, players } = createBmrActionGame();
+
+      const result = gm.resolveDevilsAdvocateSelection(
+        players[1].id,
+        players[5].id,
+      );
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        protectedTargetId: players[5].id,
+      });
+      expect(gm.getPlayer(players[5].id)?.statuses).toContain(
+        'devils_advocate_protected',
+      );
+    });
+
+    it('악마의 변호사가 취함/중독이면 보호를 자동 적용하지 않는다', () => {
+      const { gm, players } = createBmrActionGame();
+      gm.setPlayerStatuses(players[1].id, ['drunk']);
+
+      const result = gm.resolveDevilsAdvocateSelection(
+        players[1].id,
+        players[5].id,
+      );
+
+      expect(result).toEqual({
+        success: false,
+        blocked: true,
+        reason: '악마의 변호사가 중독/취함 상태입니다',
+      });
+      expect(gm.getPlayer(players[5].id)?.statuses).not.toContain(
+        'devils_advocate_protected',
+      );
+    });
+
+    it('암살자는 보호 상태와 무관하게 대상을 사망시키고 능력을 소모한다', () => {
+      const { gm, players } = createBmrActionGame();
+      gm.setPlayerStatuses(players[5].id, ['innkeeper_protected']);
+
+      const result = gm.resolveAssassinSelection(players[2].id, players[5].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        killedTargetId: players[5].id,
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(false);
+      expect(gm.getPlayer(players[2].id)?.statuses).toContain('assassin_spent');
+    });
+
+    it('암살자가 취함/중독이면 사망과 능력 소모를 자동 적용하지 않는다', () => {
+      const { gm, players } = createBmrActionGame();
+      gm.setPlayerStatuses(players[2].id, ['poisoned']);
+
+      const result = gm.resolveAssassinSelection(players[2].id, players[5].id);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: true,
+        reason: '암살자가 중독/취함 상태입니다',
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(true);
+      expect(gm.getPlayer(players[2].id)?.statuses).not.toContain(
+        'assassin_spent',
+      );
+    });
+
+    it('대부는 선택한 대상을 사망시킨다', () => {
+      const { gm, players } = createBmrActionGame();
+
+      const result = gm.resolveGodfatherSelection(players[4].id, players[5].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        killedTargetId: players[5].id,
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(false);
+    });
+
+    it('좀버얼은 오늘 처형이 없었을 때 대상을 사망시킨다', () => {
+      const { gm, players } = createBmrActionGame();
+
+      const result = gm.resolveZombuulSelection(players[3].id, players[5].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        killedTargetId: players[5].id,
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(false);
+    });
+
+    it('좀버얼은 오늘 처형이 있었으면 자동 사망을 적용하지 않는다', () => {
+      const { gm, players } = createBmrActionGame();
+      gm.markExecution();
+
+      const result = gm.resolveZombuulSelection(players[3].id, players[5].id);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: false,
+        reason: '오늘 낮에 사망이 있어 좀버얼 자동 처리를 건너뜁니다',
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(true);
+    });
+  });
+
+  describe('피로물든달 지속 효과 자동화', () => {
+    it('찻집 여인은 양쪽 살아있는 선한 이웃을 자동 보호한다', () => {
+      const { gm, players } = createTestGame(7);
+      gm.assignRole(players[0].id, 'tea_lady');
+      gm.assignRole(players[1].id, 'washerwoman');
+      gm.assignRole(players[2].id, 'poisoner');
+      gm.assignRole(players[3].id, 'imp');
+      gm.assignRole(players[4].id, 'empath');
+      gm.assignRole(players[5].id, 'grandmother');
+      gm.assignRole(players[6].id, 'sailor');
+      gm.start();
+
+      expect(gm.getPlayer(players[1].id)?.statuses).toContain(
+        'tea_lady_protected',
+      );
+      expect(gm.getPlayer(players[6].id)?.statuses).toContain(
+        'tea_lady_protected',
+      );
+    });
+
+    it('찻집 여인이 중독/취함이면 이웃 보호를 자동 적용하지 않는다', () => {
+      const { gm, players } = createTestGame(7);
+      gm.assignRole(players[0].id, 'tea_lady');
+      gm.assignRole(players[1].id, 'washerwoman');
+      gm.assignRole(players[2].id, 'poisoner');
+      gm.assignRole(players[3].id, 'imp');
+      gm.assignRole(players[4].id, 'empath');
+      gm.assignRole(players[5].id, 'grandmother');
+      gm.assignRole(players[6].id, 'sailor');
+      gm.start();
+
+      gm.setPlayerStatuses(players[0].id, ['poisoned']);
+
+      expect(gm.getPlayer(players[1].id)?.statuses).not.toContain(
+        'tea_lady_protected',
+      );
+      expect(gm.getPlayer(players[6].id)?.statuses).not.toContain(
+        'tea_lady_protected',
+      );
+    });
+
+    it('음유시인은 하수인이 처형되면 자신을 제외한 플레이어를 자동 취하게 한다', () => {
+      const { gm, players } = createTestGame(6);
+      gm.assignRole(players[0].id, 'minstrel');
+      gm.assignRole(players[1].id, 'poisoner');
+      gm.assignRole(players[2].id, 'washerwoman');
+      gm.assignRole(players[3].id, 'empath');
+      gm.assignRole(players[4].id, 'grandmother');
+      gm.assignRole(players[5].id, 'imp');
+      gm.start();
+
+      gm.markExecution(players[1].id);
+
+      expect(gm.getPlayer(players[0].id)?.statuses).not.toContain(
+        'minstrel_drunk',
+      );
+      for (const player of players.slice(1)) {
+        expect(gm.getPlayer(player.id)?.statuses).toContain('minstrel_drunk');
+      }
+    });
+
+    it('음유시인이 중독/취함이면 하수인 처형 취함을 자동 적용하지 않는다', () => {
+      const { gm, players } = createTestGame(6);
+      gm.assignRole(players[0].id, 'minstrel');
+      gm.assignRole(players[1].id, 'poisoner');
+      gm.assignRole(players[2].id, 'washerwoman');
+      gm.assignRole(players[3].id, 'empath');
+      gm.assignRole(players[4].id, 'grandmother');
+      gm.assignRole(players[5].id, 'imp');
+      gm.start();
+
+      gm.setPlayerStatuses(players[0].id, ['drunk']);
+      gm.markExecution(players[1].id);
+
+      expect(
+        players.some((player) =>
+          gm.getPlayer(player.id)?.statuses.includes('minstrel_drunk'),
+        ),
+      ).toBe(false);
+    });
+
+    it('건달을 밤에 처음 선택한 플레이어는 자동으로 취하고 건달은 그 진영이 된다', () => {
+      const { gm, players } = createTestGame(6);
+      gm.assignRole(players[0].id, 'goon');
+      gm.assignRole(players[1].id, 'assassin');
+      gm.assignRole(players[2].id, 'washerwoman');
+      gm.assignRole(players[3].id, 'empath');
+      gm.assignRole(players[4].id, 'grandmother');
+      gm.assignRole(players[5].id, 'imp');
+      gm.start();
+
+      const result = gm.resolveAssassinSelection(players[1].id, players[0].id);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: true,
+        reason: '암살자가 중독/취함 상태입니다',
+      });
+      expect(gm.getPlayer(players[1].id)?.statuses).toContain('goon_drunk');
+      expect(gm.getPlayer(players[0].id)?.alignment).toBe('evil');
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(true);
+    });
+
+    it('중독/취함 상태의 건달은 선택한 플레이어를 자동으로 취하게 하지 않는다', () => {
+      const { gm, players } = createTestGame(6);
+      gm.assignRole(players[0].id, 'goon');
+      gm.assignRole(players[1].id, 'assassin');
+      gm.assignRole(players[2].id, 'washerwoman');
+      gm.assignRole(players[3].id, 'empath');
+      gm.assignRole(players[4].id, 'grandmother');
+      gm.assignRole(players[5].id, 'imp');
+      gm.start();
+      gm.setPlayerStatuses(players[0].id, ['poisoned']);
+
+      const result = gm.resolveAssassinSelection(players[1].id, players[0].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        killedTargetId: players[0].id,
+      });
+      expect(gm.getPlayer(players[1].id)?.statuses).not.toContain('goon_drunk');
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(false);
+    });
+  });
+
   describe('처단자', () => {
     it('처단자 사용 추적', () => {
       const { gm, players } = createStartedGame();

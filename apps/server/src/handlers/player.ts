@@ -47,7 +47,10 @@ function hasEffectiveRole(
 }
 
 function isPoisonedOrDrunkStatus(statuses: Player['statuses']): boolean {
-  return hasPoisonStatus(statuses) || statuses.includes('drunk');
+  return (
+    hasPoisonStatus(statuses) ||
+    statuses.some((status) => status === 'drunk' || status.endsWith('_drunk'))
+  );
 }
 
 function toPlayerInfo(player: Player) {
@@ -380,7 +383,7 @@ export function registerPlayerHandlers(
         const virgin = game.getPlayer(nomineeId);
         const nominator = game.getPlayer(playerId);
         game.kill(result.virginKill);
-        game.markExecution();
+        game.markExecution(result.virginKill);
         emitDeathTriggers(nominator, storytellerIo, { isNight: false });
         playerIo.emit('virgin:triggered', {
           virginName: virgin?.name ?? nomineeId,
@@ -533,6 +536,36 @@ export function registerPlayerHandlers(
 
           if (effectiveRoleId === 'professor' && targets.length > 0) {
             game.resolveProfessorSelection(playerId, targets[0]);
+            storytellerIo.emit('game:state', game.getStorytellerState());
+            playerIo.emit('game:state', game.getState());
+          }
+
+          if (effectiveRoleId === 'innkeeper' && targets.length > 0) {
+            game.resolveInnkeeperSelection(playerId, targets);
+            storytellerIo.emit('game:state', game.getStorytellerState());
+            playerIo.emit('game:state', game.getState());
+          }
+
+          if (effectiveRoleId === 'devils_advocate' && targets.length > 0) {
+            game.resolveDevilsAdvocateSelection(playerId, targets[0]);
+            storytellerIo.emit('game:state', game.getStorytellerState());
+            playerIo.emit('game:state', game.getState());
+          }
+
+          if (effectiveRoleId === 'assassin' && targets.length > 0) {
+            game.resolveAssassinSelection(playerId, targets[0]);
+            storytellerIo.emit('game:state', game.getStorytellerState());
+            playerIo.emit('game:state', game.getState());
+          }
+
+          if (effectiveRoleId === 'godfather' && targets.length > 0) {
+            game.resolveGodfatherSelection(playerId, targets[0]);
+            storytellerIo.emit('game:state', game.getStorytellerState());
+            playerIo.emit('game:state', game.getState());
+          }
+
+          if (effectiveRoleId === 'zombuul' && targets.length > 0) {
+            game.resolveZombuulSelection(playerId, targets[0]);
             storytellerIo.emit('game:state', game.getStorytellerState());
             playerIo.emit('game:state', game.getState());
           }

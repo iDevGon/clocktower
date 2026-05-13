@@ -180,4 +180,46 @@ describe('E2E: 피로물든달 판정 보조', () => {
       'professor_spent',
     );
   });
+
+  it('여관 주인 밤 행동은 선택한 두 대상에게 밤 보호를 부여한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'innkeeper' },
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'godfather' },
+      { roleId: 'po' },
+    ]);
+
+    const statePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.players[0].emit('night:action', {
+      targets: [playerIds[1], playerIds[2]],
+    });
+    await statePromise;
+
+    expect(ctx.app.game.getPlayer(playerIds[1])?.statuses).toContain(
+      'innkeeper_protected',
+    );
+    expect(ctx.app.game.getPlayer(playerIds[2])?.statuses).toContain(
+      'innkeeper_protected',
+    );
+  });
+
+  it('암살자 밤 행동은 대상을 사망시키고 능력을 소모한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'gambler' },
+      { roleId: 'assassin' },
+      { roleId: 'po' },
+    ]);
+
+    const statePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.players[3].emit('night:action', { targets: [playerIds[1]] });
+    await statePromise;
+
+    expect(ctx.app.game.getPlayer(playerIds[1])?.isAlive).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[3])?.statuses).toContain(
+      'assassin_spent',
+    );
+  });
 });

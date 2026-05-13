@@ -311,7 +311,7 @@ export function registerStorytellerHandlers(
         const candidate = game.getExecutionCandidate();
         if (candidate) {
           if (options?.skipExecution) {
-            game.markExecution();
+            game.markExecution(candidate.playerId);
           } else {
             const candidatePlayer = game.getPlayer(candidate.playerId);
             game.kill(candidate.playerId);

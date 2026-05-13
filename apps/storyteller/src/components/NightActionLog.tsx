@@ -51,6 +51,16 @@ const ROLE_TARGET_ACTIONS: Record<string, TargetActionConfig> = {
   moonchild: { label: '사망 처리', doneLabel: '사망', isKill: true },
   grandmother: { label: '사망 처리', doneLabel: '사망', isKill: true },
   professor: { label: '부활 처리', doneLabel: '부활됨' },
+  innkeeper: {
+    label: '보호 처리',
+    doneLabel: '보호됨',
+    status: 'innkeeper_protected',
+  },
+  devils_advocate: {
+    label: '처형 보호',
+    doneLabel: '보호됨',
+    status: 'devils_advocate_protected',
+  },
   poisoner: { label: '중독 처리', doneLabel: '중독됨', status: 'poisoned' },
   monk: { label: '보호 처리', doneLabel: '보호됨', status: 'protected' },
   snake_charmer: { label: '확인', doneLabel: '확인' },
@@ -849,6 +859,79 @@ export function NightActionLog({
                                 {spentDone
                                   ? '교수 능력 소모됨'
                                   : '교수 능력 소모 처리'}
+                              </Text>
+                            </Pressable>
+                          </View>
+                        );
+                      }
+
+                      if (action.roleId === 'innkeeper') {
+                        const protectKey = `${targetKey}:innkeeper-protect`;
+                        const drunkKey = `${targetKey}:innkeeper-drunk`;
+                        const protectDone =
+                          processedTargets.has(protectKey) ||
+                          targetStatuses.includes('innkeeper_protected');
+                        const drunkDone =
+                          processedTargets.has(drunkKey) ||
+                          targetStatuses.includes('innkeeper_drunk');
+
+                        return (
+                          <View key={targetId} style={styles.targetActionGroup}>
+                            {isActionPlayerMalfunctioning && (
+                              <View style={styles.bmrWarningBadge}>
+                                <Text style={styles.bmrWarningText}>
+                                  여관 주인이 중독/취함 상태라 자동 판정 미적용
+                                </Text>
+                              </View>
+                            )}
+                            <Pressable
+                              onPress={() => {
+                                if (protectDone) return;
+                                onSetStatus?.(targetId, 'innkeeper_protected');
+                                setProcessedTargets((prev) =>
+                                  new Set(prev).add(protectKey),
+                                );
+                              }}
+                              style={[
+                                styles.killButton,
+                                protectDone && styles.killButtonDone,
+                              ]}
+                              disabled={protectDone}
+                            >
+                              <Text
+                                style={[
+                                  styles.killText,
+                                  protectDone && styles.killTextDone,
+                                ]}
+                              >
+                                {protectDone
+                                  ? `${getPlayerName(targetId)} 보호됨`
+                                  : `${getPlayerName(targetId)} 보호 처리`}
+                              </Text>
+                            </Pressable>
+                            <Pressable
+                              onPress={() => {
+                                if (drunkDone) return;
+                                onSetStatus?.(targetId, 'innkeeper_drunk');
+                                setProcessedTargets((prev) =>
+                                  new Set(prev).add(drunkKey),
+                                );
+                              }}
+                              style={[
+                                styles.killButton,
+                                drunkDone && styles.killButtonDone,
+                              ]}
+                              disabled={drunkDone}
+                            >
+                              <Text
+                                style={[
+                                  styles.killText,
+                                  drunkDone && styles.killTextDone,
+                                ]}
+                              >
+                                {drunkDone
+                                  ? `${getPlayerName(targetId)} 여관 주인 취함`
+                                  : `${getPlayerName(targetId)} 여관 주인 취함 처리`}
                               </Text>
                             </Pressable>
                           </View>
