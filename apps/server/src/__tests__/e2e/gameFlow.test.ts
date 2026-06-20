@@ -381,6 +381,32 @@ describe('E2E: 재접속', () => {
     expect(rejoinRes.roleId).toBeDefined();
     expect(rejoinRes.phase).toBe('night');
   }, 15000);
+
+  it('재접속 시 좌석 순서를 playerOrder 기준으로 복원한다', async () => {
+    const { playerIds } = await setupFullGame(ctx);
+    const reordered = [
+      playerIds[2],
+      playerIds[0],
+      playerIds[4],
+      playerIds[1],
+      playerIds[3],
+    ];
+
+    const statePromise = waitForEvent(ctx.players[0] as Socket, 'game:state');
+    ctx.storyteller.emit('game:setPlayerOrder', reordered);
+    await statePromise;
+
+    const newSocket = await ctx.connectPlayer();
+    const rejoinRes = await new Promise<{
+      success: boolean;
+      gamePlayers?: Array<{ id: string; name: string }>;
+    }>((resolve) => {
+      newSocket.emit('game:rejoin', { playerId: playerIds[0] }, resolve);
+    });
+
+    expect(rejoinRes.success).toBe(true);
+    expect(rejoinRes.gamePlayers?.map((p) => p.id)).toEqual(reordered);
+  }, 15000);
 });
 
 describe('E2E: rejoin 상태 복원', () => {

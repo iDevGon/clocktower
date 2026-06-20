@@ -1,3 +1,4 @@
+import type { Role, Team } from '@clocktower/shared';
 import {
   ALL_ROLES,
   DAY_SUB_PHASE_ENTRIES,
@@ -8,18 +9,19 @@ import {
   PHASE_ENTRIES,
   STATUS_ENTRIES,
   TEAM_COLORS,
-  type Team,
 } from '@clocktower/shared';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { colors, typography } from '../tokens';
+import { filterDictionaryRoles } from '../utils/dictionaryFilters';
 import { AbilityText } from './AbilityText';
 import { RoleTips } from './RoleTips';
 
@@ -41,6 +43,7 @@ interface DictionaryModalProps {
    * @default true
    */
   groupRolesByTeam?: boolean;
+  roleIds?: string[];
 }
 
 const TEAM_ORDER: Array<{ team: Team; label: string }> = [
@@ -50,12 +53,12 @@ const TEAM_ORDER: Array<{ team: Team; label: string }> = [
   { team: 'demon', label: '악마' },
 ];
 
-function GroupedRolesTab() {
+function GroupedRolesTab({ roles }: { roles: Role[] }) {
   return (
     <View style={tabStyles.section}>
       {TEAM_ORDER.map(({ team, label }) => {
-        const roles = ALL_ROLES.filter((r) => r.team === team);
-        if (roles.length === 0) return null;
+        const teamRoles = roles.filter((r) => r.team === team);
+        if (teamRoles.length === 0) return null;
         return (
           <View key={team}>
             <View
@@ -72,9 +75,9 @@ function GroupedRolesTab() {
               >
                 {label}
               </Text>
-              <Text style={tabStyles.teamCount}>{roles.length}</Text>
+              <Text style={tabStyles.teamCount}>{teamRoles.length}</Text>
             </View>
-            {roles.map((role) => {
+            {teamRoles.map((role) => {
               const editionColor = EDITION_COLORS[role.edition] ?? '#908e8a';
               const editionLabel = EDITION_LABELS[role.edition] ?? role.edition;
               return (
@@ -115,12 +118,12 @@ function GroupedRolesTab() {
   );
 }
 
-function FlatRolesTab() {
+function FlatRolesTab({ roles }: { roles: Role[] }) {
   return (
     <View style={tabStyles.section}>
       {TEAM_ORDER.map(({ team, label }) => {
-        const roles = ALL_ROLES.filter((r) => r.team === team);
-        if (roles.length === 0) return null;
+        const teamRoles = roles.filter((r) => r.team === team);
+        if (teamRoles.length === 0) return null;
         return (
           <View key={team}>
             <View
@@ -137,9 +140,9 @@ function FlatRolesTab() {
               >
                 {label}
               </Text>
-              <Text style={tabStyles.teamCount}>{roles.length}</Text>
+              <Text style={tabStyles.teamCount}>{teamRoles.length}</Text>
             </View>
-            {roles.map((role) => {
+            {teamRoles.map((role) => {
               const editionLabel = EDITION_LABELS[role.edition] ?? role.edition;
               const editionColor = EDITION_COLORS[role.edition] ?? '#908e8a';
               return (
@@ -253,8 +256,14 @@ export function DictionaryModal({
   visible,
   onClose,
   groupRolesByTeam = true,
+  roleIds,
 }: DictionaryModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('roles');
+  const [roleQuery, setRoleQuery] = useState('');
+  const roles = useMemo(
+    () => filterDictionaryRoles(ALL_ROLES, { roleIds, query: roleQuery }),
+    [roleIds, roleQuery],
+  );
 
   const tabBar = (
     <View style={styles.tabBar}>
@@ -283,8 +292,21 @@ export function DictionaryModal({
       contentContainerStyle={styles.scrollContent}
       nestedScrollEnabled
     >
+      {activeTab === 'roles' && (
+        <TextInput
+          value={roleQuery}
+          onChangeText={setRoleQuery}
+          placeholder="직업 검색"
+          placeholderTextColor={colors.arcane.text.dead}
+          style={styles.searchInput}
+        />
+      )}
       {activeTab === 'roles' &&
-        (groupRolesByTeam ? <GroupedRolesTab /> : <FlatRolesTab />)}
+        (groupRolesByTeam ? (
+          <GroupedRolesTab roles={roles} />
+        ) : (
+          <FlatRolesTab roles={roles} />
+        ))}
       {activeTab === 'statuses' && <StatusesTab />}
       {activeTab === 'rules' && <RulesTab />}
       {activeTab === 'flow' && <FlowTab />}
@@ -422,6 +444,18 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 40,
+  },
+  searchInput: {
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: colors.arcane.border.parchment,
+    borderRadius: 6,
+    backgroundColor: colors.arcane.surface.base,
+    color: colors.arcane.text.strong,
+    fontFamily: typography.fontFamily.body,
+    fontSize: 14,
+    paddingHorizontal: 12,
+    marginBottom: 12,
   },
 });
 

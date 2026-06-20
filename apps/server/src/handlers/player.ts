@@ -64,6 +64,18 @@ function toPlayerInfo(player: Player) {
   };
 }
 
+function getOrderedPlayerInfoList(game: GameManager) {
+  const state = game.getState();
+  const playerMap = new Map(state.players.map((p) => [p.id, p]));
+  const orderedPlayers =
+    state.playerOrder.length > 0
+      ? state.playerOrder
+          .map((id) => playerMap.get(id))
+          .filter((p): p is Player => p != null)
+      : state.players;
+  return orderedPlayers.map(toPlayerInfo);
+}
+
 function getRejoinNightCount(state: { phase: string; day: number }): number {
   if (state.phase === 'night') return state.day;
   return Math.max(0, state.day - 1);
@@ -228,7 +240,7 @@ export function registerPlayerHandlers(
           ? player.drunkAs
           : player.role?.id;
 
-      const gamePlayers = state.players.map(toPlayerInfo);
+      const gamePlayers = getOrderedPlayerInfoList(game);
 
       // 밤 페이즈일 때 진행 상태 포함
       let nightProgress:

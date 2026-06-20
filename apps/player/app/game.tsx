@@ -1,3 +1,4 @@
+import { getRolesForEdition } from '@clocktower/shared';
 import { BaseToast, DictionaryModal, SpriteIcon } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -93,6 +94,15 @@ export default function GameScreen() {
   const deadVoteUsed = usePlayerStore((s) => s.deadVoteUsed);
   const evilInfo = usePlayerStore((s) => s.evilInfo);
   const gameSettings = usePlayerStore((s) => s.gameSettings);
+  const dictionaryRoleIds = useMemo(() => {
+    const setupEditionId = gameSettings?.setupEditionId ?? role?.edition;
+    const editionRoles = setupEditionId
+      ? getRolesForEdition(setupEditionId).map((r) => r.id)
+      : [];
+    return [
+      ...new Set([...editionRoles, ...(gameSettings?.additionalRoleIds ?? [])]),
+    ];
+  }, [gameSettings?.setupEditionId, gameSettings?.additionalRoleIds, role]);
   const executionHappenedToday = usePlayerStore(
     (s) => s.executionHappenedToday,
   );
@@ -853,6 +863,7 @@ export default function GameScreen() {
       <DictionaryModal
         visible={dictionaryVisible}
         onClose={() => setDictionaryVisible(false)}
+        roleIds={dictionaryRoleIds}
       />
 
       <Modal

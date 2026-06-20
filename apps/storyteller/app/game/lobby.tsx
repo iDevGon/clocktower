@@ -3,22 +3,13 @@ import {
   ALL_ROLES,
   EDITION_COLORS,
   EDITIONS,
-  getRoleById,
   getRolesForEdition,
   ROLE_DISTRIBUTION,
-  TEAM_COLORS,
 } from '@clocktower/shared';
 import { SpriteIcon } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
-import {
-  Alert,
-  FlatList,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { arcaneUiSprite, uiIcon } from '../../src/assets/ui';
 import { BluffSelectModal } from '../../src/components/BluffSelectModal';
 import { ClockSpeedSetting } from '../../src/components/ClockSpeedSetting';
@@ -48,6 +39,7 @@ export default function LobbyScreen() {
     setGameSettings,
     kickPlayer,
     unassignAllRoles,
+    setPlayerOrder: syncPlayerOrder,
   } = useGameActions();
   const [distributing, setDistributing] = useState(false);
   const [selectedEditionId, setSelectedEditionId] = useState('trouble_brewing');
@@ -64,6 +56,11 @@ export default function LobbyScreen() {
   const [roleSettingsOpen, setRoleSettingsOpen] = useState(false);
   const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
   const [rolesVeiled, setRolesVeiled] = useState(false);
+  const [seatArea, setSeatArea] = useState({ width: 0, height: 0 });
+  const [selectedSeatPlayerId, setSelectedSeatPlayerId] = useState<
+    string | null
+  >(null);
+  const setLocalPlayerOrder = useGameStore((s) => s.setPlayerOrder);
 
   // 주정뱅이 가짜 역할 변경 모달 상태
   const [drunkModalPlayer, setDrunkModalPlayer] = useState<Player | null>(null);
@@ -109,6 +106,17 @@ export default function LobbyScreen() {
     () => getRolesForEdition(selectedEditionId),
     [selectedEditionId],
   );
+  const additionalRoleIdList = useMemo(
+    () => [...additionalRoleIds],
+    [additionalRoleIds],
+  );
+
+  useEffect(() => {
+    setGameSettings({
+      setupEditionId: selectedEditionId,
+      additionalRoleIds: additionalRoleIdList,
+    });
+  }, [additionalRoleIdList, selectedEditionId, setGameSettings]);
 
   const toggleExcludedRole = useCallback((roleId: string) => {
     setExcludedRoleIds((prev) => {
@@ -177,7 +185,7 @@ export default function LobbyScreen() {
           excludedRoleIds.size > 0 ? [...excludedRoleIds] : undefined,
         editionId: selectedEditionId,
         additionalRoleIds:
-          additionalRoleIds.size > 0 ? [...additionalRoleIds] : undefined,
+          additionalRoleIdList.length > 0 ? additionalRoleIdList : undefined,
       });
     } catch (e) {
       Alert.alert('오류', e instanceof Error ? e.message : '알 수 없는 오류');
@@ -227,9 +235,192 @@ export default function LobbyScreen() {
         playerId: item.id,
         editionId: selectedEditionId,
         additionalRoleIds:
-          additionalRoleIds.size > 0 ? [...additionalRoleIds].join(',') : '',
+          additionalRoleIdList.length > 0 ? additionalRoleIdList.join(',') : '',
       },
     });
+  };
+
+  const orderedPlayers = useMemo(() => {
+    const order = gameState?.playerOrder ?? [];
+    if (order.length === 0) return players;
+    const byId = new Map(players.map((p) => [p.id, p]));
+    const ordered = order
+      .map((id) => byId.get(id))
+      .filter((p): p is Player => p != null);
+    const missing = players.filter((p) => !order.includes(p.id));
+    return [...ordered, ...missing];
+  }, [gameState?.playerOrder, players]);
+
+  const currentPlayerOrder = useMemo(
+    () => orderedPlayers.map((player) => player.id),
+    [orderedPlayers],
+  );
+
+  const selectedSeatPlayer = useMemo(
+    () =>
+      orderedPlayers.find((player) => player.id === selectedSeatPlayerId) ??
+      null,
+    [orderedPlayers, selectedSeatPlayerId],
+  );
+
+  const commitPlayerOrder = useCallback(
+    (order: string[]) => {
+      setLocalPlayerOrder(order);
+      syncPlayerOrder(order);
+    },
+    [setLocalPlayerOrder, syncPlayerOrder],
+  );
+
+  const selectSeatPlayer = useCallback(
+    (playerId: string) => {
+      if (!selectedSeatPlayerId) {
+        setSelectedSeatPlayerId(playerId);
+        return;
+      }
+      if (selectedSeatPlayerId === playerId) {
+        setSelectedSeatPlayerId(null);
+        return;
+      }
+
+      const nextOrder = [...currentPlayerOrder];
+      const fromIndex = nextOrder.indexOf(selectedSeatPlayerId);
+      const toIndex = nextOrder.indexOf(playerId);
+      if (fromIndex >= 0 && toIndex >= 0) {
+        [nextOrder[fromIndex], nextOrder[toIndex]] = [
+          nextOrder[toIndex],
+          nextOrder[fromIndex],
+        ];
+        commitPlayerOrder(nextOrder);
+      }
+      setSelectedSeatPlayerId(null);
+    },
+    [commitPlayerOrder, currentPlayerOrder, selectedSeatPlayerId],
+  );
+
+  const renderSeatingBoard = (mode: 'desktop' | 'mobile') => {
+    const tokenSize = mode === 'desktop' ? 86 : s(68);
+    const boardWidth = seatArea.width;
+    const boardHeight = seatArea.height;
+    const total = orderedPlayers.length;
+    const centerX = boardWidth / 2;
+    const centerY = boardHeight / 2;
+    const radius =
+      total > 0
+        ? Math.max(
+            0,
+            Math.min(boardWidth, boardHeight) / 2 - tokenSize / 2 - s(12),
+          )
+        : 0;
+
+    return (
+      <View style={styles.seatingBoard}>
+        <View
+          style={
+            mode === 'desktop'
+              ? styles.desktopSeatingCircle
+              : styles.mobileSeatingCircle
+          }
+          onLayout={(event) => setSeatArea(event.nativeEvent.layout)}
+        >
+          <View style={styles.seatingCenter}>
+            <Text style={styles.seatingCenterKicker}>SEATS</Text>
+            <Text style={styles.seatingCenterText}>{total}</Text>
+          </View>
+          {orderedPlayers.map((player, index) => {
+            const angle =
+              (index / Math.max(total, 1)) * 2 * Math.PI - Math.PI / 2;
+            const left = centerX + radius * Math.cos(angle) - tokenSize / 2;
+            const top = centerY + radius * Math.sin(angle) - tokenSize / 2;
+            const selected = selectedSeatPlayerId === player.id;
+            const roleLabel = player.role
+              ? rolesVeiled
+                ? '???'
+                : player.role.name
+              : '미배정';
+            return (
+              <Pressable
+                key={player.id}
+                onPress={() => selectSeatPlayer(player.id)}
+                onLongPress={() => confirmKickPlayer(player)}
+                style={[
+                  styles.seatToken,
+                  selected && styles.seatTokenSelected,
+                  player.role && styles.seatTokenAssigned,
+                  {
+                    width: tokenSize,
+                    height: tokenSize,
+                    borderRadius: tokenSize / 2,
+                    left,
+                    top,
+                  },
+                ]}
+              >
+                <Text style={styles.seatIndex}>{index + 1}</Text>
+                <Text style={styles.seatName} numberOfLines={1}>
+                  {player.name}
+                </Text>
+                <Text style={styles.seatRole} numberOfLines={1}>
+                  {roleLabel}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <View style={styles.seatActionPanel}>
+          <View style={styles.seatActionTextBlock}>
+            <Text style={styles.seatActionKicker}>선택 좌석</Text>
+            <Text style={styles.seatActionName} numberOfLines={1}>
+              {selectedSeatPlayer?.name ?? '토큰을 선택하세요'}
+            </Text>
+          </View>
+          <View style={styles.seatActionButtons}>
+            <Pressable
+              disabled={!selectedSeatPlayer}
+              onPress={() =>
+                selectedSeatPlayer && openAssignRole(selectedSeatPlayer)
+              }
+              style={[
+                styles.seatActionButton,
+                !selectedSeatPlayer && styles.seatActionButtonDisabled,
+              ]}
+            >
+              <Text style={styles.seatActionButtonText}>직업</Text>
+            </Pressable>
+            <Pressable
+              disabled={!selectedSeatPlayer}
+              onPress={() =>
+                selectedSeatPlayer && confirmKickPlayer(selectedSeatPlayer)
+              }
+              style={[
+                styles.seatActionButton,
+                styles.seatKickButton,
+                !selectedSeatPlayer && styles.seatActionButtonDisabled,
+              ]}
+            >
+              <Text style={styles.seatActionButtonText}>강퇴</Text>
+            </Pressable>
+            {!rolesVeiled &&
+              selectedSeatPlayer?.role?.id === 'drunk' &&
+              selectedSeatPlayer.drunkAs && (
+                <Pressable
+                  onPress={() => setDrunkModalPlayer(selectedSeatPlayer)}
+                  style={styles.seatActionButton}
+                >
+                  <Text style={styles.seatActionButtonText}>가짜</Text>
+                </Pressable>
+              )}
+            {!rolesVeiled && selectedSeatPlayer?.role?.team === 'demon' && (
+              <Pressable
+                onPress={() => setBluffChangePlayer(selectedSeatPlayer)}
+                style={styles.seatActionButton}
+              >
+                <Text style={styles.seatActionButtonText}>블러프</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </View>
+    );
   };
 
   const confirmKickPlayer = (item: Player) => {
@@ -255,86 +446,6 @@ export default function LobbyScreen() {
       ],
     );
   };
-
-  const renderPlayerRow = (item: Player, mode: 'desktop' | 'mobile') => (
-    <Pressable
-      onPress={() => openAssignRole(item)}
-      onLongPress={() => confirmKickPlayer(item)}
-      style={[
-        styles.playerRow,
-        mode === 'desktop' && styles.desktopPlayerRow,
-        item.role && styles.playerRowAssigned,
-      ]}
-    >
-      <View style={styles.playerNameRow}>
-        <View style={lobbyDynamic.aliveDot(item.isAlive, s)} />
-        <View style={styles.playerIdentity}>
-          <Text style={styles.playerName} numberOfLines={1}>
-            {item.name}
-          </Text>
-          {item.isTraveller && (
-            <Text
-              style={[
-                styles.travellerBadge,
-                item.travellerAlignment === 'evil' && styles.travellerBadgeEvil,
-                item.travellerAlignment === 'good' && styles.travellerBadgeGood,
-              ]}
-            >
-              여행자
-            </Text>
-          )}
-        </View>
-      </View>
-      <View style={styles.playerRoleContainer}>
-        {item.role ? (
-          <Text
-            style={lobbyDynamic.playerRoleText(
-              rolesVeiled,
-              s,
-              !rolesVeiled && item.role.team
-                ? TEAM_COLORS[item.role.team]
-                : undefined,
-            )}
-            numberOfLines={mode === 'desktop' ? 2 : 1}
-          >
-            {rolesVeiled ? '???' : item.role.name}
-            {!rolesVeiled && item.role.id === 'drunk' && item.drunkAs
-              ? ` (${getRoleById(item.drunkAs)?.name ?? '?'})`
-              : ''}
-            {!rolesVeiled &&
-              item.role.team === 'demon' &&
-              ` (${gameState?.bluffRoles && gameState.bluffRoles.length > 0 ? gameState.bluffRoles.map((r) => r.name).join(', ') : '랜덤'})`}
-          </Text>
-        ) : (
-          <Text style={styles.unassignedRoleText}>미배정</Text>
-        )}
-        {!rolesVeiled && item.role?.id === 'drunk' && item.drunkAs && (
-          <Pressable
-            onPress={(e) => {
-              e.stopPropagation();
-              setDrunkModalPlayer(item);
-            }}
-            hitSlop={8}
-            style={styles.drunkChangeButton}
-          >
-            <Text style={styles.drunkChangeText}>가짜역할 변경</Text>
-          </Pressable>
-        )}
-        {!rolesVeiled && item.role?.team === 'demon' && (
-          <Pressable
-            onPress={(e) => {
-              e.stopPropagation();
-              setBluffChangePlayer(item);
-            }}
-            hitSlop={8}
-            style={styles.drunkChangeButton}
-          >
-            <Text style={styles.drunkChangeText}>블러프 변경</Text>
-          </Pressable>
-        )}
-      </View>
-    </Pressable>
-  );
 
   const renderEditionSelector = (mode: 'desktop' | 'mobile') => (
     <View
@@ -654,12 +765,7 @@ export default function LobbyScreen() {
                   )}
                 </View>
               )}
-              <FlatList
-                data={players}
-                keyExtractor={(p) => p.id}
-                contentContainerStyle={styles.desktopPlayerListContent}
-                renderItem={({ item }) => renderPlayerRow(item, 'desktop')}
-              />
+              {renderSeatingBoard('desktop')}
             </View>
 
             <View style={styles.desktopControlColumn}>
@@ -824,16 +930,9 @@ export default function LobbyScreen() {
           </View>
 
           <View style={styles.listContainer}>
-            {advancedSettingsOpen && gameState ? (
-              renderSettingsControls('mobile')
-            ) : (
-              <FlatList
-                data={players}
-                keyExtractor={(p) => p.id}
-                contentContainerStyle={styles.playerListContent}
-                renderItem={({ item }) => renderPlayerRow(item, 'mobile')}
-              />
-            )}
+            {advancedSettingsOpen && gameState
+              ? renderSettingsControls('mobile')
+              : renderSeatingBoard('mobile')}
           </View>
 
           <View style={styles.footer}>

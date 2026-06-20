@@ -17,7 +17,6 @@ import {
   getTravellerById,
   hasPoisonStatus,
   POISON_STATUSES,
-  SECTS_AND_VIOLETS_ROLES,
 } from '@clocktower/shared/logic';
 
 type BaristaEffect = 'sober_healthy' | 'acts_twice';
@@ -2556,6 +2555,12 @@ export class GameManager {
     this.state.playerOrder = order;
   }
 
+  setRoleSetup(editionId: string, additionalRoleIds: string[] = []): void {
+    this.editionId = editionId;
+    this.state.settings.setupEditionId = editionId;
+    this.state.settings.additionalRoleIds = [...additionalRoleIds];
+  }
+
   /**
    * 시계방향 투표 순서 반환: 지명된 플레이어부터 시계방향으로 순서대로.
    * 지목당한 플레이어 본인도 투표에 포함됨.
@@ -2760,6 +2765,7 @@ export class GameManager {
 
   setEditionId(editionId: string): void {
     this.editionId = editionId;
+    this.state.settings.setupEditionId = editionId;
   }
 
   getEditionId(): string {
@@ -2768,11 +2774,11 @@ export class GameManager {
 
   /** 현재 게임의 에디션을 자동 감지하여 설정합니다 */
   detectEdition(): void {
-    const svRoleIds = new Set(SECTS_AND_VIOLETS_ROLES.map((r) => r.id));
-    const hasSvRole = this.state.players.some(
-      (p) => p.role && svRoleIds.has(p.role.id),
-    );
-    this.editionId = hasSvRole ? 'sects_and_violets' : 'trouble_brewing';
+    const primaryEdition =
+      this.state.players.find((p) => p.role)?.role?.edition ??
+      this.state.settings.setupEditionId ??
+      'trouble_brewing';
+    this.setEditionId(primaryEdition);
   }
 
   // ── 마녀 저주 ──

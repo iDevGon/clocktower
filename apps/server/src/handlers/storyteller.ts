@@ -188,7 +188,11 @@ function sendEvilInfo(
   preselectedBluffIds?: string[],
 ): void {
   const state = game.getState();
-  const bluffRoles = resolveBluffRoles(game, preselectedBluffIds);
+  const existingBluffRoles = game.getBluffRoles();
+  const bluffRoles =
+    existingBluffRoles.length > 0
+      ? existingBluffRoles
+      : resolveBluffRoles(game, preselectedBluffIds);
 
   // 블러프를 GameManager에 저장 (이야기꾼 표시용)
   game.setBluffRoles(bluffRoles);
@@ -673,6 +677,10 @@ export function registerStorytellerHandlers(
     });
 
     socket.on('game:distributeRoles', (options, callback) => {
+      game.setRoleSetup(
+        options.editionId ?? game.getSettings().setupEditionId,
+        options.additionalRoleIds ?? [],
+      );
       const state = game.getState();
       // 여행자는 역할 배분에서 제외
       const regularPlayers = state.players.filter((p) => !p.isTraveller);
@@ -827,7 +835,7 @@ export function registerStorytellerHandlers(
         }
 
         // 에디션 자동 감지 (역할 기반)
-        game.detectEdition();
+        game.setEditionId(game.getSettings().setupEditionId);
 
         // 모든 플레이어에게 역할이 배정되면 점쟁이 Red Herring 자동 지정
         const updatedState = game.getState();

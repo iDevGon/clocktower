@@ -364,6 +364,8 @@ export interface GameSettings {
   discussionClockSeconds: number;
   nominationClockSeconds: number;
   defenseClockSeconds: number;
+  setupEditionId: string;
+  additionalRoleIds: string[];
 }
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
@@ -374,6 +376,8 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
   discussionClockSeconds: 0,
   nominationClockSeconds: 0,
   defenseClockSeconds: 0,
+  setupEditionId: 'trouble_brewing',
+  additionalRoleIds: [],
 };
 
 export interface StorytellerMessage {

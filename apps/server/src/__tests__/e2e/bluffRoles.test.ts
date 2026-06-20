@@ -253,6 +253,96 @@ describe('E2E: 블러프 역할 필터링', () => {
     expect(bluffIds).toEqual(expect.arrayContaining(preselected));
   }, 15000);
 
+  it('게임 시작 전에 이야기꾼 상태에 보인 블러프와 악마에게 전달된 블러프가 동일하다', async () => {
+    const preselected = ['monk', 'ravenkeeper', 'slayer'];
+    const playerCount = 5;
+
+    const createStatePromise = waitForEvent(
+      ctx.storyteller as Socket,
+      'game:state',
+    );
+    await new Promise<void>((resolve) => {
+      ctx.storyteller.emit('game:create', (res) => {
+        if (res.success) resolve();
+      });
+    });
+    await createStatePromise;
+
+    const playerIds: string[] = [];
+    for (let i = 0; i < playerCount; i++) {
+      const playerSocket = await ctx.connectPlayer();
+      ctx.players.push(playerSocket);
+      const joinStatePromise = waitForEvent(
+        ctx.storyteller as Socket,
+        'game:state',
+      );
+      const joinResult = await new Promise<{
+        success: boolean;
+        playerId?: string;
+      }>((resolve) => {
+        playerSocket.emit(
+          'game:join',
+          { playerName: `Player${i + 1}` },
+          resolve,
+        );
+      });
+      if (joinResult.playerId) playerIds.push(joinResult.playerId);
+      await joinStatePromise;
+    }
+
+    const assignments = [
+      'imp',
+      'poisoner',
+      'washerwoman',
+      'empath',
+      'fortune_teller',
+    ];
+    for (let i = 1; i < playerCount; i++) {
+      const assignStatePromise = waitForEvent(
+        ctx.storyteller as Socket,
+        'game:state',
+      );
+      ctx.storyteller.emit('game:assignRole', {
+        playerId: playerIds[i],
+        roleId: assignments[i],
+      });
+      await assignStatePromise;
+    }
+
+    const demonAssignStatePromise = waitForEvent<{
+      bluffRoles?: { id: string; name: string }[];
+    }>(ctx.storyteller as Socket, 'game:state');
+    ctx.storyteller.emit('game:assignRole', {
+      playerId: playerIds[0],
+      roleId: assignments[0],
+      bluffRoleIds: preselected,
+    });
+    const beforeStartState = await demonAssignStatePromise;
+    const storytellerBluffIds =
+      beforeStartState.bluffRoles?.map((role) => role.id) ?? [];
+
+    const demonInfoPromise = waitForEvent<{
+      bluffRoles?: { id: string; name: string }[];
+    }>(ctx.players[0] as Socket, 'evil:info');
+    const startStatePromise = waitForEvent(
+      ctx.storyteller as Socket,
+      'game:state',
+    );
+    await new Promise<void>((resolve, reject) => {
+      ctx.storyteller.emit('game:start', (res) => {
+        if (res.success) resolve();
+        else reject(new Error(res.error));
+      });
+    });
+    await startStatePromise;
+
+    const demonInfo = await demonInfoPromise;
+    expect(storytellerBluffIds).toHaveLength(3);
+    expect(demonInfo.bluffRoles?.map((role) => role.id)).toEqual(
+      storytellerBluffIds,
+    );
+  }, 15000);
+
   it('사전 선택한 블러프 중 게임에 배정된 역할은 무시되고 랜덤으로 대체된다', async () => {
     // washerwoman은 이미 배정됨 → 무시되어야 함
     const preselected = ['washerwoman', 'monk', 'ravenkeeper'];
