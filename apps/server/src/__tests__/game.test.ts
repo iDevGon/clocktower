@@ -1822,5 +1822,80 @@ describe('GameManager', () => {
         expect(result).toBe(false);
       });
     });
+
+    describe('능력 조건 + 위장', () => {
+      it('misregistered 첩자가 성결자를 지명하면 마을주민으로 등록되어 처형된다', () => {
+        const { gm, players } = createTestGame(5);
+        gm.assignRole(players[0].id, 'spy');
+        gm.assignRole(players[1].id, 'virgin');
+        gm.assignRole(players[2].id, 'chef');
+        gm.assignRole(players[3].id, 'poisoner');
+        gm.assignRole(players[4].id, 'imp');
+        gm.start();
+        gm.setPhase('day');
+        gm.setPlayerStatuses(players[0].id, ['misregistered']);
+
+        const result = gm.nominate(players[0].id, players[1].id);
+
+        expect(result.success).toBe(true);
+        expect(result.virginKill).toBe(players[0].id);
+      });
+
+      it('misregistered 은둔자가 처형되면 하수인으로 등록되어 광대악사가 발동한다', () => {
+        const { gm, players } = createTestGame(5);
+        gm.assignRole(players[0].id, 'minstrel');
+        gm.assignRole(players[1].id, 'recluse');
+        gm.assignRole(players[2].id, 'chef');
+        gm.assignRole(players[3].id, 'poisoner');
+        gm.assignRole(players[4].id, 'imp');
+        gm.start();
+        gm.setPlayerStatuses(players[1].id, ['misregistered']);
+
+        gm.markExecution(players[1].id);
+
+        expect(gm.getPlayer(players[2].id)?.statuses).toContain(
+          'minstrel_drunk',
+        );
+      });
+
+      it('misregistered 첩자가 처형되면 선으로 등록되어 광대악사가 발동하지 않는다', () => {
+        const { gm, players } = createTestGame(5);
+        gm.assignRole(players[0].id, 'minstrel');
+        gm.assignRole(players[1].id, 'spy');
+        gm.assignRole(players[2].id, 'chef');
+        gm.assignRole(players[3].id, 'poisoner');
+        gm.assignRole(players[4].id, 'imp');
+        gm.start();
+        gm.setPlayerStatuses(players[1].id, ['misregistered']);
+
+        gm.markExecution(players[1].id);
+
+        expect(gm.getPlayer(players[2].id)?.statuses).not.toContain(
+          'minstrel_drunk',
+        );
+      });
+
+      it('교수가 misregistered 첩자를 마을주민으로 등록해 부활시킬 수 있다', () => {
+        const { gm, players } = createTestGame(5);
+        gm.assignRole(players[0].id, 'professor');
+        gm.assignRole(players[1].id, 'spy');
+        gm.assignRole(players[2].id, 'chef');
+        gm.assignRole(players[3].id, 'poisoner');
+        gm.assignRole(players[4].id, 'imp');
+        gm.start();
+        gm.kill(players[1].id);
+        gm.setPlayerStatuses(players[1].id, ['misregistered']);
+
+        const result = gm.resolveProfessorSelection(
+          players[0].id,
+          players[1].id,
+        );
+
+        expect(result.success).toBe(true);
+        if (!result.success) throw new Error(result.reason);
+        expect(result.revived).toBe(true);
+        expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
+      });
+    });
   });
 });

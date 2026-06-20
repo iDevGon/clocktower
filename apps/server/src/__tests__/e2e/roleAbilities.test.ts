@@ -192,6 +192,32 @@ describe('E2E: 처단자', () => {
     expect(ctx.app.game.hadExecutionToday()).toBe(false);
   }, 15000);
 
+  it('처단자가 위장된 은둔자를 선택하면 즉사한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'slayer' },
+      { roleId: 'recluse' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+
+    await advanceToDay(ctx);
+    ctx.app.game.setPlayerStatuses(playerIds[1], ['misregistered']);
+
+    const slayerRes = await new Promise<{
+      success: boolean;
+      error?: string;
+    }>((resolve) => {
+      ctx.players[0].emit('slayer:use', { targetId: playerIds[1] }, resolve);
+    });
+
+    expect(slayerRes.success).toBe(true);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(ctx.app.game.getPlayer(playerIds[1])?.isAlive).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[4])?.isAlive).toBe(true);
+    expect(ctx.app.game.hadExecutionToday()).toBe(false);
+  }, 15000);
+
   it('처단자가 마을 주민을 선택하면 효과 없음', async () => {
     await setupGameWithRoles(ctx, [
       { roleId: 'slayer' },

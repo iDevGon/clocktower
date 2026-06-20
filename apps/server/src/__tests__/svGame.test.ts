@@ -656,6 +656,61 @@ describe('S&V GameManager', () => {
     });
   });
 
+  describe('은둔자/첩자 위장과 S&V 판정', () => {
+    it('시계공은 misregistered 은둔자를 악마 후보로 계산한다', () => {
+      const { gm, players } = createSVGame(7);
+      gm.assignRole(players[0].id, 'clockmaker');
+      gm.assignRole(players[1].id, 'recluse');
+      gm.assignRole(players[2].id, 'witch');
+      gm.assignRole(players[3].id, 'dreamer');
+      gm.assignRole(players[4].id, 'flowergirl');
+      gm.assignRole(players[5].id, 'oracle');
+      gm.assignRole(players[6].id, 'fang_gu');
+      gm.start();
+      gm.setPlayerStatuses(players[1].id, ['misregistered']);
+
+      expect(gm.getClockmakerDistance()).toBe(1);
+    });
+
+    it('팡 구는 misregistered 은둔자를 외지인이 아닌 악으로 등록해 점프하지 않는다', () => {
+      const { gm, players } = createSVGame(8);
+      gm.assignRole(players[0].id, 'clockmaker');
+      gm.assignRole(players[1].id, 'dreamer');
+      gm.assignRole(players[2].id, 'flowergirl');
+      gm.assignRole(players[3].id, 'oracle');
+      gm.assignRole(players[4].id, 'seamstress');
+      gm.assignRole(players[5].id, 'recluse');
+      gm.assignRole(players[6].id, 'witch');
+      gm.assignRole(players[7].id, 'fang_gu');
+      gm.start();
+      gm.setPlayerStatuses(players[5].id, ['misregistered']);
+
+      expect(gm.handleFangGuJump(players[7].id, players[5].id)).toBeNull();
+    });
+
+    it('비고르모르티스는 misregistered 은둔자를 하수인으로 등록해 죽일 수 있다', () => {
+      const { gm, players } = createSVGame(7);
+      gm.assignRole(players[0].id, 'clockmaker');
+      gm.assignRole(players[1].id, 'recluse');
+      gm.assignRole(players[2].id, 'dreamer');
+      gm.assignRole(players[3].id, 'flowergirl');
+      gm.assignRole(players[4].id, 'oracle');
+      gm.assignRole(players[5].id, 'witch');
+      gm.assignRole(players[6].id, 'vigormortis');
+      gm.start();
+      gm.setPlayerStatuses(players[1].id, ['misregistered']);
+
+      const result = gm.handleVigormortisMinionKill(
+        players[6].id,
+        players[1].id,
+        players[2].id,
+      );
+
+      expect(result).not.toBeNull();
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(false);
+    });
+  });
+
   describe('이발사 역할 교환 시 부가 상태 동기화', () => {
     it('점쟁이가 교환되면 Red Herring이 재배정된다', () => {
       const { gm, players } = createSVGame(7);

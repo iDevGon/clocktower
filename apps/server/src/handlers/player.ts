@@ -673,7 +673,7 @@ export function registerPlayerHandlers(
       const killCondition =
         isSlayer &&
         !isPoisonedOrDrunkStatus(player.statuses) &&
-        target.role?.team === 'demon';
+        game.isPlayerRegisteredAsDemon(targetId);
 
       if (!killCondition) {
         // 능력이 효과 없음 (중독/주정뱅이/대상이 악마가 아님)

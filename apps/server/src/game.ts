@@ -64,6 +64,16 @@ function isPubliclyAlive(player: Player): boolean {
   return player.isAlive && !player.statuses.includes('zombuul_registers_dead');
 }
 
+function isRecluseMisregistered(player: Player): boolean {
+  return (
+    player.role?.id === 'recluse' && player.statuses.includes('misregistered')
+  );
+}
+
+function isSpyMisregistered(player: Player): boolean {
+  return player.role?.id === 'spy' && player.statuses.includes('misregistered');
+}
+
 /**
  * 정보 능력에서 플레이어가 악으로 감지되는지 판정합니다.
  * - 은둔자(outsider) + misregistered → 악으로 감지
@@ -75,14 +85,33 @@ function isDetectedAsEvil(player: Player): boolean {
     player.alignment != null
       ? player.alignment === 'evil'
       : player.role?.team === 'minion' || player.role?.team === 'demon';
-  if (!player.statuses.includes('misregistered')) return actualEvil;
-
-  // 은둔자: 선 → 악으로 위장
-  if (player.role?.id === 'recluse') return true;
-  // 첩자: 악 → 선으로 위장
-  if (player.role?.id === 'spy') return false;
-
+  if (isRecluseMisregistered(player)) return true;
+  if (isSpyMisregistered(player)) return false;
   return actualEvil;
+}
+
+function isRegisteredAsDemon(player: Player): boolean {
+  if (isRecluseMisregistered(player)) return true;
+  if (isSpyMisregistered(player)) return false;
+  return player.role?.team === 'demon';
+}
+
+function isRegisteredAsMinion(player: Player): boolean {
+  if (isRecluseMisregistered(player)) return true;
+  if (isSpyMisregistered(player)) return false;
+  return player.role?.team === 'minion';
+}
+
+function isRegisteredAsTownsfolk(player: Player): boolean {
+  if (isSpyMisregistered(player)) return true;
+  if (isRecluseMisregistered(player)) return false;
+  return player.role?.team === 'townsfolk';
+}
+
+function isRegisteredAsOutsider(player: Player): boolean {
+  if (isSpyMisregistered(player)) return true;
+  if (isRecluseMisregistered(player)) return false;
+  return player.role?.team === 'outsider';
 }
 
 export class GameManager {
@@ -260,7 +289,7 @@ export class GameManager {
     const neighborIds: string[] = [];
     for (let i = 1; i < order.length; i++) {
       const player = this.getPlayer(order[(idx + i) % order.length]);
-      if (player?.role?.team === 'townsfolk') {
+      if (player && isRegisteredAsTownsfolk(player)) {
         neighborIds.push(player.id);
         break;
       }
@@ -269,7 +298,7 @@ export class GameManager {
       const player = this.getPlayer(
         order[(idx - i + order.length) % order.length],
       );
-      if (player?.role?.team === 'townsfolk') {
+      if (player && isRegisteredAsTownsfolk(player)) {
         if (!neighborIds.includes(player.id)) neighborIds.push(player.id);
         break;
       }
@@ -356,7 +385,7 @@ export class GameManager {
 
     for (const minionId of [...this.vigormortisRetainedMinions]) {
       const minion = this.getPlayer(minionId);
-      if (!minion || minion.isAlive || minion.role?.team !== 'minion') {
+      if (!minion || minion.isAlive || !isRegisteredAsMinion(minion)) {
         this.vigormortisRetainedMinions.delete(minionId);
         this.vigormortisPoisonTargets.delete(minionId);
         if (minion) this.removeStatus(minion, 'vigormortis_retained');
@@ -370,7 +399,7 @@ export class GameManager {
       this.addStatus(minion, 'vigormortis_retained');
       const targetId = this.vigormortisPoisonTargets.get(minionId);
       const target = targetId ? this.getPlayer(targetId) : undefined;
-      if (target?.role?.team === 'townsfolk') {
+      if (target && isRegisteredAsTownsfolk(target)) {
         this.addStatus(target, 'vigormortis_poisoned');
       }
     }
@@ -1168,7 +1197,7 @@ export class GameManager {
         target.statuses.includes('misregistered')
       )
         return false;
-      if (target.role?.team === 'demon') return true;
+      if (isRegisteredAsDemon(target)) return true;
       // 은둔자 위장: misregistered 은둔자는 악마로 감지
       if (
         target.role?.id === 'recluse' &&
@@ -1378,6 +1407,11 @@ export class GameManager {
     const p = this.getPlayer(playerId);
     if (!p) return null;
     return this.getEffectiveAlignment(p);
+  }
+
+  isPlayerRegisteredAsDemon(playerId: string): boolean {
+    const player = this.getPlayer(playerId);
+    return player ? isRegisteredAsDemon(player) : false;
   }
 
   /** 처형 후보와 같은 진영의 살아있는 희생양(본인 제외) 반환 */
@@ -1727,7 +1761,7 @@ export class GameManager {
     }
 
     this.addStatus(professor, 'professor_spent');
-    if (target.role?.team !== 'townsfolk') {
+    if (!isRegisteredAsTownsfolk(target)) {
       return {
         success: true,
         blocked: false,
@@ -2152,7 +2186,7 @@ export class GameManager {
 
   private applyMinstrelExecutionEffect(executedPlayerId: string): void {
     const executedPlayer = this.getPlayer(executedPlayerId);
-    if (executedPlayer?.role?.team !== 'minion') return;
+    if (!executedPlayer || !isRegisteredAsMinion(executedPlayer)) return;
 
     const activeMinstrel = this.state.players.find(
       (player) =>
@@ -2259,7 +2293,7 @@ export class GameManager {
       nominee.isAlive
     ) {
       this.virginTriggered = true;
-      if (!isPoisonedOrDrunk(nominee) && nominator.role?.team === 'townsfolk') {
+      if (!isPoisonedOrDrunk(nominee) && isRegisteredAsTownsfolk(nominator)) {
         virginKill = nominatorId;
       }
     }
@@ -2848,7 +2882,7 @@ export class GameManager {
     if (this.fangGuJumped) return null;
     const target = this.getPlayer(targetId);
     if (!target) return null;
-    if (target.role?.team !== 'outsider') return null;
+    if (!isRegisteredAsOutsider(target)) return null;
     if (!target.isAlive) return null;
 
     const oldDemon = this.getPlayer(oldDemonId);
@@ -2928,7 +2962,7 @@ export class GameManager {
       isPoisonedOrDrunk(oldSnakeCharmer)
     )
       return null;
-    if (oldDemon.role.team !== 'demon') return null;
+    if (!isRegisteredAsDemon(oldDemon)) return null;
 
     const snakeRole = oldSnakeCharmer.role;
     const demonRole = oldDemon.role;
@@ -2970,8 +3004,8 @@ export class GameManager {
     ) {
       return null;
     }
-    if (minion.role?.team !== 'minion') return null;
-    if (poisonedNeighbor.role?.team !== 'townsfolk') return null;
+    if (!isRegisteredAsMinion(minion)) return null;
+    if (!isRegisteredAsTownsfolk(poisonedNeighbor)) return null;
     if (
       !this.getVigormortisTownsfolkNeighborIds(minionId).includes(
         poisonedNeighborId,
@@ -3058,10 +3092,10 @@ export class GameManager {
   getClockmakerDistance(): number {
     const order = this.state.playerOrder;
     const demons = this.state.players.filter(
-      (p) => p.isAlive && p.role?.team === 'demon',
+      (p) => p.isAlive && isRegisteredAsDemon(p),
     );
     const minions = this.state.players.filter(
-      (p) => p.isAlive && p.role?.team === 'minion',
+      (p) => p.isAlive && isRegisteredAsMinion(p),
     );
 
     if (demons.length === 0 || minions.length === 0) return 0;
@@ -3071,6 +3105,7 @@ export class GameManager {
       const demonIdx = order.indexOf(demon.id);
       if (demonIdx === -1) continue;
       for (const minion of minions) {
+        if (minion.id === demon.id) continue;
         const minionIdx = order.indexOf(minion.id);
         if (minionIdx === -1) continue;
         const cw = (minionIdx - demonIdx + order.length) % order.length;
