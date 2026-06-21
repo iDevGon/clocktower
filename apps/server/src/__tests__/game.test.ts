@@ -737,6 +737,28 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[1].id)?.statuses).toContain('pukka_poisoned');
     });
 
+    it('이전 푸카 중독 대상이 여관 주인 보호를 받으면 사망하지 않고 건강해진다', () => {
+      const { gm, players } = createPukkaGame();
+      gm.resolvePukkaSelection(players[4].id, players[0].id);
+      gm.setPlayerStatuses(players[0].id, [
+        ...(gm.getPlayer(players[0].id)?.statuses ?? []),
+        'innkeeper_protected',
+      ]);
+
+      const result = gm.resolvePukkaSelection(players[4].id, players[1].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        poisonedTargetId: players[1].id,
+      });
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(true);
+      expect(gm.getPlayer(players[0].id)?.statuses).not.toContain(
+        'pukka_poisoned',
+      );
+      expect(gm.hasPendingNightKill(players[0].id)).toBe(false);
+    });
+
     it('푸카가 취함/중독이면 이전 대상 사망과 새 중독을 자동 적용하지 않는다', () => {
       const { gm, players } = createPukkaGame();
       gm.resolvePukkaSelection(players[4].id, players[0].id);
@@ -781,10 +803,10 @@ describe('GameManager', () => {
       expect(result).toEqual({
         success: true,
         blocked: false,
-        killedTargetIds: [players[0].id, players[1].id],
+        killedTargetIds: [players[0].id],
       });
       expect(gm.getPlayer(players[0].id)?.isAlive).toBe(false);
-      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(false);
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
       expect(gm.getPlayer(players[0].id)?.statuses).toContain(
         'shabaloth_marked_dead',
       );
@@ -792,7 +814,7 @@ describe('GameManager', () => {
         'shabaloth_marked_dead',
       );
       expect(gm.hasPendingNightKill(players[0].id)).toBe(true);
-      expect(gm.hasPendingNightKill(players[1].id)).toBe(true);
+      expect(gm.hasPendingNightKill(players[1].id)).toBe(false);
     });
 
     it('사발로스가 취함/중독이면 대상 사망과 표식을 자동 적용하지 않는다', () => {
@@ -862,17 +884,98 @@ describe('GameManager', () => {
         success: true,
         blocked: false,
         rested: false,
-        killedTargetIds: [players[0].id, players[1].id, players[2].id],
+        killedTargetIds: [players[0].id, players[2].id],
       });
       expect(gm.getPlayer(players[0].id)?.isAlive).toBe(false);
-      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(false);
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
       expect(gm.getPlayer(players[2].id)?.isAlive).toBe(false);
       expect(gm.getPlayer(players[4].id)?.statuses).not.toContain(
         'po_chose_no_one',
       );
       expect(gm.hasPendingNightKill(players[0].id)).toBe(true);
-      expect(gm.hasPendingNightKill(players[1].id)).toBe(true);
+      expect(gm.hasPendingNightKill(players[1].id)).toBe(false);
       expect(gm.hasPendingNightKill(players[2].id)).toBe(true);
+    });
+
+    it('휴식하지 않은 포는 3명을 선택할 수 없다', () => {
+      const { gm, players } = createPoGame();
+
+      const result = gm.resolvePoSelection(players[4].id, [
+        players[0].id,
+        players[1].id,
+        players[2].id,
+      ]);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: false,
+        reason: '포는 지난 선택이 휴식일 때만 3명을 선택해야 합니다',
+      });
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(true);
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
+      expect(gm.getPlayer(players[2].id)?.isAlive).toBe(true);
+    });
+
+    it('휴식한 포는 다음 행동에서 다시 휴식할 수 없다', () => {
+      const { gm, players } = createPoGame();
+      gm.setPlayerStatuses(players[4].id, ['po_chose_no_one']);
+
+      const result = gm.resolvePoSelection(players[4].id, []);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: false,
+        reason: '포는 지난 선택이 휴식이면 3명을 선택해야 합니다',
+      });
+    });
+
+    it('취한 포가 휴식해도 다음 3명 선택 상태는 남는다', () => {
+      const { gm, players } = createPoGame();
+      gm.setPlayerStatuses(players[4].id, ['drunk']);
+
+      const result = gm.resolvePoSelection(players[4].id, []);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        rested: true,
+        killedTargetIds: [],
+      });
+      expect(gm.getPlayer(players[4].id)?.statuses).toContain(
+        'po_chose_no_one',
+      );
+    });
+
+    it('포의 3명 공격은 건달을 만나기 전 대상까지 순서대로 처리한다', () => {
+      const { gm, players } = createTestGame(6);
+      gm.assignRole(players[0].id, 'grandmother');
+      gm.assignRole(players[1].id, 'goon');
+      gm.assignRole(players[2].id, 'gambler');
+      gm.assignRole(players[3].id, 'godfather');
+      gm.assignRole(players[4].id, 'po');
+      gm.assignRole(players[5].id, 'sailor');
+      gm.start();
+      gm.setPlayerStatuses(players[4].id, ['po_chose_no_one']);
+
+      const result = gm.resolvePoSelection(players[4].id, [
+        players[0].id,
+        players[1].id,
+        players[2].id,
+      ]);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        rested: false,
+        killedTargetIds: [players[0].id],
+      });
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(false);
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
+      expect(gm.getPlayer(players[2].id)?.isAlive).toBe(true);
+      expect(gm.getPlayer(players[4].id)?.statuses).toContain('goon_drunk');
+      expect(gm.getPlayer(players[4].id)?.statuses).not.toContain(
+        'po_chose_no_one',
+      );
     });
 
     it('0명, 1명, 3명 외 선택 수는 자동 적용하지 않는다', () => {
@@ -892,7 +995,7 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
     });
 
-    it('포가 취함/중독이면 휴식과 사망을 자동 적용하지 않는다', () => {
+    it('포가 취함/중독이면 사망을 자동 적용하지 않는다', () => {
       const { gm, players } = createPoGame();
       gm.setPlayerStatuses(players[4].id, ['drunk']);
 
@@ -1115,6 +1218,21 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[2].id)?.statuses).toContain('assassin_spent');
     });
 
+    it('암살자는 건달을 공격하면 건달을 죽이고 건달은 암살자의 진영이 된다', () => {
+      const { gm, players } = createBmrActionGame();
+      gm.assignRole(players[5].id, 'goon');
+
+      const result = gm.resolveAssassinSelection(players[2].id, players[5].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        killedTargetId: players[5].id,
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(false);
+      expect(gm.getPlayer(players[5].id)?.alignment).toBe('evil');
+    });
+
     it('암살자가 취함/중독이면 사망과 능력 소모를 자동 적용하지 않는다', () => {
       const { gm, players } = createBmrActionGame();
       gm.setPlayerStatuses(players[2].id, ['poisoned']);
@@ -1145,6 +1263,21 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[5].id)?.isAlive).toBe(false);
     });
 
+    it('대부는 밤 보호 대상은 사망시키지 않는다', () => {
+      const { gm, players } = createBmrActionGame();
+      gm.setPlayerStatuses(players[5].id, ['innkeeper_protected']);
+
+      const result = gm.resolveGodfatherSelection(players[4].id, players[5].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        killedTargetId: undefined,
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(true);
+      expect(gm.hasPendingNightKill(players[5].id)).toBe(false);
+    });
+
     it('좀버얼은 오늘 처형이 없었을 때 대상을 사망시킨다', () => {
       const { gm, players } = createBmrActionGame();
 
@@ -1160,16 +1293,87 @@ describe('GameManager', () => {
 
     it('좀버얼은 오늘 처형이 있었으면 자동 사망을 적용하지 않는다', () => {
       const { gm, players } = createBmrActionGame();
-      gm.markExecution();
+      gm.setPhase('day');
+      gm.kill(players[5].id);
+      gm.setPhase('night');
 
-      const result = gm.resolveZombuulSelection(players[3].id, players[5].id);
+      const result = gm.resolveZombuulSelection(players[3].id, players[6].id);
 
       expect(result).toEqual({
         success: false,
         blocked: false,
         reason: '오늘 낮에 사망이 있어 좀버얼 자동 처리를 건너뜁니다',
       });
-      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(true);
+      expect(gm.getPlayer(players[6].id)?.isAlive).toBe(true);
+    });
+
+    it('좀버얼은 처형이 있었어도 아무도 사망하지 않았다면 대상을 사망시킨다', () => {
+      const { gm, players } = createBmrActionGame();
+      gm.markExecution();
+
+      const result = gm.resolveZombuulSelection(players[3].id, players[5].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        killedTargetId: players[5].id,
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(false);
+    });
+  });
+
+  describe('피로물든달 처형 판정', () => {
+    it('악마의 변호사 보호 대상은 처형되어도 사망하지 않는다', () => {
+      const { gm, players } = createTestGame(5);
+      gm.assignRole(players[0].id, 'devils_advocate');
+      gm.assignRole(players[1].id, 'grandmother');
+      gm.assignRole(players[2].id, 'sailor');
+      gm.assignRole(players[3].id, 'godfather');
+      gm.assignRole(players[4].id, 'po');
+      gm.start();
+      gm.setPhase('day');
+      gm.setPlayerStatuses(players[1].id, ['devils_advocate_protected']);
+
+      const result = gm.resolveExecution(players[1].id);
+
+      expect(result).toEqual({ executed: true, killed: false });
+      expect(gm.hadExecutionToday()).toBe(true);
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
+    });
+
+    it('어릿광대 첫 처형 사망은 능력 소모 후 생존한다', () => {
+      const { gm, players } = createTestGame(5);
+      gm.assignRole(players[0].id, 'fool');
+      gm.assignRole(players[1].id, 'grandmother');
+      gm.assignRole(players[2].id, 'sailor');
+      gm.assignRole(players[3].id, 'godfather');
+      gm.assignRole(players[4].id, 'po');
+      gm.start();
+      gm.setPhase('day');
+
+      const result = gm.resolveExecution(players[0].id);
+
+      expect(result).toEqual({ executed: true, killed: false });
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(true);
+      expect(gm.getPlayer(players[0].id)?.statuses).toContain('fool_spent');
+    });
+
+    it('하수인이 처형으로 실제 사망하면 음유시인 효과가 적용된다', () => {
+      const { gm, players } = createTestGame(6);
+      gm.assignRole(players[0].id, 'minstrel');
+      gm.assignRole(players[1].id, 'poisoner');
+      gm.assignRole(players[2].id, 'washerwoman');
+      gm.assignRole(players[3].id, 'empath');
+      gm.assignRole(players[4].id, 'grandmother');
+      gm.assignRole(players[5].id, 'imp');
+      gm.start();
+      gm.setPhase('day');
+
+      const result = gm.resolveExecution(players[1].id);
+
+      expect(result).toEqual({ executed: true, killed: true });
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(false);
+      expect(gm.getPlayer(players[2].id)?.statuses).toContain('minstrel_drunk');
     });
   });
 
@@ -1267,13 +1471,13 @@ describe('GameManager', () => {
       const result = gm.resolveAssassinSelection(players[1].id, players[0].id);
 
       expect(result).toEqual({
-        success: false,
-        blocked: true,
-        reason: '암살자가 중독/취함 상태입니다',
+        success: true,
+        blocked: false,
+        killedTargetId: players[0].id,
       });
       expect(gm.getPlayer(players[1].id)?.statuses).toContain('goon_drunk');
       expect(gm.getPlayer(players[0].id)?.alignment).toBe('evil');
-      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(true);
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(false);
     });
 
     it('중독/취함 상태의 건달은 선택한 플레이어를 자동으로 취하게 하지 않는다', () => {

@@ -21,6 +21,17 @@ import {
 
 type BaristaEffect = 'sober_healthy' | 'acts_twice';
 
+type DeathMethod =
+  | 'execution'
+  | 'assassin'
+  | 'pukka'
+  | 'shabaloth'
+  | 'po'
+  | 'godfather'
+  | 'zombuul';
+
+type DeathTiming = 'day' | 'night';
+
 const TEMPORARY_TRAVELLER_STATUSES: PlayerStatus[] = [
   'bone_collector_ability',
   'barista_sober_healthy',
@@ -162,6 +173,8 @@ export class GameManager {
   private virginTriggered = false;
   // 오늘 처형이 있었는지 (시장 승리 조건용)
   private executionToday = false;
+  // 오늘 낮에 실제 사망이 있었는지 (좀버얼 조건용)
+  private dayDeathToday = false;
   // 오늘 최다 투표로 처형 대상이 된 플레이어 (투표 비교용)
   private executionCandidate: {
     playerId: string;
@@ -462,6 +475,71 @@ export class GameManager {
     this.goonSelectedTonight = true;
   }
 
+  private isDeathPrevented(
+    target: Player,
+    method: DeathMethod,
+    timing: DeathTiming,
+  ): boolean {
+    if (method === 'assassin') return false;
+
+    if (
+      target.role?.id === 'sailor' &&
+      !isPoisonedOrDrunk(target) &&
+      !target.statuses.includes('sailor_drunk')
+    ) {
+      return true;
+    }
+
+    if (timing === 'night' && target.statuses.includes('innkeeper_protected')) {
+      return true;
+    }
+
+    if (
+      timing === 'day' &&
+      method === 'execution' &&
+      target.statuses.includes('devils_advocate_protected')
+    ) {
+      return true;
+    }
+
+    if (target.statuses.includes('tea_lady_protected')) {
+      return true;
+    }
+
+    if (
+      target.role?.id === 'fool' &&
+      !isPoisonedOrDrunk(target) &&
+      !target.statuses.includes('fool_spent') &&
+      !target.statuses.includes('no_ability')
+    ) {
+      this.addStatus(target, 'fool_spent');
+      return true;
+    }
+
+    if (
+      target.role?.id === 'zombuul' &&
+      !isPoisonedOrDrunk(target) &&
+      !target.statuses.includes('zombuul_registers_dead')
+    ) {
+      this.addStatus(target, 'zombuul_registers_dead');
+      if (timing === 'day') this.dayDeathToday = true;
+      return true;
+    }
+
+    return false;
+  }
+
+  private resolveDeath(
+    target: Player,
+    method: DeathMethod,
+    timing: DeathTiming,
+  ): boolean {
+    if (!target.isAlive) return false;
+    if (this.isDeathPrevented(target, method, timing)) return false;
+    this.kill(target.id);
+    return true;
+  }
+
   create(): string {
     const id = randomUUID().slice(0, 8);
     this.state = {
@@ -490,6 +568,7 @@ export class GameManager {
     this.voteClockPausedNomineeId = null;
     this.virginTriggered = false;
     this.executionToday = false;
+    this.dayDeathToday = false;
     this.executionCandidateThreshold = 0;
     this.ghostVotesUsed.clear();
     this.pendingNightKills = [];
@@ -959,6 +1038,7 @@ export class GameManager {
     if (phase === 'day') {
       this.state.day++;
       this.state.daySubPhase = 'whisper';
+      this.dayDeathToday = false;
     }
   }
 
@@ -1021,7 +1101,11 @@ export class GameManager {
   kill(playerId: string): void {
     const player = this.getPlayer(playerId);
     if (player) {
+      const wasAlive = player.isAlive;
       player.isAlive = false;
+      if (wasAlive && this.state.phase === 'day') {
+        this.dayDeathToday = true;
+      }
       this.cleanupOnPlayerDeath(player);
       this.syncContinuousPoisoning();
     }
@@ -1532,10 +1616,15 @@ export class GameManager {
       };
     }
 
+    let killedPreviousTarget = false;
     if (previousTarget) {
       this.removeStatus(previousTarget, 'pukka_poisoned');
-      this.kill(previousTarget.id);
-      if (this.state.phase === 'night') {
+      killedPreviousTarget = this.resolveDeath(
+        previousTarget,
+        'pukka',
+        'night',
+      );
+      if (killedPreviousTarget && this.state.phase === 'night') {
         this.addPendingNightKill(previousTarget.id);
       }
     }
@@ -1544,7 +1633,9 @@ export class GameManager {
     return {
       success: true,
       blocked: false,
-      ...(previousTarget && { killedTargetId: previousTarget.id }),
+      ...(previousTarget && killedPreviousTarget
+        ? { killedTargetId: previousTarget.id }
+        : {}),
       poisonedTargetId: target.id,
     };
   }
@@ -1596,12 +1687,12 @@ export class GameManager {
 
     const killedTargetIds: string[] = [];
     for (const target of targets) {
-      this.kill(target.id);
+      const killed = this.resolveDeath(target, 'shabaloth', 'night');
       this.addStatus(target, 'shabaloth_marked_dead');
-      if (this.state.phase === 'night') {
+      if (killed && this.state.phase === 'night') {
         this.addPendingNightKill(target.id);
       }
-      killedTargetIds.push(target.id);
+      if (killed) killedTargetIds.push(target.id);
     }
 
     return {
@@ -1643,15 +1734,23 @@ export class GameManager {
       };
     }
 
-    if (targetIds.length === 0) {
-      if (isPoisonedOrDrunk(po)) {
-        return {
-          success: false,
-          blocked: true,
-          reason: '포가 중독/취함 상태입니다',
-        };
-      }
+    const charged = po.statuses.includes('po_chose_no_one');
+    if (charged && targetIds.length !== 3) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '포는 지난 선택이 휴식이면 3명을 선택해야 합니다',
+      };
+    }
+    if (!charged && targetIds.length === 3) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '포는 지난 선택이 휴식일 때만 3명을 선택해야 합니다',
+      };
+    }
 
+    if (targetIds.length === 0) {
       this.addStatus(po, 'po_chose_no_one');
       return {
         success: true,
@@ -1672,9 +1771,6 @@ export class GameManager {
       };
     }
 
-    for (const target of targets) {
-      this.applyGoonSelectionEffect(po, target);
-    }
     if (isPoisonedOrDrunk(po)) {
       return {
         success: false,
@@ -1686,11 +1782,14 @@ export class GameManager {
     this.removeStatus(po, 'po_chose_no_one');
     const killedTargetIds: string[] = [];
     for (const target of targets) {
-      this.kill(target.id);
-      if (this.state.phase === 'night') {
+      if (isPoisonedOrDrunk(po)) break;
+      this.applyGoonSelectionEffect(po, target);
+      if (isPoisonedOrDrunk(po)) break;
+      const killed = this.resolveDeath(target, 'po', 'night');
+      if (killed && this.state.phase === 'night') {
         this.addPendingNightKill(target.id);
       }
-      killedTargetIds.push(target.id);
+      if (killed) killedTargetIds.push(target.id);
     }
 
     return {
@@ -1896,7 +1995,7 @@ export class GameManager {
     | {
         success: true;
         blocked: false;
-        killedTargetId: string;
+        killedTargetId?: string;
       }
     | {
         success: false;
@@ -1929,7 +2028,6 @@ export class GameManager {
       };
     }
 
-    this.applyGoonSelectionEffect(assassin, target);
     if (isPoisonedOrDrunk(assassin)) {
       return {
         success: false,
@@ -1938,16 +2036,17 @@ export class GameManager {
       };
     }
 
+    this.applyGoonSelectionEffect(assassin, target);
     this.addStatus(assassin, 'assassin_spent');
-    this.kill(target.id);
-    if (this.state.phase === 'night') {
+    const killed = this.resolveDeath(target, 'assassin', 'night');
+    if (killed && this.state.phase === 'night') {
       this.addPendingNightKill(target.id);
     }
 
     return {
       success: true,
       blocked: false,
-      killedTargetId: target.id,
+      ...(killed ? { killedTargetId: target.id } : {}),
     };
   }
 
@@ -1958,7 +2057,7 @@ export class GameManager {
     | {
         success: true;
         blocked: false;
-        killedTargetId: string;
+        killedTargetId?: string;
       }
     | {
         success: false;
@@ -1992,15 +2091,15 @@ export class GameManager {
       };
     }
 
-    this.kill(target.id);
-    if (this.state.phase === 'night') {
+    const killed = this.resolveDeath(target, 'godfather', 'night');
+    if (killed && this.state.phase === 'night') {
       this.addPendingNightKill(target.id);
     }
 
     return {
       success: true,
       blocked: false,
-      killedTargetId: target.id,
+      ...(killed ? { killedTargetId: target.id } : {}),
     };
   }
 
@@ -2011,7 +2110,7 @@ export class GameManager {
     | {
         success: true;
         blocked: false;
-        killedTargetId: string;
+        killedTargetId?: string;
       }
     | {
         success: false;
@@ -2027,7 +2126,7 @@ export class GameManager {
       };
     }
 
-    if (this.executionToday) {
+    if (this.dayDeathToday) {
       return {
         success: false,
         blocked: false,
@@ -2053,15 +2152,15 @@ export class GameManager {
       };
     }
 
-    this.kill(target.id);
-    if (this.state.phase === 'night') {
+    const killed = this.resolveDeath(target, 'zombuul', 'night');
+    if (killed && this.state.phase === 'night') {
       this.addPendingNightKill(target.id);
     }
 
     return {
       success: true,
       blocked: false,
-      killedTargetId: target.id,
+      ...(killed ? { killedTargetId: target.id } : {}),
     };
   }
 
@@ -2177,6 +2276,15 @@ export class GameManager {
     if (executedPlayerId) {
       this.applyMinstrelExecutionEffect(executedPlayerId);
     }
+  }
+
+  resolveExecution(playerId: string): { executed: boolean; killed: boolean } {
+    const player = this.getPlayer(playerId);
+    if (!player) return { executed: false, killed: false };
+
+    const killed = this.resolveDeath(player, 'execution', 'day');
+    this.markExecution(killed ? playerId : undefined);
+    return { executed: true, killed };
   }
 
   hadExecutionToday(): boolean {

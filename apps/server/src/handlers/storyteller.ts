@@ -315,15 +315,16 @@ export function registerStorytellerHandlers(
         const candidate = game.getExecutionCandidate();
         if (candidate) {
           if (options?.skipExecution) {
-            game.markExecution(candidate.playerId);
+            game.markExecution();
           } else {
             const candidatePlayer = game.getPlayer(candidate.playerId);
-            game.kill(candidate.playerId);
-            game.markExecution();
+            const executionResult = game.resolveExecution(candidate.playerId);
             const killedPlayer = game.getPlayer(candidate.playerId);
-            emitDeathTriggers(candidatePlayer, storytellerIo, {
-              isNight: false,
-            });
+            if (executionResult.killed) {
+              emitDeathTriggers(candidatePlayer, storytellerIo, {
+                isNight: false,
+              });
+            }
             if (killedPlayer) {
               // 처형 알림을 먼저 전송 (사망 알림보다 먼저)
               playerIo.emit('execution:announced', {
@@ -341,11 +342,12 @@ export function registerStorytellerHandlers(
               playerIo.emit('game:playerUpdate', killedPlayer);
             }
             // 처형 후 승리 조건 체크
-            const executedRoleId = killedPlayer?.role?.id;
-            const winResult = game.checkWinCondition(
-              executedRoleId,
-              candidate.playerId,
-            );
+            const executedRoleId = executionResult.killed
+              ? killedPlayer?.role?.id
+              : undefined;
+            const winResult = executionResult.killed
+              ? game.checkWinCondition(executedRoleId, candidate.playerId)
+              : null;
             if (winResult) {
               winResult.cause = 'execution';
               playerIo.emit('game:end', winResult);

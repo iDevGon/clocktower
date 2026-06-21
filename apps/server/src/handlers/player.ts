@@ -394,9 +394,10 @@ export function registerPlayerHandlers(
       if (result.virginKill) {
         const virgin = game.getPlayer(nomineeId);
         const nominator = game.getPlayer(playerId);
-        game.kill(result.virginKill);
-        game.markExecution(result.virginKill);
-        emitDeathTriggers(nominator, storytellerIo, { isNight: false });
+        const executionResult = game.resolveExecution(result.virginKill);
+        if (executionResult.killed) {
+          emitDeathTriggers(nominator, storytellerIo, { isNight: false });
+        }
         playerIo.emit('virgin:triggered', {
           virginName: virgin?.name ?? nomineeId,
           nominatorName: nominator?.name ?? playerId,

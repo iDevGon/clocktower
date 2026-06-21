@@ -121,7 +121,7 @@ describe('E2E: 피로물든달 판정 보조', () => {
     await statePromise;
 
     expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
-    expect(ctx.app.game.getPlayer(playerIds[1])?.isAlive).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[1])?.isAlive).toBe(true);
     expect(ctx.app.game.getPlayer(playerIds[0])?.statuses).toContain(
       'shabaloth_marked_dead',
     );
@@ -154,7 +154,7 @@ describe('E2E: 피로물든달 판정 보조', () => {
     await killStatePromise;
 
     expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
-    expect(ctx.app.game.getPlayer(playerIds[1])?.isAlive).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[1])?.isAlive).toBe(true);
     expect(ctx.app.game.getPlayer(playerIds[2])?.isAlive).toBe(false);
     expect(ctx.app.game.getPlayer(playerIds[4])?.statuses).not.toContain(
       'po_chose_no_one',
