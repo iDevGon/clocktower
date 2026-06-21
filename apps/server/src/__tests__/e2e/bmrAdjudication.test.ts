@@ -237,12 +237,18 @@ describe('E2E: 피로물든달 판정 보조', () => {
       { roleId: 'po' },
     ]);
 
+    let playerStateReceived = false;
+    ctx.players[1].once('game:state', () => {
+      playerStateReceived = true;
+    });
+
     const statePromise = waitForEvent(ctx.storyteller, 'game:state');
     ctx.storyteller.emit('courtier:chooseRole', {
       courtierId: playerIds[0],
       roleId: 'sailor',
     });
     await statePromise;
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(ctx.app.game.getPlayer(playerIds[0])?.statuses).toContain(
       'courtier_spent',
@@ -250,6 +256,7 @@ describe('E2E: 피로물든달 판정 보조', () => {
     expect(ctx.app.game.getPlayer(playerIds[2])?.statuses).toContain(
       'courtier_drunk',
     );
+    expect(playerStateReceived).toBe(false);
   });
 
   it('이야기꾼이 도박사 추측을 앱에서 처리할 수 있다', async () => {

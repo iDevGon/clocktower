@@ -543,9 +543,6 @@ export function registerStorytellerHandlers(
 
     const emitBmrAssistResult = (killedTargetId?: string) => {
       storytellerIo.emit('game:state', game.getStorytellerState());
-      if (!killedTargetId) {
-        playerIo.emit('game:state', game.getState());
-      }
       if (!killedTargetId) return;
 
       const killedPlayer = game.getPlayer(killedTargetId);
