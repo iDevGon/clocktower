@@ -2411,6 +2411,7 @@ export class GameManager {
   resolveMoonchildSelection(
     moonchildId: string,
     targetId: string,
+    options?: { deferToNight?: boolean },
   ):
     | {
         success: true;
@@ -2449,7 +2450,12 @@ export class GameManager {
       };
     }
 
-    if (this.state.phase !== 'day' && isPoisonedOrDrunk(moonchild)) {
+    const deferToNight = options?.deferToNight === true;
+    if (
+      this.state.phase !== 'day' &&
+      !deferToNight &&
+      isPoisonedOrDrunk(moonchild)
+    ) {
       return {
         success: false,
         blocked: true,
@@ -2465,7 +2471,7 @@ export class GameManager {
       };
     }
 
-    if (this.state.phase === 'day') {
+    if (this.state.phase === 'day' || deferToNight) {
       this.pendingMoonchildKills.set(target.id, {
         moonchildId: moonchild.id,
         targetWasGood,

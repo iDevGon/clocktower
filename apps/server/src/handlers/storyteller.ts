@@ -960,10 +960,11 @@ export function registerStorytellerHandlers(
 
     socket.on(
       'moonchild:choose',
-      ({ moonchildId, targetPlayerId }, callback) => {
+      ({ moonchildId, targetPlayerId, deferToNight }, callback) => {
         const result = game.resolveMoonchildSelection(
           moonchildId,
           targetPlayerId,
+          { deferToNight },
         );
         if (!result.success) {
           callback?.({ success: false, error: result.reason });

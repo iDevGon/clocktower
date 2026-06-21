@@ -313,13 +313,19 @@ export function useGameActions() {
     (
       moonchildId: string,
       targetPlayerId: string,
+      optionsOrCallback?: { deferToNight?: boolean } | BmrAssistCallback,
       callback?: BmrAssistCallback,
-    ) =>
+    ) => {
+      const options =
+        typeof optionsOrCallback === 'function' ? undefined : optionsOrCallback;
+      const cb =
+        typeof optionsOrCallback === 'function' ? optionsOrCallback : callback;
       socket?.emit(
         'moonchild:choose',
-        { moonchildId, targetPlayerId },
-        callback,
-      ),
+        { moonchildId, targetPlayerId, ...options },
+        cb,
+      );
+    },
     [socket],
   );
 

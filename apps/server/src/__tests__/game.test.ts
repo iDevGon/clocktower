@@ -1607,6 +1607,30 @@ describe('GameManager', () => {
       expect(gm.hasPendingNightKill(players[5].id)).toBe(false);
     });
 
+    it('달의 자손 낮 선택은 밤 페이즈로 넘어간 직후에도 오늘 밤 사망으로 예약할 수 있다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.setPhase('day');
+      gm.kill(players[3].id);
+      gm.setPhase('night');
+
+      const result = gm.resolveMoonchildSelection(
+        players[3].id,
+        players[5].id,
+        {
+          deferToNight: true,
+        },
+      );
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        pendingKillTargetId: players[5].id,
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(true);
+      expect(gm.resolvePendingMoonchildKills()).toEqual([players[5].id]);
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(false);
+    });
+
     it('평화주의자는 선한 처형 대상의 생존 판정 후보를 만든다', () => {
       const { gm, players } = createBmrAssistGame();
 

@@ -31,4 +31,10 @@ describe('grimoire BMR death warnings', () => {
     expect(source).toContain('skipExecution: true');
     expect(source).toContain('처형 판정 확인');
   });
+
+  it('달의 자손 낮 사망 후 공개 선택을 앱에서 예약할 수 있다', () => {
+    expect(source).toContain('showMoonchildChoiceModal');
+    expect(source).toContain('달의 자손 선택 처리');
+    expect(source).toContain('deferToNight: true');
+  });
 });

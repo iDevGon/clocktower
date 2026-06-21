@@ -623,7 +623,11 @@ export interface StorytellerToServerEvents {
   ) => void;
   /** 달의 자손 사망 후 공개 선택을 앱 안에서 판정 */
   'moonchild:choose': (
-    data: { moonchildId: string; targetPlayerId: string },
+    data: {
+      moonchildId: string;
+      targetPlayerId: string;
+      deferToNight?: boolean;
+    },
     callback?: (res: { success: boolean; error?: string }) => void,
   ) => void;
   /** 평화주의자 처형 생존 판정 후보 조회 */

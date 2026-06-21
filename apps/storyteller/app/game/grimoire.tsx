@@ -589,6 +589,55 @@ export default function GrimoireScreen() {
       (warning) => warning.kind === kind,
     );
 
+  const isMoonchild = (playerId: string) =>
+    gameState?.players.find((p) => p.id === playerId)?.role?.id === 'moonchild';
+
+  const showMoonchildChoiceModal = (
+    moonchildId: string,
+    options?: { deferToNight?: boolean; afterSelect?: () => void },
+  ) => {
+    const moonchildName = getPlayerName(moonchildId);
+    const candidates =
+      gameState?.players.filter((p) => p.isAlive && p.id !== moonchildId) ?? [];
+    showModal(
+      '달의 자손 선택 처리',
+      [
+        ...candidates.map((player) => ({
+          text: player.name,
+          onPress: () =>
+            moonchildChoose(
+              moonchildId,
+              player.id,
+              { deferToNight: options?.deferToNight },
+              (result) => {
+                if (!result.success) {
+                  addLog(
+                    getDay(),
+                    getPhase(),
+                    `달의 자손 선택 실패: ${result.error ?? '알 수 없는 오류'}`,
+                  );
+                  return;
+                }
+                addLog(
+                  getDay(),
+                  getPhase(),
+                  `달의 자손 선택: ${moonchildName} → ${player.name}`,
+                  'ability',
+                );
+                options?.afterSelect?.();
+              },
+            ),
+        })),
+        {
+          text: '선택 없이 진행',
+          onPress: () => options?.afterSelect?.(),
+        },
+        { text: '취소', style: 'cancel' },
+      ],
+      `${moonchildName} 사망 후 공개 선택 대상을 고르세요.`,
+    );
+  };
+
   const showDeathWarningModal = (playerId: string, warningText: string) => {
     const options: ActionModalOption[] = [
       {
@@ -619,6 +668,16 @@ export default function GrimoireScreen() {
       });
     }
 
+    if (timing === 'day' && isMoonchild(playerId)) {
+      options.push({
+        text: '달의 자손 선택 처리',
+        onPress: () => {
+          performKill(playerId);
+          showMoonchildChoiceModal(playerId, { deferToNight: true });
+        },
+      });
+    }
+
     options.push(
       {
         text: '그래도 사망 처리',
@@ -639,6 +698,9 @@ export default function GrimoireScreen() {
       return;
     }
     performKill(playerId);
+    if (timing === 'day' && isMoonchild(playerId)) {
+      showMoonchildChoiceModal(playerId, { deferToNight: true });
+    }
   };
 
   const setPlayerStatus = applyPlayerStatus;
@@ -739,6 +801,7 @@ export default function GrimoireScreen() {
   const showDayCompleteModal = () => {
     const warningText = getExecutionTransitionWarningText();
     const candidateId = executionCandidateData?.playerId;
+    const canHandleMoonchildChoice = candidateId && isMoonchild(candidateId);
     showModal(
       warningText ? '처형 판정 확인' : '다음 날 밤으로 진행',
       [
@@ -746,6 +809,17 @@ export default function GrimoireScreen() {
           text: '밤으로 전환',
           onPress: () => handleSetPhase('night'),
         },
+        ...(canHandleMoonchildChoice
+          ? [
+              {
+                text: '처형 후 달의 자손 선택 처리',
+                onPress: () => {
+                  handleSetPhase('night');
+                  showMoonchildChoiceModal(candidateId, { deferToNight: true });
+                },
+              },
+            ]
+          : []),
         ...(warningText
           ? [
               {
