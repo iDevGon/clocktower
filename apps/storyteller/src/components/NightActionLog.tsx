@@ -50,6 +50,7 @@ const ROLE_TARGET_ACTIONS: Record<string, TargetActionConfig> = {
   gambler: { label: '사망 처리', doneLabel: '사망', isKill: true },
   moonchild: { label: '사망 처리', doneLabel: '사망', isKill: true },
   grandmother: { label: '사망 처리', doneLabel: '사망', isKill: true },
+  sailor: { label: '선원 취함 처리', doneLabel: '선원 취함' },
   professor: { label: '부활 처리', doneLabel: '부활됨' },
   innkeeper: {
     label: '보호 처리',
@@ -966,6 +967,76 @@ export function NightActionLog({
                                   : `${getPlayerName(targetId)} 여관 주인 취함 처리`}
                               </Text>
                             </Pressable>
+                          </View>
+                        );
+                      }
+
+                      if (action.roleId === 'sailor') {
+                        const sailorDrunkChoiceIds = [
+                          action.playerId,
+                          targetId,
+                        ].filter((id, index, ids) => ids.indexOf(id) === index);
+                        const sailorDrunkChoiceId = sailorDrunkChoiceIds.find(
+                          (choiceId) => {
+                            const player = players.find(
+                              (p) => p.id === choiceId,
+                            );
+                            return (
+                              getCurrentStatuses(player).includes(
+                                'sailor_drunk',
+                              ) ||
+                              processedTargets.has(
+                                `${i}-${action.playerId}-sailor-drunk-${choiceId}`,
+                              )
+                            );
+                          },
+                        );
+
+                        return (
+                          <View key={targetId} style={styles.targetActionGroup}>
+                            {sailorDrunkChoiceIds.map((choiceId) => {
+                              const drunkKey = `${i}-${action.playerId}-sailor-drunk-${choiceId}`;
+                              const choicePlayer = players.find(
+                                (p) => p.id === choiceId,
+                              );
+                              const choiceStatuses =
+                                getCurrentStatuses(choicePlayer);
+                              const drunkDone =
+                                choiceStatuses.includes('sailor_drunk') ||
+                                processedTargets.has(drunkKey) ||
+                                sailorDrunkChoiceId != null;
+
+                              return (
+                                <Pressable
+                                  key={choiceId}
+                                  onPress={() => {
+                                    if (drunkDone) return;
+                                    onSetStatus?.(choiceId, 'sailor_drunk');
+                                    setProcessedTargets((prev) =>
+                                      new Set(prev).add(drunkKey),
+                                    );
+                                  }}
+                                  style={[
+                                    styles.killButton,
+                                    drunkDone && styles.killButtonDone,
+                                  ]}
+                                  disabled={drunkDone}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.killText,
+                                      drunkDone && styles.killTextDone,
+                                    ]}
+                                  >
+                                    {drunkDone
+                                      ? choiceStatuses.includes('sailor_drunk')
+                                        ? `${getPlayerName(choiceId)} 선원 취함`
+                                        : '선원 취함 선택 완료'
+                                      : `${getPlayerName(choiceId)} 선원 취함 처리`}
+                                  </Text>
+                                </Pressable>
+                              );
+                            })}
                           </View>
                         );
                       }

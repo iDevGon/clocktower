@@ -84,4 +84,11 @@ describe('NightActionLog BMR wiring', () => {
     expect(source).toContain("label: '처형 보호'");
     expect(source).toContain('devils_advocate_protected');
   });
+
+  it('선원은 본인 또는 선택 대상 중 한 명에게 취함을 적용할 수 있다', () => {
+    expect(source).toContain('sailor: {');
+    expect(source).toContain('선원 취함 처리');
+    expect(source).toContain('sailor_drunk');
+    expect(source).toContain('sailor-drunk');
+  });
 });
