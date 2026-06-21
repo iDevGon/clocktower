@@ -350,6 +350,21 @@ export function useSocketConnection() {
               'ability',
             );
         });
+        newSocket.on('gossip:announced', (data) => {
+          const gs = useGameStore.getState().gameState;
+          useGameStore.getState().showEventToast({
+            title: '험담 공개발언',
+            message: `${data.gossipName}: ${data.statement}`,
+          });
+          useLogStore
+            .getState()
+            .addLog(
+              gs?.day ?? 0,
+              'day',
+              `🗣️ ${data.gossipName}: ${data.statement}`,
+              'ability',
+            );
+        });
         newSocket.on('juggler:correctCount', (data) => {
           useGameStore
             .getState()

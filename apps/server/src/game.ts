@@ -174,6 +174,8 @@ export class GameManager {
     string,
     Array<{ playerId: string; roleId: string }>
   >();
+  // 험담꾼 공개발언 추적 (하루 1회)
+  private gossipStatementsToday = new Map<string, string>();
   // 총잡이 능력 사용 추적 (매일 1회) + 오늘 첫 투표 찬성자 (총잡이 대상 제한)
   private gunslingerUsedToday = new Set<string>();
   private todayFirstVoteGuiltyVoters: string[] | null = null;
@@ -633,6 +635,7 @@ export class GameManager {
     this.philosopherUsed.clear();
     this.jugglerUsed.clear();
     this.jugglerGuesses.clear();
+    this.gossipStatementsToday.clear();
     this.gunslingerUsedToday.clear();
     this.todayFirstVoteGuiltyVoters = null;
     this.beggarTokens.clear();
@@ -728,6 +731,7 @@ export class GameManager {
     this.philosopherUsed.clear();
     this.jugglerUsed.clear();
     this.jugglerGuesses.clear();
+    this.gossipStatementsToday.clear();
     this.gunslingerUsedToday.clear();
     this.todayFirstVoteGuiltyVoters = null;
     this.beggarTokens.clear();
@@ -1125,6 +1129,7 @@ export class GameManager {
       this.state.day++;
       this.state.daySubPhase = 'whisper';
       this.dayDeathToday = false;
+      this.gossipStatementsToday.clear();
     }
   }
 
@@ -2794,6 +2799,20 @@ export class GameManager {
       if (effective === g.roleId) count++;
     }
     return count;
+  }
+
+  // ── 험담꾼 능력 ──
+
+  isGossipUsedToday(playerId: string): boolean {
+    return this.gossipStatementsToday.has(playerId);
+  }
+
+  recordGossipStatement(playerId: string, statement: string): void {
+    this.gossipStatementsToday.set(playerId, statement);
+  }
+
+  getGossipStatement(playerId: string): string | undefined {
+    return this.gossipStatementsToday.get(playerId);
   }
 
   /** 특정 역할 ID를 실제로 보유한 플레이어 1명 (drunkAs 보유자도 매치 — 원래 holder 의도) */

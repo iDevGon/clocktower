@@ -121,6 +121,25 @@ export function useGameActions() {
     [],
   );
 
+  const declareGossip = useCallback(
+    (statement: string): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        const socket = useConnectionStore.getState().socket;
+        if (!socket || !socket.connected) {
+          resolve({ success: false, error: '연결되어 있지 않습니다' });
+          return;
+        }
+        socket.emit('gossip:declare', { statement }, (res) => {
+          if (res.success) {
+            usePlayerStore.getState().set({ gossipUsedToday: true });
+          }
+          resolve(res);
+        });
+      });
+    },
+    [],
+  );
+
   const choosePhilosopherRole = useCallback(
     (roleId: string): Promise<{ success: boolean; error?: string }> => {
       return new Promise((resolve) => {
@@ -284,6 +303,7 @@ export function useGameActions() {
     useArtist,
     choosePhilosopherRole,
     declareJuggler,
+    declareGossip,
     useGunslinger,
     giveBeggarToken,
     consentReady,

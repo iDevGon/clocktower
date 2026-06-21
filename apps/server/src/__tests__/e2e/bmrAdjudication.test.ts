@@ -17,6 +17,48 @@ describe('E2E: 피로물든달 판정 보조', () => {
     await ctx.cleanup();
   });
 
+  it('험담꾼은 낮에 공개발언을 선언하고 모두에게 알릴 수 있다', async () => {
+    await setupGameWithRoles(ctx, [
+      { roleId: 'gossip' },
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'assassin' },
+      { roleId: 'po' },
+    ]);
+    ctx.app.game.setPhase('day');
+
+    const playerAnnouncementPromise = waitForEvent<{
+      gossipId: string;
+      gossipName: string;
+      statement: string;
+    }>(ctx.players[1], 'gossip:announced');
+    const storytellerAnnouncementPromise = waitForEvent<{
+      gossipId: string;
+      gossipName: string;
+      statement: string;
+    }>(ctx.storyteller, 'gossip:announced');
+
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.players[0].emit(
+          'gossip:declare',
+          { statement: '오늘 살아있는 악 팀은 2명입니다' },
+          resolve,
+        );
+      },
+    );
+
+    const playerAnnouncement = await playerAnnouncementPromise;
+    const storytellerAnnouncement = await storytellerAnnouncementPromise;
+
+    expect(result.success).toBe(true);
+    expect(playerAnnouncement).toMatchObject({
+      gossipName: 'Player1',
+      statement: '오늘 살아있는 악 팀은 2명입니다',
+    });
+    expect(storytellerAnnouncement).toEqual(playerAnnouncement);
+  }, 15000);
+
   it('호스트가 처형 사망을 건너뛰고 밤으로 전환할 수 있다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [
       { roleId: 'washerwoman' },

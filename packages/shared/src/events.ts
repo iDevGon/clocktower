@@ -143,6 +143,12 @@ export interface ServerToClientEvents {
       roleName: string;
     }>;
   }) => void;
+  /** 험담꾼이 공개 발언을 선언함. 모든 플레이어에게 공개 */
+  'gossip:announced': (data: {
+    gossipId: string;
+    gossipName: string;
+    statement: string;
+  }) => void;
   /** 총잡이가 사살 선언. 모든 플레이어에게 오버레이로 표시 */
   'gunslinger:fired': (data: {
     gunslingerId: string;
@@ -257,6 +263,7 @@ export interface ServerToStorytellerEvents {
   'virgin:triggered': ServerToClientEvents['virgin:triggered'];
   'witch:curseDeath': ServerToClientEvents['witch:curseDeath'];
   'juggler:announced': ServerToClientEvents['juggler:announced'];
+  'gossip:announced': ServerToClientEvents['gossip:announced'];
   'gunslinger:fired': ServerToClientEvents['gunslinger:fired'];
   'scapegoat:swapped': ServerToClientEvents['scapegoat:swapped'];
   'execution:announced': ServerToClientEvents['execution:announced'];
@@ -414,6 +421,11 @@ export interface ClientToServerEvents {
   /** 곡예사가 첫 낮에 공개적으로 플레이어-역할 추측 1~5개 선언 (게임 중 1회) */
   'juggler:declare': (
     data: { guesses: Array<{ playerId: string; roleId: string }> },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 험담꾼이 낮에 공개 발언을 선언 (하루 1회) */
+  'gossip:declare': (
+    data: { statement: string },
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
   /** 총잡이가 낮에 오늘 첫 투표자 중 1명을 사살 (하루 1회) */

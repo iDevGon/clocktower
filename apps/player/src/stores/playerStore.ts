@@ -118,6 +118,14 @@ interface PlayerState {
   philosopherGrantedRole: string | null;
   /** 곡예사 능력을 게임 중 사용했는지 (게임 중 1회) */
   jugglerUsed: boolean;
+  /** 험담꾼 능력을 오늘 이미 사용했는지 (낮마다 리셋) */
+  gossipUsedToday: boolean;
+  /** 다른 플레이어의 험담 공개발언 오버레이 */
+  gossipAnnouncement: {
+    gossipId: string;
+    gossipName: string;
+    statement: string;
+  } | null;
   /** 다른 플레이어의 곡예사 공개 선언 오버레이 */
   jugglerAnnouncement: {
     jugglerId: string;
@@ -259,6 +267,12 @@ const initialState = {
   artistUsed: false,
   philosopherGrantedRole: null as string | null,
   jugglerUsed: false,
+  gossipUsedToday: false,
+  gossipAnnouncement: null as {
+    gossipId: string;
+    gossipName: string;
+    statement: string;
+  } | null,
   jugglerAnnouncement: null as {
     jugglerId: string;
     jugglerName: string;

@@ -354,6 +354,19 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  /* ── Gossip button ── */
+  gossipButton: {
+    backgroundColor: '#4e6f82',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 4,
+  },
+  gossipButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
   /* ── Gunslinger button ── */
   gunslingerButton: {
     backgroundColor: '#7a3a3a',

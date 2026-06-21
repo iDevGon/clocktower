@@ -1113,6 +1113,57 @@ export function registerPlayerHandlers(
       );
     });
 
+    socket.on('gossip:declare', ({ statement }, callback) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      const player = game.getPlayer(playerId);
+      if (!player) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      if (!player.isAlive) {
+        callback({
+          success: false,
+          error: '사망한 상태에서는 사용할 수 없습니다',
+        });
+        return;
+      }
+      const state = game.getState();
+      if (state.phase !== 'day') {
+        callback({ success: false, error: '낮에만 사용할 수 있습니다' });
+        return;
+      }
+      if (!hasEffectiveRole(player, 'gossip')) {
+        callback({ success: false, error: '험담꾼만 사용할 수 있습니다' });
+        return;
+      }
+      if (game.isGossipUsedToday(playerId)) {
+        callback({ success: false, error: '오늘 이미 험담했습니다' });
+        return;
+      }
+
+      const trimmed = statement.trim();
+      if (!trimmed) {
+        callback({ success: false, error: '발언을 입력하세요' });
+        return;
+      }
+
+      game.recordGossipStatement(playerId, trimmed);
+      callback({ success: true });
+
+      const announcement = {
+        gossipId: playerId,
+        gossipName: player.name,
+        statement: trimmed,
+      };
+      playerIo.emit('gossip:announced', announcement);
+      storytellerIo.emit('gossip:announced', announcement);
+      console.log(`Gossip 선언: ${player.name} → ${trimmed}`);
+    });
+
     // 화가(Artist) 능력 사용 요청: 이야기꾼이 예/아니오로 답변 (게임 중 1회)
     socket.on('artist:use', (callback) => {
       const playerId = getPlayerIdFromSocket(socket);

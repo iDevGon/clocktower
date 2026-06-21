@@ -1448,6 +1448,28 @@ describe('GameManager', () => {
       return { gm, players };
     }
 
+    it('험담꾼 공개발언은 하루 1회 기록되고 다음 낮에 다시 사용할 수 있다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.setPhase('day');
+
+      expect(gm.isGossipUsedToday(players[2].id)).toBe(false);
+      gm.recordGossipStatement(
+        players[2].id,
+        '오늘 살아있는 악 팀은 2명입니다',
+      );
+
+      expect(gm.isGossipUsedToday(players[2].id)).toBe(true);
+      expect(gm.getGossipStatement(players[2].id)).toBe(
+        '오늘 살아있는 악 팀은 2명입니다',
+      );
+
+      gm.setPhase('night');
+      gm.setPhase('day');
+
+      expect(gm.isGossipUsedToday(players[2].id)).toBe(false);
+      expect(gm.getGossipStatement(players[2].id)).toBeUndefined();
+    });
+
     it('궁정대신은 선택한 역할 보유자를 취하게 하고 능력을 소모한다', () => {
       const { gm, players } = createBmrAssistGame();
 

@@ -18,6 +18,8 @@ import { DeadVignette } from '../src/components/DeadVignette';
 import { ExileVoteModal } from '../src/components/ExileVoteModal';
 import { FeedbackHistoryModal } from '../src/components/FeedbackHistoryModal';
 import { GameOverlays } from '../src/components/GameOverlays';
+import { GossipAnnouncementOverlay } from '../src/components/GossipAnnouncementOverlay';
+import { GossipDeclareModal } from '../src/components/GossipDeclareModal';
 import { GunslingerFiredOverlay } from '../src/components/GunslingerFiredOverlay';
 import { HarlotConsentModal } from '../src/components/HarlotConsentModal';
 import { JugglerAnnouncementOverlay } from '../src/components/JugglerAnnouncementOverlay';
@@ -86,6 +88,7 @@ export default function GameScreen() {
     (s) => s.philosopherGrantedRole,
   );
   const jugglerUsed = usePlayerStore((s) => s.jugglerUsed);
+  const gossipUsedToday = usePlayerStore((s) => s.gossipUsedToday);
   const gunslingerUsedToday = usePlayerStore((s) => s.gunslingerUsedToday);
   const todayFirstVoteGuiltyVoters = usePlayerStore(
     (s) => s.todayFirstVoteGuiltyVoters,
@@ -124,6 +127,7 @@ export default function GameScreen() {
     useArtist: activateArtist,
     choosePhilosopherRole,
     declareJuggler,
+    declareGossip,
     useGunslinger: activateGunslinger,
     giveBeggarToken,
     proposeExile,
@@ -201,6 +205,7 @@ export default function GameScreen() {
   const [nominateModalVisible, setNominateModalVisible] = useState(false);
   const [slayerModalVisible, setSlayerModalVisible] = useState(false);
   const [jugglerModalVisible, setJugglerModalVisible] = useState(false);
+  const [gossipModalVisible, setGossipModalVisible] = useState(false);
   const [gunslingerModalVisible, setGunslingerModalVisible] = useState(false);
   const [beggarModalVisible, setBeggarModalVisible] = useState(false);
   const [feedbackHistoryVisible, setFeedbackHistoryVisible] = useState(false);
@@ -323,12 +328,26 @@ export default function GameScreen() {
     currentPhase === 'day' &&
     nightCount === 1;
 
+  const canUseGossip =
+    isAlive &&
+    !gossipUsedToday &&
+    effectiveRoleId === 'gossip' &&
+    currentPhase === 'day';
+
   const handleJugglerSubmit = async (
     guesses: Array<{ playerId: string; roleId: string }>,
   ) => {
     const result = await declareJuggler(guesses);
     if (!result.success) {
       Alert.alert('곡예사 실패', result.error ?? '사용할 수 없습니다');
+    }
+  };
+
+  const handleGossipSubmit = async (statement: string) => {
+    setGossipModalVisible(false);
+    const result = await declareGossip(statement);
+    if (!result.success) {
+      Alert.alert('험담 실패', result.error ?? '사용할 수 없습니다');
     }
   };
 
@@ -624,6 +643,17 @@ export default function GameScreen() {
           </View>
         )}
 
+        {canUseGossip && (
+          <View style={styles.slayerContainer}>
+            <Pressable
+              onPress={() => setGossipModalVisible(true)}
+              style={styles.gossipButton}
+            >
+              <Text style={styles.gossipButtonText}>험담 공개발언</Text>
+            </Pressable>
+          </View>
+        )}
+
         {canUseGunslinger && (
           <View style={styles.slayerContainer}>
             <Pressable
@@ -832,6 +862,12 @@ export default function GameScreen() {
         onClose={() => setJugglerModalVisible(false)}
       />
 
+      <GossipDeclareModal
+        visible={gossipModalVisible}
+        onSubmit={handleGossipSubmit}
+        onClose={() => setGossipModalVisible(false)}
+      />
+
       <NominateModal
         visible={gunslingerModalVisible}
         players={gamePlayers.filter((p) =>
@@ -851,6 +887,7 @@ export default function GameScreen() {
       />
 
       <JugglerAnnouncementOverlay />
+      <GossipAnnouncementOverlay />
       <GunslingerFiredOverlay />
       <ScapegoatSwappedOverlay />
 

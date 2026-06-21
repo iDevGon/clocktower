@@ -121,6 +121,8 @@ export function attachGameListeners(socket: AppSocket) {
             artistUsed: false,
             philosopherGrantedRole: null,
             jugglerUsed: false,
+            gossipUsedToday: false,
+            gossipAnnouncement: null,
             jugglerAnnouncement: null,
             gunslingerUsedToday: false,
             todayFirstVoteGuiltyVoters: null,
@@ -137,7 +139,9 @@ export function attachGameListeners(socket: AppSocket) {
           }
         : {}),
       // 백치천재 능력은 매일 1회 → 새로운 낮 시작 시 리셋
-      ...(phase === 'day' ? { savantUsedToday: false } : {}),
+      ...(phase === 'day'
+        ? { savantUsedToday: false, gossipUsedToday: false }
+        : {}),
     });
   });
 

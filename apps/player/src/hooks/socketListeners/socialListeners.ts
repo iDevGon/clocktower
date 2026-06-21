@@ -50,6 +50,15 @@ export function attachSocialListeners(socket: AppSocket) {
     vibrateAlert();
   });
 
+  socket.on('gossip:announced', (data) => {
+    const { playerId } = usePlayerStore.getState();
+    usePlayerStore.getState().set({
+      gossipAnnouncement: data,
+      ...(data.gossipId === playerId ? { gossipUsedToday: true } : {}),
+    });
+    vibrateAlert();
+  });
+
   socket.on('slayer:noEffect', (data) => {
     usePlayerStore.getState().set({ slayerFizzle: data, slayerAcked: false });
   });
