@@ -14,6 +14,7 @@ function getSocket() {
 
 export function useGameActions() {
   const socket = useConnectionStore((s) => s.socket);
+  type BmrAssistCallback = (res: { success: boolean; error?: string }) => void;
 
   const createGame = useCallback(
     () =>
@@ -278,30 +279,47 @@ export function useGameActions() {
   );
 
   const courtierChooseRole = useCallback(
-    (courtierId: string, roleId: string) =>
-      socket?.emit('courtier:chooseRole', { courtierId, roleId }),
+    (courtierId: string, roleId: string, callback?: BmrAssistCallback) =>
+      socket?.emit('courtier:chooseRole', { courtierId, roleId }, callback),
     [socket],
   );
 
   const gamblerGuess = useCallback(
-    (gamblerId: string, targetPlayerId: string, guessedRoleId: string) =>
-      socket?.emit('gambler:guess', {
-        gamblerId,
-        targetPlayerId,
-        guessedRoleId,
-      }),
+    (
+      gamblerId: string,
+      targetPlayerId: string,
+      guessedRoleId: string,
+      callback?: BmrAssistCallback,
+    ) =>
+      socket?.emit(
+        'gambler:guess',
+        {
+          gamblerId,
+          targetPlayerId,
+          guessedRoleId,
+        },
+        callback,
+      ),
     [socket],
   );
 
   const gossipKill = useCallback(
-    (gossipId: string, targetPlayerId: string) =>
-      socket?.emit('gossip:kill', { gossipId, targetPlayerId }),
+    (gossipId: string, targetPlayerId: string, callback?: BmrAssistCallback) =>
+      socket?.emit('gossip:kill', { gossipId, targetPlayerId }, callback),
     [socket],
   );
 
   const moonchildChoose = useCallback(
-    (moonchildId: string, targetPlayerId: string) =>
-      socket?.emit('moonchild:choose', { moonchildId, targetPlayerId }),
+    (
+      moonchildId: string,
+      targetPlayerId: string,
+      callback?: BmrAssistCallback,
+    ) =>
+      socket?.emit(
+        'moonchild:choose',
+        { moonchildId, targetPlayerId },
+        callback,
+      ),
     [socket],
   );
 

@@ -267,4 +267,31 @@ describe('E2E: 피로물든달 판정 보조', () => {
     expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
     expect(ctx.app.game.hasPendingNightKill(playerIds[0])).toBe(true);
   });
+
+  it('도박사 밤 사망은 낮 전환 전까지 플레이어 상태에 공개되지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'gambler' },
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'godfather' },
+      { roleId: 'po' },
+    ]);
+
+    let playerStateReceived = false;
+    ctx.players[1].once('game:state', () => {
+      playerStateReceived = true;
+    });
+
+    const storytellerStatePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.storyteller.emit('gambler:guess', {
+      gamblerId: playerIds[0],
+      targetPlayerId: playerIds[1],
+      guessedRoleId: 'sailor',
+    });
+    await storytellerStatePromise;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
+    expect(playerStateReceived).toBe(false);
+  });
 });

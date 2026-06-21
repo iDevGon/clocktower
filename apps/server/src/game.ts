@@ -35,6 +35,16 @@ type DeathMethod =
 
 type DeathTiming = 'day' | 'night';
 
+type CourtierDrunkEffect = {
+  courtierId: string;
+  remainingPhases: number;
+};
+
+type PendingMoonchildKill = {
+  moonchildId: string;
+  targetWasGood: boolean;
+};
+
 const TEMPORARY_TRAVELLER_STATUSES: PlayerStatus[] = [
   'bone_collector_ability',
   'barista_sober_healthy',
@@ -234,10 +244,10 @@ export class GameManager {
   private butcherExtraNominatorId: string | null = null;
   // 건달: 매일 밤 처음 자신을 선택한 플레이어 1명만 취하게 함
   private goonSelectedTonight = false;
-  // 궁정대신이 취하게 한 플레이어별 남은 밤/낮 전환 수
-  private courtierDrunkRemainingPhases = new Map<string, number>();
-  // 달의 자손이 낮에 선택해 오늘 밤 사망할 대상
-  private pendingMoonchildKillIds = new Set<string>();
+  // 궁정대신이 취하게 한 플레이어별 원천 궁정대신과 남은 밤/낮 전환 수
+  private courtierDrunkEffects = new Map<string, CourtierDrunkEffect>();
+  // 달의 자손이 낮에 선택해 오늘 밤 판정할 대상
+  private pendingMoonchildKills = new Map<string, PendingMoonchildKill>();
   // 뼈 수집가: 게임 중 1회 복구 대상 추적
   private boneCollectorUsed = new Set<string>();
   private boneCollectorRestoredTargets = new Map<string, string>();
@@ -456,10 +466,25 @@ export class GameManager {
     }
   }
 
-  private syncContinuousPoisoning(): void {
+  private syncCourtierDrunkenness(): void {
+    for (const effectTargetId of this.courtierDrunkEffects.keys()) {
+      const target = this.getPlayer(effectTargetId);
+      if (target) this.removeStatus(target, 'courtier_drunk');
+    }
+
+    for (const [effectTargetId, effect] of this.courtierDrunkEffects) {
+      const courtier = this.getPlayer(effect.courtierId);
+      const target = this.getPlayer(effectTargetId);
+      if (!courtier || !target || isPoisonedOrDrunk(courtier)) continue;
+      this.addStatus(target, 'courtier_drunk');
+    }
+  }
+
+  syncContinuousPoisoning(): void {
     this.syncVigormortisPoisoning();
     this.syncNoDashiiPoisoning();
     this.syncTeaLadyProtection();
+    this.syncCourtierDrunkenness();
   }
 
   private applyGoonSelectionEffect(actor: Player, target: Player): void {
@@ -548,28 +573,37 @@ export class GameManager {
   }
 
   private tickCourtierDrunkenness(): void {
-    for (const [playerId, remaining] of [
-      ...this.courtierDrunkRemainingPhases.entries(),
-    ]) {
-      const nextRemaining = remaining - 1;
+    for (const [playerId, effect] of [...this.courtierDrunkEffects.entries()]) {
+      const nextRemaining = effect.remainingPhases - 1;
       const player = this.getPlayer(playerId);
       if (nextRemaining <= 0) {
         if (player) this.removeStatus(player, 'courtier_drunk');
-        this.courtierDrunkRemainingPhases.delete(playerId);
+        this.courtierDrunkEffects.delete(playerId);
       } else {
-        this.courtierDrunkRemainingPhases.set(playerId, nextRemaining);
+        this.courtierDrunkEffects.set(playerId, {
+          ...effect,
+          remainingPhases: nextRemaining,
+        });
       }
     }
   }
 
-  private applyPendingMoonchildKills(): void {
-    for (const targetId of [...this.pendingMoonchildKillIds]) {
+  resolvePendingMoonchildKills(): string[] {
+    const killedTargetIds: string[] = [];
+    for (const [targetId, pendingKill] of [...this.pendingMoonchildKills]) {
       const target = this.getPlayer(targetId);
+      const moonchild = this.getPlayer(pendingKill.moonchildId);
       if (!target) continue;
+      if (!moonchild || isPoisonedOrDrunk(moonchild)) continue;
+      if (!pendingKill.targetWasGood) continue;
       const killed = this.resolveDeath(target, 'moonchild', 'night');
-      if (killed) this.addPendingNightKill(target.id);
+      if (killed) {
+        this.addPendingNightKill(target.id);
+        killedTargetIds.push(target.id);
+      }
     }
-    this.pendingMoonchildKillIds.clear();
+    this.pendingMoonchildKills.clear();
+    return killedTargetIds;
   }
 
   create(): string {
@@ -619,8 +653,8 @@ export class GameManager {
     this.butcherExtraNominationUsed = false;
     this.butcherExtraNominatorId = null;
     this.goonSelectedTonight = false;
-    this.courtierDrunkRemainingPhases.clear();
-    this.pendingMoonchildKillIds.clear();
+    this.courtierDrunkEffects.clear();
+    this.pendingMoonchildKills.clear();
     this.boneCollectorUsed.clear();
     this.boneCollectorRestoredTargets.clear();
     this.pendingHarlotConsents.clear();
@@ -711,8 +745,8 @@ export class GameManager {
     this.butcherExtraNominationUsed = false;
     this.butcherExtraNominatorId = null;
     this.goonSelectedTonight = false;
-    this.courtierDrunkRemainingPhases.clear();
-    this.pendingMoonchildKillIds.clear();
+    this.courtierDrunkEffects.clear();
+    this.pendingMoonchildKills.clear();
     this.boneCollectorUsed.clear();
     this.boneCollectorRestoredTargets.clear();
     this.pendingHarlotConsents.clear();
@@ -1071,7 +1105,6 @@ export class GameManager {
         p.statuses = filterSoberHealthyBlockedStatuses(p, p.statuses);
       });
       this.syncContinuousPoisoning();
-      this.applyPendingMoonchildKills();
     }
     if (phase === 'day') {
       this.tickCourtierDrunkenness();
@@ -2209,7 +2242,7 @@ export class GameManager {
   ):
     | {
         success: true;
-        blocked: false;
+        blocked: boolean;
         drunkRoleId: string;
         drunkPlayerIds: string[];
       }
@@ -2235,26 +2268,24 @@ export class GameManager {
       };
     }
 
-    if (isPoisonedOrDrunk(courtier)) {
-      return {
-        success: false,
-        blocked: true,
-        reason: '궁정대신이 중독/취함 상태입니다',
-      };
-    }
-
     this.addStatus(courtier, 'courtier_spent');
-    const drunkPlayers = this.state.players.filter(
-      (player) => player.role?.id === roleId,
-    );
+    const isBlocked = isPoisonedOrDrunk(courtier);
+    const drunkPlayers = isBlocked
+      ? []
+      : this.state.players
+          .filter((player) => player.role?.id === roleId)
+          .slice(0, 1);
     for (const player of drunkPlayers) {
-      this.addStatus(player, 'courtier_drunk');
-      this.courtierDrunkRemainingPhases.set(player.id, 6);
+      this.courtierDrunkEffects.set(player.id, {
+        courtierId: courtier.id,
+        remainingPhases: 6,
+      });
     }
+    this.syncCourtierDrunkenness();
 
     return {
       success: true,
-      blocked: false,
+      blocked: isBlocked,
       drunkRoleId: roleId,
       drunkPlayerIds: drunkPlayers.map((player) => player.id),
     };
@@ -2418,7 +2449,7 @@ export class GameManager {
       };
     }
 
-    if (isPoisonedOrDrunk(moonchild)) {
+    if (this.state.phase !== 'day' && isPoisonedOrDrunk(moonchild)) {
       return {
         success: false,
         blocked: true,
@@ -2426,7 +2457,8 @@ export class GameManager {
       };
     }
 
-    if (this.getEffectiveAlignment(target) !== 'good') {
+    const targetWasGood = this.getEffectiveAlignment(target) === 'good';
+    if (!targetWasGood) {
       return {
         success: true,
         blocked: false,
@@ -2434,7 +2466,10 @@ export class GameManager {
     }
 
     if (this.state.phase === 'day') {
-      this.pendingMoonchildKillIds.add(target.id);
+      this.pendingMoonchildKills.set(target.id, {
+        moonchildId: moonchild.id,
+        targetWasGood,
+      });
       return {
         success: true,
         blocked: false,

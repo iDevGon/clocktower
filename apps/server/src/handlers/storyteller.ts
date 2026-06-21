@@ -541,7 +541,33 @@ export function registerStorytellerHandlers(
       }
     });
 
+    const emitBmrAssistResult = (killedTargetId?: string) => {
+      storytellerIo.emit('game:state', game.getStorytellerState());
+      if (!killedTargetId) {
+        playerIo.emit('game:state', game.getState());
+      }
+      if (!killedTargetId) return;
+
+      const killedPlayer = game.getPlayer(killedTargetId);
+      emitDeathTriggers(killedPlayer, storytellerIo, { isNight: true });
+      const winResult = game.checkWinCondition();
+      if (winResult) {
+        playerIo.emit('game:end', winResult);
+        playerIo.emit('game:phase', 'ended');
+        storytellerIo.emit('game:end', winResult);
+        storytellerIo.emit('game:state', game.getStorytellerState());
+        return;
+      }
+      emitPromotionIfAny(game, playerIo, storytellerIo);
+    };
+
     socket.on('night:setActiveRole', (roleId) => {
+      if (roleId === 'moonchild') {
+        for (const killedTargetId of game.resolvePendingMoonchildKills()) {
+          emitBmrAssistResult(killedTargetId);
+        }
+      }
+
       const state = game.getState();
       const order = getNightOrder(state.day, game.getEditionId());
       const players = getPlayerInfoList(game);
@@ -894,24 +920,6 @@ export function registerStorytellerHandlers(
         playerIo.emit('game:playerUpdate', revivedPlayer);
       }
     });
-
-    const emitBmrAssistResult = (killedTargetId?: string) => {
-      storytellerIo.emit('game:state', game.getStorytellerState());
-      playerIo.emit('game:state', game.getState());
-      if (!killedTargetId) return;
-
-      const killedPlayer = game.getPlayer(killedTargetId);
-      emitDeathTriggers(killedPlayer, storytellerIo, { isNight: true });
-      const winResult = game.checkWinCondition();
-      if (winResult) {
-        playerIo.emit('game:end', winResult);
-        playerIo.emit('game:phase', 'ended');
-        storytellerIo.emit('game:end', winResult);
-        storytellerIo.emit('game:state', game.getStorytellerState());
-        return;
-      }
-      emitPromotionIfAny(game, playerIo, storytellerIo);
-    };
 
     socket.on('courtier:chooseRole', ({ courtierId, roleId }, callback) => {
       const result = game.resolveCourtierSelection(courtierId, roleId);

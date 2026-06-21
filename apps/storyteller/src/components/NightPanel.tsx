@@ -23,6 +23,8 @@ import {
 import { isAbilityMalfunctioning, isDetectedAsEvil } from './nightRoleLogic';
 import { SpyGrimoireComposer } from './SpyGrimoireComposer';
 
+type BmrAssistResult = { success: boolean; error?: string };
+
 interface NightPanelProps {
   day: number;
   players: Player[];
@@ -65,14 +67,27 @@ interface NightPanelProps {
     targetPlayerId: string,
     effect: 'sober_healthy' | 'acts_twice',
   ) => void;
-  onCourtierChooseRole?: (courtierId: string, roleId: string) => void;
+  onCourtierChooseRole?: (
+    courtierId: string,
+    roleId: string,
+    callback?: (result: BmrAssistResult) => void,
+  ) => void;
   onGamblerGuess?: (
     gamblerId: string,
     targetPlayerId: string,
     guessedRoleId: string,
+    callback?: (result: BmrAssistResult) => void,
   ) => void;
-  onGossipKill?: (gossipId: string, targetPlayerId: string) => void;
-  onMoonchildChoose?: (moonchildId: string, targetPlayerId: string) => void;
+  onGossipKill?: (
+    gossipId: string,
+    targetPlayerId: string,
+    callback?: (result: BmrAssistResult) => void,
+  ) => void;
+  onMoonchildChoose?: (
+    moonchildId: string,
+    targetPlayerId: string,
+    callback?: (result: BmrAssistResult) => void,
+  ) => void;
   nightWakeUpTargets: string[];
   styles: ReturnType<typeof createGrimoireStyles>;
   /** 에디션 ID (밤 순서 결정에 사용) */
@@ -235,6 +250,11 @@ export function NightPanel({
   const handleBaristaApply = (effect: 'sober_healthy' | 'acts_twice') => {
     if (!baristaTargetId) return;
     onApplyBaristaEffect?.(baristaTargetId, effect);
+    setFeedbackSentForRole(activeNightRoleId);
+  };
+
+  const handleBmrAssistResult = (result: BmrAssistResult) => {
+    if (!result.success) return;
     setFeedbackSentForRole(activeNightRoleId);
   };
 
@@ -470,8 +490,8 @@ export function NightPanel({
                         onCourtierChooseRole?.(
                           activeRolePlayer.id,
                           courtierRoleId,
+                          handleBmrAssistResult,
                         );
-                        setFeedbackSentForRole(activeNightRoleId);
                       }}
                       style={{
                         backgroundColor: '#293b2f',
@@ -523,8 +543,8 @@ export function NightPanel({
                           activeRolePlayer.id,
                           gamblerTargetId,
                           gamblerRoleId,
+                          handleBmrAssistResult,
                         );
-                        setFeedbackSentForRole(activeNightRoleId);
                       }}
                       style={{
                         backgroundColor: '#3c2c2f',
@@ -567,14 +587,15 @@ export function NightPanel({
                           onGossipKill?.(
                             activeRolePlayer.id,
                             bmrAssistTargetId,
+                            handleBmrAssistResult,
                           );
                         } else {
                           onMoonchildChoose?.(
                             activeRolePlayer.id,
                             bmrAssistTargetId,
+                            handleBmrAssistResult,
                           );
                         }
-                        setFeedbackSentForRole(activeNightRoleId);
                       }}
                       style={{
                         backgroundColor: '#302f46',

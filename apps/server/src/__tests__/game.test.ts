@@ -1424,6 +1424,58 @@ describe('GameManager', () => {
       );
     });
 
+    it('궁정대신이 중독/취함 상태로 선택해도 능력은 소모된다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.setPlayerStatuses(players[0].id, ['poisoned']);
+
+      const result = gm.resolveCourtierSelection(players[0].id, 'sailor');
+
+      expect(result).toEqual({
+        success: true,
+        blocked: true,
+        drunkRoleId: 'sailor',
+        drunkPlayerIds: [],
+      });
+      expect(gm.getPlayer(players[0].id)?.statuses).toContain('courtier_spent');
+      expect(gm.getPlayer(players[6].id)?.statuses).not.toContain(
+        'courtier_drunk',
+      );
+    });
+
+    it('궁정대신은 같은 캐릭터가 여러 명이어도 한 명만 취하게 한다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.assignRole(players[5].id, 'sailor');
+
+      const result = gm.resolveCourtierSelection(players[0].id, 'sailor');
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.drunkPlayerIds).toHaveLength(1);
+      }
+      const drunkSailors = [players[5], players[6]].filter((player) =>
+        gm.getPlayer(player.id)?.statuses.includes('courtier_drunk'),
+      );
+      expect(drunkSailors).toHaveLength(1);
+    });
+
+    it('궁정대신이 중독되면 취함 효과는 멈췄다가 맑아지면 남은 기간 재개된다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.resolveCourtierSelection(players[0].id, 'sailor');
+
+      gm.setPlayerStatuses(players[0].id, [
+        ...new Set([...players[0].statuses, 'poisoned' as const]),
+      ]);
+      expect(gm.getPlayer(players[6].id)?.statuses).not.toContain(
+        'courtier_drunk',
+      );
+
+      gm.setPlayerStatuses(
+        players[0].id,
+        players[0].statuses.filter((status) => status !== 'poisoned'),
+      );
+      expect(gm.getPlayer(players[6].id)?.statuses).toContain('courtier_drunk');
+    });
+
     it('도박사는 틀린 선언이면 본인을 사망시킨다', () => {
       const { gm, players } = createBmrAssistGame();
 
@@ -1517,8 +1569,42 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[5].id)?.isAlive).toBe(true);
 
       gm.setPhase('night');
+      expect(gm.resolvePendingMoonchildKills()).toEqual([players[5].id]);
       expect(gm.getPlayer(players[5].id)?.isAlive).toBe(false);
       expect(gm.hasPendingNightKill(players[5].id)).toBe(true);
+    });
+
+    it('달의 자손 낮 선택은 선택 시점이 아니라 밤 처리 시점의 상태를 따른다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.setPhase('day');
+      gm.kill(players[3].id);
+      gm.setPlayerStatuses(players[3].id, ['poisoned']);
+
+      const result = gm.resolveMoonchildSelection(players[3].id, players[5].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        pendingKillTargetId: players[5].id,
+      });
+      gm.setPlayerStatuses(players[3].id, []);
+      gm.setPhase('night');
+      expect(gm.resolvePendingMoonchildKills()).toEqual([players[5].id]);
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(false);
+    });
+
+    it('달의 자손이 밤 처리 시점에 중독/취함이면 낮에 예약한 대상을 사망시키지 않는다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.setPhase('day');
+      gm.kill(players[3].id);
+      gm.resolveMoonchildSelection(players[3].id, players[5].id);
+
+      gm.setPhase('night');
+      gm.setPlayerStatuses(players[3].id, ['pukka_poisoned']);
+
+      expect(gm.resolvePendingMoonchildKills()).toEqual([]);
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(true);
+      expect(gm.hasPendingNightKill(players[5].id)).toBe(false);
     });
 
     it('평화주의자는 선한 처형 대상의 생존 판정 후보를 만든다', () => {
