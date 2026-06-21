@@ -540,6 +540,7 @@ export interface StorytellerToServerEvents {
       excludedRoleIds?: string[];
       editionId?: string;
       additionalRoleIds?: string[];
+      godfatherOutsiderModifier?: -1 | 1;
       /** 이야기꾼이 사전 선택한 블러프 역할 ID (최대 3개, 미선택 시 랜덤) */
       bluffRoleIds?: string[];
     },

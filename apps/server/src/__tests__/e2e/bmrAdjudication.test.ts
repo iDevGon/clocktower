@@ -386,6 +386,43 @@ describe('E2E: 피로물든달 판정 보조', () => {
     }
   }, 15000);
 
+  it('교수가 시작 정보 역할을 부활시키면 즉시 다시 깨우고 같은 밤 중복 기상시키지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'professor' },
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'godfather' },
+      { roleId: 'po' },
+    ]);
+
+    ctx.app.game.kill(playerIds[1]);
+
+    const grandmotherWakePromise = waitForEvent<{ roleId: string }>(
+      ctx.players[1],
+      'night:wakeUp',
+    );
+    const professorActionPromise = waitForEvent(
+      ctx.storyteller,
+      'night:actionReceived',
+    );
+
+    ctx.players[0].emit('night:action', { targets: [playerIds[1]] });
+
+    await professorActionPromise;
+    await expect(grandmotherWakePromise).resolves.toEqual({
+      roleId: 'grandmother',
+    });
+
+    const targetsPromise = waitForEvent<{ candidateIds: string[] }>(
+      ctx.storyteller,
+      'night:wakeUpTargets',
+    );
+    ctx.storyteller.emit('night:setActiveRole', 'grandmother');
+    const targets = await targetsPromise;
+
+    expect(targets.candidateIds).not.toContain(playerIds[1]);
+  }, 15000);
+
   it('유효하지 않은 BMR 밤 행동은 실패 응답을 보내고 행동 로그에 기록하지 않는다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [
       { roleId: 'grandmother' },

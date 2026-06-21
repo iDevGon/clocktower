@@ -60,6 +60,15 @@ const TEMPORARY_TRAVELLER_STATUSES: PlayerStatus[] = [
   'barista_acts_twice',
 ];
 
+const PROFESSOR_IMMEDIATE_WAKE_ROLE_IDS = new Set([
+  'washerwoman',
+  'librarian',
+  'investigator',
+  'chef',
+  'clockmaker',
+  'grandmother',
+]);
+
 function isSoberHealthy(player: Player): boolean {
   return (
     player.role?.id === 'beggar' ||
@@ -1413,6 +1422,12 @@ export class GameManager {
   }
 
   shouldWakePlayerForRole(roleId: string, player: Player): boolean {
+    if (
+      PROFESSOR_IMMEDIATE_WAKE_ROLE_IDS.has(roleId) &&
+      this.nightAwakenedPlayerIds.has(player.id)
+    ) {
+      return false;
+    }
     if (roleId === 'courtier' && player.statuses.includes('courtier_spent')) {
       return false;
     }

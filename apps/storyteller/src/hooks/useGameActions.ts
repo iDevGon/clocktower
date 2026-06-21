@@ -47,6 +47,7 @@ export function useGameActions() {
       excludedRoleIds?: string[];
       editionId?: string;
       additionalRoleIds?: string[];
+      godfatherOutsiderModifier?: -1 | 1;
       bluffRoleIds?: string[];
     }) =>
       new Promise<{ redHerringPlayerId?: string }>((resolve, reject) => {

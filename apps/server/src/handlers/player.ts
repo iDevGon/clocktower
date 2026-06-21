@@ -13,7 +13,10 @@ import {
 } from '@clocktower/shared/logic';
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
-import { registerPushToken } from '../pushNotifications.js';
+import {
+  registerPushToken,
+  sendPushNotification,
+} from '../pushNotifications.js';
 import { WhisperTracker } from '../whisper.js';
 import { pendingApprovals } from './pendingApprovals.js';
 import { startClockwiseVote } from './storyteller.js';
@@ -23,6 +26,15 @@ type StorytellerNamespace = Namespace<
   StorytellerToServerEvents,
   ServerToStorytellerEvents
 >;
+
+const PROFESSOR_IMMEDIATE_WAKE_ROLE_IDS = new Set([
+  'washerwoman',
+  'librarian',
+  'investigator',
+  'chef',
+  'clockmaker',
+  'grandmother',
+]);
 
 function getPlayerIdFromSocket(socket: {
   id: string;
@@ -196,6 +208,34 @@ function emitTriggeredDeathUpdates(
     const player = game.getPlayer(playerId);
     if (player) playerIo.emit('game:playerUpdate', player);
   }
+}
+
+function emitProfessorImmediateWake(
+  game: GameManager,
+  playerIo: PlayerNamespace,
+  revivedTargetId: string | undefined,
+): void {
+  if (!revivedTargetId) return;
+  const revived = game.getPlayer(revivedTargetId);
+  const roleId = revived?.role?.id;
+  if (!revived || !roleId || !PROFESSOR_IMMEDIATE_WAKE_ROLE_IDS.has(roleId)) {
+    return;
+  }
+
+  const roleName = getRoleById(roleId)?.name ?? roleId;
+  const { order } = game.getNightProgress();
+  game.markNightWakeUp(revived.id);
+  sendPushNotification(
+    revived.id,
+    '🌙 당신의 차례입니다',
+    `${roleName}, 행동을 수행하세요`,
+  );
+  playerIo.to(revived.id).emit('night:activeRole', {
+    roleId,
+    order,
+    players: getOrderedPlayerInfoList(game),
+  });
+  playerIo.to(revived.id).emit('night:wakeUp', { roleId });
 }
 
 export function registerPlayerHandlers(
@@ -637,6 +677,9 @@ export function registerPlayerHandlers(
         const result = game.resolveProfessorSelection(playerId, targets[0]);
         if (rejectInvalidAction(result)) return;
         storytellerIo.emit('game:state', game.getStorytellerState());
+        if (result.success && result.revived) {
+          emitProfessorImmediateWake(game, playerIo, result.revivedTargetId);
+        }
       }
 
       if (effectiveRoleId === 'sailor' && targets.length > 0) {

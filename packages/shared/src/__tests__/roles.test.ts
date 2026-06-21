@@ -863,6 +863,33 @@ describe('Bad Moon Rising 역할 정의', () => {
       result.assignments.filter((a) => a.role.team === 'outsider'),
     ).toHaveLength(1);
   });
+
+  it('갓파더 외지인 조정은 이야기꾼 선택에 따라 +1 또는 -1을 적용한다', () => {
+    const playerIds = Array.from({ length: 8 }, (_, i) => `bmr-p${i + 1}`);
+    const excludedRoleIds = ['devils_advocate', 'assassin', 'mastermind'];
+
+    const plusResult = distributeRoles(playerIds, {
+      editionId: 'bad_moon_rising',
+      excludedRoleIds,
+      godfatherOutsiderModifier: 1,
+    });
+    const minusResult = distributeRoles(playerIds, {
+      editionId: 'bad_moon_rising',
+      excludedRoleIds,
+      godfatherOutsiderModifier: -1,
+    });
+
+    expect(plusResult).not.toBeNull();
+    expect(minusResult).not.toBeNull();
+    if (!plusResult || !minusResult) return;
+
+    expect(
+      plusResult.assignments.filter((a) => a.role.team === 'outsider'),
+    ).toHaveLength(2);
+    expect(
+      minusResult.assignments.filter((a) => a.role.team === 'outsider'),
+    ).toHaveLength(0);
+  });
 });
 
 describe('BMR 밤 진행 순서', () => {

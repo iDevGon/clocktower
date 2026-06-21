@@ -50,6 +50,9 @@ export default function LobbyScreen() {
   const [additionalRoleIds, setAdditionalRoleIds] = useState<Set<string>>(
     new Set(),
   );
+  const [godfatherOutsiderModifier, setGodfatherOutsiderModifier] = useState<
+    -1 | 1
+  >(1);
   const [showMixModal, setShowMixModal] = useState(false);
   const [excludeSearch, setExcludeSearch] = useState('');
   const [mixSearch, setMixSearch] = useState('');
@@ -186,6 +189,11 @@ export default function LobbyScreen() {
         editionId: selectedEditionId,
         additionalRoleIds:
           additionalRoleIdList.length > 0 ? additionalRoleIdList : undefined,
+        godfatherOutsiderModifier:
+          selectedEditionId === 'bad_moon_rising' ||
+          additionalRoleIds.has('godfather')
+            ? godfatherOutsiderModifier
+            : undefined,
       });
     } catch (e) {
       Alert.alert('오류', e instanceof Error ? e.message : '알 수 없는 오류');
@@ -461,6 +469,7 @@ export default function LobbyScreen() {
             setSelectedEditionId(edition.id);
             setExcludedRoleIds(new Set());
             setAdditionalRoleIds(new Set());
+            setGodfatherOutsiderModifier(1);
             unassignAllRoles();
           }}
           disabled={edition.disabled}
@@ -536,6 +545,29 @@ export default function LobbyScreen() {
           >
             에디션 혼합
             {additionalRoleIds.size > 0 ? ` ${additionalRoleIds.size}` : ''}
+          </Text>
+        </Pressable>
+      )}
+
+      {(selectedEditionId === 'bad_moon_rising' ||
+        additionalRoleIds.has('godfather')) && (
+        <Pressable
+          onPress={() =>
+            setGodfatherOutsiderModifier((v) => (v === 1 ? -1 : 1))
+          }
+          style={({ pressed }) => [
+            styles.roleActionButton,
+            godfatherOutsiderModifier === -1 && styles.roleActionButtonMix,
+            pressed && styles.roleActionButtonPressed,
+          ]}
+        >
+          <Text
+            style={[
+              styles.roleActionText,
+              godfatherOutsiderModifier === -1 && styles.roleActionTextMix,
+            ]}
+          >
+            대부 외지인 {godfatherOutsiderModifier > 0 ? '+1' : '-1'}
           </Text>
         </Pressable>
       )}

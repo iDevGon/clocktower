@@ -1011,6 +1011,8 @@ export interface DistributeOptions {
   editionId?: string;
   /** 다른 에디션에서 추가로 포함할 역할 ID 목록 (크로스 에디션 믹싱) */
   additionalRoleIds?: string[];
+  /** Godfather setup choice: add or remove one Outsider when possible. */
+  godfatherOutsiderModifier?: -1 | 1;
 }
 
 /**
@@ -1087,10 +1089,19 @@ export function distributeRoles(
     townsfolkCount = count - outsiderCount - minionCount - demonCount;
   }
 
-  // BMR: 갓파더 → 외지인 +1 또는 -1. 자동 배분은 가능한 경우 +1을 적용한다.
+  // BMR: 갓파더 → 외지인 +1 또는 -1.
   const hasGodfather = selectedMinions.some((r) => r.id === 'godfather');
-  if (hasGodfather && outsiderCount < outsiders.length) {
+  const godfatherModifier = options?.godfatherOutsiderModifier ?? 1;
+  if (
+    hasGodfather &&
+    godfatherModifier === 1 &&
+    outsiderCount < outsiders.length
+  ) {
     outsiderCount++;
+    townsfolkCount = count - outsiderCount - minionCount - demonCount;
+  }
+  if (hasGodfather && godfatherModifier === -1 && outsiderCount > 0) {
+    outsiderCount--;
     townsfolkCount = count - outsiderCount - minionCount - demonCount;
   }
 
