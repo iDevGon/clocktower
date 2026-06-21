@@ -146,6 +146,16 @@ function emitDeathTriggers(
   }
 }
 
+function emitTriggeredDeathUpdates(
+  game: GameManager,
+  playerIo: PlayerNamespace,
+): void {
+  for (const playerId of game.consumeTriggeredDeathIds()) {
+    const player = game.getPlayer(playerId);
+    if (player) playerIo.emit('game:playerUpdate', player);
+  }
+}
+
 export function registerPlayerHandlers(
   storytellerIo: StorytellerNamespace,
   playerIo: PlayerNamespace,
@@ -725,6 +735,7 @@ export function registerPlayerHandlers(
           detail: `${player.name}의 처단자 능력으로 ${killedTarget.name}이(가) 사망했습니다`,
         });
         playerIo.emit('game:playerUpdate', killedTarget);
+        emitTriggeredDeathUpdates(game, playerIo);
       }
       storytellerIo.emit('game:state', game.getStorytellerState());
 
@@ -927,7 +938,10 @@ export function registerPlayerHandlers(
       playerIo.emit('gunslinger:fired', payload);
       storytellerIo.emit('gunslinger:fired', payload);
       const updatedTarget = game.getPlayer(targetId);
-      if (updatedTarget) playerIo.emit('game:playerUpdate', updatedTarget);
+      if (updatedTarget) {
+        playerIo.emit('game:playerUpdate', updatedTarget);
+        emitTriggeredDeathUpdates(game, playerIo);
+      }
       storytellerIo.emit('game:state', game.getStorytellerState());
       console.log(`Gunslinger: ${player.name} shot ${target.name}`);
 

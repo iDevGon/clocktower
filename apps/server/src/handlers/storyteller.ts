@@ -87,6 +87,16 @@ function emitPromotionIfAny(
   }
 }
 
+function emitTriggeredDeathUpdates(
+  game: GameManager,
+  playerIo: PlayerNamespace,
+): void {
+  for (const playerId of game.consumeTriggeredDeathIds()) {
+    const player = game.getPlayer(playerId);
+    if (player) playerIo.emit('game:playerUpdate', player);
+  }
+}
+
 /**
  * 게임에 등장하지 않는 선한 역할 목록을 반환합니다.
  * Drunk의 drunkAs 역할도 "등장하는 역할"로 간주합니다.
@@ -340,6 +350,7 @@ export function registerStorytellerHandlers(
                 detail: `${killedPlayer.name}이(가) 투표로 처형되었습니다`,
               });
               playerIo.emit('game:playerUpdate', killedPlayer);
+              emitTriggeredDeathUpdates(game, playerIo);
             }
             // 처형 후 승리 조건 체크
             const executedRoleId = executionResult.killed
@@ -420,6 +431,7 @@ export function registerStorytellerHandlers(
             nightDeaths.push({ id: killed.id, name: killed.name });
           }
         });
+        game.consumeTriggeredDeathIds();
         // 모든 플레이어에게 간밤 사망자 알림 (오버레이 표시용)
         // 사망자가 없어도 전송하여 "아무도 사망하지 않았습니다" 표시
         playerIo.emit('night:deaths', { deaths: nightDeaths });
@@ -912,10 +924,14 @@ export function registerStorytellerHandlers(
       if (isNight) {
         // 밤 중 사망: 낮 전환 시까지 플레이어 알림 보류
         game.addPendingNightKill(playerId);
+        game.consumeTriggeredDeathIds();
         return;
       }
       const updatedPlayer = game.getPlayer(playerId);
-      if (updatedPlayer) playerIo.emit('game:playerUpdate', updatedPlayer);
+      if (updatedPlayer) {
+        playerIo.emit('game:playerUpdate', updatedPlayer);
+        emitTriggeredDeathUpdates(game, playerIo);
+      }
     });
 
     socket.on('game:revive', (playerId) => {

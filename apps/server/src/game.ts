@@ -252,6 +252,7 @@ export class GameManager {
   private exorcistBlockedPlayerIds = new Set<string>();
   // 할머니가 알게 된 손주 매핑 (grandmotherId -> grandchildId)
   private grandmotherGrandchildren = new Map<string, string>();
+  private triggeredDeathIds: string[] = [];
   // 뼈 수집가: 게임 중 1회 복구 대상 추적
   private boneCollectorUsed = new Set<string>();
   private boneCollectorRestoredTargets = new Map<string, string>();
@@ -661,6 +662,7 @@ export class GameManager {
     this.pendingMoonchildKills.clear();
     this.exorcistBlockedPlayerIds.clear();
     this.grandmotherGrandchildren.clear();
+    this.triggeredDeathIds = [];
     this.boneCollectorUsed.clear();
     this.boneCollectorRestoredTargets.clear();
     this.pendingHarlotConsents.clear();
@@ -1222,8 +1224,17 @@ export class GameManager {
       if (this.state.phase === 'night') {
         this.addPendingNightKill(grandmother.id);
       }
+      if (!this.triggeredDeathIds.includes(grandmother.id)) {
+        this.triggeredDeathIds.push(grandmother.id);
+      }
       this.cleanupOnPlayerDeath(grandmother);
     }
+  }
+
+  consumeTriggeredDeathIds(): string[] {
+    const ids = [...this.triggeredDeathIds];
+    this.triggeredDeathIds = [];
+    return ids;
   }
 
   hasPendingNightKill(playerId: string): boolean {

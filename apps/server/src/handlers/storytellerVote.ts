@@ -86,6 +86,16 @@ function emitDeathTriggers(
   }
 }
 
+function emitTriggeredDeathUpdates(
+  game: GameManager,
+  playerIo: PlayerNamespace,
+): void {
+  for (const playerId of game.consumeTriggeredDeathIds()) {
+    const player = game.getPlayer(playerId);
+    if (player) playerIo.emit('game:playerUpdate', player);
+  }
+}
+
 export function startClockwiseVote(
   game: GameManager,
   playerIo: PlayerNamespace,
@@ -250,6 +260,7 @@ export function registerVoteHandlers(
           detail: `${killedNominator.name}이(가) 성결자를 지목하여 처형되었습니다`,
         });
         playerIo.emit('game:playerUpdate', killedNominator);
+        emitTriggeredDeathUpdates(game, playerIo);
       }
       storytellerIo.emit('game:state', game.getStorytellerState());
 
