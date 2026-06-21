@@ -222,4 +222,49 @@ describe('E2E: 피로물든달 판정 보조', () => {
       'assassin_spent',
     );
   });
+
+  it('이야기꾼이 궁정대신 역할 선택을 앱에서 처리할 수 있다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'courtier' },
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'godfather' },
+      { roleId: 'po' },
+    ]);
+
+    const statePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.storyteller.emit('courtier:chooseRole', {
+      courtierId: playerIds[0],
+      roleId: 'sailor',
+    });
+    await statePromise;
+
+    expect(ctx.app.game.getPlayer(playerIds[0])?.statuses).toContain(
+      'courtier_spent',
+    );
+    expect(ctx.app.game.getPlayer(playerIds[2])?.statuses).toContain(
+      'courtier_drunk',
+    );
+  });
+
+  it('이야기꾼이 도박사 추측을 앱에서 처리할 수 있다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'gambler' },
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'godfather' },
+      { roleId: 'po' },
+    ]);
+
+    const statePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.storyteller.emit('gambler:guess', {
+      gamblerId: playerIds[0],
+      targetPlayerId: playerIds[1],
+      guessedRoleId: 'sailor',
+    });
+    await statePromise;
+
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
+    expect(ctx.app.game.hasPendingNightKill(playerIds[0])).toBe(true);
+  });
 });

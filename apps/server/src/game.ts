@@ -28,7 +28,10 @@ type DeathMethod =
   | 'shabaloth'
   | 'po'
   | 'godfather'
-  | 'zombuul';
+  | 'zombuul'
+  | 'gambler'
+  | 'gossip'
+  | 'moonchild';
 
 type DeathTiming = 'day' | 'night';
 
@@ -231,6 +234,10 @@ export class GameManager {
   private butcherExtraNominatorId: string | null = null;
   // 건달: 매일 밤 처음 자신을 선택한 플레이어 1명만 취하게 함
   private goonSelectedTonight = false;
+  // 궁정대신이 취하게 한 플레이어별 남은 밤/낮 전환 수
+  private courtierDrunkRemainingPhases = new Map<string, number>();
+  // 달의 자손이 낮에 선택해 오늘 밤 사망할 대상
+  private pendingMoonchildKillIds = new Set<string>();
   // 뼈 수집가: 게임 중 1회 복구 대상 추적
   private boneCollectorUsed = new Set<string>();
   private boneCollectorRestoredTargets = new Map<string, string>();
@@ -540,6 +547,31 @@ export class GameManager {
     return true;
   }
 
+  private tickCourtierDrunkenness(): void {
+    for (const [playerId, remaining] of [
+      ...this.courtierDrunkRemainingPhases.entries(),
+    ]) {
+      const nextRemaining = remaining - 1;
+      const player = this.getPlayer(playerId);
+      if (nextRemaining <= 0) {
+        if (player) this.removeStatus(player, 'courtier_drunk');
+        this.courtierDrunkRemainingPhases.delete(playerId);
+      } else {
+        this.courtierDrunkRemainingPhases.set(playerId, nextRemaining);
+      }
+    }
+  }
+
+  private applyPendingMoonchildKills(): void {
+    for (const targetId of [...this.pendingMoonchildKillIds]) {
+      const target = this.getPlayer(targetId);
+      if (!target) continue;
+      const killed = this.resolveDeath(target, 'moonchild', 'night');
+      if (killed) this.addPendingNightKill(target.id);
+    }
+    this.pendingMoonchildKillIds.clear();
+  }
+
   create(): string {
     const id = randomUUID().slice(0, 8);
     this.state = {
@@ -587,6 +619,8 @@ export class GameManager {
     this.butcherExtraNominationUsed = false;
     this.butcherExtraNominatorId = null;
     this.goonSelectedTonight = false;
+    this.courtierDrunkRemainingPhases.clear();
+    this.pendingMoonchildKillIds.clear();
     this.boneCollectorUsed.clear();
     this.boneCollectorRestoredTargets.clear();
     this.pendingHarlotConsents.clear();
@@ -677,6 +711,8 @@ export class GameManager {
     this.butcherExtraNominationUsed = false;
     this.butcherExtraNominatorId = null;
     this.goonSelectedTonight = false;
+    this.courtierDrunkRemainingPhases.clear();
+    this.pendingMoonchildKillIds.clear();
     this.boneCollectorUsed.clear();
     this.boneCollectorRestoredTargets.clear();
     this.pendingHarlotConsents.clear();
@@ -994,6 +1030,7 @@ export class GameManager {
     this.state.phase = phase;
     this.state.daySubPhase = null;
     if (phase === 'night') {
+      this.tickCourtierDrunkenness();
       this.state.nominations = [];
       this.nightActionTargets.clear();
       this.executionToday = false;
@@ -1034,8 +1071,10 @@ export class GameManager {
         p.statuses = filterSoberHealthyBlockedStatuses(p, p.statuses);
       });
       this.syncContinuousPoisoning();
+      this.applyPendingMoonchildKills();
     }
     if (phase === 'day') {
+      this.tickCourtierDrunkenness();
       this.state.day++;
       this.state.daySubPhase = 'whisper';
       this.dayDeathToday = false;
@@ -2161,6 +2200,286 @@ export class GameManager {
       success: true,
       blocked: false,
       ...(killed ? { killedTargetId: target.id } : {}),
+    };
+  }
+
+  resolveCourtierSelection(
+    courtierId: string,
+    roleId: string,
+  ):
+    | {
+        success: true;
+        blocked: false;
+        drunkRoleId: string;
+        drunkPlayerIds: string[];
+      }
+    | {
+        success: false;
+        blocked: boolean;
+        reason: string;
+      } {
+    const courtier = this.getPlayer(courtierId);
+    if (!courtier) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '궁정대신을 찾을 수 없습니다',
+      };
+    }
+
+    if (courtier.statuses.includes('courtier_spent')) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '궁정대신 능력은 이미 소모되었습니다',
+      };
+    }
+
+    if (isPoisonedOrDrunk(courtier)) {
+      return {
+        success: false,
+        blocked: true,
+        reason: '궁정대신이 중독/취함 상태입니다',
+      };
+    }
+
+    this.addStatus(courtier, 'courtier_spent');
+    const drunkPlayers = this.state.players.filter(
+      (player) => player.role?.id === roleId,
+    );
+    for (const player of drunkPlayers) {
+      this.addStatus(player, 'courtier_drunk');
+      this.courtierDrunkRemainingPhases.set(player.id, 6);
+    }
+
+    return {
+      success: true,
+      blocked: false,
+      drunkRoleId: roleId,
+      drunkPlayerIds: drunkPlayers.map((player) => player.id),
+    };
+  }
+
+  resolveGamblerGuess(
+    gamblerId: string,
+    targetId: string,
+    guessedRoleId: string,
+  ):
+    | {
+        success: true;
+        blocked: false;
+        correct: boolean;
+        killedTargetId?: string;
+      }
+    | {
+        success: false;
+        blocked: boolean;
+        reason: string;
+      } {
+    const gambler = this.getPlayer(gamblerId);
+    if (!gambler) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '도박사를 찾을 수 없습니다',
+      };
+    }
+
+    const target = this.getPlayer(targetId);
+    if (!target) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '대상을 찾을 수 없습니다',
+      };
+    }
+
+    this.applyGoonSelectionEffect(gambler, target);
+    if (isPoisonedOrDrunk(gambler)) {
+      return {
+        success: false,
+        blocked: true,
+        reason: '도박사가 중독/취함 상태입니다',
+      };
+    }
+
+    const correct = target.role?.id === guessedRoleId;
+    if (correct) {
+      return {
+        success: true,
+        blocked: false,
+        correct: true,
+      };
+    }
+
+    const killed = this.resolveDeath(gambler, 'gambler', 'night');
+    if (killed && this.state.phase === 'night') {
+      this.addPendingNightKill(gambler.id);
+    }
+
+    return {
+      success: true,
+      blocked: false,
+      correct: false,
+      ...(killed ? { killedTargetId: gambler.id } : {}),
+    };
+  }
+
+  resolveGossipKill(
+    gossipId: string,
+    targetId: string,
+  ):
+    | {
+        success: true;
+        blocked: false;
+        killedTargetId?: string;
+      }
+    | {
+        success: false;
+        blocked: boolean;
+        reason: string;
+      } {
+    const gossip = this.getPlayer(gossipId);
+    if (!gossip) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '가십을 찾을 수 없습니다',
+      };
+    }
+
+    const target = this.getPlayer(targetId);
+    if (!target) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '대상을 찾을 수 없습니다',
+      };
+    }
+
+    if (isPoisonedOrDrunk(gossip)) {
+      return {
+        success: false,
+        blocked: true,
+        reason: '가십이 중독/취함 상태입니다',
+      };
+    }
+
+    const killed = this.resolveDeath(target, 'gossip', 'night');
+    if (killed && this.state.phase === 'night') {
+      this.addPendingNightKill(target.id);
+    }
+
+    return {
+      success: true,
+      blocked: false,
+      ...(killed ? { killedTargetId: target.id } : {}),
+    };
+  }
+
+  resolveMoonchildSelection(
+    moonchildId: string,
+    targetId: string,
+  ):
+    | {
+        success: true;
+        blocked: false;
+        killedTargetId?: string;
+        pendingKillTargetId?: string;
+      }
+    | {
+        success: false;
+        blocked: boolean;
+        reason: string;
+      } {
+    const moonchild = this.getPlayer(moonchildId);
+    if (!moonchild) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '달의 자손을 찾을 수 없습니다',
+      };
+    }
+
+    if (moonchild.isAlive) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '달의 자손은 사망한 뒤에만 선택할 수 있습니다',
+      };
+    }
+
+    const target = this.getPlayer(targetId);
+    if (!target) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '대상을 찾을 수 없습니다',
+      };
+    }
+
+    if (isPoisonedOrDrunk(moonchild)) {
+      return {
+        success: false,
+        blocked: true,
+        reason: '달의 자손이 중독/취함 상태입니다',
+      };
+    }
+
+    if (this.getEffectiveAlignment(target) !== 'good') {
+      return {
+        success: true,
+        blocked: false,
+      };
+    }
+
+    if (this.state.phase === 'day') {
+      this.pendingMoonchildKillIds.add(target.id);
+      return {
+        success: true,
+        blocked: false,
+        pendingKillTargetId: target.id,
+      };
+    }
+
+    const killed = this.resolveDeath(target, 'moonchild', 'night');
+    if (killed && this.state.phase === 'night') {
+      this.addPendingNightKill(target.id);
+    }
+
+    return {
+      success: true,
+      blocked: false,
+      ...(killed ? { killedTargetId: target.id } : {}),
+    };
+  }
+
+  getPacifistSaveCandidate(targetId: string):
+    | {
+        canSave: true;
+        pacifistId: string;
+        targetId: string;
+      }
+    | {
+        canSave: false;
+      } {
+    const target = this.getPlayer(targetId);
+    if (!target || this.getEffectiveAlignment(target) !== 'good') {
+      return { canSave: false };
+    }
+
+    const pacifist = this.state.players.find(
+      (player) =>
+        isPubliclyAlive(player) &&
+        player.role?.id === 'pacifist' &&
+        !isPoisonedOrDrunk(player),
+    );
+    if (!pacifist) return { canSave: false };
+
+    return {
+      canSave: true,
+      pacifistId: pacifist.id,
+      targetId: target.id,
     };
   }
 

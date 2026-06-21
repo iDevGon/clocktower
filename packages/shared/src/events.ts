@@ -606,4 +606,33 @@ export interface StorytellerToServerEvents {
     targetPlayerId: string;
     effect: 'sober_healthy' | 'acts_twice';
   }) => void;
+  /** 궁정대신이 선택한 역할을 3일/3밤 동안 취하게 함 */
+  'courtier:chooseRole': (
+    data: { courtierId: string; roleId: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 도박사 추측을 앱 안에서 판정 */
+  'gambler:guess': (
+    data: { gamblerId: string; targetPlayerId: string; guessedRoleId: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 가십 발언이 사실일 때 이야기꾼이 사망 대상을 지정 */
+  'gossip:kill': (
+    data: { gossipId: string; targetPlayerId: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 달의 자손 사망 후 공개 선택을 앱 안에서 판정 */
+  'moonchild:choose': (
+    data: { moonchildId: string; targetPlayerId: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 평화주의자 처형 생존 판정 후보 조회 */
+  'pacifist:checkSave': (
+    data: { targetPlayerId: string },
+    callback: (
+      res:
+        | { canSave: true; pacifistId: string; targetId: string }
+        | { canSave: false },
+    ) => void,
+  ) => void;
 }

@@ -230,6 +230,10 @@ export default function GrimoireScreen() {
     assignGoodTwin,
     boneCollectorRestore,
     applyBaristaEffect,
+    courtierChooseRole,
+    gamblerGuess,
+    gossipKill,
+    moonchildChoose,
     assignRedHerring,
     kickPlayer,
     addTraveller,
@@ -1727,6 +1731,10 @@ export default function GrimoireScreen() {
         onPitHagChangeRole={pitHagChangeRole}
         onBoneCollectorRestore={boneCollectorRestore}
         onApplyBaristaEffect={applyBaristaEffect}
+        onCourtierChooseRole={courtierChooseRole}
+        onGamblerGuess={gamblerGuess}
+        onGossipKill={gossipKill}
+        onMoonchildChoose={moonchildChoose}
         nightWakeUpTargets={nightWakeUpTargets}
         styles={styles}
         editionId={detectedEditionId}

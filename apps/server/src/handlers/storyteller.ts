@@ -895,6 +895,81 @@ export function registerStorytellerHandlers(
       }
     });
 
+    const emitBmrAssistResult = (killedTargetId?: string) => {
+      storytellerIo.emit('game:state', game.getStorytellerState());
+      playerIo.emit('game:state', game.getState());
+      if (!killedTargetId) return;
+
+      const killedPlayer = game.getPlayer(killedTargetId);
+      emitDeathTriggers(killedPlayer, storytellerIo, { isNight: true });
+      const winResult = game.checkWinCondition();
+      if (winResult) {
+        playerIo.emit('game:end', winResult);
+        playerIo.emit('game:phase', 'ended');
+        storytellerIo.emit('game:end', winResult);
+        storytellerIo.emit('game:state', game.getStorytellerState());
+        return;
+      }
+      emitPromotionIfAny(game, playerIo, storytellerIo);
+    };
+
+    socket.on('courtier:chooseRole', ({ courtierId, roleId }, callback) => {
+      const result = game.resolveCourtierSelection(courtierId, roleId);
+      if (!result.success) {
+        callback?.({ success: false, error: result.reason });
+        return;
+      }
+      emitBmrAssistResult();
+      callback?.({ success: true });
+    });
+
+    socket.on(
+      'gambler:guess',
+      ({ gamblerId, targetPlayerId, guessedRoleId }, callback) => {
+        const result = game.resolveGamblerGuess(
+          gamblerId,
+          targetPlayerId,
+          guessedRoleId,
+        );
+        if (!result.success) {
+          callback?.({ success: false, error: result.reason });
+          return;
+        }
+        emitBmrAssistResult(result.killedTargetId);
+        callback?.({ success: true });
+      },
+    );
+
+    socket.on('gossip:kill', ({ gossipId, targetPlayerId }, callback) => {
+      const result = game.resolveGossipKill(gossipId, targetPlayerId);
+      if (!result.success) {
+        callback?.({ success: false, error: result.reason });
+        return;
+      }
+      emitBmrAssistResult(result.killedTargetId);
+      callback?.({ success: true });
+    });
+
+    socket.on(
+      'moonchild:choose',
+      ({ moonchildId, targetPlayerId }, callback) => {
+        const result = game.resolveMoonchildSelection(
+          moonchildId,
+          targetPlayerId,
+        );
+        if (!result.success) {
+          callback?.({ success: false, error: result.reason });
+          return;
+        }
+        emitBmrAssistResult(result.killedTargetId);
+        callback?.({ success: true });
+      },
+    );
+
+    socket.on('pacifist:checkSave', ({ targetPlayerId }, callback) => {
+      callback(game.getPacifistSaveCandidate(targetPlayerId));
+    });
+
     // 투표 관련 핸들러 등록 (별도 모듈)
     registerVoteHandlers(socket, storytellerIo, playerIo, game);
 

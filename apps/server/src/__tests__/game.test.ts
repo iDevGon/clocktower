@@ -1377,6 +1377,163 @@ describe('GameManager', () => {
     });
   });
 
+  describe('피로물든달 인앱 판정 보조', () => {
+    function createBmrAssistGame() {
+      const { gm, players } = createTestGame(8);
+      gm.assignRole(players[0].id, 'courtier');
+      gm.assignRole(players[1].id, 'gambler');
+      gm.assignRole(players[2].id, 'gossip');
+      gm.assignRole(players[3].id, 'moonchild');
+      gm.assignRole(players[4].id, 'pacifist');
+      gm.assignRole(players[5].id, 'grandmother');
+      gm.assignRole(players[6].id, 'sailor');
+      gm.assignRole(players[7].id, 'po');
+      gm.start();
+      return { gm, players };
+    }
+
+    it('궁정대신은 선택한 역할 보유자를 취하게 하고 능력을 소모한다', () => {
+      const { gm, players } = createBmrAssistGame();
+
+      const result = gm.resolveCourtierSelection(players[0].id, 'sailor');
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        drunkRoleId: 'sailor',
+        drunkPlayerIds: [players[6].id],
+      });
+      expect(gm.getPlayer(players[0].id)?.statuses).toContain('courtier_spent');
+      expect(gm.getPlayer(players[6].id)?.statuses).toContain('courtier_drunk');
+    });
+
+    it('궁정대신 취함은 선택한 밤을 포함해 3밤/3낮 이후 해제된다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.resolveCourtierSelection(players[0].id, 'sailor');
+
+      gm.setPhase('day');
+      gm.setPhase('night');
+      gm.setPhase('day');
+      gm.setPhase('night');
+      gm.setPhase('day');
+      expect(gm.getPlayer(players[6].id)?.statuses).toContain('courtier_drunk');
+
+      gm.setPhase('night');
+      expect(gm.getPlayer(players[6].id)?.statuses).not.toContain(
+        'courtier_drunk',
+      );
+    });
+
+    it('도박사는 틀린 선언이면 본인을 사망시킨다', () => {
+      const { gm, players } = createBmrAssistGame();
+
+      const result = gm.resolveGamblerGuess(
+        players[1].id,
+        players[5].id,
+        'sailor',
+      );
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        correct: false,
+        killedTargetId: players[1].id,
+      });
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(false);
+      expect(gm.hasPendingNightKill(players[1].id)).toBe(true);
+    });
+
+    it('도박사는 맞는 선언이면 사망하지 않는다', () => {
+      const { gm, players } = createBmrAssistGame();
+
+      const result = gm.resolveGamblerGuess(
+        players[1].id,
+        players[5].id,
+        'grandmother',
+      );
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        correct: true,
+      });
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
+    });
+
+    it('가십 사망 처리는 이야기꾼이 고른 대상을 사망시킨다', () => {
+      const { gm, players } = createBmrAssistGame();
+
+      const result = gm.resolveGossipKill(players[2].id, players[5].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        killedTargetId: players[5].id,
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(false);
+      expect(gm.hasPendingNightKill(players[5].id)).toBe(true);
+    });
+
+    it('달의 자손은 사망 후 선한 대상을 선택하면 그 대상을 사망시킨다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.kill(players[3].id);
+
+      const result = gm.resolveMoonchildSelection(players[3].id, players[5].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        killedTargetId: players[5].id,
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(false);
+    });
+
+    it('달의 자손이 악한 대상을 선택하면 사망시키지 않는다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.kill(players[3].id);
+
+      const result = gm.resolveMoonchildSelection(players[3].id, players[7].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        killedTargetId: undefined,
+      });
+      expect(gm.getPlayer(players[7].id)?.isAlive).toBe(true);
+    });
+
+    it('달의 자손이 낮에 선한 대상을 선택하면 다음 밤 사망으로 예약한다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.setPhase('day');
+      gm.kill(players[3].id);
+
+      const result = gm.resolveMoonchildSelection(players[3].id, players[5].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        pendingKillTargetId: players[5].id,
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(true);
+
+      gm.setPhase('night');
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(false);
+      expect(gm.hasPendingNightKill(players[5].id)).toBe(true);
+    });
+
+    it('평화주의자는 선한 처형 대상의 생존 판정 후보를 만든다', () => {
+      const { gm, players } = createBmrAssistGame();
+
+      const result = gm.getPacifistSaveCandidate(players[5].id);
+
+      expect(result).toEqual({
+        canSave: true,
+        pacifistId: players[4].id,
+        targetId: players[5].id,
+      });
+    });
+  });
+
   describe('피로물든달 지속 효과 자동화', () => {
     it('찻집 여인은 양쪽 살아있는 선한 이웃을 자동 보호한다', () => {
       const { gm, players } = createTestGame(7);

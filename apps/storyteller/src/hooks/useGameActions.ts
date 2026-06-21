@@ -277,6 +277,46 @@ export function useGameActions() {
     [socket],
   );
 
+  const courtierChooseRole = useCallback(
+    (courtierId: string, roleId: string) =>
+      socket?.emit('courtier:chooseRole', { courtierId, roleId }),
+    [socket],
+  );
+
+  const gamblerGuess = useCallback(
+    (gamblerId: string, targetPlayerId: string, guessedRoleId: string) =>
+      socket?.emit('gambler:guess', {
+        gamblerId,
+        targetPlayerId,
+        guessedRoleId,
+      }),
+    [socket],
+  );
+
+  const gossipKill = useCallback(
+    (gossipId: string, targetPlayerId: string) =>
+      socket?.emit('gossip:kill', { gossipId, targetPlayerId }),
+    [socket],
+  );
+
+  const moonchildChoose = useCallback(
+    (moonchildId: string, targetPlayerId: string) =>
+      socket?.emit('moonchild:choose', { moonchildId, targetPlayerId }),
+    [socket],
+  );
+
+  const checkPacifistSave = useCallback(
+    (
+      targetPlayerId: string,
+      callback: (
+        res:
+          | { canSave: true; pacifistId: string; targetId: string }
+          | { canSave: false },
+      ) => void,
+    ) => socket?.emit('pacifist:checkSave', { targetPlayerId }, callback),
+    [socket],
+  );
+
   const sendChatToPlayer = useCallback(
     (playerId: string, message: string) =>
       socket?.emit('chat:sendToPlayer', { playerId, message }),
@@ -378,6 +418,11 @@ export function useGameActions() {
     assignGoodTwin,
     boneCollectorRestore,
     applyBaristaEffect,
+    courtierChooseRole,
+    gamblerGuess,
+    gossipKill,
+    moonchildChoose,
+    checkPacifistSave,
     sendChatToPlayer,
     kickPlayer,
     addTraveller,
