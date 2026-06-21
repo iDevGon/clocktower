@@ -248,6 +248,8 @@ export class GameManager {
   private courtierDrunkEffects = new Map<string, CourtierDrunkEffect>();
   // 달의 자손이 낮에 선택해 오늘 밤 판정할 대상
   private pendingMoonchildKills = new Map<string, PendingMoonchildKill>();
+  // 엑소시스트가 이번 밤 깨우지 못하게 한 악마
+  private exorcistBlockedPlayerIds = new Set<string>();
   // 뼈 수집가: 게임 중 1회 복구 대상 추적
   private boneCollectorUsed = new Set<string>();
   private boneCollectorRestoredTargets = new Map<string, string>();
@@ -655,6 +657,7 @@ export class GameManager {
     this.goonSelectedTonight = false;
     this.courtierDrunkEffects.clear();
     this.pendingMoonchildKills.clear();
+    this.exorcistBlockedPlayerIds.clear();
     this.boneCollectorUsed.clear();
     this.boneCollectorRestoredTargets.clear();
     this.pendingHarlotConsents.clear();
@@ -1074,6 +1077,7 @@ export class GameManager {
       this.butcherExtraNominationUsed = false;
       this.butcherExtraNominatorId = null;
       this.goonSelectedTonight = false;
+      this.exorcistBlockedPlayerIds.clear();
       this.boneCollectorRestoredTargets.clear();
       this.pendingHarlotConsents.clear();
       this.pendingNightKills = [];
@@ -2063,6 +2067,64 @@ export class GameManager {
       blocked: false,
       protectedTargetId: target.id,
     };
+  }
+
+  resolveExorcistSelection(
+    exorcistId: string,
+    targetId: string,
+  ):
+    | {
+        success: true;
+        blocked: boolean;
+        blockedTargetId?: string;
+      }
+    | {
+        success: false;
+        blocked: boolean;
+        reason: string;
+      } {
+    const exorcist = this.getPlayer(exorcistId);
+    if (!exorcist) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '엑소시스트를 찾을 수 없습니다',
+      };
+    }
+
+    const target = this.getPlayer(targetId);
+    if (!target) {
+      return {
+        success: false,
+        blocked: false,
+        reason: '대상을 찾을 수 없습니다',
+      };
+    }
+
+    if (isPoisonedOrDrunk(exorcist)) {
+      return {
+        success: true,
+        blocked: true,
+      };
+    }
+
+    if (!isRegisteredAsDemon(target)) {
+      return {
+        success: true,
+        blocked: false,
+      };
+    }
+
+    this.exorcistBlockedPlayerIds.add(target.id);
+    return {
+      success: true,
+      blocked: false,
+      blockedTargetId: target.id,
+    };
+  }
+
+  isExorcistBlockedFromWaking(playerId: string): boolean {
+    return this.exorcistBlockedPlayerIds.has(playerId);
   }
 
   resolveAssassinSelection(

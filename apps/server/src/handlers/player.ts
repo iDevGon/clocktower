@@ -559,6 +559,11 @@ export function registerPlayerHandlers(
             storytellerIo.emit('game:state', game.getStorytellerState());
           }
 
+          if (effectiveRoleId === 'exorcist' && targets.length > 0) {
+            game.resolveExorcistSelection(playerId, targets[0]);
+            storytellerIo.emit('game:state', game.getStorytellerState());
+          }
+
           if (effectiveRoleId === 'assassin' && targets.length > 0) {
             game.resolveAssassinSelection(playerId, targets[0]);
             storytellerIo.emit('game:state', game.getStorytellerState());

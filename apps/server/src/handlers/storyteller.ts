@@ -586,6 +586,7 @@ export function registerStorytellerHandlers(
             (p.role?.id === 'philosopher' &&
               p.philosopherGrantedRole === roleId);
           if (!roleMatches) return false;
+          if (game.isExorcistBlockedFromWaking(p.id)) return false;
           return isOnlyWhenDead
             ? !p.isAlive && game.hasPendingNightKill(p.id)
             : p.isAlive ||

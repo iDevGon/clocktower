@@ -161,6 +161,29 @@ describe('E2E: 피로물든달 판정 보조', () => {
     );
   });
 
+  it('엑소시스트가 선택한 악마는 그 밤 깨어나지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'exorcist' },
+      { roleId: 'godfather' },
+      { roleId: 'pukka' },
+    ]);
+
+    const statePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.players[2].emit('night:action', { targets: [playerIds[4]] });
+    await statePromise;
+
+    const wakeTargetsPromise = waitForEvent<{ candidateIds: string[] }>(
+      ctx.storyteller,
+      'night:wakeUpTargets',
+    );
+    ctx.storyteller.emit('night:setActiveRole', 'pukka');
+    const wakeTargets = await wakeTargetsPromise;
+
+    expect(wakeTargets.candidateIds).not.toContain(playerIds[4]);
+  });
+
   it('교수 밤 행동은 사망한 마을주민을 부활시키고 능력을 소모한다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [
       { roleId: 'professor' },
