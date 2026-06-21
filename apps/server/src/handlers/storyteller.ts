@@ -992,6 +992,26 @@ export function registerStorytellerHandlers(
       }
     });
 
+    socket.on(
+      'shabaloth:regurgitate',
+      ({ shabalothId, targetPlayerId }, callback) => {
+        const result = game.resolveShabalothRegurgitation(
+          shabalothId,
+          targetPlayerId,
+        );
+        if (!result.success) {
+          callback?.({ success: false, error: result.reason });
+          return;
+        }
+        storytellerIo.emit('game:state', game.getStorytellerState());
+        const revivedPlayer = game.getPlayer(result.revivedTargetId);
+        if (revivedPlayer) {
+          playerIo.emit('game:playerUpdate', revivedPlayer);
+        }
+        callback?.({ success: true });
+      },
+    );
+
     socket.on('courtier:chooseRole', ({ courtierId, roleId }, callback) => {
       const result = game.resolveCourtierSelection(courtierId, roleId);
       if (!result.success) {

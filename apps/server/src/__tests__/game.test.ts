@@ -216,6 +216,24 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[0].id)?.isAlive).toBe(true);
     });
 
+    it('사망 투표권을 쓴 플레이어도 부활 후 다시 죽으면 새 사망 투표권을 받는다', () => {
+      const { gm, players } = createStartedGame();
+      gm.kill(players[2].id);
+      gm.setPhase('day');
+      gm.setDaySubPhase('nomination');
+
+      gm.nominate(players[0].id, players[1].id);
+      expect(gm.castVote(players[2].id).success).toBe(true);
+      gm.closeVote();
+
+      gm.revive(players[2].id);
+      expect(gm.isGhostVoteUsed(players[2].id)).toBe(false);
+
+      gm.kill(players[2].id);
+      gm.nominate(players[3].id, players[4].id);
+      expect(gm.castVote(players[2].id).success).toBe(true);
+    });
+
     it('밤 사망 대기 중인 플레이어를 부활시키면 사망 알림 대기에서도 제거한다', () => {
       const { gm, players } = createStartedGame();
       gm.addPendingNightKill(players[0].id);
@@ -839,6 +857,38 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[1].id)?.statuses).not.toContain(
         'shabaloth_marked_dead',
       );
+    });
+
+    it('표식이 있는 사망자를 한 밤에 한 명만 토해내 부활시킨다', () => {
+      const { gm, players } = createShabalothGame();
+      gm.setPhase('night');
+      gm.kill(players[0].id);
+      gm.kill(players[1].id);
+      gm.setPlayerStatuses(players[0].id, ['shabaloth_marked_dead']);
+      gm.setPlayerStatuses(players[1].id, ['shabaloth_marked_dead']);
+
+      const first = gm.resolveShabalothRegurgitation(
+        players[4].id,
+        players[0].id,
+      );
+      const second = gm.resolveShabalothRegurgitation(
+        players[4].id,
+        players[1].id,
+      );
+
+      expect(first).toEqual({
+        success: true,
+        revivedTargetId: players[0].id,
+      });
+      expect(gm.getPlayer(players[0].id)?.isAlive).toBe(true);
+      expect(gm.getPlayer(players[0].id)?.statuses).not.toContain(
+        'shabaloth_marked_dead',
+      );
+      expect(second).toEqual({
+        success: false,
+        reason: '사발로스는 이번 밤 이미 1명을 토해냈습니다',
+      });
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(false);
     });
   });
 

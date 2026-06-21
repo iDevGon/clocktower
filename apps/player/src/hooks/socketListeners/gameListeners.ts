@@ -189,6 +189,7 @@ export function attachGameListeners(socket: AppSocket) {
       const showDeathOverlay = wasDeath && !(isOnlyWhenDead && isNightKill);
       usePlayerStore.getState().set({
         isAlive: player.isAlive,
+        deadVoteUsed: player.deadVoteUsed,
         philosopherGrantedRole: player.philosopherGrantedRole ?? null,
         ...(showDeathOverlay
           ? {
@@ -200,7 +201,9 @@ export function attachGameListeners(socket: AppSocket) {
       });
     }
     const updated = state.gamePlayers.map((p) =>
-      p.id === player.id ? { ...p, isAlive: player.isAlive } : p,
+      p.id === player.id
+        ? { ...p, isAlive: player.isAlive, deadVoteUsed: player.deadVoteUsed }
+        : p,
     );
     usePlayerStore.getState().set({ gamePlayers: updated });
   });

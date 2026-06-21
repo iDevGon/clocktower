@@ -233,6 +233,7 @@ export default function GrimoireScreen() {
     courtierChooseRole,
     gamblerGuess,
     gossipKill,
+    shabalothRegurgitate,
     moonchildChoose,
     assignRedHerring,
     kickPlayer,
@@ -534,21 +535,6 @@ export default function GrimoireScreen() {
       getDay(),
       getPhase(),
       `${getPlayerName(playerId)} ${PLAYER_STATUS_LABELS[status]}`,
-    );
-  };
-
-  const removePlayerStatus = (playerId: string, status: PlayerStatus) => {
-    const current = playerStatuses[playerId] ?? [];
-    if (!current.includes(status)) return;
-    useGameStore.getState().removePlayerStatus(playerId, status);
-    syncPlayerStatuses(
-      playerId,
-      current.filter((st) => st !== status),
-    );
-    addLog(
-      getDay(),
-      getPhase(),
-      `${getPlayerName(playerId)} 상태 제거: ${PLAYER_STATUS_LABELS[status]}`,
     );
   };
 
@@ -1798,7 +1784,6 @@ export default function GrimoireScreen() {
         onKill={kill}
         onRevive={revive}
         onSetStatus={setPlayerStatus}
-        onRemoveStatus={removePlayerStatus}
         onFangGuJump={fangGuConfirmJump}
         onSnakeCharmerSwap={snakeCharmerSwap}
         onVigormortisKillMinion={vigormortisKillMinion}
@@ -1808,6 +1793,7 @@ export default function GrimoireScreen() {
         onCourtierChooseRole={courtierChooseRole}
         onGamblerGuess={gamblerGuess}
         onGossipKill={gossipKill}
+        onShabalothRegurgitate={shabalothRegurgitate}
         onMoonchildChoose={moonchildChoose}
         nightWakeUpTargets={nightWakeUpTargets}
         styles={styles}

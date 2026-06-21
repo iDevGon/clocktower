@@ -488,6 +488,10 @@ export interface StorytellerToServerEvents {
   'game:unassignAllRoles': () => void;
   'game:kill': (playerId: string) => void;
   'game:revive': (playerId: string) => void;
+  'shabaloth:regurgitate': (
+    data: { shabalothId: string; targetPlayerId: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   'vote:nominate': (data: { nominatorId: string; nomineeId: string }) => void;
   'vote:castForPlayer': (data: { playerId: string; guilty: boolean }) => void;
   'vote:close': () => void;

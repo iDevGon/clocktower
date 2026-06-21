@@ -26,6 +26,8 @@ import { RolePickerModal } from './RolePickerModal';
 
 export { NightFeedbackPanel } from './NightFeedbackPanel';
 
+type BmrAssistResult = { success: boolean; error?: string };
+
 /** 역할별 타겟 액션 버튼 설정 */
 interface TargetActionConfig {
   label: string;
@@ -126,7 +128,11 @@ interface NightActionLogProps {
   onKill?: (playerId: string) => void;
   onRevive?: (playerId: string) => void;
   onSetStatus?: (playerId: string, status: PlayerStatus) => void;
-  onRemoveStatus?: (playerId: string, status: PlayerStatus) => void;
+  onShabalothRegurgitate?: (
+    shabalothId: string,
+    targetPlayerId: string,
+    callback?: (result: BmrAssistResult) => void,
+  ) => void;
   playerOrder?: string[];
   onFangGuJump?: (oldDemonId: string, newDemonId: string) => void;
   onSnakeCharmerSwap?: (snakeCharmerId: string, demonId: string) => void;
@@ -154,7 +160,7 @@ export function NightActionLog({
   onKill,
   onRevive,
   onSetStatus,
-  onRemoveStatus,
+  onShabalothRegurgitate,
   playerOrder,
   onFangGuJump,
   onSnakeCharmerSwap,
@@ -366,13 +372,15 @@ export function NightActionLog({
                             key={player.id}
                             onPress={() => {
                               if (alreadyRevived) return;
-                              onRevive?.(player.id);
-                              onRemoveStatus?.(
+                              onShabalothRegurgitate?.(
+                                action.playerId,
                                 player.id,
-                                'shabaloth_marked_dead',
-                              );
-                              setProcessedTargets((prev) =>
-                                new Set(prev).add(reviveKey),
+                                (result) => {
+                                  if (!result.success) return;
+                                  setProcessedTargets((prev) =>
+                                    new Set(prev).add(reviveKey),
+                                  );
+                                },
                               );
                             }}
                             style={[

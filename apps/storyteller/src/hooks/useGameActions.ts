@@ -309,6 +309,20 @@ export function useGameActions() {
     [socket],
   );
 
+  const shabalothRegurgitate = useCallback(
+    (
+      shabalothId: string,
+      targetPlayerId: string,
+      callback?: BmrAssistCallback,
+    ) =>
+      socket?.emit(
+        'shabaloth:regurgitate',
+        { shabalothId, targetPlayerId },
+        callback,
+      ),
+    [socket],
+  );
+
   const moonchildChoose = useCallback(
     (
       moonchildId: string,
@@ -445,6 +459,7 @@ export function useGameActions() {
     courtierChooseRole,
     gamblerGuess,
     gossipKill,
+    shabalothRegurgitate,
     moonchildChoose,
     checkPacifistSave,
     sendChatToPlayer,

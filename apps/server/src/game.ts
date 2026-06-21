@@ -199,6 +199,7 @@ export class GameManager {
   private ghostVotesUsed = new Set<string>();
   // 밤 중 사망한 플레이어 (낮 전환 시 알림용)
   private pendingNightKills: string[] = [];
+  private shabalothRegurgitatedTonight = false;
   // 현재 활성 밤 역할 및 순서 (재접속 시 복원용)
   private currentNightRoleId: string | null = null;
   private currentNightOrder: string[] = [];
@@ -643,6 +644,7 @@ export class GameManager {
     this.executionCandidateThreshold = 0;
     this.ghostVotesUsed.clear();
     this.pendingNightKills = [];
+    this.shabalothRegurgitatedTonight = false;
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
     this.fortuneTellerRedHerring = null;
@@ -737,6 +739,7 @@ export class GameManager {
     this.executionCandidateThreshold = 0;
     this.ghostVotesUsed.clear();
     this.pendingNightKills = [];
+    this.shabalothRegurgitatedTonight = false;
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
     this.fortuneTellerRedHerring = null;
@@ -1087,6 +1090,7 @@ export class GameManager {
       this.boneCollectorRestoredTargets.clear();
       this.pendingHarlotConsents.clear();
       this.pendingNightKills = [];
+      this.shabalothRegurgitatedTonight = false;
       // 추방 투표 진행 중이면 취소
       this.exileVote = null;
       // 마녀 저주 초기화 (밤 시작 시)
@@ -1292,6 +1296,8 @@ export class GameManager {
     const player = this.getPlayer(playerId);
     if (player) {
       player.isAlive = true;
+      player.deadVoteUsed = false;
+      this.ghostVotesUsed.delete(playerId);
       this.removePendingNightKill(playerId);
       this.syncContinuousPoisoning();
     }
@@ -1835,6 +1841,52 @@ export class GameManager {
       blocked: false,
       killedTargetIds,
     };
+  }
+
+  resolveShabalothRegurgitation(
+    shabalothId: string,
+    targetId: string,
+  ):
+    | {
+        success: true;
+        revivedTargetId: string;
+      }
+    | {
+        success: false;
+        reason: string;
+      } {
+    const shabaloth = this.getPlayer(shabalothId);
+    if (!shabaloth || shabaloth.role?.id !== 'shabaloth') {
+      return { success: false, reason: '사발로스를 찾을 수 없습니다' };
+    }
+    if (isPoisonedOrDrunk(shabaloth)) {
+      return { success: false, reason: '사발로스가 중독/취함 상태입니다' };
+    }
+    if (this.shabalothRegurgitatedTonight) {
+      return {
+        success: false,
+        reason: '사발로스는 이번 밤 이미 1명을 토해냈습니다',
+      };
+    }
+
+    const target = this.getPlayer(targetId);
+    if (!target) {
+      return { success: false, reason: '대상을 찾을 수 없습니다' };
+    }
+    if (isPubliclyAlive(target)) {
+      return { success: false, reason: '사망한 대상만 토해낼 수 있습니다' };
+    }
+    if (!target.statuses.includes('shabaloth_marked_dead')) {
+      return {
+        success: false,
+        reason: '사발로스가 사망시킨 표식 대상만 토해낼 수 있습니다',
+      };
+    }
+
+    this.shabalothRegurgitatedTonight = true;
+    this.revive(target.id);
+    this.removeStatus(target, 'shabaloth_marked_dead');
+    return { success: true, revivedTargetId: target.id };
   }
 
   resolvePoSelection(

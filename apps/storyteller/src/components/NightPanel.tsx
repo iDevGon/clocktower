@@ -46,7 +46,6 @@ interface NightPanelProps {
   onKill: (playerId: string) => void;
   onRevive?: (playerId: string) => void;
   onSetStatus: (playerId: string, status: PlayerStatus) => void;
-  onRemoveStatus?: (playerId: string, status: PlayerStatus) => void;
   onFangGuJump?: (oldDemonId: string, newDemonId: string) => void;
   onSnakeCharmerSwap?: (snakeCharmerId: string, demonId: string) => void;
   onVigormortisKillMinion?: (
@@ -80,6 +79,11 @@ interface NightPanelProps {
   ) => void;
   onGossipKill?: (
     gossipId: string,
+    targetPlayerId: string,
+    callback?: (result: BmrAssistResult) => void,
+  ) => void;
+  onShabalothRegurgitate?: (
+    shabalothId: string,
     targetPlayerId: string,
     callback?: (result: BmrAssistResult) => void,
   ) => void;
@@ -121,7 +125,6 @@ export function NightPanel({
   onKill,
   onRevive,
   onSetStatus,
-  onRemoveStatus,
   onFangGuJump,
   onSnakeCharmerSwap,
   onVigormortisKillMinion,
@@ -131,6 +134,7 @@ export function NightPanel({
   onCourtierChooseRole,
   onGamblerGuess,
   onGossipKill,
+  onShabalothRegurgitate,
   onMoonchildChoose,
   nightWakeUpTargets,
   styles,
@@ -309,7 +313,12 @@ export function NightPanel({
           onKill={onKill}
           onRevive={onRevive}
           onSetStatus={onSetStatus}
-          onRemoveStatus={onRemoveStatus}
+          onShabalothRegurgitate={(shabalothId, targetPlayerId, callback) =>
+            onShabalothRegurgitate?.(shabalothId, targetPlayerId, (result) => {
+              handleBmrAssistResult(result);
+              callback?.(result);
+            })
+          }
           playerOrder={playerOrder}
           onFangGuJump={onFangGuJump}
           onSnakeCharmerSwap={onSnakeCharmerSwap}
