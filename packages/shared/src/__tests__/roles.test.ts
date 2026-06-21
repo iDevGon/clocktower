@@ -846,6 +846,23 @@ describe('Bad Moon Rising 역할 정의', () => {
       result.assignments.every((a) => a.role.edition === 'bad_moon_rising'),
     ).toBe(true);
   });
+
+  it('갓파더가 포함되면 BMR 자동 배분에서 외지인 수를 조정한다', () => {
+    const playerIds = Array.from({ length: 7 }, (_, i) => `bmr-p${i + 1}`);
+    const result = distributeRoles(playerIds, {
+      editionId: 'bad_moon_rising',
+      excludedRoleIds: ['devils_advocate', 'assassin', 'mastermind'],
+    });
+
+    expect(result).not.toBeNull();
+    if (!result) return;
+    expect(result.assignments.some((a) => a.role.id === 'godfather')).toBe(
+      true,
+    );
+    expect(
+      result.assignments.filter((a) => a.role.team === 'outsider'),
+    ).toHaveLength(1);
+  });
 });
 
 describe('BMR 밤 진행 순서', () => {
@@ -920,6 +937,25 @@ describe('BMR 밤 행동 정의', () => {
 
   it('교수는 사망 플레이어도 대상으로 선택할 수 있다', () => {
     expect(NIGHT_ACTIONS.professor?.includeDeadTargets).toBe(true);
+  });
+
+  it('교수는 사망 플레이어만 대상으로 선택한다', () => {
+    expect(NIGHT_ACTIONS.professor?.deadTargetsOnly).toBe(true);
+  });
+
+  it('BMR에서 생존 제한이 없는 플레이어 선택 역할은 사망 플레이어도 선택할 수 있다', () => {
+    for (const id of [
+      'exorcist',
+      'innkeeper',
+      'godfather',
+      'assassin',
+      'zombuul',
+      'pukka',
+      'shabaloth',
+      'po',
+    ]) {
+      expect(NIGHT_ACTIONS[id]?.includeDeadTargets).toBe(true);
+    }
   });
 });
 

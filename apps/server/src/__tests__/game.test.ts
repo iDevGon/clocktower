@@ -693,6 +693,40 @@ describe('GameManager', () => {
       expect(result).not.toBeNull();
       expect(result?.winningTeam).toBe('good');
     });
+
+    it('주모자가 살아있으면 악마 처형 직후 게임을 하루 더 진행한다', () => {
+      const { gm, players } = createTestGame(5);
+      gm.assignRole(players[0].id, 'grandmother');
+      gm.assignRole(players[1].id, 'sailor');
+      gm.assignRole(players[2].id, 'gambler');
+      gm.assignRole(players[3].id, 'mastermind');
+      gm.assignRole(players[4].id, 'po');
+      gm.start();
+
+      gm.resolveExecution(players[4].id);
+      const result = gm.checkWinCondition('po', players[4].id);
+
+      expect(result).toBeNull();
+      expect(gm.getState().phase).not.toBe('ended');
+    });
+
+    it('주모자 추가 낮에 선한 플레이어가 처형되면 악 팀이 승리한다', () => {
+      const { gm, players } = createTestGame(5);
+      gm.assignRole(players[0].id, 'grandmother');
+      gm.assignRole(players[1].id, 'sailor');
+      gm.assignRole(players[2].id, 'gambler');
+      gm.assignRole(players[3].id, 'mastermind');
+      gm.assignRole(players[4].id, 'po');
+      gm.start();
+
+      gm.resolveExecution(players[4].id);
+      gm.checkWinCondition('po', players[4].id);
+      gm.resolveExecution(players[0].id);
+      const result = gm.checkWinCondition('grandmother', players[0].id);
+
+      expect(result).not.toBeNull();
+      expect(result?.winningTeam).toBe('evil');
+    });
   });
 
   describe('임프 자살', () => {
@@ -828,11 +862,32 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[0].id)?.statuses).toContain(
         'shabaloth_marked_dead',
       );
-      expect(gm.getPlayer(players[1].id)?.statuses).toContain(
+      expect(gm.getPlayer(players[1].id)?.statuses).not.toContain(
         'shabaloth_marked_dead',
       );
       expect(gm.hasPendingNightKill(players[0].id)).toBe(true);
       expect(gm.hasPendingNightKill(players[1].id)).toBe(false);
+    });
+
+    it('사발로스 표식은 지난밤 선택한 죽은 대상만 남긴다', () => {
+      const { gm, players } = createShabalothGame();
+      gm.kill(players[0].id);
+      gm.setPlayerStatuses(players[0].id, ['shabaloth_marked_dead']);
+
+      gm.resolveShabalothSelection(players[4].id, [
+        players[2].id,
+        players[3].id,
+      ]);
+
+      expect(gm.getPlayer(players[0].id)?.statuses).not.toContain(
+        'shabaloth_marked_dead',
+      );
+      expect(gm.getPlayer(players[2].id)?.statuses).toContain(
+        'shabaloth_marked_dead',
+      );
+      expect(gm.getPlayer(players[3].id)?.statuses).toContain(
+        'shabaloth_marked_dead',
+      );
     });
 
     it('사발로스가 취함/중독이면 대상 사망과 표식을 자동 적용하지 않는다', () => {
@@ -857,6 +912,28 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[1].id)?.statuses).not.toContain(
         'shabaloth_marked_dead',
       );
+    });
+
+    it('사발로스는 서로 다른 플레이어 2명을 선택해야 한다', () => {
+      const { gm, players } = createShabalothGame();
+
+      expect(
+        gm.resolveShabalothSelection(players[4].id, [players[0].id]),
+      ).toEqual({
+        success: false,
+        blocked: false,
+        reason: '사발로스는 서로 다른 플레이어 2명을 선택해야 합니다',
+      });
+      expect(
+        gm.resolveShabalothSelection(players[4].id, [
+          players[0].id,
+          players[0].id,
+        ]),
+      ).toEqual({
+        success: false,
+        blocked: false,
+        reason: '사발로스는 서로 다른 플레이어 2명을 선택해야 합니다',
+      });
     });
 
     it('표식이 있는 사망자를 한 밤에 한 명만 토해내 부활시킨다', () => {
@@ -1045,6 +1122,23 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
     });
 
+    it('포가 3명을 공격할 때는 서로 다른 플레이어를 선택해야 한다', () => {
+      const { gm, players } = createPoGame();
+      gm.setPlayerStatuses(players[4].id, ['po_chose_no_one']);
+
+      const result = gm.resolvePoSelection(players[4].id, [
+        players[0].id,
+        players[0].id,
+        players[1].id,
+      ]);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: false,
+        reason: '포는 서로 다른 플레이어 3명을 선택해야 합니다',
+      });
+    });
+
     it('포가 취함/중독이면 사망을 자동 적용하지 않는다', () => {
       const { gm, players } = createPoGame();
       gm.setPlayerStatuses(players[4].id, ['drunk']);
@@ -1200,6 +1294,37 @@ describe('GameManager', () => {
       ).toHaveLength(1);
     });
 
+    it('선원은 선택한 생존 플레이어와 술을 마시고 한쪽을 취하게 한다', () => {
+      const { gm, players } = createBmrActionGame();
+      gm.assignRole(players[0].id, 'sailor');
+
+      const result = gm.resolveSailorSelection(players[0].id, players[5].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        drunkTargetId: players[5].id,
+      });
+      expect(gm.getPlayer(players[5].id)?.statuses).toContain('sailor_drunk');
+    });
+
+    it('선원이 취함/중독이면 술 취함을 자동 적용하지 않는다', () => {
+      const { gm, players } = createBmrActionGame();
+      gm.assignRole(players[0].id, 'sailor');
+      gm.setPlayerStatuses(players[0].id, ['poisoned']);
+
+      const result = gm.resolveSailorSelection(players[0].id, players[5].id);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: true,
+        reason: '선원이 중독/취함 상태입니다',
+      });
+      expect(gm.getPlayer(players[5].id)?.statuses).not.toContain(
+        'sailor_drunk',
+      );
+    });
+
     it('여관 주인이 취함/중독이면 보호를 자동 적용하지 않는다', () => {
       const { gm, players } = createBmrActionGame();
       gm.setPlayerStatuses(players[0].id, ['poisoned']);
@@ -1222,6 +1347,21 @@ describe('GameManager', () => {
       );
     });
 
+    it('여관 주인은 서로 다른 플레이어 2명을 선택해야 한다', () => {
+      const { gm, players } = createBmrActionGame();
+
+      const result = gm.resolveInnkeeperSelection(players[0].id, [
+        players[5].id,
+        players[5].id,
+      ]);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: false,
+        reason: '여관 주인은 서로 다른 플레이어 2명을 선택해야 합니다',
+      });
+    });
+
     it('악마의 변호사는 선택한 플레이어에게 처형 보호를 부여한다', () => {
       const { gm, players } = createBmrActionGame();
 
@@ -1238,6 +1378,56 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[5].id)?.statuses).toContain(
         'devils_advocate_protected',
       );
+    });
+
+    it('악마의 변호사는 사망한 플레이어를 보호 대상으로 선택할 수 없다', () => {
+      const { gm, players } = createBmrActionGame();
+      gm.kill(players[5].id);
+
+      const result = gm.resolveDevilsAdvocateSelection(
+        players[1].id,
+        players[5].id,
+      );
+
+      expect(result).toEqual({
+        success: false,
+        blocked: false,
+        reason: '생존한 대상을 찾을 수 없습니다',
+      });
+      expect(gm.getPlayer(players[5].id)?.statuses).not.toContain(
+        'devils_advocate_protected',
+      );
+    });
+
+    it('악마의 변호사는 지난밤 선택한 플레이어를 바로 다시 선택할 수 없다', () => {
+      const { gm, players } = createBmrActionGame();
+
+      const firstResult = gm.resolveDevilsAdvocateSelection(
+        players[1].id,
+        players[5].id,
+      );
+      gm.setPhase('day');
+      gm.setPhase('night');
+      const repeatedResult = gm.resolveDevilsAdvocateSelection(
+        players[1].id,
+        players[5].id,
+      );
+      const otherResult = gm.resolveDevilsAdvocateSelection(
+        players[1].id,
+        players[6].id,
+      );
+
+      expect(firstResult.success).toBe(true);
+      expect(repeatedResult).toEqual({
+        success: false,
+        blocked: false,
+        reason: '악마의 변호사는 지난밤 선택한 대상을 다시 선택할 수 없습니다',
+      });
+      expect(otherResult).toEqual({
+        success: true,
+        blocked: false,
+        protectedTargetId: players[6].id,
+      });
     });
 
     it('악마의 변호사가 취함/중독이면 보호를 자동 적용하지 않는다', () => {
@@ -1257,6 +1447,42 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[5].id)?.statuses).not.toContain(
         'devils_advocate_protected',
       );
+    });
+
+    it('구마사제는 지난밤 선택한 플레이어를 바로 다시 선택할 수 없다', () => {
+      const { gm, players } = createBmrActionGame();
+      gm.assignRole(players[0].id, 'exorcist');
+
+      const firstResult = gm.resolveExorcistSelection(
+        players[0].id,
+        players[6].id,
+      );
+      gm.setPhase('day');
+      gm.setPhase('night');
+      const repeatedResult = gm.resolveExorcistSelection(
+        players[0].id,
+        players[6].id,
+      );
+
+      expect(firstResult.success).toBe(true);
+      expect(repeatedResult).toEqual({
+        success: false,
+        blocked: false,
+        reason: '구마사제는 지난밤 선택한 대상을 다시 선택할 수 없습니다',
+      });
+    });
+
+    it('구마사제는 자기 자신을 선택할 수 없다', () => {
+      const { gm, players } = createBmrActionGame();
+      gm.assignRole(players[0].id, 'exorcist');
+
+      const result = gm.resolveExorcistSelection(players[0].id, players[0].id);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: false,
+        reason: '구마사제는 자신을 선택할 수 없습니다',
+      });
     });
 
     it('암살자는 보호 상태와 무관하게 대상을 사망시키고 능력을 소모한다', () => {
@@ -1308,6 +1534,10 @@ describe('GameManager', () => {
 
     it('대부는 선택한 대상을 사망시킨다', () => {
       const { gm, players } = createBmrActionGame();
+      gm.assignRole(players[6].id, 'moonchild');
+      gm.setPhase('day');
+      gm.kill(players[6].id);
+      gm.setPhase('night');
 
       const result = gm.resolveGodfatherSelection(players[4].id, players[5].id);
 
@@ -1321,6 +1551,10 @@ describe('GameManager', () => {
 
     it('대부는 밤 보호 대상은 사망시키지 않는다', () => {
       const { gm, players } = createBmrActionGame();
+      gm.assignRole(players[6].id, 'moonchild');
+      gm.setPhase('day');
+      gm.kill(players[6].id);
+      gm.setPhase('night');
       gm.setPlayerStatuses(players[5].id, ['innkeeper_protected']);
 
       const result = gm.resolveGodfatherSelection(players[4].id, players[5].id);
@@ -1448,7 +1682,7 @@ describe('GameManager', () => {
       return { gm, players };
     }
 
-    it('험담꾼 공개발언은 하루 1회 기록되고 다음 낮에 다시 사용할 수 있다', () => {
+    it('험담 공개발언은 플레이어별 하루 1회 기록되고 다음 낮에 다시 사용할 수 있다', () => {
       const { gm, players } = createBmrAssistGame();
       gm.setPhase('day');
 
@@ -1468,6 +1702,17 @@ describe('GameManager', () => {
 
       expect(gm.isGossipUsedToday(players[2].id)).toBe(false);
       expect(gm.getGossipStatement(players[2].id)).toBeUndefined();
+    });
+
+    it('험담꾼이 아닌 플레이어의 공개발언도 같은 방식으로 기록한다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.setPhase('day');
+
+      expect(gm.isGossipUsedToday(players[5].id)).toBe(false);
+      gm.recordGossipStatement(players[5].id, '나는 험담꾼입니다');
+
+      expect(gm.isGossipUsedToday(players[5].id)).toBe(true);
+      expect(gm.getGossipStatement(players[5].id)).toBe('나는 험담꾼입니다');
     });
 
     it('궁정대신은 선택한 역할 보유자를 취하게 하고 능력을 소모한다', () => {
@@ -1590,6 +1835,69 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
     });
 
+    it('미치광이의 가짜 악마 행동은 실제 악마 능력으로 처리되지 않는다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.assignRole(players[0].id, 'lunatic', undefined, 'pukka');
+
+      const result = gm.resolvePukkaSelection(players[0].id, players[5].id);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: false,
+        reason: '푸카를 찾을 수 없습니다',
+      });
+      expect(gm.getPlayer(players[5].id)?.statuses).not.toContain(
+        'pukka_poisoned',
+      );
+    });
+
+    it('험담 사망 처리는 실제 험담꾼만 실행할 수 있다', () => {
+      const { gm, players } = createBmrAssistGame();
+
+      const result = gm.resolveGossipKill(players[5].id, players[6].id);
+
+      expect(result).toEqual({
+        success: false,
+        blocked: false,
+        reason: '가십을 찾을 수 없습니다',
+      });
+      expect(gm.getPlayer(players[6].id)?.isAlive).toBe(true);
+    });
+
+    it('대부는 낮에 외지인이 사망한 날 밤에만 사망을 처리할 수 있다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.assignRole(players[0].id, 'godfather');
+      gm.setPhase('night');
+
+      const noOutsiderDeathResult = gm.resolveGodfatherSelection(
+        players[0].id,
+        players[5].id,
+      );
+
+      expect(noOutsiderDeathResult).toEqual({
+        success: false,
+        blocked: false,
+        reason: '오늘 낮에 사망한 외지인이 없어 대부 자동 처리를 건너뜁니다',
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(true);
+
+      gm.setPhase('day');
+      gm.kill(players[3].id);
+      gm.setPhase('night');
+
+      const outsiderDeathResult = gm.resolveGodfatherSelection(
+        players[0].id,
+        players[5].id,
+      );
+
+      expect(outsiderDeathResult).toEqual({
+        success: true,
+        blocked: false,
+        killedTargetId: players[5].id,
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(false);
+    });
+
     it('가십 사망 처리는 이야기꾼이 고른 대상을 사망시킨다', () => {
       const { gm, players } = createBmrAssistGame();
 
@@ -1630,6 +1938,63 @@ describe('GameManager', () => {
         killedTargetId: undefined,
       });
       expect(gm.getPlayer(players[7].id)?.isAlive).toBe(true);
+    });
+
+    it('달의 자손은 사망했거나 공개상 사망한 대상을 선택할 수 없다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.kill(players[3].id);
+      gm.kill(players[5].id);
+
+      const deadTargetResult = gm.resolveMoonchildSelection(
+        players[3].id,
+        players[5].id,
+      );
+
+      expect(deadTargetResult).toEqual({
+        success: false,
+        blocked: false,
+        reason: '달의 자손은 생존한 대상을 선택해야 합니다',
+      });
+
+      gm.assignRole(players[7].id, 'zombuul');
+      gm.setPlayerStatuses(players[7].id, ['zombuul_registers_dead']);
+      const publiclyDeadTargetResult = gm.resolveMoonchildSelection(
+        players[3].id,
+        players[7].id,
+      );
+
+      expect(publiclyDeadTargetResult).toEqual({
+        success: false,
+        blocked: false,
+        reason: '달의 자손은 생존한 대상을 선택해야 합니다',
+      });
+    });
+
+    it('달의 자손은 사망 후 한 번만 공개 선택할 수 있다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.kill(players[3].id);
+
+      const first = gm.resolveMoonchildSelection(players[3].id, players[5].id);
+      const second = gm.resolveMoonchildSelection(players[3].id, players[6].id);
+
+      expect(first).toMatchObject({ success: true, blocked: false });
+      expect(second).toEqual({
+        success: false,
+        blocked: false,
+        reason: '달의 자손은 이미 선택했습니다',
+      });
+    });
+
+    it('달의 자손이 부활 후 다시 사망하면 다시 공개 선택할 수 있다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.kill(players[3].id);
+      gm.resolveMoonchildSelection(players[3].id, players[5].id);
+
+      gm.revive(players[3].id);
+      gm.kill(players[3].id);
+      const result = gm.resolveMoonchildSelection(players[3].id, players[6].id);
+
+      expect(result).toMatchObject({ success: true, blocked: false });
     });
 
     it('달의 자손이 낮에 선한 대상을 선택하면 다음 밤 사망으로 예약한다', () => {
@@ -1683,6 +2048,32 @@ describe('GameManager', () => {
       expect(gm.resolvePendingMoonchildKills()).toEqual([]);
       expect(gm.getPlayer(players[5].id)?.isAlive).toBe(true);
       expect(gm.hasPendingNightKill(players[5].id)).toBe(false);
+    });
+
+    it('할머니 손주가 악마가 아닌 원인으로 죽으면 할머니는 같이 죽지 않는다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.setGrandmotherGrandchild(players[5].id, players[1].id);
+
+      const result = gm.resolveGamblerGuess(
+        players[1].id,
+        players[1].id,
+        'sailor',
+      );
+
+      expect(result.success).toBe(true);
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(false);
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(true);
+    });
+
+    it('할머니 손주가 악마에게 죽으면 할머니도 같이 죽는다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.setGrandmotherGrandchild(players[5].id, players[1].id);
+
+      const result = gm.resolvePoSelection(players[7].id, [players[1].id]);
+
+      expect(result.success).toBe(true);
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(false);
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(false);
     });
 
     it('달의 자손 낮 선택은 밤 페이즈로 넘어간 직후에도 오늘 밤 사망으로 예약할 수 있다', () => {

@@ -128,6 +128,7 @@ interface NightActionLogProps {
   onKill?: (playerId: string) => void;
   onRevive?: (playerId: string) => void;
   onSetStatus?: (playerId: string, status: PlayerStatus) => void;
+  onRemoveStatus?: (playerId: string, status: PlayerStatus) => void;
   onShabalothRegurgitate?: (
     shabalothId: string,
     targetPlayerId: string,
@@ -160,6 +161,7 @@ export function NightActionLog({
   onKill,
   onRevive,
   onSetStatus,
+  onRemoveStatus,
   onShabalothRegurgitate,
   playerOrder,
   onFangGuJump,
@@ -377,6 +379,10 @@ export function NightActionLog({
                                 player.id,
                                 (result) => {
                                   if (!result.success) return;
+                                  onRemoveStatus?.(
+                                    player.id,
+                                    'shabaloth_marked_dead',
+                                  );
                                   setProcessedTargets((prev) =>
                                     new Set(prev).add(reviveKey),
                                   );

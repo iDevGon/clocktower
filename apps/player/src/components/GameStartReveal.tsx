@@ -414,6 +414,14 @@ function RevealCard({
                     </Text>
                   </View>
                 )}
+              {evilInfo.outsiderRoles && evilInfo.outsiderRoles.length > 0 && (
+                <View style={s.infoRow}>
+                  <Text style={s.infoLabel}>외지인</Text>
+                  <Text style={s.infoValue}>
+                    {evilInfo.outsiderRoles.map((r) => r.name).join(', ')}
+                  </Text>
+                </View>
+              )}
             </View>
           )}
         </View>

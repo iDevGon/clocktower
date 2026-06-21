@@ -237,6 +237,13 @@ function sendEvilInfo(
 
   const demons = state.players.filter((p) => p.role?.team === 'demon');
   const minions = state.players.filter((p) => p.role?.team === 'minion');
+  const outsiderRoles = state.players.flatMap((player, index, players) => {
+    const role = player.role;
+    if (!role || role.team !== 'outsider') return [];
+    const firstIndex = players.findIndex((p) => p.role?.id === role.id);
+    if (firstIndex !== index) return [];
+    return [{ id: role.id, name: role.name }];
+  });
 
   // 악마에게 전송
   demons.forEach((demon) => {
@@ -252,6 +259,7 @@ function sendEvilInfo(
     playerIo.to(minion.id).emit('evil:info', {
       demonName: demons[0]?.name,
       otherMinionNames: otherMinions.map((m) => m.name),
+      ...(minion.role?.id === 'godfather' ? { outsiderRoles } : {}),
     });
   });
 }
@@ -384,9 +392,10 @@ export function registerStorytellerHandlers(
             const executedRoleId = executionResult.killed
               ? killedPlayer?.role?.id
               : undefined;
-            const winResult = executionResult.killed
-              ? game.checkWinCondition(executedRoleId, candidate.playerId)
-              : null;
+            const winResult =
+              executionResult.killed || game.isMastermindFinalDayActive()
+                ? game.checkWinCondition(executedRoleId, candidate.playerId)
+                : null;
             if (winResult) {
               winResult.cause = 'execution';
               playerIo.emit('game:end', winResult);
@@ -583,6 +592,7 @@ export function registerStorytellerHandlers(
           '🌙 당신의 차례입니다',
           `${roleName}, 행동을 수행하세요`,
         );
+        game.markNightWakeUp(next.playerId);
         playerIo
           .to(next.playerId)
           .emit('night:wakeUp', { roleId: next.roleId });
@@ -621,7 +631,7 @@ export function registerStorytellerHandlers(
 
       // 대상 플레이어 수집 → 셔플 → 첫 번째만 wakeUp, 나머지는 큐
       game.clearNightWakeUpQueue();
-      if (roleId) {
+      if (roleId && game.shouldWakeRole(roleId)) {
         const actionDef = NIGHT_ACTIONS[roleId];
         const isOnlyWhenDead = actionDef?.onlyWhenDead === true;
 
@@ -636,6 +646,7 @@ export function registerStorytellerHandlers(
               p.philosopherGrantedRole === roleId);
           if (!roleMatches) return false;
           if (game.isExorcistBlockedFromWaking(p.id)) return false;
+          if (!game.shouldWakePlayerForRole(roleId, p)) return false;
           return isOnlyWhenDead
             ? !p.isAlive && game.hasPendingNightKill(p.id)
             : p.isAlive ||
@@ -669,6 +680,7 @@ export function registerStorytellerHandlers(
             '🌙 당신의 차례입니다',
             `${roleName}, 행동을 수행하세요`,
           );
+          game.markNightWakeUp(first.id);
           playerIo.to(first.id).emit('night:wakeUp', { roleId });
 
           // 나머지는 대기열에 저장 (night:sendFeedback 시 순차 전송)
@@ -677,6 +689,8 @@ export function registerStorytellerHandlers(
             game.setNightWakeUpQueue(remaining, roleId);
           }
         }
+      } else if (roleId) {
+        storytellerIo.emit('night:wakeUpTargets', { candidateIds: [] });
       }
 
       // Spy: automatically send grimoire

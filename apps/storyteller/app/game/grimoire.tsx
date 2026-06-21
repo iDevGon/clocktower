@@ -689,6 +689,22 @@ export default function GrimoireScreen() {
     }
   };
 
+  const removePlayerStatus = (playerId: string, status: PlayerStatus) => {
+    const current = playerStatuses[playerId] ?? [];
+    if (current.includes(status)) {
+      useGameStore.getState().removePlayerStatus(playerId, status);
+      syncPlayerStatuses(
+        playerId,
+        current.filter((st) => st !== status),
+      );
+    }
+    addLog(
+      getDay(),
+      getPhase(),
+      `${getPlayerName(playerId)} 상태 제거: ${PLAYER_STATUS_LABELS[status]}`,
+    );
+  };
+
   const setPlayerStatus = applyPlayerStatus;
 
   const revive = (playerId: string) => {
@@ -1784,6 +1800,7 @@ export default function GrimoireScreen() {
         onKill={kill}
         onRevive={revive}
         onSetStatus={setPlayerStatus}
+        onRemoveStatus={removePlayerStatus}
         onFangGuJump={fangGuConfirmJump}
         onSnakeCharmerSwap={snakeCharmerSwap}
         onVigormortisKillMinion={vigormortisKillMinion}

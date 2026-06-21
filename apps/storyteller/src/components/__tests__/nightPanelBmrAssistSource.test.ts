@@ -33,4 +33,9 @@ describe('NightPanel BMR assist callbacks', () => {
     expect(componentSource).toContain('handleBmrAssistResult');
     expect(componentSource).toContain('if (!result.success) return;');
   });
+
+  it('도박사 판정 보조는 사망 플레이어도 대상 후보로 보여준다', () => {
+    expect(componentSource).toContain('gamblerCandidatePlayers');
+    expect(componentSource).toContain('gamblerCandidatePlayers.map');
+  });
 });

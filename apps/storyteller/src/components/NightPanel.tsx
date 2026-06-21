@@ -46,6 +46,7 @@ interface NightPanelProps {
   onKill: (playerId: string) => void;
   onRevive?: (playerId: string) => void;
   onSetStatus: (playerId: string, status: PlayerStatus) => void;
+  onRemoveStatus?: (playerId: string, status: PlayerStatus) => void;
   onFangGuJump?: (oldDemonId: string, newDemonId: string) => void;
   onSnakeCharmerSwap?: (snakeCharmerId: string, demonId: string) => void;
   onVigormortisKillMinion?: (
@@ -125,6 +126,7 @@ export function NightPanel({
   onKill,
   onRevive,
   onSetStatus,
+  onRemoveStatus,
   onFangGuJump,
   onSnakeCharmerSwap,
   onVigormortisKillMinion,
@@ -238,6 +240,7 @@ export function NightPanel({
       ),
     [players],
   );
+  const gamblerCandidatePlayers = players;
   const activeNightRolePlayerNames = activeNightRoleId
     ? getNightRolePlayerNames(players, activeNightRoleId)
     : [];
@@ -313,6 +316,7 @@ export function NightPanel({
           onKill={onKill}
           onRevive={onRevive}
           onSetStatus={onSetStatus}
+          onRemoveStatus={onRemoveStatus}
           onShabalothRegurgitate={(shabalothId, targetPlayerId, callback) =>
             onShabalothRegurgitate?.(shabalothId, targetPlayerId, (result) => {
               handleBmrAssistResult(result);
@@ -524,7 +528,7 @@ export function NightPanel({
                   <View
                     style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
                   >
-                    {livingPlayers.map((player) =>
+                    {gamblerCandidatePlayers.map((player) =>
                       renderChip(
                         player.id,
                         player.name,

@@ -182,6 +182,7 @@ export function attachGameListeners(socket: AppSocket) {
     const state = usePlayerStore.getState();
     if (player.id === state.playerId) {
       const wasDeath = state.isAlive && !player.isAlive;
+      const wasRevive = !state.isAlive && player.isAlive;
       // onlyWhenDead 역할(까마귀지기 등)의 밤 사망은 전용 오버레이로 이미 알렸으므로
       // DeathOverlay 스킵 (낮 처형 등 다른 사유로 죽으면 정상 표시)
       const effectiveRoleId = state.drunkAs ?? state.role?.id;
@@ -195,6 +196,7 @@ export function attachGameListeners(socket: AppSocket) {
         isAlive: player.isAlive,
         deadVoteUsed: player.deadVoteUsed,
         philosopherGrantedRole: player.philosopherGrantedRole ?? null,
+        ...(wasRevive ? { moonchildUsed: false } : {}),
         ...(showDeathOverlay
           ? {
               justDied: true,

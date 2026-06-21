@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { Alert } from 'react-native';
 import { useConnectionStore } from '../stores/connectionStore';
 import { usePlayerStore } from '../stores/playerStore';
 import { getOptimisticConsentReadyIds } from './voteConsentOptimistic';
@@ -25,18 +26,27 @@ export function useGameActions() {
   const submitNightAction = useCallback((targets: string[]) => {
     const socket = useConnectionStore.getState().socket;
     if (socket) {
-      socket.emit('night:action', { targets });
-      const store = usePlayerStore.getState();
-      const roleId = store.drunkAs ?? store.role?.id;
-      if (roleId === 'butler' && targets.length > 0) {
-        const master = store.gamePlayers.find((p) => p.id === targets[0]);
-        store.set({
-          nightActionSubmitted: true,
-          butlerMasterName: master?.name ?? null,
-        });
-        return;
-      }
-      store.set({ nightActionSubmitted: true });
+      socket.emit('night:action', { targets }, (result) => {
+        if (!result?.success) {
+          Alert.alert(
+            '밤 행동 실패',
+            result?.error ?? '밤 행동을 제출할 수 없습니다',
+          );
+          return;
+        }
+
+        const store = usePlayerStore.getState();
+        const roleId = store.drunkAs ?? store.role?.id;
+        if (roleId === 'butler' && targets.length > 0) {
+          const master = store.gamePlayers.find((p) => p.id === targets[0]);
+          store.set({
+            nightActionSubmitted: true,
+            butlerMasterName: master?.name ?? null,
+          });
+          return;
+        }
+        store.set({ nightActionSubmitted: true });
+      });
     }
   }, []);
 
@@ -132,6 +142,25 @@ export function useGameActions() {
         socket.emit('gossip:declare', { statement }, (res) => {
           if (res.success) {
             usePlayerStore.getState().set({ gossipUsedToday: true });
+          }
+          resolve(res);
+        });
+      });
+    },
+    [],
+  );
+
+  const chooseMoonchildTarget = useCallback(
+    (targetPlayerId: string): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        const socket = useConnectionStore.getState().socket;
+        if (!socket || !socket.connected) {
+          resolve({ success: false, error: '연결되어 있지 않습니다' });
+          return;
+        }
+        socket.emit('moonchild:choose', { targetPlayerId }, (res) => {
+          if (res.success) {
+            usePlayerStore.getState().set({ moonchildUsed: true });
           }
           resolve(res);
         });
@@ -304,6 +333,7 @@ export function useGameActions() {
     choosePhilosopherRole,
     declareJuggler,
     declareGossip,
+    chooseMoonchildTarget,
     useGunslinger,
     giveBeggarToken,
     consentReady,

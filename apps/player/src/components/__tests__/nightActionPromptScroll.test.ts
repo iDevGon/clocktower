@@ -22,4 +22,9 @@ describe('NightActionPrompt allowed target counts', () => {
   it('uses the largest allowed target count as the selection cap', () => {
     expect(source).toContain('Math.max(...allowedTargetCounts)');
   });
+
+  it('supports roles that can only target dead players', () => {
+    expect(source).toContain('actionDef.deadTargetsOnly');
+    expect(source).toContain('return !p.isAlive');
+  });
 });

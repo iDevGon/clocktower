@@ -46,6 +46,7 @@ export interface EvilInfo {
   demonName?: string;
   otherMinionNames?: string[];
   bluffRoles?: { id: string; name: string }[];
+  outsiderRoles?: { id: string; name: string }[];
 }
 
 export interface FeedbackHistoryEntry {
@@ -118,8 +119,10 @@ interface PlayerState {
   philosopherGrantedRole: string | null;
   /** 곡예사 능력을 게임 중 사용했는지 (게임 중 1회) */
   jugglerUsed: boolean;
-  /** 험담꾼 능력을 오늘 이미 사용했는지 (낮마다 리셋) */
+  /** 험담 공개발언을 오늘 이미 했는지 (낮마다 리셋) */
   gossipUsedToday: boolean;
+  /** 달의 자손 공개 선택을 이미 했는지 */
+  moonchildUsed: boolean;
   /** 다른 플레이어의 험담 공개발언 오버레이 */
   gossipAnnouncement: {
     gossipId: string;
@@ -268,6 +271,7 @@ const initialState = {
   philosopherGrantedRole: null as string | null,
   jugglerUsed: false,
   gossipUsedToday: false,
+  moonchildUsed: false,
   gossipAnnouncement: null as {
     gossipId: string;
     gossipName: string;

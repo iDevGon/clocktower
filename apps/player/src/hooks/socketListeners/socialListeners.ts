@@ -59,6 +59,18 @@ export function attachSocialListeners(socket: AppSocket) {
     vibrateAlert();
   });
 
+  socket.on('moonchild:announced', (data) => {
+    const { playerId, showEventToast } = usePlayerStore.getState();
+    usePlayerStore.getState().set({
+      ...(data.moonchildId === playerId ? { moonchildUsed: true } : {}),
+    });
+    showEventToast({
+      title: '달의 자손',
+      message: `${data.moonchildName} → ${data.targetName}`,
+    });
+    vibrateAlert();
+  });
+
   socket.on('slayer:noEffect', (data) => {
     usePlayerStore.getState().set({ slayerFizzle: data, slayerAcked: false });
   });

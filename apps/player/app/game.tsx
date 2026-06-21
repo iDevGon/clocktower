@@ -89,6 +89,7 @@ export default function GameScreen() {
   );
   const jugglerUsed = usePlayerStore((s) => s.jugglerUsed);
   const gossipUsedToday = usePlayerStore((s) => s.gossipUsedToday);
+  const moonchildUsed = usePlayerStore((s) => s.moonchildUsed);
   const gunslingerUsedToday = usePlayerStore((s) => s.gunslingerUsedToday);
   const todayFirstVoteGuiltyVoters = usePlayerStore(
     (s) => s.todayFirstVoteGuiltyVoters,
@@ -128,6 +129,7 @@ export default function GameScreen() {
     choosePhilosopherRole,
     declareJuggler,
     declareGossip,
+    chooseMoonchildTarget,
     useGunslinger: activateGunslinger,
     giveBeggarToken,
     proposeExile,
@@ -206,6 +208,7 @@ export default function GameScreen() {
   const [slayerModalVisible, setSlayerModalVisible] = useState(false);
   const [jugglerModalVisible, setJugglerModalVisible] = useState(false);
   const [gossipModalVisible, setGossipModalVisible] = useState(false);
+  const [moonchildModalVisible, setMoonchildModalVisible] = useState(false);
   const [gunslingerModalVisible, setGunslingerModalVisible] = useState(false);
   const [beggarModalVisible, setBeggarModalVisible] = useState(false);
   const [feedbackHistoryVisible, setFeedbackHistoryVisible] = useState(false);
@@ -331,8 +334,14 @@ export default function GameScreen() {
   const canUseGossip =
     isAlive &&
     !gossipUsedToday &&
-    effectiveRoleId === 'gossip' &&
+    dictionaryRoleIds.includes('gossip') &&
     currentPhase === 'day';
+
+  const canUseMoonchild =
+    !isAlive &&
+    !moonchildUsed &&
+    dictionaryRoleIds.includes('moonchild') &&
+    (currentPhase === 'day' || currentPhase === 'vote');
 
   const handleJugglerSubmit = async (
     guesses: Array<{ playerId: string; roleId: string }>,
@@ -348,6 +357,14 @@ export default function GameScreen() {
     const result = await declareGossip(statement);
     if (!result.success) {
       Alert.alert('험담 실패', result.error ?? '사용할 수 없습니다');
+    }
+  };
+
+  const handleMoonchildChoose = async (targetId: string) => {
+    setMoonchildModalVisible(false);
+    const result = await chooseMoonchildTarget(targetId);
+    if (!result.success) {
+      Alert.alert('달의 자손 실패', result.error ?? '선택할 수 없습니다');
     }
   };
 
@@ -654,6 +671,17 @@ export default function GameScreen() {
           </View>
         )}
 
+        {canUseMoonchild && (
+          <View style={styles.slayerContainer}>
+            <Pressable
+              onPress={() => setMoonchildModalVisible(true)}
+              style={styles.gossipButton}
+            >
+              <Text style={styles.gossipButtonText}>달의 자손 공개 선택</Text>
+            </Pressable>
+          </View>
+        )}
+
         {canUseGunslinger && (
           <View style={styles.slayerContainer}>
             <Pressable
@@ -866,6 +894,14 @@ export default function GameScreen() {
         visible={gossipModalVisible}
         onSubmit={handleGossipSubmit}
         onClose={() => setGossipModalVisible(false)}
+      />
+
+      <NominateModal
+        visible={moonchildModalVisible}
+        players={gamePlayers.filter((p) => p.isAlive && p.id !== playerId)}
+        onNominate={handleMoonchildChoose}
+        onClose={() => setMoonchildModalVisible(false)}
+        title="달의 자손 공개 선택"
       />
 
       <NominateModal

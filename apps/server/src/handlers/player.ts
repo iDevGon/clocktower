@@ -1,8 +1,10 @@
 import {
   type ClientToServerEvents,
+  type DeliveredFeedbackSource,
   type EvilInfoPayload,
   getRoleById,
   hasPoisonStatus,
+  type NightFeedbackPayload,
   type Player,
   type ServerToClientEvents,
   type ServerToStorytellerEvents,
@@ -78,9 +80,44 @@ function getOrderedPlayerInfoList(game: GameManager) {
   return orderedPlayers.map(toPlayerInfo);
 }
 
+function emitDeliveredFeedbackRecord(
+  game: GameManager,
+  storytellerIo: StorytellerNamespace,
+  data: {
+    player: Player;
+    roleId: string | null;
+    feedback: NightFeedbackPayload;
+    source: DeliveredFeedbackSource;
+  },
+): void {
+  const role = data.roleId ? getRoleById(data.roleId) : null;
+  storytellerIo.emit('night:feedbackSent', {
+    playerId: data.player.id,
+    playerName: data.player.name,
+    roleId: data.roleId,
+    roleName: role?.name ?? data.roleId ?? '정보',
+    day: game.getState().day,
+    timestamp: Date.now(),
+    feedback: data.feedback,
+    source: data.source,
+  });
+}
+
 function getRejoinNightCount(state: { phase: string; day: number }): number {
   if (state.phase === 'night') return state.day;
   return Math.max(0, state.day - 1);
+}
+
+function getOutsiderRolesInPlay(
+  game: GameManager,
+): { id: string; name: string }[] {
+  const seen = new Set<string>();
+  return game.getState().players.flatMap((player) => {
+    const role = player.role;
+    if (!role || role.team !== 'outsider' || seen.has(role.id)) return [];
+    seen.add(role.id);
+    return [{ id: role.id, name: role.name }];
+  });
 }
 
 function getEvilInfoForPlayer(
@@ -108,6 +145,9 @@ function getEvilInfoForPlayer(
       otherMinionNames: minions
         .filter((m) => m.id !== player.id)
         .map((m) => m.name),
+      ...(role.id === 'godfather'
+        ? { outsiderRoles: getOutsiderRolesInPlay(game) }
+        : {}),
     };
   }
 
@@ -505,118 +545,206 @@ export function registerPlayerHandlers(
       storytellerIo.emit('vote:preselected', { playerId, guilty });
     });
 
-    socket.on('night:action', ({ targets }) => {
+    socket.on('night:action', ({ targets }, callback) => {
       const playerId = getPlayerIdFromSocket(socket);
-      if (playerId) {
-        const player = game.getPlayer(playerId);
-        if (player?.role) {
-          // 밤 행동 타깃 기록 (임프 자해 감지용)
-          game.recordNightAction(playerId, targets);
-
-          // 행동 수행 시점의 효과적 역할 ID
-          // - 주정뱅이: drunkAs (능력은 무효)
-          // - 철학자: philosopherGrantedRole (실제 능력 보유)
-          // - 그 외: 본 역할
-          const effectiveRoleId =
-            player.role.id === 'drunk' && player.drunkAs
-              ? player.drunkAs
-              : player.role.id === 'lunatic' && player.lunaticAs
-                ? player.lunaticAs
-                : player.role.id === 'philosopher' &&
-                    player.philosopherGrantedRole
-                  ? player.philosopherGrantedRole
-                  : player.role.id;
-
-          // 집사(Butler) 주인 선택 저장 (철학자가 집사 능력 가진 경우 포함)
-          if (effectiveRoleId === 'butler' && targets.length > 0) {
-            game.setButlerMaster(playerId, targets[0]);
-          }
-
-          // 마녀(Witch) 저주 대상 저장 (철학자가 마녀 능력 가진 경우 포함)
-          if (effectiveRoleId === 'witch' && targets.length > 0) {
-            game.setWitchCursedTarget(targets[0]);
-          }
-
-          // 탕녀(Harlot): 선택 대상에게 동의 요청을 보내고, 결과는 대상 응답 후 이야기꾼이 처리
-          if (effectiveRoleId === 'harlot' && targets.length > 0) {
-            const request = game.requestHarlotConsent(playerId, targets[0]);
-            if (request) {
-              playerIo.to(request.target.id).emit('harlot:consentRequested', {
-                harlotId: request.harlot.id,
-                harlotName: request.harlot.name,
-              });
-            }
-          }
-
-          if (effectiveRoleId === 'pukka' && targets.length > 0) {
-            game.resolvePukkaSelection(playerId, targets[0]);
-            storytellerIo.emit('game:state', game.getStorytellerState());
-          }
-
-          if (effectiveRoleId === 'shabaloth' && targets.length > 0) {
-            game.resolveShabalothSelection(playerId, targets);
-            storytellerIo.emit('game:state', game.getStorytellerState());
-          }
-
-          if (effectiveRoleId === 'po') {
-            game.resolvePoSelection(playerId, targets);
-            storytellerIo.emit('game:state', game.getStorytellerState());
-          }
-
-          if (effectiveRoleId === 'professor' && targets.length > 0) {
-            game.resolveProfessorSelection(playerId, targets[0]);
-            storytellerIo.emit('game:state', game.getStorytellerState());
-          }
-
-          if (effectiveRoleId === 'innkeeper' && targets.length > 0) {
-            game.resolveInnkeeperSelection(playerId, targets);
-            storytellerIo.emit('game:state', game.getStorytellerState());
-          }
-
-          if (effectiveRoleId === 'devils_advocate' && targets.length > 0) {
-            game.resolveDevilsAdvocateSelection(playerId, targets[0]);
-            storytellerIo.emit('game:state', game.getStorytellerState());
-          }
-
-          if (effectiveRoleId === 'exorcist' && targets.length > 0) {
-            game.resolveExorcistSelection(playerId, targets[0]);
-            storytellerIo.emit('game:state', game.getStorytellerState());
-          }
-
-          if (effectiveRoleId === 'assassin' && targets.length > 0) {
-            game.resolveAssassinSelection(playerId, targets[0]);
-            storytellerIo.emit('game:state', game.getStorytellerState());
-          }
-
-          if (effectiveRoleId === 'godfather' && targets.length > 0) {
-            game.resolveGodfatherSelection(playerId, targets[0]);
-            storytellerIo.emit('game:state', game.getStorytellerState());
-          }
-
-          if (effectiveRoleId === 'zombuul' && targets.length > 0) {
-            game.resolveZombuulSelection(playerId, targets[0]);
-            storytellerIo.emit('game:state', game.getStorytellerState());
-          }
-
-          const reportRoleId = effectiveRoleId;
-          // 점쟁이 판정: 선택된 2명 중 악마/Red Herring 포함 여부
-          const fortuneTellerResult =
-            reportRoleId === 'fortune_teller'
-              ? game.judgeFortuneTeller(targets, playerId)
-              : undefined;
-
-          storytellerIo.emit('night:actionReceived', {
-            playerId,
-            playerName: player.name,
-            roleId: reportRoleId,
-            targets,
-            fortuneTellerResult,
+      if (!playerId) {
+        callback?.({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      const player = game.getPlayer(playerId);
+      if (!player?.role) {
+        callback?.({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      const rejectInvalidAction = (result: {
+        success: boolean;
+        blocked?: boolean;
+        reason?: string;
+      }) => {
+        if (!result.success && !result.blocked) {
+          callback?.({
+            success: false,
+            error: result.reason ?? '밤 행동을 처리할 수 없습니다',
           });
-          console.log(
-            `Night action: ${player.name}(${player.role.name}) -> [${targets.join(', ')}]`,
-          );
+          return true;
+        }
+        return false;
+      };
+
+      // 행동 수행 시점의 효과적 역할 ID
+      // - 주정뱅이: drunkAs (능력은 무효)
+      // - 철학자: philosopherGrantedRole (실제 능력 보유)
+      // - 그 외: 본 역할
+      const effectiveRoleId =
+        player.role.id === 'drunk' && player.drunkAs
+          ? player.drunkAs
+          : player.role.id === 'lunatic' && player.lunaticAs
+            ? player.lunaticAs
+            : player.role.id === 'philosopher' && player.philosopherGrantedRole
+              ? player.philosopherGrantedRole
+              : player.role.id;
+      const isLunaticFakeAction =
+        player.role.id === 'lunatic' && player.lunaticAs === effectiveRoleId;
+
+      // 집사(Butler) 주인 선택 저장 (철학자가 집사 능력 가진 경우 포함)
+      if (effectiveRoleId === 'butler' && targets.length > 0) {
+        game.setButlerMaster(playerId, targets[0]);
+      }
+
+      // 마녀(Witch) 저주 대상 저장 (철학자가 마녀 능력 가진 경우 포함)
+      if (effectiveRoleId === 'witch' && targets.length > 0) {
+        game.setWitchCursedTarget(targets[0]);
+      }
+
+      // 탕녀(Harlot): 선택 대상에게 동의 요청을 보내고, 결과는 대상 응답 후 이야기꾼이 처리
+      if (effectiveRoleId === 'harlot' && targets.length > 0) {
+        const request = game.requestHarlotConsent(playerId, targets[0]);
+        if (request) {
+          playerIo.to(request.target.id).emit('harlot:consentRequested', {
+            harlotId: request.harlot.id,
+            harlotName: request.harlot.name,
+          });
         }
       }
+
+      if (
+        !isLunaticFakeAction &&
+        effectiveRoleId === 'pukka' &&
+        targets.length > 0
+      ) {
+        const result = game.resolvePukkaSelection(playerId, targets[0]);
+        if (rejectInvalidAction(result)) return;
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      }
+
+      if (
+        !isLunaticFakeAction &&
+        effectiveRoleId === 'shabaloth' &&
+        targets.length > 0
+      ) {
+        const result = game.resolveShabalothSelection(playerId, targets);
+        if (rejectInvalidAction(result)) return;
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      }
+
+      if (!isLunaticFakeAction && effectiveRoleId === 'po') {
+        const result = game.resolvePoSelection(playerId, targets);
+        if (rejectInvalidAction(result)) return;
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      }
+
+      if (effectiveRoleId === 'professor' && targets.length > 0) {
+        const result = game.resolveProfessorSelection(playerId, targets[0]);
+        if (rejectInvalidAction(result)) return;
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      }
+
+      if (effectiveRoleId === 'sailor' && targets.length > 0) {
+        const result = game.resolveSailorSelection(playerId, targets[0]);
+        if (rejectInvalidAction(result)) return;
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      }
+
+      if (effectiveRoleId === 'chambermaid' && targets.length > 0) {
+        const result = game.resolveChambermaidSelection(playerId, targets);
+        if (rejectInvalidAction(result)) return;
+        if (result.success) {
+          const feedback: NightFeedbackPayload = {
+            type: 'number',
+            value: result.count,
+          };
+          playerIo.to(playerId).emit('night:feedback', { feedback });
+          emitDeliveredFeedbackRecord(game, storytellerIo, {
+            player,
+            roleId: effectiveRoleId,
+            feedback,
+            source: 'auto',
+          });
+        }
+      }
+
+      if (effectiveRoleId === 'innkeeper' && targets.length > 0) {
+        const result = game.resolveInnkeeperSelection(playerId, targets);
+        if (rejectInvalidAction(result)) return;
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      }
+
+      if (effectiveRoleId === 'devils_advocate' && targets.length > 0) {
+        const result = game.resolveDevilsAdvocateSelection(
+          playerId,
+          targets[0],
+        );
+        if (rejectInvalidAction(result)) return;
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      }
+
+      if (effectiveRoleId === 'exorcist' && targets.length > 0) {
+        const result = game.resolveExorcistSelection(playerId, targets[0]);
+        if (rejectInvalidAction(result)) return;
+        if (result.success && result.blockedTargetId) {
+          const target = game.getPlayer(result.blockedTargetId);
+          if (target) {
+            const feedback = {
+              type: 'player_and_role' as const,
+              playerId,
+              playerName: player.name,
+              roleName: '엑소시스트',
+            };
+            playerIo.to(target.id).emit('night:feedback', { feedback });
+            emitDeliveredFeedbackRecord(game, storytellerIo, {
+              player: target,
+              roleId: 'exorcist',
+              feedback,
+              source: 'auto',
+            });
+          }
+        }
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      }
+
+      if (effectiveRoleId === 'assassin' && targets.length > 0) {
+        const result = game.resolveAssassinSelection(playerId, targets[0]);
+        if (rejectInvalidAction(result)) return;
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      }
+
+      if (effectiveRoleId === 'godfather' && targets.length > 0) {
+        const result = game.resolveGodfatherSelection(playerId, targets[0]);
+        if (rejectInvalidAction(result)) return;
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      }
+
+      if (
+        !isLunaticFakeAction &&
+        effectiveRoleId === 'zombuul' &&
+        targets.length > 0
+      ) {
+        const result = game.resolveZombuulSelection(playerId, targets[0]);
+        if (rejectInvalidAction(result)) return;
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      }
+
+      // 밤 행동 타깃 기록 (임프 자해 감지용)
+      game.recordNightAction(playerId, targets);
+
+      const reportRoleId = effectiveRoleId;
+      // 점쟁이 판정: 선택된 2명 중 악마/Red Herring 포함 여부
+      const fortuneTellerResult =
+        reportRoleId === 'fortune_teller'
+          ? game.judgeFortuneTeller(targets, playerId)
+          : undefined;
+
+      storytellerIo.emit('night:actionReceived', {
+        playerId,
+        playerName: player.name,
+        roleId: reportRoleId,
+        targets,
+        fortuneTellerResult,
+      });
+      callback?.({ success: true });
+      console.log(
+        `Night action: ${player.name}(${player.role.name}) -> [${targets.join(', ')}]`,
+      );
     });
 
     socket.on('harlot:respond', ({ harlotId, accepted }) => {
@@ -1136,10 +1264,6 @@ export function registerPlayerHandlers(
         callback({ success: false, error: '낮에만 사용할 수 있습니다' });
         return;
       }
-      if (!hasEffectiveRole(player, 'gossip')) {
-        callback({ success: false, error: '험담꾼만 사용할 수 있습니다' });
-        return;
-      }
       if (game.isGossipUsedToday(playerId)) {
         callback({ success: false, error: '오늘 이미 험담했습니다' });
         return;
@@ -1162,6 +1286,71 @@ export function registerPlayerHandlers(
       playerIo.emit('gossip:announced', announcement);
       storytellerIo.emit('gossip:announced', announcement);
       console.log(`Gossip 선언: ${player.name} → ${trimmed}`);
+    });
+
+    socket.on('moonchild:choose', ({ targetPlayerId }, callback) => {
+      const playerId = getPlayerIdFromSocket(socket);
+      if (!playerId) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      const player = game.getPlayer(playerId);
+      const target = game.getPlayer(targetPlayerId);
+      if (!player || !target) {
+        callback({
+          success: false,
+          error: '플레이어 또는 대상을 찾을 수 없습니다',
+        });
+        return;
+      }
+      if (player.isAlive) {
+        callback({
+          success: false,
+          error: '사망한 상태에서만 선택할 수 있습니다',
+        });
+        return;
+      }
+      if (
+        target.id === player.id ||
+        !target.isAlive ||
+        target.statuses.includes('zombuul_registers_dead')
+      ) {
+        callback({
+          success: false,
+          error: '생존한 다른 플레이어를 선택하세요',
+        });
+        return;
+      }
+      if (game.isMoonchildClaimed(playerId)) {
+        callback({ success: false, error: '이미 달의 자손 선택을 했습니다' });
+        return;
+      }
+
+      if (player.role?.id === 'moonchild') {
+        const result = game.resolveMoonchildSelection(
+          playerId,
+          targetPlayerId,
+          {
+            deferToNight: true,
+          },
+        );
+        if (!result.success) {
+          callback({ success: false, error: result.reason });
+          return;
+        }
+      }
+      game.recordMoonchildClaim(playerId);
+
+      const announcement = {
+        moonchildId: player.id,
+        moonchildName: player.name,
+        targetId: target.id,
+        targetName: target.name,
+      };
+      callback({ success: true });
+      playerIo.emit('moonchild:announced', announcement);
+      storytellerIo.emit('moonchild:announced', announcement);
+      console.log(`Moonchild 선택: ${player.name} → ${target.name}`);
     });
 
     // 화가(Artist) 능력 사용 요청: 이야기꾼이 예/아니오로 답변 (게임 중 1회)

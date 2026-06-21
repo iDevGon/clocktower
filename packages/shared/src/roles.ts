@@ -1015,7 +1015,7 @@ export interface DistributeOptions {
 
 /**
  * 플레이어 수에 맞게 역할을 자동 배분합니다.
- * 남작이 포함되면 외지인 +2, 마을주민 -2 적용.
+ * 셋업 변경 역할이 포함되면 플레이어 수에 맞는 팀 수를 조정합니다.
  */
 export function distributeRoles(
   playerIds: string[],
@@ -1084,6 +1084,13 @@ export function distributeRoles(
   const hasBaron = selectedMinions.some((r) => r.id === 'baron');
   if (hasBaron) {
     outsiderCount = Math.min(outsiderCount + 2, outsiders.length);
+    townsfolkCount = count - outsiderCount - minionCount - demonCount;
+  }
+
+  // BMR: 갓파더 → 외지인 +1 또는 -1. 자동 배분은 가능한 경우 +1을 적용한다.
+  const hasGodfather = selectedMinions.some((r) => r.id === 'godfather');
+  if (hasGodfather && outsiderCount < outsiders.length) {
+    outsiderCount++;
     townsfolkCount = count - outsiderCount - minionCount - demonCount;
   }
 
@@ -1337,11 +1344,13 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     type: 'select_one',
     instruction: '오늘 밤 깨어나지 못하게 할 플레이어 1명을 선택하세요',
     excludeSelf: true,
+    includeDeadTargets: true,
   },
   innkeeper: {
     type: 'select_two',
     instruction: '오늘 밤 사망할 수 없게 할 플레이어 2명을 선택하세요',
     excludeSelf: false,
+    includeDeadTargets: true,
   },
   gambler: {
     type: 'passive',
@@ -1363,6 +1372,7 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     instruction: '부활시킬 사망 플레이어를 선택하세요',
     excludeSelf: true,
     includeDeadTargets: true,
+    deadTargetsOnly: true,
   },
   lunatic: {
     type: 'passive',
@@ -1383,6 +1393,7 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     type: 'select_one',
     instruction: '외지인이 낮에 사망했다면 죽일 플레이어를 선택하세요',
     excludeSelf: false,
+    includeDeadTargets: true,
   },
   devils_advocate: {
     type: 'select_one',
@@ -1393,28 +1404,33 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     type: 'select_one',
     instruction: '암살할 플레이어를 선택하세요 (1회 사용)',
     excludeSelf: false,
+    includeDeadTargets: true,
   },
   zombuul: {
     type: 'select_one',
     instruction:
       '오늘 낮에 아무도 사망하지 않았다면 죽일 플레이어를 선택하세요',
     excludeSelf: false,
+    includeDeadTargets: true,
   },
   pukka: {
     type: 'select_one',
     instruction: '중독시킬 플레이어를 선택하세요',
     excludeSelf: false,
+    includeDeadTargets: true,
   },
   shabaloth: {
     type: 'select_two',
     instruction: '죽일 플레이어 2명을 선택하세요',
     excludeSelf: false,
+    includeDeadTargets: true,
   },
   po: {
     type: 'select_one',
     instruction:
       '죽일 플레이어 1명 또는, 지난밤 아무도 선택하지 않았다면 3명을 선택하세요',
     excludeSelf: false,
+    includeDeadTargets: true,
     allowedTargetCounts: [0, 1, 3],
   },
 

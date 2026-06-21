@@ -116,6 +116,7 @@ export function NightActionPrompt({
   const availablePlayers = players.filter((p) => {
     if (actionDef.excludeSelf && p.id === myPlayerId) return false;
     if (actionDef.excludeTraveller && p.isTraveller) return false;
+    if (actionDef.deadTargetsOnly) return !p.isAlive;
     return actionDef.includeDeadTargets || p.isAlive;
   });
 

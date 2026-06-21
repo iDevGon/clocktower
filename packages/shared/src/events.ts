@@ -25,6 +25,8 @@ export interface EvilInfoPayload {
   otherMinionNames?: string[];
   /** 악마에게: 게임에 없는 선한 역할 3개 (블러프용) */
   bluffRoles?: { id: string; name: string }[];
+  /** 대부에게: 게임에 참여 중인 외지인 역할 */
+  outsiderRoles?: { id: string; name: string }[];
 }
 
 export type DeliveredFeedbackSource = 'manual' | 'auto';
@@ -143,11 +145,18 @@ export interface ServerToClientEvents {
       roleName: string;
     }>;
   }) => void;
-  /** 험담꾼이 공개 발언을 선언함. 모든 플레이어에게 공개 */
+  /** 플레이어가 험담 공개발언을 선언함. 모든 플레이어에게 공개 */
   'gossip:announced': (data: {
     gossipId: string;
     gossipName: string;
     statement: string;
+  }) => void;
+  /** 달의 자손이 사망 후 공개 선택함. 모든 플레이어에게 공개 */
+  'moonchild:announced': (data: {
+    moonchildId: string;
+    moonchildName: string;
+    targetId: string;
+    targetName: string;
   }) => void;
   /** 총잡이가 사살 선언. 모든 플레이어에게 오버레이로 표시 */
   'gunslinger:fired': (data: {
@@ -264,6 +273,7 @@ export interface ServerToStorytellerEvents {
   'witch:curseDeath': ServerToClientEvents['witch:curseDeath'];
   'juggler:announced': ServerToClientEvents['juggler:announced'];
   'gossip:announced': ServerToClientEvents['gossip:announced'];
+  'moonchild:announced': ServerToClientEvents['moonchild:announced'];
   'gunslinger:fired': ServerToClientEvents['gunslinger:fired'];
   'scapegoat:swapped': ServerToClientEvents['scapegoat:swapped'];
   'execution:announced': ServerToClientEvents['execution:announced'];
@@ -400,7 +410,10 @@ export interface ClientToServerEvents {
     callback?: (result: { success: boolean; error?: string }) => void,
   ) => void;
   'vote:preselect': (data: { guilty: boolean | null }) => void;
-  'night:action': (data: { targets: string[] }) => void;
+  'night:action': (
+    data: { targets: string[] },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   'slayer:use': (
     data: { targetId: string },
     callback: (res: { success: boolean; error?: string }) => void,
@@ -423,9 +436,14 @@ export interface ClientToServerEvents {
     data: { guesses: Array<{ playerId: string; roleId: string }> },
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
-  /** 험담꾼이 낮에 공개 발언을 선언 (하루 1회) */
+  /** 플레이어가 낮에 험담 공개발언을 선언 (하루 1회) */
   'gossip:declare': (
     data: { statement: string },
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 죽은 달의 자손이 공개 선택 */
+  'moonchild:choose': (
+    data: { targetPlayerId: string },
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
   /** 총잡이가 낮에 오늘 첫 투표자 중 1명을 사살 (하루 1회) */

@@ -266,6 +266,14 @@ function FrontFace({
                 </Text>
               </View>
             )}
+          {evilInfo.outsiderRoles && evilInfo.outsiderRoles.length > 0 && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>외지인</Text>
+              <Text style={styles.infoValue}>
+                {evilInfo.outsiderRoles.map((r) => r.name).join(', ')}
+              </Text>
+            </View>
+          )}
         </View>
       )}
 
