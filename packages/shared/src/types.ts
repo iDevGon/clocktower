@@ -116,7 +116,12 @@ export interface NightFeedbackDef {
 export type NightFeedbackPayload =
   | { type: 'number'; value: number }
   | { type: 'yes_no'; value: boolean; targetNames?: string[] }
-  | { type: 'player_and_role'; playerName: string; roleName: string }
+  | {
+      type: 'player_and_role';
+      playerName: string;
+      roleName: string;
+      playerId?: string;
+    }
   | { type: 'players_and_role'; playerNames: string[]; roleName: string }
   | {
       type: 'dreamer_info';

@@ -184,6 +184,36 @@ describe('E2E: 피로물든달 판정 보조', () => {
     expect(wakeTargets.candidateIds).not.toContain(playerIds[4]);
   });
 
+  it('할머니가 알게 된 손주가 사망하면 할머니도 사망한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'exorcist' },
+      { roleId: 'godfather' },
+      { roleId: 'pukka' },
+    ]);
+
+    ctx.storyteller.emit('night:setActiveRole', 'grandmother');
+    const feedbackPromise = waitForEvent(ctx.players[0], 'night:feedback');
+    ctx.storyteller.emit('night:sendFeedback', {
+      playerId: playerIds[0],
+      feedback: {
+        type: 'player_and_role',
+        playerId: playerIds[1],
+        playerName: 'Player2',
+        roleName: '선원',
+      },
+    });
+    await feedbackPromise;
+
+    const statePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.storyteller.emit('game:kill', playerIds[1]);
+    await statePromise;
+
+    expect(ctx.app.game.getPlayer(playerIds[1])?.isAlive).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
+  });
+
   it('교수 밤 행동은 사망한 마을주민을 부활시키고 능력을 소모한다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [
       { roleId: 'professor' },

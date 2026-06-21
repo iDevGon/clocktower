@@ -22,9 +22,7 @@ export function PlayerAndRoleFeedback({
   onSend,
 }: PlayerAndRoleFeedbackProps) {
   const styles = useNightActionLogStyles();
-  const [selectedPlayerName, setSelectedPlayerName] = useState<string | null>(
-    null,
-  );
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selectedRoleName, setSelectedRoleName] = useState<string | null>(null);
   const [playerQuery, setPlayerQuery] = useState('');
   const [roleQuery, setRoleQuery] = useState('');
@@ -36,7 +34,10 @@ export function PlayerAndRoleFeedback({
   const filteredRoles = roleQuery.trim()
     ? gameRoles.filter((r) => matchQuery(r.name, roleQuery.trim()))
     : gameRoles;
-  const canSend = selectedPlayerName != null && selectedRoleName != null;
+  const selectedPlayer = selectedPlayerId
+    ? players.find((p) => p.id === selectedPlayerId)
+    : undefined;
+  const canSend = selectedPlayer != null && selectedRoleName != null;
 
   return (
     <View style={styles.composerVertical}>
@@ -53,16 +54,16 @@ export function PlayerAndRoleFeedback({
         {filteredPlayers.map((p) => (
           <Pressable
             key={p.id}
-            onPress={() => setSelectedPlayerName(p.name)}
+            onPress={() => setSelectedPlayerId(p.id)}
             style={[
               styles.chip,
-              selectedPlayerName === p.name && styles.chipSelected,
+              selectedPlayerId === p.id && styles.chipSelected,
             ]}
           >
             <Text
               style={[
                 styles.chipText,
-                selectedPlayerName === p.name && styles.chipTextSelected,
+                selectedPlayerId === p.id && styles.chipTextSelected,
               ]}
             >
               {p.name}
@@ -108,7 +109,8 @@ export function PlayerAndRoleFeedback({
           if (!canSend) return;
           onSend({
             type: 'player_and_role',
-            playerName: selectedPlayerName as string,
+            playerId: selectedPlayer?.id,
+            playerName: selectedPlayer?.name ?? '',
             roleName: selectedRoleName as string,
           });
         }}

@@ -250,6 +250,8 @@ export class GameManager {
   private pendingMoonchildKills = new Map<string, PendingMoonchildKill>();
   // 엑소시스트가 이번 밤 깨우지 못하게 한 악마
   private exorcistBlockedPlayerIds = new Set<string>();
+  // 할머니가 알게 된 손주 매핑 (grandmotherId -> grandchildId)
+  private grandmotherGrandchildren = new Map<string, string>();
   // 뼈 수집가: 게임 중 1회 복구 대상 추적
   private boneCollectorUsed = new Set<string>();
   private boneCollectorRestoredTargets = new Map<string, string>();
@@ -658,6 +660,7 @@ export class GameManager {
     this.courtierDrunkEffects.clear();
     this.pendingMoonchildKills.clear();
     this.exorcistBlockedPlayerIds.clear();
+    this.grandmotherGrandchildren.clear();
     this.boneCollectorUsed.clear();
     this.boneCollectorRestoredTargets.clear();
     this.pendingHarlotConsents.clear();
@@ -1183,7 +1186,43 @@ export class GameManager {
         this.dayDeathToday = true;
       }
       this.cleanupOnPlayerDeath(player);
+      if (wasAlive) this.killGrandmothersForGrandchild(player.id);
       this.syncContinuousPoisoning();
+    }
+  }
+
+  setGrandmotherGrandchild(grandmotherId: string, grandchildId: string): void {
+    const grandmother = this.getPlayer(grandmotherId);
+    const grandchild = this.getPlayer(grandchildId);
+    if (!grandmother || !grandchild || grandmother.role?.id !== 'grandmother') {
+      return;
+    }
+    this.grandmotherGrandchildren.set(grandmother.id, grandchild.id);
+  }
+
+  private killGrandmothersForGrandchild(grandchildId: string): void {
+    for (const [grandmotherId, linkedGrandchildId] of this
+      .grandmotherGrandchildren) {
+      if (linkedGrandchildId !== grandchildId) continue;
+      const grandmother = this.getPlayer(grandmotherId);
+      if (
+        !grandmother ||
+        !grandmother.isAlive ||
+        grandmother.role?.id !== 'grandmother' ||
+        isPoisonedOrDrunk(grandmother) ||
+        grandmother.statuses.includes('no_ability')
+      ) {
+        continue;
+      }
+
+      grandmother.isAlive = false;
+      if (this.state.phase === 'day') {
+        this.dayDeathToday = true;
+      }
+      if (this.state.phase === 'night') {
+        this.addPendingNightKill(grandmother.id);
+      }
+      this.cleanupOnPlayerDeath(grandmother);
     }
   }
 

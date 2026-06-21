@@ -516,10 +516,18 @@ export function registerStorytellerHandlers(
       const targetPlayer = game
         .getState()
         .players.find((player) => player.id === playerId);
+      const activeRoleId = game.getNightProgress().activeRoleId;
+      if (
+        activeRoleId === 'grandmother' &&
+        deliveredFeedback.type === 'player_and_role' &&
+        deliveredFeedback.playerId
+      ) {
+        game.setGrandmotherGrandchild(playerId, deliveredFeedback.playerId);
+      }
       if (targetPlayer) {
         emitDeliveredFeedbackRecord(game, storytellerIo, {
           player: targetPlayer,
-          roleId: game.getNightProgress().activeRoleId,
+          roleId: activeRoleId,
           feedback: deliveredFeedback,
           source: 'manual',
         });
