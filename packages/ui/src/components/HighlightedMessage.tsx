@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, typography } from '../tokens';
+import { segmentHighlightedMessage } from '../utils/chat';
 import type { TaggedCandidate } from './QuickSuggestions';
 
 const BADGE_COLORS = colors.badge;
@@ -19,38 +20,7 @@ export function HighlightedMessage({
   const baseStyleFlat = StyleSheet.flatten(baseStyle);
 
   const segments = useMemo(() => {
-    if (keywords.length === 0) return [{ text: message, match: null }];
-
-    const sorted = [...keywords].sort((a, b) => b.word.length - a.word.length);
-
-    const result: { text: string; match: TaggedCandidate | null }[] = [];
-    let remaining = message;
-
-    while (remaining.length > 0) {
-      let earliestIdx = remaining.length;
-      let earliestMatch: TaggedCandidate | null = null;
-
-      for (const kw of sorted) {
-        const idx = remaining.indexOf(kw.word);
-        if (idx !== -1 && idx < earliestIdx) {
-          earliestIdx = idx;
-          earliestMatch = kw;
-        }
-      }
-
-      if (!earliestMatch) {
-        result.push({ text: remaining, match: null });
-        break;
-      }
-
-      if (earliestIdx > 0) {
-        result.push({ text: remaining.slice(0, earliestIdx), match: null });
-      }
-      result.push({ text: earliestMatch.word, match: earliestMatch });
-      remaining = remaining.slice(earliestIdx + earliestMatch.word.length);
-    }
-
-    return result;
+    return segmentHighlightedMessage(message, keywords);
   }, [message, keywords]);
 
   return (

@@ -4,6 +4,7 @@ import {
   applySuggestion,
   buildChatCandidates,
   formatChatTime,
+  segmentHighlightedMessage,
 } from '../utils/chat';
 
 describe('buildChatCandidates', () => {
@@ -115,5 +116,36 @@ describe('applySuggestion', () => {
   it('공백이 여러 개여도 보존된다', () => {
     const result = applySuggestion('안녕  홍길', '홍길동');
     expect(result).toBe('안녕  홍길동');
+  });
+});
+
+describe('segmentHighlightedMessage', () => {
+  it('한 글자 키워드는 단어 일부에 포함될 때 하이라이트하지 않는다', () => {
+    const segments = segmentHighlightedMessage('포함된 정보', [
+      { word: '포', category: 'role' },
+    ]);
+
+    expect(segments).toEqual([{ text: '포함된 정보', match: null }]);
+  });
+
+  it('한 글자 키워드는 독립된 토큰이면 하이라이트한다', () => {
+    const keyword = { word: '포', category: 'role' } as const;
+    const segments = segmentHighlightedMessage('악마는 포 입니다', [keyword]);
+
+    expect(segments).toEqual([
+      { text: '악마는 ', match: null },
+      { text: '포', match: keyword },
+      { text: ' 입니다', match: null },
+    ]);
+  });
+
+  it('두 글자 이상 키워드는 기존처럼 단어 내부에서도 하이라이트한다', () => {
+    const keyword = { word: '사망', category: 'status' } as const;
+    const segments = segmentHighlightedMessage('사망자는 누구?', [keyword]);
+
+    expect(segments).toEqual([
+      { text: '사망', match: keyword },
+      { text: '자는 누구?', match: null },
+    ]);
   });
 });
