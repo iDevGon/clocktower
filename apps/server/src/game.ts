@@ -1956,6 +1956,7 @@ export class GameManager {
         success: true;
         blocked: false;
         protectedTargetIds: string[];
+        drunkTargetId: string;
       }
     | {
         success: false;
@@ -1995,15 +1996,19 @@ export class GameManager {
 
     for (const player of this.state.players) {
       this.removeStatus(player, 'innkeeper_protected');
+      this.removeStatus(player, 'innkeeper_drunk');
     }
     for (const target of targets) {
       this.addStatus(target, 'innkeeper_protected');
     }
+    const drunkTarget = targets[0];
+    this.addStatus(drunkTarget, 'innkeeper_drunk');
 
     return {
       success: true,
       blocked: false,
       protectedTargetIds: targets.map((target) => target.id),
+      drunkTargetId: drunkTarget.id,
     };
   }
 

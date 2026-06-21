@@ -884,12 +884,26 @@ export function NightActionLog({
                       if (action.roleId === 'innkeeper') {
                         const protectKey = `${targetKey}:innkeeper-protect`;
                         const drunkKey = `${targetKey}:innkeeper-drunk`;
+                        const innkeeperDrunkTargetId = action.targets.find(
+                          (id) => {
+                            const player = players.find((p) => p.id === id);
+                            return (
+                              getCurrentStatuses(player).includes(
+                                'innkeeper_drunk',
+                              ) ||
+                              processedTargets.has(
+                                `${getActionTargetKey(action, i, id)}:innkeeper-drunk`,
+                              )
+                            );
+                          },
+                        );
                         const protectDone =
                           processedTargets.has(protectKey) ||
                           targetStatuses.includes('innkeeper_protected');
                         const drunkDone =
                           processedTargets.has(drunkKey) ||
-                          targetStatuses.includes('innkeeper_drunk');
+                          targetStatuses.includes('innkeeper_drunk') ||
+                          innkeeperDrunkTargetId != null;
 
                         return (
                           <View key={targetId} style={styles.targetActionGroup}>
@@ -946,7 +960,9 @@ export function NightActionLog({
                                 ]}
                               >
                                 {drunkDone
-                                  ? `${getPlayerName(targetId)} 여관 주인 취함`
+                                  ? targetStatuses.includes('innkeeper_drunk')
+                                    ? `${getPlayerName(targetId)} 여관 주인 취함`
+                                    : '여관 주인 취함 선택 완료'
                                   : `${getPlayerName(targetId)} 여관 주인 취함 처리`}
                               </Text>
                             </Pressable>

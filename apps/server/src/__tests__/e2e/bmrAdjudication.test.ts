@@ -202,6 +202,11 @@ describe('E2E: 피로물든달 판정 보조', () => {
     expect(ctx.app.game.getPlayer(playerIds[2])?.statuses).toContain(
       'innkeeper_protected',
     );
+    expect(
+      [playerIds[1], playerIds[2]].filter((playerId) =>
+        ctx.app.game.getPlayer(playerId)?.statuses.includes('innkeeper_drunk'),
+      ),
+    ).toHaveLength(1);
   });
 
   it('암살자 밤 행동은 대상을 사망시키고 능력을 소모한다', async () => {
@@ -292,6 +297,30 @@ describe('E2E: 피로물든달 판정 보조', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
+    expect(playerStateReceived).toBe(false);
+  });
+
+  it('플레이어가 제출한 BMR 밤 사망도 낮 전환 전까지 플레이어 상태에 공개되지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'gambler' },
+      { roleId: 'assassin' },
+      { roleId: 'po' },
+    ]);
+
+    let playerStateReceived = false;
+    ctx.players[1].once('game:state', () => {
+      playerStateReceived = true;
+    });
+
+    const storytellerStatePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.players[3].emit('night:action', { targets: [playerIds[1]] });
+    await storytellerStatePromise;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(ctx.app.game.getPlayer(playerIds[1])?.isAlive).toBe(false);
+    expect(ctx.app.game.hasPendingNightKill(playerIds[1])).toBe(true);
     expect(playerStateReceived).toBe(false);
   });
 });

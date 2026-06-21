@@ -1135,6 +1135,7 @@ describe('GameManager', () => {
         success: true,
         blocked: false,
         protectedTargetIds: [players[5].id, players[6].id],
+        drunkTargetId: players[5].id,
       });
       expect(gm.getPlayer(players[5].id)?.statuses).toContain(
         'innkeeper_protected',
@@ -1142,6 +1143,11 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[6].id)?.statuses).toContain(
         'innkeeper_protected',
       );
+      expect(
+        [players[5], players[6]].filter((player) =>
+          gm.getPlayer(player.id)?.statuses.includes('innkeeper_drunk'),
+        ),
+      ).toHaveLength(1);
     });
 
     it('여관 주인이 취함/중독이면 보호를 자동 적용하지 않는다', () => {
