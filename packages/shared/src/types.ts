@@ -18,6 +18,7 @@ export interface Player {
   /** 현재 진영. 일반적으로 role.team에서 파생되지만, 이발사/마귀할멈/뱀 조련사 등으로 달라질 수 있습니다. */
   alignment?: 'good' | 'evil';
   drunkAs?: string;
+  lunaticAs?: string;
   isAlive: boolean;
   hasNominatedToday: boolean;
   hasBeenNominatedToday: boolean;

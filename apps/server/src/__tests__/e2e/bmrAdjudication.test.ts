@@ -74,6 +74,46 @@ describe('E2E: 피로물든달 판정 보조', () => {
     expect(wakeTargets.candidateIds).toContain(playerIds[4]);
   });
 
+  it('미치광이는 플레이어 앱에서 악마로 보이고 해당 악마 밤 차례에 행동한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'lunatic', lunaticAs: 'po' },
+      { roleId: 'sailor' },
+      { roleId: 'grandmother' },
+      { roleId: 'godfather' },
+      { roleId: 'zombuul' },
+    ]);
+
+    const rejoinResult = await new Promise<{
+      success: boolean;
+      roleId?: string;
+      lunaticAs?: string;
+    }>((resolve) => {
+      ctx.players[0].emit('game:rejoin', { playerId: playerIds[0] }, resolve);
+    });
+
+    expect(rejoinResult.success).toBe(true);
+    expect(rejoinResult.roleId).toBe('po');
+    expect(rejoinResult.lunaticAs).toBe('po');
+
+    const wakePromise = waitForEvent<{ roleId: string }>(
+      ctx.players[0],
+      'night:wakeUp',
+    );
+    ctx.storyteller.emit('night:setActiveRole', 'po');
+    const wake = await wakePromise;
+    expect(wake.roleId).toBe('po');
+
+    const actionPromise = waitForEvent<{ playerId: string; roleId: string }>(
+      ctx.storyteller,
+      'night:actionReceived',
+    );
+    ctx.players[0].emit('night:action', { targets: [playerIds[1]] });
+    const action = await actionPromise;
+
+    expect(action.playerId).toBe(playerIds[0]);
+    expect(action.roleId).toBe('po');
+  });
+
   it('푸카 밤 행동은 이전 중독 대상을 사망시키고 새 대상을 중독시킨다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [
       { roleId: 'grandmother' },

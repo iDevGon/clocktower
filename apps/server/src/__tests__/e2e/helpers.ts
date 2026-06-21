@@ -162,11 +162,15 @@ export async function setupFullGame(
 
 /**
  * 게임 생성 → 플레이어 참가 → 수동 역할 배정 → 게임 시작.
- * roleAssignments: [{ roleId, drunkAs? }] — playerIds 순서대로 매핑
+ * roleAssignments: [{ roleId, drunkAs?, lunaticAs? }] — playerIds 순서대로 매핑
  */
 export async function setupGameWithRoles(
   ctx: TestContext,
-  roleAssignments: Array<{ roleId: string; drunkAs?: string }>,
+  roleAssignments: Array<{
+    roleId: string;
+    drunkAs?: string;
+    lunaticAs?: string;
+  }>,
 ): Promise<{ playerIds: string[] }> {
   const playerCount = roleAssignments.length;
 
@@ -210,6 +214,7 @@ export async function setupGameWithRoles(
       playerId: playerIds[i],
       roleId: roleAssignments[i].roleId,
       drunkAs: roleAssignments[i].drunkAs,
+      lunaticAs: roleAssignments[i].lunaticAs,
     });
     await assignStatePromise;
   }

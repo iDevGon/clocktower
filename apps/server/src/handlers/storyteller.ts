@@ -99,7 +99,7 @@ function emitTriggeredDeathUpdates(
 
 /**
  * 게임에 등장하지 않는 선한 역할 목록을 반환합니다.
- * Drunk의 drunkAs 역할도 "등장하는 역할"로 간주합니다.
+ * Drunk의 drunkAs 및 Lunatic의 lunaticAs 역할도 "등장하는 역할"로 간주합니다.
  * 게임에 배정된 역할들의 에디션에 속하는 역할만 후보로 반환합니다.
  */
 function getNotInPlayGoodRoles(game: GameManager) {
@@ -108,7 +108,9 @@ function getNotInPlayGoodRoles(game: GameManager) {
     .map((p) => p.role)
     .filter((r): r is Role => !!r);
   const assignedRoleIds = new Set(
-    state.players.flatMap((p) => [p.role?.id, p.drunkAs]).filter(Boolean),
+    state.players
+      .flatMap((p) => [p.role?.id, p.drunkAs, p.lunaticAs])
+      .filter(Boolean),
   );
   const activeEditions = new Set(assignedRoles.map((r) => r.edition));
   return ALL_ROLES.filter(
@@ -117,6 +119,32 @@ function getNotInPlayGoodRoles(game: GameManager) {
       !assignedRoleIds.has(r.id) &&
       activeEditions.has(r.edition),
   );
+}
+
+function getDemonRolesForGame(game: GameManager): Role[] {
+  const editionId = game.getEditionId();
+  const editionDemons = ALL_ROLES.filter(
+    (r) => r.team === 'demon' && r.edition === editionId,
+  );
+  return editionDemons.length > 0
+    ? editionDemons
+    : ALL_ROLES.filter((r) => r.team === 'demon');
+}
+
+function resolveLunaticAs(
+  game: GameManager,
+  requestedRoleId?: string,
+): string | undefined {
+  const requestedRole = requestedRoleId ? getRoleById(requestedRoleId) : null;
+  if (requestedRole?.team === 'demon') return requestedRole.id;
+
+  const inPlayDemon = game
+    .getState()
+    .players.find((p) => p.role?.team === 'demon')?.role;
+  if (inPlayDemon) return inPlayDemon.id;
+
+  const demonRoles = getDemonRolesForGame(game);
+  return demonRoles[0]?.id;
 }
 
 /**
@@ -597,12 +625,13 @@ export function registerStorytellerHandlers(
         const actionDef = NIGHT_ACTIONS[roleId];
         const isOnlyWhenDead = actionDef?.onlyWhenDead === true;
 
-        // 실제 역할 + 주정뱅이(drunkAs) + 철학자(philosopherGrantedRole) 모두 수집.
+        // 실제 역할 + 주정뱅이(drunkAs) + 미치광이(lunaticAs) + 철학자(philosopherGrantedRole) 모두 수집.
         // 철학자가 활성화될 때(roleId === 'philosopher')도 본인 포함되어야 하므로 그대로 매치
         const baseCandidates = state.players.filter((p) => {
           const roleMatches =
             p.role?.id === roleId ||
             (p.role?.id === 'drunk' && p.drunkAs === roleId) ||
+            (p.role?.id === 'lunatic' && p.lunaticAs === roleId) ||
             (p.role?.id === 'philosopher' &&
               p.philosopherGrantedRole === roleId);
           if (!roleMatches) return false;
@@ -770,7 +799,9 @@ export function registerStorytellerHandlers(
               candidates[Math.floor(Math.random() * candidates.length)].id;
           }
         }
-        game.assignRole(playerId, role.id, drunkAs);
+        const lunaticAs =
+          role.id === 'lunatic' ? resolveLunaticAs(game) : undefined;
+        game.assignRole(playerId, role.id, drunkAs, lunaticAs);
         if (role.id === 'drunk' && drunkAs) {
           // 주정뱅이에게는 가짜 마을주민 역할을 전송
           const fakeRole = getRoleById(drunkAs);
@@ -778,6 +809,13 @@ export function registerStorytellerHandlers(
             roleId: drunkAs,
             roleName: fakeRole?.name ?? drunkAs,
             drunkAs,
+          });
+        } else if (role.id === 'lunatic' && lunaticAs) {
+          const fakeRole = getRoleById(lunaticAs);
+          playerIo.to(playerId).emit('role:assign', {
+            roleId: lunaticAs,
+            roleName: fakeRole?.name ?? lunaticAs,
+            lunaticAs,
           });
         } else {
           playerIo.to(playerId).emit('role:assign', {
@@ -798,7 +836,7 @@ export function registerStorytellerHandlers(
 
     socket.on(
       'game:assignRole',
-      ({ playerId, roleId, drunkAs, bluffRoleIds }) => {
+      ({ playerId, roleId, drunkAs, lunaticAs, bluffRoleIds }) => {
         // 이미 다른 플레이어가 같은 역할을 갖고 있으면 스왑
         const state = game.getState();
         const currentPlayer = state.players.find((p) => p.id === playerId);
@@ -853,6 +891,17 @@ export function registerStorytellerHandlers(
               roleId: fakeRoleId,
               roleName: fakeRole?.name ?? fakeRoleId,
               drunkAs: fakeRoleId,
+            });
+          }
+        } else if (roleId === 'lunatic') {
+          const fakeRoleId = resolveLunaticAs(game, lunaticAs);
+          game.assignRole(playerId, roleId, undefined, fakeRoleId);
+          if (fakeRoleId) {
+            const fakeRole = getRoleById(fakeRoleId);
+            playerIo.to(playerId).emit('role:assign', {
+              roleId: fakeRoleId,
+              roleName: fakeRole?.name ?? fakeRoleId,
+              lunaticAs: fakeRoleId,
             });
           }
         } else {

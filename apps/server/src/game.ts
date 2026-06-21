@@ -695,6 +695,7 @@ export class GameManager {
       role: undefined,
       alignment: undefined,
       drunkAs: undefined,
+      lunaticAs: undefined,
       isAlive: true,
       hasNominatedToday: false,
       hasBeenNominatedToday: false,
@@ -1133,6 +1134,7 @@ export class GameManager {
     player.role = undefined;
     player.alignment = undefined;
     player.drunkAs = undefined;
+    player.lunaticAs = undefined;
     player.statuses = player.statuses.filter((s) => s !== 'drunk');
     this.syncContinuousPoisoning();
   }
@@ -1144,6 +1146,7 @@ export class GameManager {
       player.role = undefined;
       player.alignment = undefined;
       player.drunkAs = undefined;
+      player.lunaticAs = undefined;
       player.statuses = player.statuses.filter((s) => s !== 'drunk');
     }
     this.bluffRoles = [];
@@ -1151,7 +1154,12 @@ export class GameManager {
     this.syncContinuousPoisoning();
   }
 
-  assignRole(playerId: string, roleId: string, drunkAs?: string): void {
+  assignRole(
+    playerId: string,
+    roleId: string,
+    drunkAs?: string,
+    lunaticAs?: string,
+  ): void {
     const player = this.getPlayer(playerId);
     if (!player) return;
 
@@ -1165,7 +1173,8 @@ export class GameManager {
     };
     player.role = role;
     player.alignment = this.getDefaultAlignmentForRole(role);
-    player.drunkAs = drunkAs;
+    player.drunkAs = roleId === 'drunk' ? drunkAs : undefined;
+    player.lunaticAs = roleId === 'lunatic' ? lunaticAs : undefined;
 
     // 주정뱅이는 처음부터 '취함' 상태 자동 부여
     if (roleId === 'drunk') {
@@ -3493,6 +3502,7 @@ export class GameManager {
       target.role = fangGuRole;
     }
     target.alignment = 'evil';
+    target.lunaticAs = undefined;
 
     // 기존 팡 구는 사망
     oldDemon.isAlive = false;
@@ -3533,6 +3543,7 @@ export class GameManager {
     player.role = newRole;
     // 주정뱅이 상태 제거 (역할 변경 시)
     player.drunkAs = undefined;
+    player.lunaticAs = undefined;
     player.statuses = player.statuses.filter((s) => s !== 'drunk');
     this.syncContinuousPoisoning();
 
@@ -3627,10 +3638,13 @@ export class GameManager {
     p1.role = role2;
     p2.role = role1;
 
-    // drunkAs 교환
+    // drunkAs/lunaticAs 교환
     const drunkAs1 = p1.drunkAs;
     p1.drunkAs = p2.drunkAs;
     p2.drunkAs = drunkAs1;
+    const lunaticAs1 = p1.lunaticAs;
+    p1.lunaticAs = p2.lunaticAs;
+    p2.lunaticAs = lunaticAs1;
 
     // 점쟁이 Red Herring 재배정: 교환된 플레이어 중 점쟁이가 있으면
     if (p1.role?.id === 'fortune_teller' || p2.role?.id === 'fortune_teller') {

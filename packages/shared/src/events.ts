@@ -49,6 +49,7 @@ export interface ServerToClientEvents {
     roleId: string;
     roleName: string;
     drunkAs?: string;
+    lunaticAs?: string;
   }) => void;
   'vote:start': (data: {
     nominatorId: string;
@@ -360,6 +361,7 @@ export interface ClientToServerEvents {
       playerName?: string;
       roleId?: string;
       drunkAs?: string;
+      lunaticAs?: string;
       phase?: Phase;
       isAlive?: boolean;
       daySubPhase?: DaySubPhase | null;
@@ -479,6 +481,7 @@ export interface StorytellerToServerEvents {
     playerId: string;
     roleId: string;
     drunkAs?: string;
+    lunaticAs?: string;
     /** 악마 역할 배정 시 이야기꾼이 사전 선택한 블러프 역할 ID (최대 3개) */
     bluffRoleIds?: string[];
   }) => void;

@@ -34,6 +34,7 @@ function hasEffectiveRole(
   player: {
     role?: { id: string };
     drunkAs?: string;
+    lunaticAs?: string;
     philosopherGrantedRole?: string;
   },
   roleId: string,
@@ -41,6 +42,7 @@ function hasEffectiveRole(
   return (
     player.role?.id === roleId ||
     (player.role?.id === 'drunk' && player.drunkAs === roleId) ||
+    (player.role?.id === 'lunatic' && player.lunaticAs === roleId) ||
     (player.role?.id === 'philosopher' &&
       player.philosopherGrantedRole === roleId)
   );
@@ -244,11 +246,13 @@ export function registerPlayerHandlers(
         return;
       }
       socket.join(player.id);
-      // 주정뱅이에게는 가짜 역할 ID를 전송
+      // 주정뱅이/미치광이에게는 가짜 역할 ID를 전송
       const roleIdForPlayer =
         player.role?.id === 'drunk' && player.drunkAs
           ? player.drunkAs
-          : player.role?.id;
+          : player.role?.id === 'lunatic' && player.lunaticAs
+            ? player.lunaticAs
+            : player.role?.id;
 
       const gamePlayers = getOrderedPlayerInfoList(game);
 
@@ -269,7 +273,9 @@ export function registerPlayerHandlers(
       const effectiveRoleId =
         player.role?.id === 'drunk' && player.drunkAs
           ? player.drunkAs
-          : player.role?.id;
+          : player.role?.id === 'lunatic' && player.lunaticAs
+            ? player.lunaticAs
+            : player.role?.id;
       let butlerMasterName: string | undefined;
       if (effectiveRoleId === 'butler') {
         const masterId = game.getButlerMaster(playerId);
@@ -322,6 +328,7 @@ export function registerPlayerHandlers(
         playerName: player.name,
         roleId: roleIdForPlayer,
         drunkAs: player.drunkAs ?? undefined,
+        lunaticAs: player.lunaticAs ?? undefined,
         phase: state.phase,
         isAlive: player.isAlive,
         daySubPhase: state.daySubPhase,
@@ -513,10 +520,12 @@ export function registerPlayerHandlers(
           const effectiveRoleId =
             player.role.id === 'drunk' && player.drunkAs
               ? player.drunkAs
-              : player.role.id === 'philosopher' &&
-                  player.philosopherGrantedRole
-                ? player.philosopherGrantedRole
-                : player.role.id;
+              : player.role.id === 'lunatic' && player.lunaticAs
+                ? player.lunaticAs
+                : player.role.id === 'philosopher' &&
+                    player.philosopherGrantedRole
+                  ? player.philosopherGrantedRole
+                  : player.role.id;
 
           // 집사(Butler) 주인 선택 저장 (철학자가 집사 능력 가진 경우 포함)
           if (effectiveRoleId === 'butler' && targets.length > 0) {
