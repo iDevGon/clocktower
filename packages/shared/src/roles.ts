@@ -1354,7 +1354,7 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
   exorcist: {
     type: 'select_one',
     instruction: '오늘 밤 깨어나지 못하게 할 플레이어 1명을 선택하세요',
-    excludeSelf: true,
+    excludeSelf: false,
     includeDeadTargets: true,
   },
   innkeeper: {
@@ -1365,17 +1365,17 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
   },
   gambler: {
     type: 'passive',
-    instruction: '플레이어와 캐릭터 추측은 진행자가 수동으로 처리합니다',
+    instruction: '이야기꾼 앱에서 플레이어와 캐릭터 추측을 기록하세요',
     excludeSelf: false,
   },
   gossip: {
     type: 'passive',
-    instruction: '낮 공개 발언 결과는 진행자가 수동으로 처리합니다',
+    instruction: '이야기꾼 앱에서 공개 발언 성공 시 사망 대상을 선택하세요',
     excludeSelf: false,
   },
   courtier: {
     type: 'passive',
-    instruction: '취하게 할 캐릭터 선택은 진행자가 수동으로 처리합니다',
+    instruction: '이야기꾼 앱에서 취하게 할 캐릭터를 선택하세요',
     excludeSelf: false,
   },
   professor: {
@@ -1397,7 +1397,7 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
   },
   moonchild: {
     type: 'passive',
-    instruction: '달의 자손 공개 선택 결과는 진행자가 수동으로 처리합니다',
+    instruction: '이야기꾼 앱에서 공개 선택 대상과 사망 처리를 기록하세요',
     excludeSelf: false,
   },
   godfather: {

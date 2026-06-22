@@ -83,4 +83,80 @@ describe('attachGameListeners', () => {
       otherMinionNames: ['Player3'],
     });
   });
+
+  it('재접속 응답의 철학자 부여 역할을 복원한다', () => {
+    const socket = new FakeSocket();
+    socket.rejoinResponse = {
+      success: true,
+      playerName: 'Philosopher',
+      roleId: 'philosopher',
+      phase: 'night',
+      philosopherGrantedRole: 'po',
+    };
+    usePlayerStore.getState().set({ playerId: 'p1' });
+    attachGameListeners(socket as unknown as AppSocket);
+
+    socket.emitEvent('connect', undefined);
+
+    expect(usePlayerStore.getState().philosopherGrantedRole).toBe('po');
+  });
+
+  it('플레이어 갱신의 좀버얼 공개 사망 상태를 사망으로 표시한다', () => {
+    const socket = new FakeSocket();
+    attachGameListeners(socket as unknown as AppSocket);
+    usePlayerStore.getState().set({
+      playerId: 'zombuul',
+      isAlive: false,
+      gamePlayers: [
+        {
+          id: 'zombuul',
+          name: 'Zombuul',
+          isAlive: false,
+          deadVoteUsed: false,
+        },
+      ],
+    });
+
+    socket.emitEvent('game:playerUpdate', {
+      id: 'zombuul',
+      name: 'Zombuul',
+      isAlive: true,
+      deadVoteUsed: false,
+      statuses: ['zombuul_registers_dead'],
+    });
+
+    expect(usePlayerStore.getState().isAlive).toBe(false);
+    expect(usePlayerStore.getState().gamePlayers[0]?.isAlive).toBe(false);
+  });
+
+  it('부활 플레이어 갱신은 사망 투표권 사용 상태도 되돌린다', () => {
+    const socket = new FakeSocket();
+    attachGameListeners(socket as unknown as AppSocket);
+    usePlayerStore.getState().set({
+      playerId: 'revived',
+      isAlive: false,
+      deadVoteUsed: true,
+      gamePlayers: [
+        {
+          id: 'revived',
+          name: 'Revived',
+          isAlive: false,
+          deadVoteUsed: true,
+        },
+      ],
+    });
+
+    socket.emitEvent('game:playerUpdate', {
+      id: 'revived',
+      name: 'Revived',
+      isAlive: true,
+      deadVoteUsed: false,
+      statuses: [],
+    });
+
+    expect(usePlayerStore.getState().isAlive).toBe(true);
+    expect(usePlayerStore.getState().deadVoteUsed).toBe(false);
+    expect(usePlayerStore.getState().gamePlayers[0]?.isAlive).toBe(true);
+    expect(usePlayerStore.getState().gamePlayers[0]?.deadVoteUsed).toBe(false);
+  });
 });

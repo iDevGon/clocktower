@@ -90,6 +90,48 @@ describe('E2E: 주정뱅이 겹침 — 점쟁이 (select_two)', () => {
     const action2 = await action2Promise;
     expect(action2.roleId).toBe('fortune_teller');
   }, 15000);
+
+  it('잘못된 피드백 대상은 실패하고 다음 점쟁이 wakeUp으로 넘어가지 않는다', async () => {
+    await setupGameWithRoles(ctx, makeRoles('fortune_teller'));
+
+    const firstWakeUp = new Promise<number>((resolve) => {
+      ctx.players[0].once('night:wakeUp', () => resolve(0));
+      ctx.players[1].once('night:wakeUp', () => resolve(1));
+    });
+
+    ctx.storyteller.emit('night:setActiveRole', 'fortune_teller');
+    const firstIdx = await firstWakeUp;
+    const secondIdx = firstIdx === 0 ? 1 : 0;
+
+    const secondWakeUp = new Promise<'received' | 'timeout'>((resolve) => {
+      const timer = setTimeout(() => resolve('timeout'), 250);
+      ctx.players[secondIdx].once('night:wakeUp', () => {
+        clearTimeout(timer);
+        resolve('received');
+      });
+    });
+
+    const result = await new Promise<{
+      success: boolean | 'timeout';
+      error?: string;
+    }>((resolve) => {
+      const timer = setTimeout(() => resolve({ success: 'timeout' }), 250);
+      (ctx.storyteller as Socket).emit(
+        'night:sendFeedback',
+        {
+          playerId: 'missing-player',
+          feedback: { type: 'yes_no', value: true },
+        },
+        (res: { success: boolean; error?: string }) => {
+          clearTimeout(timer);
+          resolve(res);
+        },
+      );
+    });
+
+    expect(result.success).toBe(false);
+    expect(await secondWakeUp).toBe('timeout');
+  }, 15000);
 });
 
 describe('E2E: 주정뱅이 겹침 — 수도승 (select_one)', () => {

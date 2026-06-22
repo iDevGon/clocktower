@@ -79,7 +79,11 @@ interface NightFeedbackPanelProps {
   chefHint?: ChefHint;
   executedRoleName?: string;
   executedPlayerName?: string;
-  onSendFeedback: (playerId: string, feedback: NightFeedbackPayload) => void;
+  onSendFeedback: (
+    playerId: string,
+    feedback: NightFeedbackPayload,
+    callback?: (result: { success: boolean; error?: string }) => void,
+  ) => void;
   onAllFeedbackSent?: () => void;
   /** 서버에서 전달받은 실제 wakeUp 대상 플레이어 ID 목록 */
   wakeUpTargetIds?: string[];
@@ -215,10 +219,11 @@ export function NightFeedbackPanel({
         }
       }
     }
-    onSendFeedback(targetPlayer.id, fb);
-    if (currentIndex != null) {
-      setSentIndices((prev) => new Set(prev).add(currentIndex));
-    }
+    onSendFeedback(targetPlayer.id, fb, (result) => {
+      if (result.success && currentIndex != null) {
+        setSentIndices((prev) => new Set(prev).add(currentIndex));
+      }
+    });
   };
 
   const progressLabel =

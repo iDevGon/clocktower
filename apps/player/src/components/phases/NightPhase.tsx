@@ -10,7 +10,6 @@ interface NightPhaseProps {
   visible: boolean;
   nightProgress: NightProgressData | null;
   role: Role | null;
-  drunkAs?: string | null;
   isMyTurn: boolean;
   playerId: string;
   nightActionSubmitted: boolean;
@@ -24,7 +23,6 @@ export function NightPhase({
   visible,
   nightProgress,
   role,
-  drunkAs,
   isMyTurn,
   playerId,
   nightActionSubmitted,
@@ -47,9 +45,9 @@ export function NightPhase({
       {nightProgress && (
         <NightProgress
           activeRoleId={nightProgress.activeRoleId}
+          activeIndex={nightProgress.activeIndex}
           order={nightProgress.order}
           myRole={role}
-          drunkAs={drunkAs}
           nightWakeUp={nightWakeUp != null}
         />
       )}

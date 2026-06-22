@@ -36,7 +36,7 @@ export function useGameActions() {
         }
 
         const store = usePlayerStore.getState();
-        const roleId = store.drunkAs ?? store.role?.id;
+        const roleId = store.role?.id;
         if (roleId === 'butler' && targets.length > 0) {
           const master = store.gamePlayers.find((p) => p.id === targets[0]);
           store.set({
@@ -286,12 +286,19 @@ export function useGameActions() {
     [],
   );
 
-  const castExileVote = useCallback((guilty: boolean) => {
-    const socket = useConnectionStore.getState().socket;
-    if (socket) {
-      socket.emit('exile:vote', { guilty });
-    }
-  }, []);
+  const castExileVote = useCallback(
+    (guilty: boolean): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        const socket = useConnectionStore.getState().socket;
+        if (!socket || !socket.connected) {
+          resolve({ success: false, error: '연결되어 있지 않습니다' });
+          return;
+        }
+        socket.emit('exile:vote', { guilty }, (res) => resolve(res));
+      });
+    },
+    [],
+  );
 
   const respondHarlotConsent = useCallback(
     (harlotId: string, accepted: boolean) => {

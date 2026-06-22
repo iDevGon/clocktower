@@ -124,7 +124,11 @@ interface NightActionLogProps {
   actions: NightAction[];
   players: Player[];
   playerStatuses?: Record<string, PlayerStatus[]>;
-  onSendFeedback: (playerId: string, feedback: NightFeedbackPayload) => void;
+  onSendFeedback: (
+    playerId: string,
+    feedback: NightFeedbackPayload,
+    callback?: (result: { success: boolean; error?: string }) => void,
+  ) => void;
   onKill?: (playerId: string) => void;
   onRevive?: (playerId: string) => void;
   onSetStatus?: (playerId: string, status: PlayerStatus) => void;
@@ -135,21 +139,32 @@ interface NightActionLogProps {
     callback?: (result: BmrAssistResult) => void,
   ) => void;
   playerOrder?: string[];
-  onFangGuJump?: (oldDemonId: string, newDemonId: string) => void;
-  onSnakeCharmerSwap?: (snakeCharmerId: string, demonId: string) => void;
+  onFangGuJump?: (
+    oldDemonId: string,
+    newDemonId: string,
+    callback?: (result: BmrAssistResult) => void,
+  ) => void;
+  onSnakeCharmerSwap?: (
+    snakeCharmerId: string,
+    demonId: string,
+    callback?: (result: BmrAssistResult) => void,
+  ) => void;
   onVigormortisKillMinion?: (
     vigormortisId: string,
     minionId: string,
     poisonedNeighborId: string,
+    callback?: (result: BmrAssistResult) => void,
   ) => void;
   onPitHagChangeRole?: (
     pitHagId: string,
     targetPlayerId: string,
     newRoleId: string,
+    callback?: (result: BmrAssistResult) => void,
   ) => void;
   onBoneCollectorRestore?: (
     boneCollectorId: string,
     targetPlayerId: string,
+    callback?: (result: BmrAssistResult) => void,
   ) => void;
 }
 
@@ -180,6 +195,11 @@ export function NightActionLog({
     players.find((p) => p.id === id)?.isAlive ?? false;
   const getCurrentStatuses = (player?: Player) =>
     player ? (playerStatuses?.[player.id] ?? player.statuses ?? []) : [];
+  const isPlayerPubliclyAlive = (id: string) => {
+    const player = players.find((p) => p.id === id);
+    if (!player?.isAlive) return false;
+    return !getCurrentStatuses(player).includes('zombuul_registers_dead');
+  };
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [sentIndices, setSentIndices] = useState<Set<number>>(new Set());
   const [processedTargets, setProcessedTargets] = useState<Set<string>>(
@@ -259,9 +279,11 @@ export function NightActionLog({
     index: number,
     feedback: NightFeedbackPayload,
   ) => {
-    onSendFeedback(action.playerId, feedback);
-    setSentIndices((prev) => new Set(prev).add(index));
-    setExpandedIndex(null);
+    onSendFeedback(action.playerId, feedback, (result) => {
+      if (!result.success) return;
+      setSentIndices((prev) => new Set(prev).add(index));
+      setExpandedIndex(null);
+    });
   };
 
   const handleTargetAction = (
@@ -279,6 +301,18 @@ export function NightActionLog({
       new Set(prev).add(getActionTargetKey(action, index, targetId)),
     );
   };
+  const markTargetProcessed =
+    (
+      action: Pick<NightAction, 'playerId' | 'roleId'>,
+      index: number,
+      targetId: string,
+    ) =>
+    (result: BmrAssistResult) => {
+      if (!result.success) return;
+      setProcessedTargets((prev) =>
+        new Set(prev).add(getActionTargetKey(action, index, targetId)),
+      );
+    };
 
   return (
     <View style={styles.container}>
@@ -721,7 +755,7 @@ export function NightActionLog({
 
                       const alreadyDone = actionConfig.isKill
                         ? processedTargets.has(targetKey) ||
-                          !isPlayerAlive(targetId)
+                          !isPlayerPubliclyAlive(targetId)
                         : processedTargets.has(targetKey);
                       const warningBadges =
                         bmrWarnings.length > 0 ? (
@@ -1112,10 +1146,20 @@ export function NightActionLog({
                             key={targetId}
                             onPress={() => {
                               if (alreadyDone) return;
-                              onFangGuJump?.(action.playerId, targetId);
-                              setProcessedTargets((prev) =>
-                                new Set(prev).add(targetKey),
+                              const markProcessed = markTargetProcessed(
+                                action,
+                                i,
+                                targetId,
                               );
+                              if (onFangGuJump) {
+                                onFangGuJump?.(
+                                  action.playerId,
+                                  targetId,
+                                  markProcessed,
+                                );
+                              } else {
+                                markProcessed({ success: true });
+                              }
                             }}
                             style={[
                               styles.killButton,
@@ -1146,10 +1190,20 @@ export function NightActionLog({
                             key={targetId}
                             onPress={() => {
                               if (alreadyDone) return;
-                              onSnakeCharmerSwap?.(action.playerId, targetId);
-                              setProcessedTargets((prev) =>
-                                new Set(prev).add(targetKey),
+                              const markProcessed = markTargetProcessed(
+                                action,
+                                i,
+                                targetId,
                               );
+                              if (onSnakeCharmerSwap) {
+                                onSnakeCharmerSwap?.(
+                                  action.playerId,
+                                  targetId,
+                                  markProcessed,
+                                );
+                              } else {
+                                markProcessed({ success: true });
+                              }
                             }}
                             style={[
                               styles.killButton,
@@ -1177,13 +1231,20 @@ export function NightActionLog({
                             key={targetId}
                             onPress={() => {
                               if (alreadyDone) return;
-                              onBoneCollectorRestore?.(
-                                action.playerId,
+                              const markProcessed = markTargetProcessed(
+                                action,
+                                i,
                                 targetId,
                               );
-                              setProcessedTargets((prev) =>
-                                new Set(prev).add(targetKey),
-                              );
+                              if (onBoneCollectorRestore) {
+                                onBoneCollectorRestore?.(
+                                  action.playerId,
+                                  targetId,
+                                  markProcessed,
+                                );
+                              } else {
+                                markProcessed({ success: true });
+                              }
                             }}
                             style={[
                               styles.killButton,
@@ -1266,14 +1327,10 @@ export function NightActionLog({
             pitHagTarget.pitHagId,
             pitHagTarget.targetId,
             roleId,
-          );
-          setProcessedTargets((prev) =>
-            new Set(prev).add(
-              getActionTargetKey(
-                { playerId: pitHagTarget.pitHagId, roleId: 'pit_hag' },
-                pitHagTarget.actionIndex,
-                pitHagTarget.targetId,
-              ),
+            markTargetProcessed(
+              { playerId: pitHagTarget.pitHagId, roleId: 'pit_hag' },
+              pitHagTarget.actionIndex,
+              pitHagTarget.targetId,
             ),
           );
           setPitHagTarget(null);
@@ -1321,17 +1378,13 @@ export function NightActionLog({
             vigormortisPoisonChoice.vigormortisId,
             vigormortisPoisonChoice.minionId,
             poisonedNeighborId,
-          );
-          setProcessedTargets((prev) =>
-            new Set(prev).add(
-              getActionTargetKey(
-                {
-                  playerId: vigormortisPoisonChoice.vigormortisId,
-                  roleId: 'vigormortis',
-                },
-                vigormortisPoisonChoice.actionIndex,
-                vigormortisPoisonChoice.minionId,
-              ),
+            markTargetProcessed(
+              {
+                playerId: vigormortisPoisonChoice.vigormortisId,
+                roleId: 'vigormortis',
+              },
+              vigormortisPoisonChoice.actionIndex,
+              vigormortisPoisonChoice.minionId,
             ),
           );
           setVigormortisPoisonChoice(null);

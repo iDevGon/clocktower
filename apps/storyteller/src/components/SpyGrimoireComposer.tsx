@@ -15,8 +15,12 @@ import {
 interface SpyGrimoireComposerProps {
   players: Player[];
   spyPlayer: Player;
-  onSend: (playerId: string, feedback: NightFeedbackPayload) => void;
-  onSent?: () => void;
+  onSend: (
+    playerId: string,
+    feedback: NightFeedbackPayload,
+    callback?: (result: { success: boolean; error?: string }) => void,
+  ) => void;
+  onSent?: (result: { success: boolean; error?: string }) => void;
 }
 
 export function SpyGrimoireComposer({
@@ -44,11 +48,16 @@ export function SpyGrimoireComposer({
 
   const send = () => {
     if (!canSend) return;
-    onSend(spyPlayer.id, {
-      type: 'grimoire',
-      entries: buildManualSpyGrimoireEntries(players, selections),
-    });
-    onSent?.();
+    onSend(
+      spyPlayer.id,
+      {
+        type: 'grimoire',
+        entries: buildManualSpyGrimoireEntries(players, selections),
+      },
+      (result) => {
+        if (result.success) onSent?.(result);
+      },
+    );
   };
 
   return (

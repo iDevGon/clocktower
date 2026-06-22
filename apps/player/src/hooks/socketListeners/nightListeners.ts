@@ -3,9 +3,9 @@ import { usePlayerStore } from '../../stores/playerStore';
 import type { AppSocket } from './types';
 
 export function attachNightListeners(socket: AppSocket) {
-  socket.on('night:activeRole', ({ roleId, order, players }) => {
+  socket.on('night:activeRole', ({ roleId, activeIndex, order, players }) => {
     usePlayerStore.getState().set({
-      nightProgress: { activeRoleId: roleId, order, players },
+      nightProgress: { activeRoleId: roleId, activeIndex, order, players },
       gamePlayers: players,
       nightActionSubmitted: false,
       nightFeedback: null,

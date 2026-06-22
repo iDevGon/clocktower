@@ -221,6 +221,7 @@ export function getBmrDeathWarnings({
 
   if (
     target?.role?.id === 'zombuul' &&
+    !isAbilityMalfunctioning(target) &&
     !statuses.includes('zombuul_registers_dead')
   ) {
     warnings.push({

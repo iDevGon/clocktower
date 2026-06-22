@@ -206,6 +206,84 @@ describe('E2E: S&V 낮 능력 검증', () => {
     expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
     expect(ctx.app.game.hadExecutionToday()).toBe(false);
   }, 15000);
+
+  it('이야기꾼이 지명을 입력해도 마녀 저주 확인 요청을 보낸다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'clockmaker' },
+      { roleId: 'dreamer' },
+      { roleId: 'flowergirl' },
+      { roleId: 'witch' },
+      { roleId: 'vortox' },
+    ]);
+    await advanceToDay(ctx);
+    ctx.app.game.setWitchCursedTarget(playerIds[0]);
+
+    const cursePromise = waitForEvent<{ nominatorId: string }>(
+      ctx.storyteller as Socket,
+      'witch:curseDeath',
+    );
+    ctx.storyteller.emit('vote:nominate', {
+      nominatorId: playerIds[0],
+      nomineeId: playerIds[1],
+    });
+
+    const curse = await cursePromise;
+    expect(curse.nominatorId).toBe(playerIds[0]);
+  }, 15000);
+
+  it('마녀 저주 확인은 현재 유효한 저주 대상만 사망시킨다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'clockmaker' },
+      { roleId: 'dreamer' },
+      { roleId: 'flowergirl' },
+      { roleId: 'witch' },
+      { roleId: 'vortox' },
+    ]);
+    await advanceToDay(ctx);
+
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.storyteller.emit(
+          'witch:confirmCurseDeath',
+          { nominatorId: playerIds[0], kill: true },
+          resolve,
+        );
+      },
+    );
+
+    expect(result.success).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(true);
+  }, 15000);
+
+  it('마녀 저주로 악마가 죽고 탕녀 조건이면 탕녀에게 악마 역할을 알린다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'clockmaker' },
+      { roleId: 'dreamer' },
+      { roleId: 'flowergirl' },
+      { roleId: 'seamstress' },
+      { roleId: 'witch' },
+      { roleId: 'scarlet_woman' },
+      { roleId: 'imp' },
+    ]);
+    await advanceToDay(ctx);
+    ctx.app.game.setWitchCursedTarget(playerIds[6]);
+
+    const roleAssignPromise = waitForEvent<{ roleId: string }>(
+      ctx.players[5] as Socket,
+      'role:assign',
+      500,
+    );
+    ctx.storyteller.emit('witch:confirmCurseDeath', {
+      nominatorId: playerIds[6],
+      kill: true,
+    });
+    const roleAssign = await roleAssignPromise;
+
+    expect(roleAssign.roleId).toBe('imp');
+    expect(ctx.app.game.getPlayer(playerIds[6])?.isAlive).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[5])?.role?.id).toBe('imp');
+    expect(ctx.app.game.getState().phase).not.toBe('ended');
+  }, 15000);
 });
 
 describe('E2E: S&V 사망 트리거', () => {
@@ -260,6 +338,130 @@ describe('E2E: S&V 사망 트리거', () => {
 
     const event = await barberPromise;
     expect(event.barberName).toBe('Player1');
+  }, 15000);
+
+  it('이발사 역할 교환은 이발사 사망 후 한 번만 적용된다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'barber' },
+      { roleId: 'dreamer' },
+      { roleId: 'flowergirl' },
+      { roleId: 'witch' },
+      { roleId: 'vortox' },
+    ]);
+    await advanceToDay(ctx);
+
+    const beforeDeath = await new Promise<{
+      success: boolean;
+      error?: string;
+    }>((resolve) => {
+      ctx.storyteller.emit(
+        'barber:swapRoles',
+        { playerId1: playerIds[1], playerId2: playerIds[2] },
+        resolve,
+      );
+    });
+
+    expect(beforeDeath.success).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[1])?.role?.id).toBe('dreamer');
+    expect(ctx.app.game.getPlayer(playerIds[2])?.role?.id).toBe('flowergirl');
+
+    const barberPromise = waitForEvent<{ barberName: string }>(
+      ctx.storyteller as Socket,
+      'barber:died',
+    );
+    ctx.storyteller.emit('game:kill', playerIds[0]);
+    await barberPromise;
+
+    const afterDeath = await new Promise<{ success: boolean }>((resolve) => {
+      ctx.storyteller.emit(
+        'barber:swapRoles',
+        { playerId1: playerIds[1], playerId2: playerIds[2] },
+        resolve,
+      );
+    });
+
+    expect(afterDeath.success).toBe(true);
+    expect(ctx.app.game.getPlayer(playerIds[1])?.role?.id).toBe('flowergirl');
+    expect(ctx.app.game.getPlayer(playerIds[2])?.role?.id).toBe('dreamer');
+
+    const secondAttempt = await new Promise<{ success: boolean }>((resolve) => {
+      ctx.storyteller.emit(
+        'barber:swapRoles',
+        { playerId1: playerIds[1], playerId2: playerIds[2] },
+        resolve,
+      );
+    });
+
+    expect(secondAttempt.success).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[1])?.role?.id).toBe('flowergirl');
+    expect(ctx.app.game.getPlayer(playerIds[2])?.role?.id).toBe('dreamer');
+  }, 15000);
+
+  it('이발사 역할 교환을 스킵하면 이후 교환 요청은 실패한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'barber' },
+      { roleId: 'dreamer' },
+      { roleId: 'flowergirl' },
+      { roleId: 'witch' },
+      { roleId: 'vortox' },
+    ]);
+    await advanceToDay(ctx);
+
+    const barberPromise = waitForEvent<{ barberName: string }>(
+      ctx.storyteller as Socket,
+      'barber:died',
+    );
+    ctx.storyteller.emit('game:kill', playerIds[0]);
+    await barberPromise;
+
+    const skip = await new Promise<{ success: boolean }>((resolve) => {
+      ctx.storyteller.emit('barber:skipSwap', resolve);
+    });
+    expect(skip.success).toBe(true);
+
+    const swap = await new Promise<{ success: boolean }>((resolve) => {
+      ctx.storyteller.emit(
+        'barber:swapRoles',
+        { playerId1: playerIds[1], playerId2: playerIds[2] },
+        resolve,
+      );
+    });
+
+    expect(swap.success).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[1])?.role?.id).toBe('dreamer');
+    expect(ctx.app.game.getPlayer(playerIds[2])?.role?.id).toBe('flowergirl');
+  }, 15000);
+
+  it('이미 죽은 이발사를 다시 처치해도 역할 교환 요청을 다시 보내지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'barber' },
+      { roleId: 'dreamer' },
+      { roleId: 'flowergirl' },
+      { roleId: 'witch' },
+      { roleId: 'vortox' },
+    ]);
+    await advanceToDay(ctx);
+
+    const barberPromise = waitForEvent<{ barberName: string }>(
+      ctx.storyteller as Socket,
+      'barber:died',
+    );
+    ctx.storyteller.emit('game:kill', playerIds[0]);
+    await barberPromise;
+
+    const skip = await new Promise<{ success: boolean }>((resolve) => {
+      ctx.storyteller.emit('barber:skipSwap', resolve);
+    });
+    expect(skip.success).toBe(true);
+
+    let repeatedDeathEventReceived = false;
+    ctx.storyteller.once('barber:died', () => {
+      repeatedDeathEventReceived = true;
+    });
+    ctx.storyteller.emit('game:kill', playerIds[0]);
+    await new Promise((resolve) => setTimeout(resolve, 250));
+
+    expect(repeatedDeathEventReceived).toBe(false);
   }, 15000);
 });
 
@@ -352,6 +554,7 @@ describe('E2E: S&V 밤 역할 처리', () => {
       winningTeam: 'good' | 'evil';
       cause?: string;
     }>(ctx.players[0] as Socket, 'game:end');
+    ctx.app.game.kill(playerIds[0]);
 
     ctx.storyteller.emit('klutz:choose', {
       klutzId: playerIds[0],
@@ -361,5 +564,62 @@ describe('E2E: S&V 밤 역할 처리', () => {
     const result = await endPromise;
     expect(result.winningTeam).toBe('evil');
     expect(result.cause).toBe('klutz');
+  }, 15000);
+
+  it('죽지 않은 얼뜨기 선택 이벤트는 게임을 끝내지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'klutz' },
+      { roleId: 'dreamer' },
+      { roleId: 'flowergirl' },
+      { roleId: 'witch' },
+      { roleId: 'fang_gu' },
+    ]);
+
+    const result = await new Promise<
+      { success: boolean; error?: string } | undefined
+    >((resolve) => {
+      ctx.storyteller.emit(
+        'klutz:choose',
+        {
+          klutzId: playerIds[0],
+          chosenPlayerId: playerIds[3],
+        },
+        resolve,
+      );
+      setTimeout(() => resolve(undefined), 300);
+    });
+
+    expect(result?.success).toBe(false);
+    expect(ctx.app.game.getState().phase).not.toBe('ended');
+  }, 15000);
+
+  it('사악한 쌍둥이는 선한 생존 플레이어에게만 지정할 수 있다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'clockmaker' },
+      { roleId: 'dreamer' },
+      { roleId: 'flowergirl' },
+      { roleId: 'witch' },
+      { roleId: 'evil_twin' },
+      { roleId: 'fang_gu' },
+    ]);
+
+    const result = await new Promise<
+      { success: boolean; error?: string } | undefined
+    >((resolve) => {
+      ctx.storyteller.emit(
+        'evilTwin:assignGoodTwin',
+        {
+          evilTwinPlayerId: playerIds[4],
+          goodTwinPlayerId: playerIds[5],
+        },
+        resolve,
+      );
+      setTimeout(() => resolve(undefined), 300);
+    });
+
+    expect(result?.success).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[5])?.statuses).not.toContain(
+      'good_twin',
+    );
   }, 15000);
 });

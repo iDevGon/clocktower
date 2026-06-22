@@ -962,6 +962,14 @@ describe('BMR 밤 행동 정의', () => {
     });
   });
 
+  it('구마사제는 자기 자신도 선택할 수 있다', () => {
+    expect(NIGHT_ACTIONS.exorcist).toMatchObject({
+      type: 'select_one',
+      excludeSelf: false,
+      includeDeadTargets: true,
+    });
+  });
+
   it('교수는 사망 플레이어도 대상으로 선택할 수 있다', () => {
     expect(NIGHT_ACTIONS.professor?.includeDeadTargets).toBe(true);
   });
@@ -982,6 +990,12 @@ describe('BMR 밤 행동 정의', () => {
       'po',
     ]) {
       expect(NIGHT_ACTIONS[id]?.includeDeadTargets).toBe(true);
+    }
+  });
+
+  it('앱에서 처리되는 BMR 보조 역할 안내는 수동 처리로 표시하지 않는다', () => {
+    for (const id of ['courtier', 'gambler', 'gossip', 'moonchild']) {
+      expect(NIGHT_ACTIONS[id]?.instruction).not.toContain('수동');
     }
   });
 });

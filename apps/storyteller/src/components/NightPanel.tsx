@@ -42,30 +42,46 @@ interface NightPanelProps {
   playerOrder: string[];
   onActivateRole: (roleId: string | null) => void;
   onNightComplete: () => void;
-  onSendFeedback: (playerId: string, feedback: NightFeedbackPayload) => void;
+  onSendFeedback: (
+    playerId: string,
+    feedback: NightFeedbackPayload,
+    callback?: (result: BmrAssistResult) => void,
+  ) => void;
   onKill: (playerId: string) => void;
   onRevive?: (playerId: string) => void;
   onSetStatus: (playerId: string, status: PlayerStatus) => void;
   onRemoveStatus?: (playerId: string, status: PlayerStatus) => void;
-  onFangGuJump?: (oldDemonId: string, newDemonId: string) => void;
-  onSnakeCharmerSwap?: (snakeCharmerId: string, demonId: string) => void;
+  onFangGuJump?: (
+    oldDemonId: string,
+    newDemonId: string,
+    callback?: (result: BmrAssistResult) => void,
+  ) => void;
+  onSnakeCharmerSwap?: (
+    snakeCharmerId: string,
+    demonId: string,
+    callback?: (result: BmrAssistResult) => void,
+  ) => void;
   onVigormortisKillMinion?: (
     vigormortisId: string,
     minionId: string,
     poisonedNeighborId: string,
+    callback?: (result: BmrAssistResult) => void,
   ) => void;
   onPitHagChangeRole?: (
     pitHagId: string,
     targetPlayerId: string,
     newRoleId: string,
+    callback?: (result: BmrAssistResult) => void,
   ) => void;
   onBoneCollectorRestore?: (
     boneCollectorId: string,
     targetPlayerId: string,
+    callback?: (result: BmrAssistResult) => void,
   ) => void;
   onApplyBaristaEffect?: (
     targetPlayerId: string,
     effect: 'sober_healthy' | 'acts_twice',
+    callback?: (result: BmrAssistResult) => void,
   ) => void;
   onCourtierChooseRole?: (
     courtierId: string,
@@ -240,6 +256,22 @@ export function NightPanel({
       ),
     [players],
   );
+  const moonchildCandidatePlayers = useMemo(
+    () =>
+      players.filter(
+        (player) =>
+          player.isAlive && !player.statuses.includes('zombuul_registers_dead'),
+      ),
+    [players],
+  );
+  const shabalothRegurgitateCandidates = useMemo(
+    () =>
+      players.filter((player) => {
+        const statuses = playerStatuses[player.id] ?? player.statuses;
+        return !player.isAlive && statuses.includes('shabaloth_marked_dead');
+      }),
+    [playerStatuses, players],
+  );
   const gamblerCandidatePlayers = players;
   const activeNightRolePlayerNames = activeNightRoleId
     ? getNightRolePlayerNames(players, activeNightRoleId)
@@ -256,8 +288,7 @@ export function NightPanel({
 
   const handleBaristaApply = (effect: 'sober_healthy' | 'acts_twice') => {
     if (!baristaTargetId) return;
-    onApplyBaristaEffect?.(baristaTargetId, effect);
-    setFeedbackSentForRole(activeNightRoleId);
+    onApplyBaristaEffect?.(baristaTargetId, effect, handleBmrAssistResult);
   };
 
   const handleBmrAssistResult = (result: BmrAssistResult) => {
@@ -275,6 +306,11 @@ export function NightPanel({
     activeNightRoleId != null &&
     bmrAssistPanelRoleIds.has(activeNightRoleId) &&
     activeRolePlayer != null &&
+    !isFeedbackSent;
+  const showShabalothRegurgitationPanel =
+    activeNightRoleId === 'shabaloth' &&
+    activeRolePlayer != null &&
+    shabalothRegurgitateCandidates.length > 0 &&
     !isFeedbackSent;
 
   const renderChip = (
@@ -386,6 +422,60 @@ export function NightPanel({
             extraRoleIds={extraNightRoleIds}
             advanceRequestId={advanceRequestId}
           />
+
+          {showShabalothRegurgitationPanel && (
+            <View
+              style={{
+                marginTop: 12,
+                borderWidth: 1,
+                borderColor: '#3a3a42',
+                backgroundColor: '#17171b',
+                padding: 12,
+                gap: 10,
+              }}
+            >
+              <Text style={{ color: '#e0ddd8', fontWeight: '700' }}>
+                사발로스 토해내기
+              </Text>
+              <Text style={{ color: '#a9a29a' }}>
+                사발로스 사망 표식이 있는 플레이어를 부활시킬 수 있습니다.
+              </Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {shabalothRegurgitateCandidates.map((player) =>
+                  renderChip(
+                    player.id,
+                    player.name,
+                    bmrAssistTargetId === player.id,
+                    () => setBmrAssistTargetId(player.id),
+                  ),
+                )}
+              </View>
+              {bmrAssistTargetId && (
+                <Pressable
+                  onPress={() => {
+                    if (!activeRolePlayer) return;
+                    onShabalothRegurgitate?.(
+                      activeRolePlayer.id,
+                      bmrAssistTargetId,
+                      (result) => {
+                        handleBmrAssistResult(result);
+                        if (result.success) setBmrAssistTargetId(null);
+                      },
+                    );
+                  }}
+                  style={{
+                    backgroundColor: '#302f46',
+                    paddingVertical: 10,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ color: '#bab6f0', fontWeight: '700' }}>
+                    부활 처리
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          )}
 
           {activeNightRoleId === 'barista' && !isFeedbackSent && (
             <View
@@ -584,7 +674,10 @@ export function NightPanel({
                   <View
                     style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
                   >
-                    {livingPlayers.map((player) =>
+                    {(activeNightRoleId === 'moonchild'
+                      ? moonchildCandidatePlayers
+                      : livingPlayers
+                    ).map((player) =>
                       renderChip(
                         player.id,
                         player.name,
@@ -636,7 +729,8 @@ export function NightPanel({
                   players={players}
                   spyPlayer={spyPlayer}
                   onSend={onSendFeedback}
-                  onSent={() => {
+                  onSent={(result) => {
+                    if (!result.success) return;
                     setFeedbackSentForRole(activeNightRoleId);
                     setFeedbackCollapsed(true);
                   }}
@@ -674,9 +768,7 @@ export function NightPanel({
                       }
                     : undefined
                 }
-                onSendFeedback={(playerId, fb) => {
-                  onSendFeedback(playerId, fb);
-                }}
+                onSendFeedback={onSendFeedback}
                 onAllFeedbackSent={() => {
                   setFeedbackSentForRole(activeNightRoleId);
                   setFeedbackCollapsed(true);

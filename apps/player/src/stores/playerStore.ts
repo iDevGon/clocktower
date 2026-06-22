@@ -37,6 +37,7 @@ interface VoteResult {
 
 export interface NightProgress {
   activeRoleId: string | null;
+  activeIndex?: number;
   order: string[];
   players: PlayerInfo[];
 }

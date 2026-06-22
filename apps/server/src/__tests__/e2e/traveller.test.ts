@@ -107,6 +107,28 @@ describe('E2E: 여행자 참가', () => {
 
     expect(joinResult.success).toBe(false);
   }, 10000);
+
+  it('승인 대기 요청이 없으면 여행자 승인 콜백은 실패한다', async () => {
+    await setupFullGame(ctx);
+
+    const result = await new Promise<{
+      success: boolean | 'timeout';
+      error?: string;
+    }>((resolve) => {
+      const timer = setTimeout(() => resolve({ success: 'timeout' }), 250);
+      ctx.storyteller.emit(
+        'traveller:approve',
+        { socketId: 'missing-socket', playerName: 'Traveller1' },
+        (res) => {
+          clearTimeout(timer);
+          resolve(res);
+        },
+      );
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('승인 요청');
+  }, 15000);
 });
 
 describe('E2E: 여행자 역할 배정 및 알림', () => {
@@ -252,6 +274,35 @@ describe('E2E: 여행자 역할 배정 및 알림', () => {
     expect(afterPlayer?.travellerAlignment).toBe('good');
     // 기존 일반 역할은 해제되어야 한다
     expect(afterPlayer?.role?.id).not.toBe(previousRoleId);
+  }, 15000);
+
+  it('일반 플레이어 traveller:add 실패 시 기존 역할과 일반 플레이어 상태를 보존한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'chef' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.storyteller.emit(
+          'traveller:add',
+          {
+            playerId: playerIds[0],
+            roleId: 'not_a_traveller',
+            alignment: 'good',
+          },
+          resolve,
+        );
+      },
+    );
+
+    const player = ctx.app.game.getPlayer(playerIds[0]);
+    expect(result.success).toBe(false);
+    expect(player?.isTraveller).toBeFalsy();
+    expect(player?.role?.id).toBe('chef');
   }, 15000);
 });
 
@@ -420,6 +471,139 @@ describe('E2E: S&V 여행자 진행 이벤트', () => {
 
     expect(result.success).toBe(true);
     expect(ctx.app.game.getPlayer(playerIds[2])?.isAlive).toBe(true);
+  }, 20000);
+
+  it('희생양 교체는 현재 처형 후보가 있을 때만 성공한다', async () => {
+    await setupFullGame(ctx);
+    const scapegoat = await addTravellerWithRole(
+      ctx,
+      'Scapegoat',
+      'scapegoat',
+      'good',
+    );
+
+    const result = await new Promise<
+      { success: boolean; error?: string } | undefined
+    >((resolve) => {
+      ctx.storyteller.emit(
+        'scapegoat:swap',
+        { scapegoatId: scapegoat.playerId },
+        resolve,
+      );
+      setTimeout(() => resolve(undefined), 300);
+    });
+
+    expect(result?.success).toBe(false);
+  }, 20000);
+
+  it('총잡이가 악마를 사살해 게임이 끝나면 플레이어 phase도 ended로 전환된다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'washerwoman' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+    const gunslinger = await addTravellerWithRole(
+      ctx,
+      'Gunslinger',
+      'gunslinger',
+      'good',
+    );
+    await advanceToDay(ctx, 'nomination');
+
+    const voteStartPromise = waitForEvent(
+      ctx.players[0] as Socket,
+      'vote:start',
+    );
+    ctx.storyteller.emit('vote:nominate', {
+      nominatorId: playerIds[0],
+      nomineeId: playerIds[1],
+    });
+    await voteStartPromise;
+
+    await new Promise<void>((resolve) => {
+      ctx.players[4].emit('vote:cast', () => resolve());
+    });
+    ctx.storyteller.emit('vote:close');
+    await waitForEvent(ctx.players[0] as Socket, 'vote:result');
+
+    const endPromise = waitForEvent<{ winningTeam: 'good' | 'evil' }>(
+      ctx.players[0] as Socket,
+      'game:end',
+    );
+    const phasePromise = waitForEvent<string>(
+      ctx.players[0] as Socket,
+      'game:phase',
+      500,
+    );
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        gunslinger.socket.emit(
+          'gunslinger:use',
+          { targetId: playerIds[4] },
+          resolve,
+        );
+      },
+    );
+
+    expect(result.success).toBe(true);
+    expect((await endPromise).winningTeam).toBe('good');
+    expect(await phasePromise).toBe('ended');
+  }, 20000);
+
+  it('총잡이가 악마를 사살하고 탕녀 조건이면 탕녀에게 악마 역할을 알린다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'washerwoman' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'chef' },
+      { roleId: 'scarlet_woman' },
+      { roleId: 'imp' },
+    ]);
+    const gunslinger = await addTravellerWithRole(
+      ctx,
+      'Gunslinger',
+      'gunslinger',
+      'good',
+    );
+    await advanceToDay(ctx, 'nomination');
+
+    const voteStartPromise = waitForEvent(
+      ctx.players[0] as Socket,
+      'vote:start',
+    );
+    ctx.storyteller.emit('vote:nominate', {
+      nominatorId: playerIds[0],
+      nomineeId: playerIds[1],
+    });
+    await voteStartPromise;
+
+    await new Promise<void>((resolve) => {
+      ctx.players[5].emit('vote:cast', () => resolve());
+    });
+    ctx.storyteller.emit('vote:close');
+    await waitForEvent(ctx.players[0] as Socket, 'vote:result');
+
+    const roleAssignPromise = waitForEvent<{ roleId: string }>(
+      ctx.players[4] as Socket,
+      'role:assign',
+      500,
+    );
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        gunslinger.socket.emit(
+          'gunslinger:use',
+          { targetId: playerIds[5] },
+          resolve,
+        );
+      },
+    );
+    const roleAssign = await roleAssignPromise;
+
+    expect(result.success).toBe(true);
+    expect(roleAssign.roleId).toBe('imp');
+    expect(ctx.app.game.getState().phase).not.toBe('ended');
   }, 20000);
 
   it('재접속 응답은 첫 낮 진행과 여행자 대상 정보를 복원한다', async () => {

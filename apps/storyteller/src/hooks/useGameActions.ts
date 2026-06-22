@@ -108,14 +108,14 @@ export function useGameActions() {
   );
 
   const nominate = useCallback(
-    (nominatorId: string, nomineeId: string) =>
-      socket?.emit('vote:nominate', { nominatorId, nomineeId }),
+    (nominatorId: string, nomineeId: string, callback?: BmrAssistCallback) =>
+      socket?.emit('vote:nominate', { nominatorId, nomineeId }, callback),
     [socket],
   );
 
   const castVoteForPlayer = useCallback(
-    (playerId: string, guilty: boolean) =>
-      socket?.emit('vote:castForPlayer', { playerId, guilty }),
+    (playerId: string, guilty: boolean, callback?: BmrAssistCallback) =>
+      socket?.emit('vote:castForPlayer', { playerId, guilty }, callback),
     [socket],
   );
 
@@ -147,8 +147,11 @@ export function useGameActions() {
   );
 
   const sendNightFeedback = useCallback(
-    (playerId: string, feedback: NightFeedbackPayload) =>
-      socket?.emit('night:sendFeedback', { playerId, feedback }),
+    (
+      playerId: string,
+      feedback: NightFeedbackPayload,
+      callback?: BmrAssistCallback,
+    ) => socket?.emit('night:sendFeedback', { playerId, feedback }, callback),
     [socket],
   );
 
@@ -190,92 +193,152 @@ export function useGameActions() {
   );
 
   const sweetheartDrunk = useCallback(
-    (playerId: string) => socket?.emit('game:sweetheartDrunk', playerId),
+    (playerId: string, callback?: BmrAssistCallback) =>
+      socket?.emit('game:sweetheartDrunk', playerId, callback),
+    [socket],
+  );
+
+  const sweetheartSkipDrunk = useCallback(
+    (callback?: BmrAssistCallback) =>
+      socket?.emit('game:sweetheartSkipDrunk', callback),
     [socket],
   );
 
   const mayorRedirect = useCallback(
-    (mayorId: string, redirectTargetId: string) =>
-      socket?.emit('game:mayorRedirect', { mayorId, redirectTargetId }),
+    (mayorId: string, redirectTargetId: string, callback?: BmrAssistCallback) =>
+      socket?.emit(
+        'game:mayorRedirect',
+        { mayorId, redirectTargetId },
+        callback,
+      ),
+    [socket],
+  );
+
+  const mayorSkipRedirect = useCallback(
+    (mayorId: string, callback?: BmrAssistCallback) =>
+      socket?.emit('game:mayorSkipRedirect', { mayorId }, callback),
     [socket],
   );
 
   const scapegoatSwap = useCallback(
-    (scapegoatId: string) => socket?.emit('scapegoat:swap', { scapegoatId }),
+    (scapegoatId: string, callback?: BmrAssistCallback) =>
+      socket?.emit('scapegoat:swap', { scapegoatId }, callback),
     [socket],
   );
 
   const confirmWitchCurseDeath = useCallback(
-    (nominatorId: string, kill: boolean) =>
-      socket?.emit('witch:confirmCurseDeath', { nominatorId, kill }),
+    (nominatorId: string, kill: boolean, callback?: BmrAssistCallback) =>
+      socket?.emit('witch:confirmCurseDeath', { nominatorId, kill }, callback),
     [socket],
   );
 
   const barberSwapRoles = useCallback(
-    (playerId1: string, playerId2: string) =>
-      socket?.emit('barber:swapRoles', { playerId1, playerId2 }),
+    (playerId1: string, playerId2: string, callback?: BmrAssistCallback) =>
+      socket?.emit('barber:swapRoles', { playerId1, playerId2 }, callback),
+    [socket],
+  );
+
+  const barberSkipSwap = useCallback(
+    (callback?: BmrAssistCallback) => socket?.emit('barber:skipSwap', callback),
     [socket],
   );
 
   const klutzChoose = useCallback(
-    (klutzId: string, chosenPlayerId: string) =>
-      socket?.emit('klutz:choose', { klutzId, chosenPlayerId }),
+    (klutzId: string, chosenPlayerId: string, callback?: BmrAssistCallback) =>
+      socket?.emit('klutz:choose', { klutzId, chosenPlayerId }, callback),
     [socket],
   );
 
   const fangGuConfirmJump = useCallback(
-    (oldDemonId: string, newDemonId: string) =>
-      socket?.emit('fangGu:confirmJump', { oldDemonId, newDemonId }),
+    (oldDemonId: string, newDemonId: string, callback?: BmrAssistCallback) =>
+      socket?.emit('fangGu:confirmJump', { oldDemonId, newDemonId }, callback),
     [socket],
   );
 
   const snakeCharmerSwap = useCallback(
-    (snakeCharmerId: string, demonId: string) =>
-      socket?.emit('snakeCharmer:swap', { snakeCharmerId, demonId }),
+    (snakeCharmerId: string, demonId: string, callback?: BmrAssistCallback) =>
+      socket?.emit('snakeCharmer:swap', { snakeCharmerId, demonId }, callback),
     [socket],
   );
 
   const vigormortisKillMinion = useCallback(
-    (vigormortisId: string, minionId: string, poisonedNeighborId: string) =>
-      socket?.emit('vigormortis:killMinion', {
-        vigormortisId,
-        minionId,
-        poisonedNeighborId,
-      }),
+    (
+      vigormortisId: string,
+      minionId: string,
+      poisonedNeighborId: string,
+      callback?: BmrAssistCallback,
+    ) =>
+      socket?.emit(
+        'vigormortis:killMinion',
+        {
+          vigormortisId,
+          minionId,
+          poisonedNeighborId,
+        },
+        callback,
+      ),
     [socket],
   );
 
   const pitHagChangeRole = useCallback(
-    (pitHagId: string, targetPlayerId: string, newRoleId: string) =>
-      socket?.emit('pitHag:changeRole', {
-        pitHagId,
-        targetPlayerId,
-        newRoleId,
-      }),
+    (
+      pitHagId: string,
+      targetPlayerId: string,
+      newRoleId: string,
+      callback?: BmrAssistCallback,
+    ) =>
+      socket?.emit(
+        'pitHag:changeRole',
+        {
+          pitHagId,
+          targetPlayerId,
+          newRoleId,
+        },
+        callback,
+      ),
     [socket],
   );
 
   const assignGoodTwin = useCallback(
-    (evilTwinPlayerId: string, goodTwinPlayerId: string) =>
-      socket?.emit('evilTwin:assignGoodTwin', {
-        evilTwinPlayerId,
-        goodTwinPlayerId,
-      }),
+    (
+      evilTwinPlayerId: string,
+      goodTwinPlayerId: string,
+      callback?: BmrAssistCallback,
+    ) =>
+      socket?.emit(
+        'evilTwin:assignGoodTwin',
+        {
+          evilTwinPlayerId,
+          goodTwinPlayerId,
+        },
+        callback,
+      ),
     [socket],
   );
 
   const boneCollectorRestore = useCallback(
-    (boneCollectorId: string, targetPlayerId: string) =>
-      socket?.emit('boneCollector:restore', {
-        boneCollectorId,
-        targetPlayerId,
-      }),
+    (
+      boneCollectorId: string,
+      targetPlayerId: string,
+      callback?: BmrAssistCallback,
+    ) =>
+      socket?.emit(
+        'boneCollector:restore',
+        {
+          boneCollectorId,
+          targetPlayerId,
+        },
+        callback,
+      ),
     [socket],
   );
 
   const applyBaristaEffect = useCallback(
-    (targetPlayerId: string, effect: 'sober_healthy' | 'acts_twice') =>
-      socket?.emit('barista:apply', { targetPlayerId, effect }),
+    (
+      targetPlayerId: string,
+      effect: 'sober_healthy' | 'acts_twice',
+      callback?: BmrAssistCallback,
+    ) => socket?.emit('barista:apply', { targetPlayerId, effect }, callback),
     [socket],
   );
 
@@ -406,19 +469,38 @@ export function useGameActions() {
   );
 
   const forceCloseExile = useCallback(
-    (exiled: boolean) => socket?.emit('exile:forceClose', { exiled }),
+    (exiled: boolean, callback?: BmrAssistCallback) =>
+      socket?.emit('exile:forceClose', { exiled }, callback),
     [socket],
   );
 
   const approveTraveller = useCallback(
-    (socketId: string, playerName: string) =>
-      socket?.emit('traveller:approve', { socketId, playerName }),
-    [socket],
+    (
+      socketId: string,
+      playerName: string,
+    ): Promise<{ success: boolean; error?: string; playerId?: string }> =>
+      new Promise((resolve, reject) => {
+        const s = getSocket();
+        if (!s) return reject(new Error('Not connected'));
+        s.emit('traveller:approve', { socketId, playerName }, (res) => {
+          if (res.success) resolve(res);
+          else reject(new Error(res.error ?? '여행자 승인 실패'));
+        });
+      }),
+    [],
   );
 
   const rejectTraveller = useCallback(
-    (socketId: string) => socket?.emit('traveller:reject', { socketId }),
-    [socket],
+    (socketId: string): Promise<{ success: boolean; error?: string }> =>
+      new Promise((resolve, reject) => {
+        const s = getSocket();
+        if (!s) return reject(new Error('Not connected'));
+        s.emit('traveller:reject', { socketId }, (res) => {
+          if (res.success) resolve(res);
+          else reject(new Error(res.error ?? '여행자 거절 실패'));
+        });
+      }),
+    [],
   );
 
   return {
@@ -445,10 +527,13 @@ export function useGameActions() {
     setPlayerOrder,
     assignRedHerring,
     sweetheartDrunk,
+    sweetheartSkipDrunk,
     mayorRedirect,
+    mayorSkipRedirect,
     scapegoatSwap,
     confirmWitchCurseDeath,
     barberSwapRoles,
+    barberSkipSwap,
     klutzChoose,
     fangGuConfirmJump,
     snakeCharmerSwap,

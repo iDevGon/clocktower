@@ -21,8 +21,9 @@ export default function NominateScreen() {
 
   const handleSubmit = () => {
     if (nominatorId && nomineeId) {
-      nominate(nominatorId, nomineeId);
-      router.back();
+      nominate(nominatorId, nomineeId, (result) => {
+        if (result.success) router.back();
+      });
     }
   };
 

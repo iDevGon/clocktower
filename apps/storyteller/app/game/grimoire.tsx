@@ -218,10 +218,13 @@ export default function GrimoireScreen() {
     setPlayerOrder: syncPlayerOrder,
     sendChatToPlayer,
     sweetheartDrunk,
+    sweetheartSkipDrunk,
     mayorRedirect,
+    mayorSkipRedirect,
     scapegoatSwap,
     confirmWitchCurseDeath,
     barberSwapRoles,
+    barberSkipSwap,
     klutzChoose,
     fangGuConfirmJump,
     snakeCharmerSwap,
@@ -289,11 +292,18 @@ export default function GrimoireScreen() {
 
   const handleSweetheartDrunkSelect = useCallback(
     (playerId: string) => {
-      sweetheartDrunk(playerId);
-      clearSweetheartDied();
+      sweetheartDrunk(playerId, (result) => {
+        if (result.success) clearSweetheartDied();
+      });
     },
     [sweetheartDrunk, clearSweetheartDied],
   );
+
+  const handleSweetheartDrunkClose = useCallback(() => {
+    sweetheartSkipDrunk((result) => {
+      if (result.success) clearSweetheartDied();
+    });
+  }, [sweetheartSkipDrunk, clearSweetheartDied]);
 
   // 시장 밤 사망 시 대신 죽일 후보: 살아있는 플레이어 (시장 본인 제외)
   const mayorRedirectCandidates = useMemo(() => {
@@ -304,12 +314,20 @@ export default function GrimoireScreen() {
   const handleMayorRedirectSelect = useCallback(
     (playerId: string) => {
       if (mayorNightDeathId) {
-        mayorRedirect(mayorNightDeathId, playerId);
+        mayorRedirect(mayorNightDeathId, playerId, (result) => {
+          if (result.success) clearMayorNightDeath();
+        });
       }
-      clearMayorNightDeath();
     },
     [mayorNightDeathId, mayorRedirect, clearMayorNightDeath],
   );
+
+  const handleMayorRedirectClose = useCallback(() => {
+    if (!mayorNightDeathId) return;
+    mayorSkipRedirect(mayorNightDeathId, (result) => {
+      if (result.success) clearMayorNightDeath();
+    });
+  }, [mayorNightDeathId, mayorSkipRedirect, clearMayorNightDeath]);
 
   const isGoodAligned = useCallback(
     (player: { alignment?: string; role?: { team: string } }) => {
@@ -488,29 +506,31 @@ export default function GrimoireScreen() {
     };
   }, [socket]);
 
-  const handleApproveTraveller = useCallback(() => {
+  const handleApproveTraveller = useCallback(async () => {
     if (!pendingApproval) return;
     const { socketId, playerName } = pendingApproval;
-    setPendingApproval(null);
-    approveTraveller(socketId, playerName);
-    setTimeout(() => {
-      const state = useGameStore.getState().gameState;
-      const newTraveller = state?.players.find(
-        (p) => p.name === playerName && p.isTraveller && !p.role,
-      );
-      if (newTraveller) {
+    try {
+      const approval = await approveTraveller(socketId, playerName);
+      setPendingApproval(null);
+      if (approval.playerId) {
         router.push({
           pathname: '/game/assign-role',
-          params: { playerId: newTraveller.id, travellerOnly: 'true' },
+          params: { playerId: approval.playerId, travellerOnly: 'true' },
         });
       }
-    }, 500);
+    } catch {
+      // Keep the approval request open so the storyteller can retry.
+    }
   }, [pendingApproval, approveTraveller, router]);
 
-  const handleRejectTraveller = useCallback(() => {
+  const handleRejectTraveller = useCallback(async () => {
     if (!pendingApproval) return;
-    rejectTraveller(pendingApproval.socketId);
-    setPendingApproval(null);
+    try {
+      await rejectTraveller(pendingApproval.socketId);
+      setPendingApproval(null);
+    } catch {
+      // Keep the approval request open so the storyteller can retry.
+    }
   }, [pendingApproval, rejectTraveller]);
 
   const getDay = () => useGameStore.getState().gameState?.day ?? 0;
@@ -584,7 +604,14 @@ export default function GrimoireScreen() {
   ) => {
     const moonchildName = getPlayerName(moonchildId);
     const candidates =
-      gameState?.players.filter((p) => p.isAlive && p.id !== moonchildId) ?? [];
+      gameState?.players.filter(
+        (p) =>
+          p.isAlive &&
+          p.id !== moonchildId &&
+          !(playerStatuses[p.id] ?? p.statuses).includes(
+            'zombuul_registers_dead',
+          ),
+      ) ?? [];
     showModal(
       '달의 자손 선택 처리',
       [
@@ -726,17 +753,11 @@ export default function GrimoireScreen() {
       for (const [, v] of entries) {
         if (v) guiltyCount++;
       }
-      const alivePlayers =
-        gameState?.players.filter((p) => p.isAlive).length ?? 0;
-      const isGuilty = guiltyCount >= Math.ceil(alivePlayers / 2);
       addLog(
         getDay(),
         'vote',
         `${nomineeName} 투표 종료 (유죄 ${guiltyCount}/${totalVotes})`,
       );
-      if (isGuilty) {
-        setExecutedPlayerId(nom.nomineeId);
-      }
     }
   };
 
@@ -1828,7 +1849,9 @@ export default function GrimoireScreen() {
           nomination={currentNomination}
           players={gameState.players}
           onCloseVote={closeVote}
-          onCastVote={castVoteForPlayer}
+          onCastVote={(playerId, guilty) => {
+            castVoteForPlayer(playerId, guilty, () => {});
+          }}
           onProceedToVote={proceedToVote}
           voteResult={voteResult}
           onDismissResult={() => setVoteResult(null)}
@@ -2171,7 +2194,7 @@ export default function GrimoireScreen() {
         themeColor="#b07f5c"
         candidates={sweetheartDrunkCandidates}
         onSelectPlayer={handleSweetheartDrunkSelect}
-        onClose={clearSweetheartDied}
+        onClose={handleSweetheartDrunkClose}
         scale={scale}
       />
 
@@ -2183,7 +2206,7 @@ export default function GrimoireScreen() {
         themeColor="#a68a64"
         candidates={mayorRedirectCandidates}
         onSelectPlayer={handleMayorRedirectSelect}
-        onClose={clearMayorNightDeath}
+        onClose={handleMayorRedirectClose}
         scale={scale}
       />
 
@@ -2196,14 +2219,24 @@ export default function GrimoireScreen() {
         confirmStyle="destructive"
         onConfirm={() => {
           if (!witchCursePending) return;
-          confirmWitchCurseDeath(witchCursePending.nominatorId, true);
-          setWitchCursePending(null);
+          confirmWitchCurseDeath(
+            witchCursePending.nominatorId,
+            true,
+            (result) => {
+              if (result.success) setWitchCursePending(null);
+            },
+          );
         }}
         onCancel={() => {
           if (witchCursePending) {
-            confirmWitchCurseDeath(witchCursePending.nominatorId, false);
+            confirmWitchCurseDeath(
+              witchCursePending.nominatorId,
+              false,
+              (result) => {
+                if (result.success) setWitchCursePending(null);
+              },
+            );
           }
-          setWitchCursePending(null);
         }}
       />
 
@@ -2215,12 +2248,14 @@ export default function GrimoireScreen() {
         cancelText="살림"
         confirmStyle="destructive"
         onConfirm={() => {
-          forceCloseExile(true);
-          setDeviantExileJudgement(null);
+          forceCloseExile(true, (result) => {
+            if (result.success) setDeviantExileJudgement(null);
+          });
         }}
         onCancel={() => {
-          forceCloseExile(false);
-          setDeviantExileJudgement(null);
+          forceCloseExile(false, (result) => {
+            if (result.success) setDeviantExileJudgement(null);
+          });
         }}
       />
 
@@ -2231,10 +2266,15 @@ export default function GrimoireScreen() {
         themeColor="#4aa890"
         candidates={barberSwapCandidates}
         onConfirm={(playerId1, playerId2) => {
-          barberSwapRoles(playerId1, playerId2);
-          setBarberDiedPending(null);
+          barberSwapRoles(playerId1, playerId2, (result) => {
+            if (result.success) setBarberDiedPending(null);
+          });
         }}
-        onClose={() => setBarberDiedPending(null)}
+        onClose={() => {
+          barberSkipSwap((result) => {
+            if (result.success) setBarberDiedPending(null);
+          });
+        }}
         scale={scale}
       />
 
@@ -2246,8 +2286,9 @@ export default function GrimoireScreen() {
         candidates={klutzChoiceCandidates}
         onSelectPlayer={(playerId) => {
           if (!klutzDiedPending) return;
-          klutzChoose(klutzDiedPending.klutzId, playerId);
-          setKlutzDiedPending(null);
+          klutzChoose(klutzDiedPending.klutzId, playerId, (result) => {
+            if (result.success) setKlutzDiedPending(null);
+          });
         }}
         onClose={() => setKlutzDiedPending(null)}
         scale={scale}
@@ -2261,8 +2302,9 @@ export default function GrimoireScreen() {
         candidates={goodTwinCandidates}
         onSelectPlayer={(playerId) => {
           if (!activeEvilTwin) return;
-          assignGoodTwin(activeEvilTwin.id, playerId);
-          setEvilTwinModalDismissed(true);
+          assignGoodTwin(activeEvilTwin.id, playerId, (result) => {
+            if (result.success) setEvilTwinModalDismissed(true);
+          });
         }}
         onClose={() => setEvilTwinModalDismissed(true)}
         scale={scale}
@@ -2325,8 +2367,9 @@ export default function GrimoireScreen() {
         scapegoatName={scapegoatOffer?.scapegoatName ?? ''}
         onAccept={() => {
           if (!scapegoatOffer) return;
-          scapegoatSwap(scapegoatOffer.scapegoatId);
-          setScapegoatOffer(null);
+          scapegoatSwap(scapegoatOffer.scapegoatId, (result) => {
+            if (result.success) setScapegoatOffer(null);
+          });
         }}
         onReject={() => setScapegoatOffer(null)}
       />

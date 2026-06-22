@@ -215,6 +215,29 @@ describe('E2E: 피로물든달 판정 보조', () => {
     expect(wakeTargets.candidateIds).toContain(playerIds[4]);
   });
 
+  it('낮에 사망이 있었으면 좀버얼 플레이어 앱을 깨우지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'washerwoman' },
+      { roleId: 'empath' },
+      { roleId: 'chef' },
+      { roleId: 'poisoner' },
+      { roleId: 'zombuul' },
+    ]);
+
+    ctx.app.game.setPhase('day');
+    ctx.app.game.kill(playerIds[0]);
+    ctx.app.game.setPhase('night');
+
+    const wakeTargetsPromise = waitForEvent<{ candidateIds: string[] }>(
+      ctx.storyteller,
+      'night:wakeUpTargets',
+    );
+    ctx.storyteller.emit('night:setActiveRole', 'zombuul');
+    const wakeTargets = await wakeTargetsPromise;
+
+    expect(wakeTargets.candidateIds).toEqual([]);
+  });
+
   it('미치광이는 플레이어 앱에서 악마로 보이고 해당 악마 밤 차례에 행동한다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [
       { roleId: 'lunatic', lunaticAs: 'po' },
@@ -224,17 +247,24 @@ describe('E2E: 피로물든달 판정 보조', () => {
       { roleId: 'zombuul' },
     ]);
 
-    const rejoinResult = await new Promise<{
-      success: boolean;
-      roleId?: string;
-      lunaticAs?: string;
-    }>((resolve) => {
+    const rejoinResult = await new Promise<
+      {
+        success: boolean;
+        roleId?: string;
+        evilInfo?: {
+          minionNames?: string[];
+          bluffRoles?: Array<{ id: string; name: string }>;
+        } | null;
+      } & Record<string, unknown>
+    >((resolve) => {
       ctx.players[0].emit('game:rejoin', { playerId: playerIds[0] }, resolve);
     });
 
     expect(rejoinResult.success).toBe(true);
     expect(rejoinResult.roleId).toBe('po');
-    expect(rejoinResult.lunaticAs).toBe('po');
+    expect(rejoinResult).not.toHaveProperty('lunaticAs');
+    expect(rejoinResult.evilInfo?.minionNames).toHaveLength(1);
+    expect(rejoinResult.evilInfo?.bluffRoles).toHaveLength(3);
 
     const wakePromise = waitForEvent<{ roleId: string }>(
       ctx.players[0],
@@ -314,7 +344,7 @@ describe('E2E: 피로물든달 판정 보조', () => {
     ]);
   });
 
-  it('선원 밤 행동은 선택 대상에게 선원 취함 상태를 적용한다', async () => {
+  it('선원 밤 행동은 취할 플레이어를 자동 결정하지 않는다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [
       { roleId: 'sailor' },
       { roleId: 'grandmother' },
@@ -327,7 +357,10 @@ describe('E2E: 피로물든달 판정 보조', () => {
     ctx.players[0].emit('night:action', { targets: [playerIds[1]] });
     await statePromise;
 
-    expect(ctx.app.game.getPlayer(playerIds[1])?.statuses).toContain(
+    expect(ctx.app.game.getPlayer(playerIds[0])?.statuses).not.toContain(
+      'sailor_drunk',
+    );
+    expect(ctx.app.game.getPlayer(playerIds[1])?.statuses).not.toContain(
       'sailor_drunk',
     );
   });
@@ -588,6 +621,33 @@ describe('E2E: 피로물든달 판정 보조', () => {
     );
   });
 
+  it('중독된 포의 충전 3명 선택은 사망 없이 충전 표식만 소모한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'gambler' },
+      { roleId: 'godfather' },
+      { roleId: 'po' },
+    ]);
+    ctx.app.game.setPlayerStatuses(playerIds[4], [
+      'po_chose_no_one',
+      'poisoned',
+    ]);
+
+    const statePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.players[4].emit('night:action', {
+      targets: [playerIds[0], playerIds[1], playerIds[2]],
+    });
+    await statePromise;
+
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(true);
+    expect(ctx.app.game.getPlayer(playerIds[1])?.isAlive).toBe(true);
+    expect(ctx.app.game.getPlayer(playerIds[2])?.isAlive).toBe(true);
+    expect(ctx.app.game.getPlayer(playerIds[4])?.statuses).not.toContain(
+      'po_chose_no_one',
+    );
+  });
+
   it('엑소시스트가 선택한 악마는 그 밤 깨어나지 않는다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [
       { roleId: 'grandmother' },
@@ -609,6 +669,229 @@ describe('E2E: 피로물든달 판정 보조', () => {
     const wakeTargets = await wakeTargetsPromise;
 
     expect(wakeTargets.candidateIds).not.toContain(playerIds[4]);
+  });
+
+  it('엑소시스트가 푸카를 막아도 이전 푸카 중독 대상은 사망한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'exorcist' },
+      { roleId: 'godfather' },
+      { roleId: 'pukka' },
+    ]);
+    ctx.app.game.setPlayerStatuses(playerIds[0], ['pukka_poisoned']);
+
+    const exorcistStatePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.players[2].emit('night:action', { targets: [playerIds[4]] });
+    await exorcistStatePromise;
+
+    const pukkaStatePromise = waitForEvent(ctx.storyteller, 'game:state');
+    const wakeTargetsPromise = waitForEvent<{ candidateIds: string[] }>(
+      ctx.storyteller,
+      'night:wakeUpTargets',
+    );
+    ctx.storyteller.emit('night:setActiveRole', 'pukka');
+    const wakeTargets = await wakeTargetsPromise;
+    await pukkaStatePromise;
+
+    expect(wakeTargets.candidateIds).toEqual([]);
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[0])?.statuses).not.toContain(
+      'pukka_poisoned',
+    );
+  });
+
+  it('푸카 중독으로 죽은 달의 자손도 공개 선택 자체는 성공 방송된다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'moonchild' },
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'godfather' },
+      { roleId: 'pukka' },
+    ]);
+
+    let statePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.players[4].emit('night:action', { targets: [playerIds[0]] });
+    await statePromise;
+
+    statePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.players[4].emit('night:action', { targets: [playerIds[2]] });
+    await statePromise;
+
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
+
+    ctx.app.game.setPhase('day');
+    const announcementPromise = waitForEvent<{
+      moonchildId: string;
+      targetId: string;
+    }>(ctx.players[1], 'moonchild:announced');
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.players[0].emit(
+          'moonchild:choose',
+          { targetPlayerId: playerIds[1] },
+          resolve,
+        );
+      },
+    );
+
+    const announcement = await announcementPromise;
+
+    expect(result).toEqual({ success: true });
+    expect(announcement).toMatchObject({
+      moonchildId: playerIds[0],
+      targetId: playerIds[1],
+    });
+
+    ctx.app.game.setPhase('night');
+    expect(ctx.app.game.resolvePendingMoonchildKills()).toEqual([]);
+    expect(ctx.app.game.getPlayer(playerIds[1])?.isAlive).toBe(true);
+  }, 15000);
+
+  it('공개상 사망한 좀버얼도 달의 자손 공개 선택을 사칭할 수 있다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'gambler' },
+      { roleId: 'godfather' },
+      { roleId: 'zombuul' },
+    ]);
+    ctx.app.game.setPlayerStatuses(playerIds[4], ['zombuul_registers_dead']);
+    ctx.app.game.setPhase('day');
+
+    const announcementPromise = waitForEvent<{
+      moonchildId: string;
+      targetId: string;
+    }>(ctx.players[0], 'moonchild:announced');
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.players[4].emit(
+          'moonchild:choose',
+          { targetPlayerId: playerIds[0] },
+          resolve,
+        );
+      },
+    );
+
+    const announcement = await announcementPromise;
+
+    expect(result).toEqual({ success: true });
+    expect(announcement).toMatchObject({
+      moonchildId: playerIds[4],
+      targetId: playerIds[0],
+    });
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(true);
+  });
+
+  it('공개상 사망한 좀버얼은 재접속 응답에서도 사망 상태로 복원된다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'gambler' },
+      { roleId: 'godfather' },
+      { roleId: 'zombuul' },
+    ]);
+    ctx.app.game.setPlayerStatuses(playerIds[4], ['zombuul_registers_dead']);
+
+    const result = await new Promise<{ success: boolean; isAlive?: boolean }>(
+      (resolve) => {
+        ctx.players[4].emit('game:rejoin', { playerId: playerIds[4] }, resolve);
+      },
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.isAlive).toBe(false);
+  });
+
+  it('공개상 사망한 좀버얼은 투표 순서 상태에서도 사망자로 표시된다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'gambler' },
+      { roleId: 'godfather' },
+      { roleId: 'zombuul' },
+    ]);
+    ctx.app.game.setPlayerStatuses(playerIds[4], ['zombuul_registers_dead']);
+    ctx.app.game.setPhase('day');
+    ctx.app.game.setDaySubPhase('nomination');
+
+    ctx.storyteller.emit('vote:nominate', {
+      nominatorId: playerIds[0],
+      nomineeId: playerIds[1],
+    });
+    const voteOrderPromise = waitForEvent<{
+      fullOrder: Array<{ id: string; isAlive: boolean }>;
+    }>(ctx.players[0], 'vote:order', 7000);
+    ctx.storyteller.emit('vote:proceedToVote');
+    const voteOrder = await voteOrderPromise;
+
+    expect(
+      voteOrder.fullOrder.find((player) => player.id === playerIds[4])?.isAlive,
+    ).toBe(false);
+  });
+
+  it('필수 대상 수가 부족한 밤 행동은 완료 처리하지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'gambler' },
+      { roleId: 'godfather' },
+      { roleId: 'pukka' },
+    ]);
+
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.players[4].emit('night:action', { targets: [] }, resolve);
+      },
+    );
+
+    expect(result).toEqual({
+      success: false,
+      error: '대상 1명을 선택해야 합니다',
+    });
+    expect(ctx.app.game.getPlayer(playerIds[0])?.statuses).not.toContain(
+      'pukka_poisoned',
+    );
+  });
+
+  it('엑소시스트가 사발로스를 막아도 사발로스 토해내기는 처리할 수 있다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'exorcist' },
+      { roleId: 'godfather' },
+      { roleId: 'shabaloth' },
+    ]);
+    ctx.app.game.kill(playerIds[0]);
+    ctx.app.game.setPlayerStatuses(playerIds[0], ['shabaloth_marked_dead']);
+
+    const exorcistStatePromise = waitForEvent(ctx.storyteller, 'game:state');
+    ctx.players[2].emit('night:action', { targets: [playerIds[4]] });
+    await exorcistStatePromise;
+
+    const wakeTargetsPromise = waitForEvent<{ candidateIds: string[] }>(
+      ctx.storyteller,
+      'night:wakeUpTargets',
+    );
+    ctx.storyteller.emit('night:setActiveRole', 'shabaloth');
+    const wakeTargets = await wakeTargetsPromise;
+
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.storyteller.emit(
+          'shabaloth:regurgitate',
+          { shabalothId: playerIds[4], targetPlayerId: playerIds[0] },
+          resolve,
+        );
+      },
+    );
+
+    expect(wakeTargets.candidateIds).toEqual([]);
+    expect(result).toEqual({ success: true });
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(true);
+    expect(ctx.app.game.getPlayer(playerIds[0])?.statuses).not.toContain(
+      'shabaloth_marked_dead',
+    );
   });
 
   it('엑소시스트가 악마를 선택하면 악마는 엑소시스트가 누구인지 알 수 있다', async () => {
@@ -722,7 +1005,7 @@ describe('E2E: 피로물든달 판정 보조', () => {
     );
   });
 
-  it('여관 주인 밤 행동은 선택한 두 대상에게 밤 보호를 부여한다', async () => {
+  it('여관 주인 밤 행동은 보호만 적용하고 취한 플레이어를 자동 결정하지 않는다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [
       { roleId: 'innkeeper' },
       { roleId: 'grandmother' },
@@ -747,7 +1030,7 @@ describe('E2E: 피로물든달 판정 보조', () => {
       [playerIds[1], playerIds[2]].filter((playerId) =>
         ctx.app.game.getPlayer(playerId)?.statuses.includes('innkeeper_drunk'),
       ),
-    ).toHaveLength(1);
+    ).toHaveLength(0);
   });
 
   it('암살자 밤 행동은 대상을 사망시키고 능력을 소모한다', async () => {
@@ -798,6 +1081,30 @@ describe('E2E: 피로물든달 판정 보조', () => {
       'courtier_drunk',
     );
     expect(playerStateReceived).toBe(false);
+  });
+
+  it.each([
+    ['courtier', 'courtier_spent'],
+    ['professor', 'professor_spent'],
+    ['assassin', 'assassin_spent'],
+  ] as const)('%s는 능력을 소모한 뒤 밤 차례에 다시 깨어나지 않는다', async (roleId, spentStatus) => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId },
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'godfather' },
+      { roleId: 'po' },
+    ]);
+    ctx.app.game.setPlayerStatuses(playerIds[0], [spentStatus]);
+
+    const wakeTargetsPromise = waitForEvent<{ candidateIds: string[] }>(
+      ctx.storyteller,
+      'night:wakeUpTargets',
+    );
+    ctx.storyteller.emit('night:setActiveRole', roleId);
+    const wakeTargets = await wakeTargetsPromise;
+
+    expect(wakeTargets.candidateIds).not.toContain(playerIds[0]);
   });
 
   it('이야기꾼이 도박사 추측을 앱에서 처리할 수 있다', async () => {
@@ -870,5 +1177,26 @@ describe('E2E: 피로물든달 판정 보조', () => {
     expect(ctx.app.game.getPlayer(playerIds[1])?.isAlive).toBe(false);
     expect(ctx.app.game.hasPendingNightKill(playerIds[1])).toBe(true);
     expect(playerStateReceived).toBe(false);
+  });
+
+  it('플레이어 암살자 밤 행동으로 악마가 사망하면 즉시 선 팀 승리로 종료한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'gambler' },
+      { roleId: 'assassin' },
+      { roleId: 'po' },
+    ]);
+
+    const endPromise = waitForEvent<{ winningTeam: 'good' | 'evil' }>(
+      ctx.players[0],
+      'game:end',
+      500,
+    );
+    ctx.players[3].emit('night:action', { targets: [playerIds[4]] });
+    const result = await endPromise;
+
+    expect(result.winningTeam).toBe('good');
+    expect(ctx.app.game.getPlayer(playerIds[4])?.isAlive).toBe(false);
   });
 });

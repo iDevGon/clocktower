@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type {
   DaySubPhase,
+  EvilInfoPayload,
   ExecutionStatus,
   GameResult,
   GameSettings,
@@ -31,7 +32,8 @@ type DeathMethod =
   | 'zombuul'
   | 'gambler'
   | 'gossip'
-  | 'moonchild';
+  | 'moonchild'
+  | 'grandmother';
 
 type DeathTiming = 'day' | 'night';
 
@@ -230,9 +232,13 @@ export class GameManager {
   // 밤 중 사망한 플레이어 (낮 전환 시 알림용)
   private pendingNightKills: string[] = [];
   private shabalothRegurgitatedTonight = false;
+  private barberSwapPending = false;
+  private sweetheartDrunkPending = false;
+  private pendingMayorRedirectId: string | null = null;
   private nightAwakenedPlayerIds = new Set<string>();
   // 주모자: 악마 처형 후 추가 낮 진행 여부
   private mastermindFinalDayActive = false;
+  private minstrelDrunkUntilDuskDay: number | null = null;
   // 현재 활성 밤 역할 및 순서 (재접속 시 복원용)
   private currentNightRoleId: string | null = null;
   private currentNightOrder: string[] = [];
@@ -252,6 +258,8 @@ export class GameManager {
   private nominationStartedAt: number | null = null;
   // 악마에게 전달된 블러프 역할 (이야기꾼 표시용)
   private bluffRoles: { id: string; name: string }[] = [];
+  // 미치광이에게 전달된 가짜 악마 정보
+  private lunaticEvilInfo = new Map<string, EvilInfoPayload>();
   // 이야기꾼이 사전 선택한 블러프 역할 ID (수동 배정 시 사용)
   private preselectedBluffIds: string[] = [];
 
@@ -284,6 +292,7 @@ export class GameManager {
   private pendingMoonchildKills = new Map<string, PendingMoonchildKill>();
   private moonchildChosenIds = new Set<string>();
   private moonchildClaimedIds = new Set<string>();
+  private pukkaPoisonedMoonchildDeathIds = new Set<string>();
   // 엑소시스트가 이번 밤 깨우지 못하게 한 악마
   private exorcistBlockedPlayerIds = new Set<string>();
   private exorcistLastTargets = new Map<string, string>();
@@ -548,6 +557,7 @@ export class GameManager {
     }
     this.addStatus(actor, 'goon_drunk');
     this.goonSelectedTonight = true;
+    this.syncTeaLadyProtection();
   }
 
   private isDeathPrevented(
@@ -687,14 +697,19 @@ export class GameManager {
     this.ghostVotesUsed.clear();
     this.pendingNightKills = [];
     this.shabalothRegurgitatedTonight = false;
+    this.barberSwapPending = false;
+    this.sweetheartDrunkPending = false;
+    this.pendingMayorRedirectId = null;
     this.nightAwakenedPlayerIds.clear();
     this.mastermindFinalDayActive = false;
+    this.minstrelDrunkUntilDuskDay = null;
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
     this.fortuneTellerRedHerring = null;
     this.nightWakeUpQueue = [];
     this.nightWakeUpRoleId = null;
     this.bluffRoles = [];
+    this.lunaticEvilInfo.clear();
     this.witchCursedTarget = null;
     this.fangGuJumped = false;
     this.vigormortisRetainedMinions.clear();
@@ -708,6 +723,7 @@ export class GameManager {
     this.pendingMoonchildKills.clear();
     this.moonchildChosenIds.clear();
     this.moonchildClaimedIds.clear();
+    this.pukkaPoisonedMoonchildDeathIds.clear();
     this.exorcistBlockedPlayerIds.clear();
     this.exorcistLastTargets.clear();
     this.grandmotherGrandchildren.clear();
@@ -793,6 +809,7 @@ export class GameManager {
     this.shabalothRegurgitatedTonight = false;
     this.nightAwakenedPlayerIds.clear();
     this.mastermindFinalDayActive = false;
+    this.minstrelDrunkUntilDuskDay = null;
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
     this.fortuneTellerRedHerring = null;
@@ -800,6 +817,7 @@ export class GameManager {
     this.nightWakeUpRoleId = null;
     this.voteConsentReady.clear();
     this.bluffRoles = [];
+    this.lunaticEvilInfo.clear();
     this.exileVote = null;
     this.witchCursedTarget = null;
     this.fangGuJumped = false;
@@ -814,6 +832,7 @@ export class GameManager {
     this.pendingMoonchildKills.clear();
     this.moonchildChosenIds.clear();
     this.moonchildClaimedIds.clear();
+    this.pukkaPoisonedMoonchildDeathIds.clear();
     this.exorcistBlockedPlayerIds.clear();
     this.exorcistLastTargets.clear();
     this.grandmotherGrandchildren.clear();
@@ -856,6 +875,14 @@ export class GameManager {
 
   getBluffRoles(): { id: string; name: string }[] {
     return this.bluffRoles;
+  }
+
+  setLunaticEvilInfo(playerId: string, info: EvilInfoPayload): void {
+    this.lunaticEvilInfo.set(playerId, info);
+  }
+
+  getLunaticEvilInfo(playerId: string): EvilInfoPayload | null {
+    return this.lunaticEvilInfo.get(playerId) ?? null;
   }
 
   setPreselectedBluffIds(ids: string[]): void {
@@ -1135,6 +1162,9 @@ export class GameManager {
     this.state.phase = phase;
     this.state.daySubPhase = null;
     if (phase === 'night') {
+      const clearMinstrelDrunk =
+        this.minstrelDrunkUntilDuskDay == null ||
+        this.state.day >= this.minstrelDrunkUntilDuskDay;
       this.tickCourtierDrunkenness();
       this.state.nominations = [];
       this.nightActionTargets.clear();
@@ -1150,6 +1180,8 @@ export class GameManager {
       this.pendingHarlotConsents.clear();
       this.pendingNightKills = [];
       this.shabalothRegurgitatedTonight = false;
+      this.sweetheartDrunkPending = false;
+      this.pendingMayorRedirectId = null;
       this.nightAwakenedPlayerIds.clear();
       // 추방 투표 진행 중이면 취소
       this.exileVote = null;
@@ -1173,11 +1205,14 @@ export class GameManager {
             s !== 'sailor_drunk' &&
             s !== 'innkeeper_drunk' &&
             s !== 'goon_drunk' &&
-            s !== 'minstrel_drunk' &&
+            !(clearMinstrelDrunk && s === 'minstrel_drunk') &&
             !TEMPORARY_TRAVELLER_STATUSES.includes(s),
         );
         p.statuses = filterSoberHealthyBlockedStatuses(p, p.statuses);
       });
+      if (clearMinstrelDrunk) {
+        this.minstrelDrunkUntilDuskDay = null;
+      }
       this.syncContinuousPoisoning();
     }
     if (phase === 'day') {
@@ -1292,18 +1327,13 @@ export class GameManager {
         continue;
       }
 
-      grandmother.isAlive = false;
-      if (this.state.phase === 'day') {
-        this.dayDeathToday = true;
-        if (isRegisteredAsOutsider(grandmother)) this.outsiderDiedToday = true;
-      }
-      if (this.state.phase === 'night') {
+      const killed = this.resolveDeath(grandmother, 'grandmother', 'night');
+      if (killed && this.state.phase === 'night') {
         this.addPendingNightKill(grandmother.id);
       }
-      if (!this.triggeredDeathIds.includes(grandmother.id)) {
+      if (killed && !this.triggeredDeathIds.includes(grandmother.id)) {
         this.triggeredDeathIds.push(grandmother.id);
       }
-      this.cleanupOnPlayerDeath(grandmother);
     }
   }
 
@@ -1367,6 +1397,8 @@ export class GameManager {
       this.ghostVotesUsed.delete(playerId);
       this.moonchildChosenIds.delete(playerId);
       this.moonchildClaimedIds.delete(playerId);
+      this.pukkaPoisonedMoonchildDeathIds.delete(playerId);
+      this.removeStatus(player, 'zombuul_registers_dead');
       this.removePendingNightKill(playerId);
       this.syncContinuousPoisoning();
     }
@@ -1418,6 +1450,7 @@ export class GameManager {
 
   shouldWakeRole(roleId: string): boolean {
     if (roleId === 'godfather') return this.outsiderDiedToday;
+    if (roleId === 'zombuul') return !this.dayDeathToday;
     return true;
   }
 
@@ -1913,12 +1946,15 @@ export class GameManager {
 
     let killedPreviousTarget = false;
     if (previousTarget) {
-      this.removeStatus(previousTarget, 'pukka_poisoned');
       killedPreviousTarget = this.resolveDeath(
         previousTarget,
         'pukka',
         'night',
       );
+      this.removeStatus(previousTarget, 'pukka_poisoned');
+      if (killedPreviousTarget && previousTarget.role?.id === 'moonchild') {
+        this.pukkaPoisonedMoonchildDeathIds.add(previousTarget.id);
+      }
       if (killedPreviousTarget && this.state.phase === 'night') {
         this.addPendingNightKill(previousTarget.id);
       }
@@ -1932,6 +1968,49 @@ export class GameManager {
         ? { killedTargetId: previousTarget.id }
         : {}),
       poisonedTargetId: target.id,
+    };
+  }
+
+  resolveExorcistBlockedPukkaAttack():
+    | {
+        success: true;
+        killedTargetId?: string;
+      }
+    | {
+        success: false;
+        reason: string;
+      } {
+    const pukka = this.state.players.find(
+      (player) =>
+        player.role?.id === 'pukka' &&
+        this.exorcistBlockedPlayerIds.has(player.id),
+    );
+    if (!pukka || !canResolveRoleAbility(pukka, 'pukka')) {
+      return { success: false, reason: '엑소시스트에게 막힌 푸카가 없습니다' };
+    }
+
+    const previousTarget = this.state.players.find((player) =>
+      player.statuses.includes('pukka_poisoned'),
+    );
+    if (!previousTarget) {
+      return { success: false, reason: '이전 푸카 중독 대상이 없습니다' };
+    }
+    if (isPoisonedOrDrunk(pukka)) {
+      return { success: false, reason: '푸카가 중독/취함 상태입니다' };
+    }
+
+    const killed = this.resolveDeath(previousTarget, 'pukka', 'night');
+    this.removeStatus(previousTarget, 'pukka_poisoned');
+    if (killed && previousTarget.role?.id === 'moonchild') {
+      this.pukkaPoisonedMoonchildDeathIds.add(previousTarget.id);
+    }
+    if (killed && this.state.phase === 'night') {
+      this.addPendingNightKill(previousTarget.id);
+    }
+
+    return {
+      success: true,
+      ...(killed ? { killedTargetId: previousTarget.id } : {}),
     };
   }
 
@@ -1975,10 +2054,11 @@ export class GameManager {
     }
     const validTargets = targets as Player[];
 
-    for (const target of validTargets) {
-      this.applyGoonSelectionEffect(shabaloth, target);
-    }
-    if (isPoisonedOrDrunk(shabaloth)) {
+    const wasAlreadyPoisonedOrDrunk = isPoisonedOrDrunk(shabaloth);
+    if (wasAlreadyPoisonedOrDrunk) {
+      for (const target of validTargets) {
+        this.applyGoonSelectionEffect(shabaloth, target);
+      }
       return {
         success: false,
         blocked: true,
@@ -1991,6 +2071,9 @@ export class GameManager {
       this.removeStatus(player, 'shabaloth_marked_dead');
     }
     for (const target of validTargets) {
+      if (isPoisonedOrDrunk(shabaloth)) break;
+      this.applyGoonSelectionEffect(shabaloth, target);
+      if (isPoisonedOrDrunk(shabaloth)) break;
       const killed = this.resolveDeath(target, 'shabaloth', 'night');
       if (!target.isAlive) {
         this.addStatus(target, 'shabaloth_marked_dead');
@@ -2122,7 +2205,7 @@ export class GameManager {
     const targets = targetIds
       .map((targetId) => this.getPlayer(targetId))
       .filter((target): target is Player => target != null);
-    if (targets.length === 0) {
+    if (targets.length !== targetIds.length) {
       return {
         success: false,
         blocked: false,
@@ -2131,6 +2214,7 @@ export class GameManager {
     }
 
     if (isPoisonedOrDrunk(po)) {
+      if (charged) this.removeStatus(po, 'po_chose_no_one');
       return {
         success: false,
         blocked: true,
@@ -2209,6 +2293,7 @@ export class GameManager {
     }
 
     this.applyGoonSelectionEffect(professor, target);
+    this.addStatus(professor, 'professor_spent');
     if (isPoisonedOrDrunk(professor)) {
       return {
         success: false,
@@ -2217,7 +2302,6 @@ export class GameManager {
       };
     }
 
-    this.addStatus(professor, 'professor_spent');
     if (!isRegisteredAsTownsfolk(target)) {
       return {
         success: true,
@@ -2242,7 +2326,7 @@ export class GameManager {
     | {
         success: true;
         blocked: false;
-        drunkTargetId: string;
+        possibleDrunkPlayerIds: string[];
       }
     | {
         success: false;
@@ -2276,11 +2360,10 @@ export class GameManager {
       };
     }
 
-    this.addStatus(target, 'sailor_drunk');
     return {
       success: true,
       blocked: false,
-      drunkTargetId: target.id,
+      possibleDrunkPlayerIds: [sailor.id, target.id],
     };
   }
 
@@ -2292,7 +2375,6 @@ export class GameManager {
         success: true;
         blocked: false;
         protectedTargetIds: string[];
-        drunkTargetId: string;
       }
     | {
         success: false;
@@ -2343,14 +2425,11 @@ export class GameManager {
     for (const target of validTargets) {
       this.addStatus(target, 'innkeeper_protected');
     }
-    const drunkTarget = validTargets[0];
-    this.addStatus(drunkTarget, 'innkeeper_drunk');
 
     return {
       success: true,
       blocked: false,
       protectedTargetIds: validTargets.map((target) => target.id),
-      drunkTargetId: drunkTarget.id,
     };
   }
 
@@ -2450,13 +2529,6 @@ export class GameManager {
         reason: '대상을 찾을 수 없습니다',
       };
     }
-    if (target.id === exorcist.id) {
-      return {
-        success: false,
-        blocked: false,
-        reason: '구마사제는 자신을 선택할 수 없습니다',
-      };
-    }
     if (this.exorcistLastTargets.get(exorcist.id) === target.id) {
       return {
         success: false,
@@ -2532,7 +2604,10 @@ export class GameManager {
       };
     }
 
-    if (isPoisonedOrDrunk(assassin)) {
+    const wasAlreadyPoisonedOrDrunk = isPoisonedOrDrunk(assassin);
+    this.applyGoonSelectionEffect(assassin, target);
+    this.addStatus(assassin, 'assassin_spent');
+    if (wasAlreadyPoisonedOrDrunk) {
       return {
         success: false,
         blocked: true,
@@ -2540,8 +2615,6 @@ export class GameManager {
       };
     }
 
-    this.applyGoonSelectionEffect(assassin, target);
-    this.addStatus(assassin, 'assassin_spent');
     const killed = this.resolveDeath(target, 'assassin', 'night');
     if (killed && this.state.phase === 'night') {
       this.addPendingNightKill(target.id);
@@ -2854,9 +2927,10 @@ export class GameManager {
   ):
     | {
         success: true;
-        blocked: false;
+        blocked: boolean;
         killedTargetId?: string;
         pendingKillTargetId?: string;
+        reason?: string;
       }
     | {
         success: false;
@@ -2904,6 +2978,15 @@ export class GameManager {
       };
     }
     this.moonchildChosenIds.add(moonchild.id);
+
+    if (this.pukkaPoisonedMoonchildDeathIds.has(moonchild.id)) {
+      this.pukkaPoisonedMoonchildDeathIds.delete(moonchild.id);
+      return {
+        success: true,
+        blocked: true,
+        reason: '달의 자손이 푸카 중독 상태로 사망했습니다',
+      };
+    }
 
     const deferToNight = options?.deferToNight === true;
     if (
@@ -3132,8 +3215,10 @@ export class GameManager {
     );
     if (!activeMinstrel) return;
 
+    this.minstrelDrunkUntilDuskDay = this.state.day + 1;
     for (const player of this.state.players) {
       if (player.id === activeMinstrel.id) continue;
+      if (player.isTraveller) continue;
       this.addStatus(player, 'minstrel_drunk');
     }
   }
@@ -3776,16 +3861,27 @@ export class GameManager {
 
   // ── 사악한 쌍둥이 ──
 
-  setEvilTwinPair(evilTwinId: string, goodTwinId: string): void {
-    this.evilTwinPairs.set(evilTwinId, goodTwinId);
+  setEvilTwinPair(evilTwinId: string, goodTwinId: string): boolean {
     const evilTwin = this.getPlayer(evilTwinId);
+    const goodTwin = this.getPlayer(goodTwinId);
+    if (
+      !evilTwin ||
+      !goodTwin ||
+      !evilTwin.isAlive ||
+      !goodTwin.isAlive ||
+      evilTwin.role?.id !== 'evil_twin' ||
+      this.getPlayerAlignment(goodTwinId) !== 'good'
+    ) {
+      return false;
+    }
+    this.evilTwinPairs.set(evilTwinId, goodTwinId);
     if (evilTwin && !evilTwin.statuses.includes('evil_twin')) {
       evilTwin.statuses.push('evil_twin');
     }
-    const goodTwin = this.getPlayer(goodTwinId);
     if (goodTwin && !goodTwin.statuses.includes('good_twin')) {
       goodTwin.statuses.push('good_twin');
     }
+    return true;
   }
 
   getGoodTwinId(evilTwinId: string): string | undefined {
@@ -3970,6 +4066,102 @@ export class GameManager {
   }
 
   // ── 이발사: 역할 교환 ──
+
+  markBarberSwapPending(barberId: string): boolean {
+    const barber = this.getPlayer(barberId);
+    if (!barber || barber.role?.id !== 'barber' || isPoisonedOrDrunk(barber)) {
+      return false;
+    }
+    this.barberSwapPending = true;
+    return true;
+  }
+
+  hasPendingBarberSwap(): boolean {
+    return this.barberSwapPending;
+  }
+
+  consumeBarberSwapPending(): void {
+    this.barberSwapPending = false;
+  }
+
+  markSweetheartDrunkPending(sweetheartId: string): boolean {
+    const sweetheart = this.getPlayer(sweetheartId);
+    if (
+      !sweetheart ||
+      sweetheart.role?.id !== 'sweetheart' ||
+      isPoisonedOrDrunk(sweetheart)
+    ) {
+      return false;
+    }
+    this.sweetheartDrunkPending = true;
+    return true;
+  }
+
+  resolveSweetheartDrunk(
+    targetPlayerId: string,
+  ): { success: true } | { success: false; reason: string } {
+    if (!this.sweetheartDrunkPending) {
+      return { success: false, reason: '처리할 사랑꾼 사망 효과가 없습니다' };
+    }
+    const target = this.getPlayer(targetPlayerId);
+    if (!target || !target.isAlive) {
+      return {
+        success: false,
+        reason: '취하게 할 생존 플레이어를 찾을 수 없습니다',
+      };
+    }
+    this.addStatus(target, 'drunk');
+    this.sweetheartDrunkPending = false;
+    return { success: true };
+  }
+
+  skipSweetheartDrunk(): boolean {
+    if (!this.sweetheartDrunkPending) return false;
+    this.sweetheartDrunkPending = false;
+    return true;
+  }
+
+  markMayorRedirectPending(mayorId: string): boolean {
+    const mayor = this.getPlayer(mayorId);
+    if (!mayor || mayor.role?.id !== 'mayor' || isPoisonedOrDrunk(mayor)) {
+      return false;
+    }
+    this.pendingMayorRedirectId = mayorId;
+    return true;
+  }
+
+  resolveMayorRedirect(
+    mayorId: string,
+    redirectTargetId: string,
+  ): { success: true } | { success: false; reason: string } {
+    if (this.pendingMayorRedirectId !== mayorId) {
+      return { success: false, reason: '처리할 시장 밤 사망이 없습니다' };
+    }
+    const mayor = this.getPlayer(mayorId);
+    const target = this.getPlayer(redirectTargetId);
+    if (!mayor || mayor.role?.id !== 'mayor') {
+      return { success: false, reason: '시장 플레이어를 찾을 수 없습니다' };
+    }
+    if (!target || !target.isAlive) {
+      return {
+        success: false,
+        reason: '대신 사망할 생존 플레이어를 찾을 수 없습니다',
+      };
+    }
+
+    this.revive(mayorId);
+    this.removePendingNightKill(mayorId);
+    this.kill(redirectTargetId);
+    this.addPendingNightKill(redirectTargetId);
+    this.pendingMayorRedirectId = null;
+    return { success: true };
+  }
+
+  skipMayorRedirect(mayorId: string): boolean {
+    if (this.pendingMayorRedirectId !== mayorId) return false;
+    this.pendingMayorRedirectId = null;
+    return true;
+  }
 
   swapPlayerRoles(playerId1: string, playerId2: string): boolean {
     const p1 = this.getPlayer(playerId1);
@@ -4172,6 +4364,10 @@ export class GameManager {
           `주모자 추가 낮에 ${executedPlayer.name}이(가) 처형되었습니다`,
         );
       }
+    }
+    if (this.mastermindFinalDayActive && this.executionToday) {
+      this.mastermindFinalDayActive = false;
+      return buildResult('good', '주모자 추가 낮에 아무도 처형되지 않았습니다');
     }
 
     // 성자(Saint) 처형 → 악한 팀 승리 (중독/취한 성자는 능력 무효화)

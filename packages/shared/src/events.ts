@@ -47,12 +47,7 @@ export interface ServerToClientEvents {
   'game:phase': (phase: Phase) => void;
   'game:playerUpdate': (player: Player) => void;
   'day:subPhase': (subPhase: DaySubPhase) => void;
-  'role:assign': (role: {
-    roleId: string;
-    roleName: string;
-    drunkAs?: string;
-    lunaticAs?: string;
-  }) => void;
+  'role:assign': (role: { roleId: string; roleName: string }) => void;
   'vote:start': (data: {
     nominatorId: string;
     nomineeId: string;
@@ -74,6 +69,7 @@ export interface ServerToClientEvents {
   }) => void;
   'night:activeRole': (data: {
     roleId: string | null;
+    activeIndex?: number;
     order: string[];
     players: PlayerInfo[];
   }) => void;
@@ -377,8 +373,7 @@ export interface ClientToServerEvents {
       success: boolean;
       playerName?: string;
       roleId?: string;
-      drunkAs?: string;
-      lunaticAs?: string;
+      philosopherGrantedRole?: string;
       phase?: Phase;
       isAlive?: boolean;
       daySubPhase?: DaySubPhase | null;
@@ -387,6 +382,7 @@ export interface ClientToServerEvents {
       nightCount?: number;
       nightProgress?: {
         activeRoleId: string | null;
+        activeIndex?: number;
         order: string[];
         players: PlayerInfo[];
       };
@@ -522,8 +518,14 @@ export interface StorytellerToServerEvents {
     data: { shabalothId: string; targetPlayerId: string },
     callback?: (res: { success: boolean; error?: string }) => void,
   ) => void;
-  'vote:nominate': (data: { nominatorId: string; nomineeId: string }) => void;
-  'vote:castForPlayer': (data: { playerId: string; guilty: boolean }) => void;
+  'vote:nominate': (
+    data: { nominatorId: string; nomineeId: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  'vote:castForPlayer': (
+    data: { playerId: string; guilty: boolean },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   'vote:close': () => void;
   'vote:proceedToVote': () => void;
   'game:reset': () => void;
@@ -531,10 +533,13 @@ export interface StorytellerToServerEvents {
     callback: (res: { success: boolean; gameId?: string }) => void,
   ) => void;
   'night:setActiveRole': (roleId: string | null) => void;
-  'night:sendFeedback': (data: {
-    playerId: string;
-    feedback: NightFeedbackPayload;
-  }) => void;
+  'night:sendFeedback': (
+    data: {
+      playerId: string;
+      feedback: NightFeedbackPayload;
+    },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   'game:distributeRoles': (
     options: {
       excludedRoleIds?: string[];
@@ -551,11 +556,24 @@ export interface StorytellerToServerEvents {
     }) => void,
   ) => void;
   'game:assignRedHerring': (playerId: string) => void;
-  'game:sweetheartDrunk': (playerId: string) => void;
-  'game:mayorRedirect': (data: {
-    mayorId: string;
-    redirectTargetId: string;
-  }) => void;
+  'game:sweetheartDrunk': (
+    playerId: string,
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  'game:sweetheartSkipDrunk': (
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  'game:mayorRedirect': (
+    data: {
+      mayorId: string;
+      redirectTargetId: string;
+    },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  'game:mayorSkipRedirect': (
+    data: { mayorId: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   'game:addDummyPlayers': (count: number) => void;
   'game:removeDummyPlayers': () => void;
   'player:setStatuses': (data: {
@@ -592,58 +610,105 @@ export interface StorytellerToServerEvents {
   ) => void;
 
   /** 게임 중 참가 요청 승인 */
-  'traveller:approve': (data: { socketId: string; playerName: string }) => void;
+  'traveller:approve': (
+    data: { socketId: string; playerName: string },
+    callback?: (res: {
+      success: boolean;
+      error?: string;
+      playerId?: string;
+    }) => void,
+  ) => void;
   /** 게임 중 참가 요청 거절 */
-  'traveller:reject': (data: { socketId: string }) => void;
+  'traveller:reject': (
+    data: { socketId: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
 
   // ── Sects & Violets ──
   /** 마녀 저주 사망 확인 (이야기꾼이 판단) */
-  'witch:confirmCurseDeath': (data: {
-    nominatorId: string;
-    kill: boolean;
-  }) => void;
+  'witch:confirmCurseDeath': (
+    data: {
+      nominatorId: string;
+      kill: boolean;
+    },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   /** 이발사 사망 시 악마의 역할 교환 대상 지정 */
-  'barber:swapRoles': (data: { playerId1: string; playerId2: string }) => void;
+  'barber:swapRoles': (
+    data: { playerId1: string; playerId2: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 이발사 사망 역할 교환을 적용하지 않고 넘김 */
+  'barber:skipSwap': (
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   /** 얼뜨기 사망 시 선택한 플레이어 지정 */
-  'klutz:choose': (data: { klutzId: string; chosenPlayerId: string }) => void;
+  'klutz:choose': (
+    data: { klutzId: string; chosenPlayerId: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   /** 팡 구 외지인 교환 실행 */
-  'fangGu:confirmJump': (data: {
-    oldDemonId: string;
-    newDemonId: string;
-  }) => void;
+  'fangGu:confirmJump': (
+    data: {
+      oldDemonId: string;
+      newDemonId: string;
+    },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   /** 뱀 조련사가 선택한 악마와 직업/진영 교환 실행 */
-  'snakeCharmer:swap': (data: {
-    snakeCharmerId: string;
-    demonId: string;
-  }) => void;
-  'vigormortis:killMinion': (data: {
-    vigormortisId: string;
-    minionId: string;
-    poisonedNeighborId: string;
-  }) => void;
+  'snakeCharmer:swap': (
+    data: {
+      snakeCharmerId: string;
+      demonId: string;
+    },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  'vigormortis:killMinion': (
+    data: {
+      vigormortisId: string;
+      minionId: string;
+      poisonedNeighborId: string;
+    },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   /** 마귀할멈 역할 변경 실행 */
-  'pitHag:changeRole': (data: {
-    pitHagId: string;
-    targetPlayerId: string;
-    newRoleId: string;
-  }) => void;
+  'pitHag:changeRole': (
+    data: {
+      pitHagId: string;
+      targetPlayerId: string;
+      newRoleId: string;
+    },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   /** 사악한 쌍둥이 선한 쌍둥이 지정 */
-  'evilTwin:assignGoodTwin': (data: {
-    evilTwinPlayerId: string;
-    goodTwinPlayerId: string;
-  }) => void;
+  'evilTwin:assignGoodTwin': (
+    data: {
+      evilTwinPlayerId: string;
+      goodTwinPlayerId: string;
+    },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   /** 희생양 처형 교체: 현재 처형 후보를 희생양으로 교체 */
-  'scapegoat:swap': (data: { scapegoatId: string }) => void;
+  'scapegoat:swap': (
+    data: { scapegoatId: string },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   /** 뼈 수집가가 죽은 플레이어의 능력을 황혼까지 복구 */
-  'boneCollector:restore': (data: {
-    boneCollectorId: string;
-    targetPlayerId: string;
-  }) => void;
+  'boneCollector:restore': (
+    data: {
+      boneCollectorId: string;
+      targetPlayerId: string;
+    },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   /** 바리스타가 오늘 밤/내일 낮 효과를 부여 */
-  'barista:apply': (data: {
-    targetPlayerId: string;
-    effect: 'sober_healthy' | 'acts_twice';
-  }) => void;
+  'barista:apply': (
+    data: {
+      targetPlayerId: string;
+      effect: 'sober_healthy' | 'acts_twice';
+    },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   /** 궁정대신이 선택한 역할을 3일/3밤 동안 취하게 함 */
   'courtier:chooseRole': (
     data: { courtierId: string; roleId: string },

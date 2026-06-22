@@ -4,7 +4,7 @@ import { usePlayerStore } from '../stores/playerStore';
 import { styles } from './ExileVoteModal.styles';
 
 interface ExileVoteModalProps {
-  onVote: (guilty: boolean) => void;
+  onVote: (guilty: boolean) => Promise<{ success: boolean; error?: string }>;
 }
 
 export function ExileVoteModal({ onVote }: ExileVoteModalProps) {
@@ -29,8 +29,9 @@ export function ExileVoteModal({ onVote }: ExileVoteModalProps) {
 
   const handleVote = useCallback(
     (guilty: boolean) => {
-      setHasVoted(true);
-      onVote(guilty);
+      onVote(guilty).then((res) => {
+        if (res.success) setHasVoted(true);
+      });
     },
     [onVote],
   );

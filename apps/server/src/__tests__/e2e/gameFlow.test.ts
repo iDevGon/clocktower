@@ -190,6 +190,51 @@ describe('E2E: 투표 흐름', () => {
     expect(result.nomineeId).toBe(playerIds[1]);
   }, 15000);
 
+  it('이야기꾼 지명 입력은 서버 실패를 콜백으로 돌려준다', async () => {
+    const { playerIds } = await setupFullGame(ctx);
+
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.storyteller.emit(
+          'vote:nominate',
+          {
+            nominatorId: playerIds[0],
+            nomineeId: playerIds[0],
+          },
+          resolve,
+        );
+      },
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeTruthy();
+  }, 15000);
+
+  it('이야기꾼 수동 투표 입력은 존재하는 투표권자에게만 성공한다', async () => {
+    const { playerIds } = await setupFullGame(ctx);
+
+    const invalidResult = await new Promise<{
+      success: boolean;
+      error?: string;
+    }>((resolve) => {
+      ctx.storyteller.emit(
+        'vote:castForPlayer',
+        { playerId: 'missing-player', guilty: true },
+        resolve,
+      );
+    });
+    expect(invalidResult.success).toBe(false);
+
+    const validResult = await new Promise<{ success: boolean }>((resolve) => {
+      ctx.storyteller.emit(
+        'vote:castForPlayer',
+        { playerId: playerIds[0], guilty: true },
+        resolve,
+      );
+    });
+    expect(validResult.success).toBe(true);
+  }, 15000);
+
   it('플레이어가 직접 지명', async () => {
     const { playerIds } = await setupFullGame(ctx);
 
@@ -248,21 +293,16 @@ describe('E2E: 밤 행동', () => {
     // 기존 이벤트를 소비하기 위해 짧은 대기 후 리스너 등록
     await new Promise((r) => setTimeout(r, 50));
 
-    // roleId가 'poisoner'인 이벤트만 기다림
-    const activeRolePromise = new Promise<{ roleId: string | null }>(
-      (resolve) => {
-        const handler = (data: { roleId: string | null }) => {
-          if (data.roleId === 'poisoner') {
-            ctx.players[poisonerIdx].off('night:activeRole', handler);
-            resolve(data);
-          }
-        };
-        ctx.players[poisonerIdx].on('night:activeRole', handler);
-      },
-    );
+    const activeRolePromise = waitForEvent<{
+      roleId: string | null;
+      order: string[];
+      activeIndex?: number;
+    }>(ctx.players[poisonerIdx], 'night:activeRole');
     ctx.storyteller.emit('night:setActiveRole', 'poisoner');
     const activeRole = await activeRolePromise;
-    expect(activeRole.roleId).toBe('poisoner');
+    expect(activeRole.roleId).toBeNull();
+    expect(activeRole.order).not.toContain('poisoner');
+    expect(activeRole.activeIndex).toBeGreaterThanOrEqual(0);
 
     // 이야기꾼 수신 대기
     const actionPromise = waitForEvent<{
@@ -406,6 +446,46 @@ describe('E2E: 재접속', () => {
 
     expect(rejoinRes.success).toBe(true);
     expect(rejoinRes.gamePlayers?.map((p) => p.id)).toEqual(reordered);
+  }, 15000);
+
+  it('플레이어에게 브로드캐스트되는 게임 상태는 역할 정보를 포함하지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'washerwoman' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+    const statePromise = waitForEvent<{
+      players: Array<{ role?: unknown }>;
+    }>(ctx.players[0] as Socket, 'game:state');
+
+    ctx.storyteller.emit('game:setPlayerOrder', playerIds);
+    const state = await statePromise;
+
+    expect(state.players.every((player) => player.role === undefined)).toBe(
+      true,
+    );
+  }, 15000);
+
+  it('플레이어에게 브로드캐스트되는 플레이어 갱신은 역할 정보를 포함하지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'washerwoman' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+    await advanceToDay(ctx);
+    const updatePromise = waitForEvent<{ role?: unknown }>(
+      ctx.players[0] as Socket,
+      'game:playerUpdate',
+    );
+
+    ctx.storyteller.emit('game:kill', playerIds[1]);
+    const update = await updatePromise;
+
+    expect(update.role).toBeUndefined();
   }, 15000);
 });
 

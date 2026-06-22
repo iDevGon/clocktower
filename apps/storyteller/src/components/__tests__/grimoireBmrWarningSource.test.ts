@@ -36,5 +36,7 @@ describe('grimoire BMR death warnings', () => {
     expect(source).toContain('showMoonchildChoiceModal');
     expect(source).toContain('달의 자손 선택 처리');
     expect(source).toContain('deferToNight: true');
+    expect(source).toContain('playerStatuses[p.id] ?? p.statuses');
+    expect(source).toContain("'zombuul_registers_dead'");
   });
 });

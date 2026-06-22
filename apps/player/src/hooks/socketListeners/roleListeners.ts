@@ -3,7 +3,7 @@ import { usePlayerStore } from '../../stores/playerStore';
 import type { AppSocket } from './types';
 
 export function attachRoleListeners(socket: AppSocket) {
-  socket.on('role:assign', ({ roleId, drunkAs }) => {
+  socket.on('role:assign', ({ roleId }) => {
     const { role: prevRole, currentPhase } = usePlayerStore.getState();
     const role = getRoleById(roleId) ?? null;
     // Detect mid-game role promotion (e.g. Scarlet Woman → Imp)
@@ -13,14 +13,12 @@ export function attachRoleListeners(socket: AppSocket) {
       // During night: defer the reveal until day
       usePlayerStore.getState().set({
         role,
-        drunkAs: drunkAs ?? null,
         pendingRolePromotion: role,
       });
       return;
     }
     usePlayerStore.getState().set({
       role,
-      drunkAs: drunkAs ?? null,
       rolePromotion: isPromotion ? role : null,
     });
   });

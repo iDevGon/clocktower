@@ -167,6 +167,37 @@ describe('E2E: 처단자', () => {
     expect(ctx.app.game.hadExecutionToday()).toBe(false);
   }, 15000);
 
+  it('처단자가 악마를 죽이고 탕녀 조건이면 탕녀에게 악마 역할을 알린다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'slayer' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'washerwoman' },
+      { roleId: 'chef' },
+      { roleId: 'scarlet_woman' },
+      { roleId: 'imp' },
+    ]);
+
+    await advanceToDay(ctx);
+
+    const roleAssignPromise = waitForEvent<{ roleId: string }>(
+      ctx.players[5] as Socket,
+      'role:assign',
+      500,
+    );
+    const slayerRes = await new Promise<{
+      success: boolean;
+      error?: string;
+    }>((resolve) => {
+      ctx.players[0].emit('slayer:use', { targetId: playerIds[6] }, resolve);
+    });
+    const roleAssign = await roleAssignPromise;
+
+    expect(slayerRes.success).toBe(true);
+    expect(roleAssign.roleId).toBe('imp');
+    expect(ctx.app.game.getState().phase).not.toBe('ended');
+  }, 15000);
+
   it('취한 처단자는 악마를 선택해도 죽이지 않는다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [
       { roleId: 'slayer' },
@@ -619,6 +650,135 @@ describe('E2E: 시장 특수 승리', () => {
     const endResult = await endPromise;
     expect(endResult.winningTeam).toBe('good');
   }, 15000);
+
+  it('시장 밤 사망 리다이렉트로 악마가 죽으면 즉시 선 진영 승리로 종료한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'mayor' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+    ctx.app.game.setPhase('night');
+    ctx.app.game.kill(playerIds[0]);
+    ctx.app.game.addPendingNightKill(playerIds[0]);
+    ctx.app.game.markMayorRedirectPending(playerIds[0]);
+
+    const endPromise = waitForEvent<{ winningTeam: 'good' | 'evil' }>(
+      ctx.players[0] as Socket,
+      'game:end',
+      500,
+    );
+    ctx.storyteller.emit('game:mayorRedirect', {
+      mayorId: playerIds[0],
+      redirectTargetId: playerIds[4],
+    });
+    const endResult = await endPromise;
+
+    expect(endResult.winningTeam).toBe('good');
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(true);
+    expect(ctx.app.game.getPlayer(playerIds[4])?.isAlive).toBe(false);
+  }, 15000);
+
+  it('중독된 시장이 밤에 죽으면 리다이렉트 요청을 보내지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'mayor' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+    ctx.app.game.setPhase('night');
+    ctx.app.game.setPlayerStatuses(playerIds[0], ['poisoned']);
+
+    const mayorPromise = waitForEvent(
+      ctx.storyteller as Socket,
+      'mayor:nightDeath',
+      100,
+    );
+    ctx.storyteller.emit('game:kill', playerIds[0]);
+
+    await expect(mayorPromise).rejects.toThrow('Timeout waiting for event');
+  }, 15000);
+
+  it('시장 리다이렉트는 대기 중인 시장 밤 사망이 있을 때만 성공한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'mayor' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.storyteller.emit(
+          'game:mayorRedirect',
+          { mayorId: playerIds[0], redirectTargetId: playerIds[4] },
+          resolve,
+        );
+      },
+    );
+
+    expect(result.success).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(true);
+    expect(ctx.app.game.getPlayer(playerIds[4])?.isAlive).toBe(true);
+  }, 15000);
+});
+
+describe('E2E: 사랑꾼', () => {
+  let ctx: TestContext;
+
+  beforeEach(async () => {
+    ctx = await setupTestServer();
+  }, 10000);
+
+  afterEach(async () => {
+    await ctx.cleanup();
+  });
+
+  it('중독된 사랑꾼이 죽으면 취함 대상 선택 요청을 보내지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'sweetheart' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+    ctx.app.game.setPlayerStatuses(playerIds[0], ['poisoned']);
+
+    const sweetheartPromise = waitForEvent(
+      ctx.storyteller as Socket,
+      'sweetheart:died',
+      100,
+    );
+    ctx.storyteller.emit('game:kill', playerIds[0]);
+
+    await expect(sweetheartPromise).rejects.toThrow(
+      'Timeout waiting for event',
+    );
+  }, 15000);
+
+  it('사랑꾼 취함 적용은 대기 중인 사랑꾼 사망이 있을 때만 성공한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'sweetheart' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.storyteller.emit('game:sweetheartDrunk', playerIds[1], resolve);
+      },
+    );
+
+    expect(result.success).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[1])?.statuses).not.toContain(
+      'drunk',
+    );
+  }, 15000);
 });
 
 describe('E2E: 까마귀지기 (onlyWhenDead)', () => {
@@ -720,5 +880,42 @@ describe('E2E: 까마귀지기 (onlyWhenDead)', () => {
     // 죽은 주정뱅이가 wakeUp 수신
     const wakeUpData = await wakeUpPromise;
     expect(wakeUpData.roleId).toBe('ravenkeeper');
+  }, 15000);
+});
+
+describe('E2E: 밤 행동 대상 검증', () => {
+  let ctx: TestContext;
+
+  beforeEach(async () => {
+    ctx = await setupTestServer();
+  }, 10000);
+
+  afterEach(async () => {
+    await ctx.cleanup();
+  });
+
+  it('자기 자신을 제외하는 밤 행동은 UI를 우회해도 본인을 대상으로 완료 처리하지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'monk' },
+      { roleId: 'washerwoman' },
+      { roleId: 'chef' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
+
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.players[0].emit(
+          'night:action',
+          { targets: [playerIds[0]] },
+          resolve,
+        );
+      },
+    );
+
+    expect(result).toEqual({
+      success: false,
+      error: '자기 자신은 선택할 수 없습니다',
+    });
   }, 15000);
 });

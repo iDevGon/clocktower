@@ -91,4 +91,25 @@ describe('NightActionLog BMR wiring', () => {
     expect(source).toContain('sailor_drunk');
     expect(source).toContain('sailor-drunk');
   });
+
+  it('사망 처리 완료 판정은 좀버얼 공개 사망 상태도 사망으로 취급한다', () => {
+    expect(source).toContain('isPlayerPubliclyAlive');
+    expect(source).toContain("'zombuul_registers_dead'");
+    expect(source).toContain('!isPlayerPubliclyAlive(targetId)');
+  });
+
+  it('서버 실패 가능성이 있는 특수 액션은 성공 콜백 후에만 완료 처리한다', () => {
+    expect(source).toContain('callback?: (result: BmrAssistResult) => void');
+    expect(source).toMatch(
+      /onFangGuJump\?\.\([\s\S]*action\.playerId,[\s\S]*targetId,[\s\S]*markProcessed,[\s\S]*\)/,
+    );
+    expect(source).toMatch(
+      /onSnakeCharmerSwap\?\.\([\s\S]*action\.playerId,[\s\S]*targetId,[\s\S]*markProcessed,[\s\S]*\)/,
+    );
+    expect(source).toMatch(
+      /onBoneCollectorRestore\?\.\([\s\S]*action\.playerId,[\s\S]*targetId,[\s\S]*markProcessed,[\s\S]*\)/,
+    );
+    expect(source).toContain('markProcessed({ success: true })');
+    expect(source).toContain('if (!result.success) return;');
+  });
 });

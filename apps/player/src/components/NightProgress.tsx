@@ -49,26 +49,22 @@ function ActiveGlow({ isMine }: { isMine: boolean }) {
 
 interface NightProgressProps {
   activeRoleId: string | null;
+  activeIndex?: number;
   order: string[];
   myRole: Role | null;
-  drunkAs?: string | null;
   /** 서버에서 night:wakeUp을 받았는지 여부 */
   nightWakeUp?: boolean;
 }
 
 export function NightProgress({
   activeRoleId,
+  activeIndex,
   order,
   myRole,
-  drunkAs,
   nightWakeUp = false,
 }: NightProgressProps) {
-  const isRoleActive =
-    myRole != null &&
-    (activeRoleId === myRole.id ||
-      (drunkAs != null && activeRoleId === drunkAs));
   // 서버가 night:wakeUp을 개별 전송하므로, wakeUp 수신 시에만 차례로 인정
-  const isMyTurn = isRoleActive && nightWakeUp;
+  const isMyTurn = myRole != null && nightWakeUp;
   const reduced = useReducedMotion();
   const pulseAnim = useSharedValue(1);
 
@@ -93,7 +89,8 @@ export function NightProgress({
     opacity: pulseAnim.value,
   }));
 
-  const activeIndex = activeRoleId ? order.indexOf(activeRoleId) : -1;
+  const resolvedActiveIndex =
+    activeIndex ?? (activeRoleId ? order.indexOf(activeRoleId) : -1);
 
   return (
     <View style={styles.container}>
@@ -106,10 +103,10 @@ export function NightProgress({
       <View style={styles.progressBar}>
         {order.map((roleId, index) => {
           const role = getRoleById(roleId);
-          const isActive = roleId === activeRoleId;
-          const isPast = activeIndex >= 0 && index < activeIndex;
-          const isMine =
-            myRole?.id === roleId || (drunkAs != null && drunkAs === roleId);
+          const isActive = index === resolvedActiveIndex;
+          const isPast =
+            resolvedActiveIndex >= 0 && index < resolvedActiveIndex;
+          const isMine = myRole?.id === roleId;
           const isFirst = index === 0;
           const isLast = index === order.length - 1;
 

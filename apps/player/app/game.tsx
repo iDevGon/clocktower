@@ -49,6 +49,7 @@ import { usePlayerStore } from '../src/stores/playerStore';
 import { useSettingsStore } from '../src/stores/settingsStore';
 import { useWhisperStore } from '../src/stores/whisperStore';
 import { styles } from '../src/styles/game.styles';
+import { isNightWakeUpForCurrentRole } from '../src/utils/nightTurn';
 
 const DAY_SUB_PHASE_LABELS: Record<string, string> = {
   whisper: '밀담',
@@ -234,36 +235,31 @@ export default function GameScreen() {
     [dismissDeath],
   );
 
-  const drunkAs = usePlayerStore((s) => s.drunkAs);
   const nightWakeUp = usePlayerStore((s) => s.nightWakeUp);
-  const activeRoleId = nightProgress?.activeRoleId;
-  const isRoleActive =
-    role != null &&
-    (activeRoleId === role.id ||
-      (drunkAs != null && activeRoleId === drunkAs) ||
-      (role.id === 'philosopher' &&
-        philosopherGrantedRole != null &&
-        activeRoleId === philosopherGrantedRole));
   // 서버가 night:wakeUp을 개별 전송하므로, wakeUp 수신 시에만 차례로 인정
-  const isMyTurn = isRoleActive && nightWakeUp != null;
+  const isMyTurn = isNightWakeUpForCurrentRole(
+    role?.id,
+    philosopherGrantedRole,
+    nightWakeUp,
+  );
 
   // nightWakeUp 수신 시 밤 행동 UI를 가리는 오버레이 자동 해제
   useEffect(() => {
-    if (nightWakeUp && isRoleActive) {
+    if (nightWakeUp && role != null) {
       setShowNightFall(false);
     }
-  }, [nightWakeUp, isRoleActive]);
+  }, [nightWakeUp, role]);
 
   // 까마귀지기가 밤에 죽었을 때만 전용 오버레이 표시
   const effectiveRoleId =
     role?.id === 'philosopher' && philosopherGrantedRole
       ? philosopherGrantedRole
-      : (drunkAs ?? role?.id);
+      : role?.id;
   useEffect(() => {
-    if (nightWakeUp && isRoleActive && effectiveRoleId === 'ravenkeeper') {
+    if (nightWakeUp && role != null && effectiveRoleId === 'ravenkeeper') {
       setRavenkeeperOverlay(true);
     }
-  }, [nightWakeUp, isRoleActive, effectiveRoleId]);
+  }, [nightWakeUp, role, effectiveRoleId]);
 
   const handleNominate = async (nomineeId: string) => {
     setNominateModalVisible(false);
@@ -536,7 +532,6 @@ export default function GameScreen() {
           visible={currentPhase === 'night'}
           nightProgress={nightProgress}
           role={role}
-          drunkAs={drunkAs}
           isMyTurn={isMyTurn}
           playerId={playerId}
           nightActionSubmitted={nightActionSubmitted}

@@ -8,6 +8,7 @@ import type {
 import type { Namespace, Socket } from 'socket.io';
 import type { GameManager } from '../game.js';
 import { sendPushToAll } from '../pushNotifications.js';
+import { toPublicPlayer } from './publicPayloads.js';
 
 type PlayerNamespace = Namespace<ClientToServerEvents, ServerToClientEvents>;
 type StorytellerNamespace = Namespace<
@@ -57,23 +58,31 @@ function emitPromotionIfAny(
 }
 
 function emitDeathTriggers(
+  game: GameManager,
   player: Player | undefined,
   storytellerIo: StorytellerNamespace,
   options: { isNight: boolean },
 ): void {
   if (!player?.role) return;
-  if (player.role.id === 'sweetheart') {
+  if (
+    player.role.id === 'sweetheart' &&
+    game.markSweetheartDrunkPending(player.id)
+  ) {
     storytellerIo.emit('sweetheart:died', {
       sweetheartName: player.name,
     });
   }
-  if (player.role.id === 'mayor' && options.isNight) {
+  if (
+    player.role.id === 'mayor' &&
+    options.isNight &&
+    game.markMayorRedirectPending(player.id)
+  ) {
     storytellerIo.emit('mayor:nightDeath', {
       mayorId: player.id,
       mayorName: player.name,
     });
   }
-  if (player.role.id === 'barber') {
+  if (player.role.id === 'barber' && game.markBarberSwapPending(player.id)) {
     storytellerIo.emit('barber:died', {
       barberName: player.name,
     });
@@ -92,7 +101,7 @@ function emitTriggeredDeathUpdates(
 ): void {
   for (const playerId of game.consumeTriggeredDeathIds()) {
     const player = game.getPlayer(playerId);
-    if (player) playerIo.emit('game:playerUpdate', player);
+    if (player) playerIo.emit('game:playerUpdate', toPublicPlayer(player));
   }
 }
 
@@ -116,11 +125,12 @@ export function startClockwiseVote(
   });
   const fullOrderInfo = fullOrder.map((id) => {
     const p = game.getPlayer(id);
+    const publicPlayer = p ? toPublicPlayer(p) : null;
     return {
       id,
       name: p?.name ?? id,
-      isAlive: p?.isAlive ?? false,
-      deadVoteUsed: p?.deadVoteUsed ?? false,
+      isAlive: publicPlayer?.isAlive ?? false,
+      deadVoteUsed: publicPlayer?.deadVoteUsed ?? false,
     };
   });
   playerIo.emit('vote:order', {
@@ -223,9 +233,21 @@ export function registerVoteHandlers(
   playerIo: PlayerNamespace,
   game: GameManager,
 ): void {
-  socket.on('vote:nominate', ({ nominatorId, nomineeId }) => {
+  socket.on('vote:nominate', ({ nominatorId, nomineeId }, callback) => {
+    const isWitchCursed = game.checkWitchCurse(nominatorId);
     const result = game.nominate(nominatorId, nomineeId);
-    if (!result.success) return;
+    if (!result.success) {
+      callback?.({ success: false, error: result.error });
+      return;
+    }
+
+    if (isWitchCursed) {
+      const nominator = game.getPlayer(nominatorId);
+      storytellerIo.emit('witch:curseDeath', {
+        nominatorId,
+        nominatorName: nominator?.name ?? nominatorId,
+      });
+    }
 
     // 성결자(Virgin) 트리거: 지명자가 마을주민이면 즉시 처형
     if (result.virginKill) {
@@ -233,7 +255,7 @@ export function registerVoteHandlers(
       const nominator = game.getPlayer(nominatorId);
       const executionResult = game.resolveExecution(result.virginKill);
       if (executionResult.killed) {
-        emitDeathTriggers(nominator, storytellerIo, { isNight: false });
+        emitDeathTriggers(game, nominator, storytellerIo, { isNight: false });
       }
       playerIo.emit('virgin:triggered', {
         virginName: virgin?.name ?? nomineeId,
@@ -259,7 +281,7 @@ export function registerVoteHandlers(
           reason: 'virgin',
           detail: `${killedNominator.name}이(가) 성결자를 지목하여 처형되었습니다`,
         });
-        playerIo.emit('game:playerUpdate', killedNominator);
+        playerIo.emit('game:playerUpdate', toPublicPlayer(killedNominator));
         emitTriggeredDeathUpdates(game, playerIo);
       }
       storytellerIo.emit('game:state', game.getStorytellerState());
@@ -268,6 +290,7 @@ export function registerVoteHandlers(
       const winResult = game.checkWinCondition();
       if (winResult) {
         winResult.cause = 'virgin';
+        callback?.({ success: true });
         playerIo.emit('game:end', winResult);
         playerIo.emit('game:phase', 'ended');
         storytellerIo.emit('game:end', winResult);
@@ -275,6 +298,7 @@ export function registerVoteHandlers(
         return;
       }
       emitPromotionIfAny(game, playerIo, storytellerIo);
+      callback?.({ success: true });
       return;
     }
 
@@ -309,6 +333,7 @@ export function registerVoteHandlers(
     playerIo.emit('vote:start', voteStartData);
     storytellerIo.emit('vote:start', voteStartData);
     storytellerIo.emit('game:state', game.getStorytellerState());
+    callback?.({ success: true });
 
     const state = game.getState();
     const allIds = state.players.map((p) => p.id);
@@ -343,11 +368,16 @@ export function registerVoteHandlers(
     }
   });
 
-  socket.on('vote:castForPlayer', ({ playerId, guilty }) => {
+  socket.on('vote:castForPlayer', ({ playerId, guilty }, callback) => {
+    if (!game.getPlayer(playerId)) {
+      callback?.({ success: false, error: '플레이어를 찾을 수 없습니다' });
+      return;
+    }
     // 시계방향 투표 중이면 프리셀렉트로 처리
     game.preselectVote(playerId, guilty);
     playerIo.emit('vote:preselected', { playerId, guilty });
     storytellerIo.emit('vote:preselected', { playerId, guilty });
+    callback?.({ success: true });
   });
 
   socket.on('vote:close', () => {
@@ -373,14 +403,26 @@ export function registerVoteHandlers(
     }
   });
 
-  socket.on('scapegoat:swap', ({ scapegoatId }) => {
+  socket.on('scapegoat:swap', ({ scapegoatId }, callback) => {
     const candidate = game.getExecutionCandidate();
-    if (!candidate) return;
+    if (!candidate) {
+      callback?.({ success: false, error: '현재 처형 후보가 없습니다' });
+      return;
+    }
     const original = game.getPlayer(candidate.playerId);
     const scapegoat = game.getPlayer(scapegoatId);
-    if (!scapegoat || !original) return;
+    if (!scapegoat || !original) {
+      callback?.({
+        success: false,
+        error: '희생양 또는 기존 처형 후보를 찾을 수 없습니다',
+      });
+      return;
+    }
     const ok = game.swapExecutionCandidateToScapegoat(scapegoatId);
-    if (!ok) return;
+    if (!ok) {
+      callback?.({ success: false, error: '희생양 교체를 적용할 수 없습니다' });
+      return;
+    }
     const payload = {
       originalId: original.id,
       originalName: original.name,
@@ -391,6 +433,7 @@ export function registerVoteHandlers(
     playerIo.emit('scapegoat:swapped', payload);
     storytellerIo.emit('scapegoat:swapped', payload);
     storytellerIo.emit('game:state', game.getStorytellerState());
+    callback?.({ success: true });
     console.log(`Scapegoat swap: ${original.name} → ${scapegoat.name}`);
   });
 

@@ -111,7 +111,7 @@ export function useConnection() {
           playerId,
           playerName: res.playerName,
           role: res.roleId ? (getRoleById(res.roleId) ?? null) : null,
-          drunkAs: res.drunkAs ?? null,
+          philosopherGrantedRole: res.philosopherGrantedRole ?? null,
           currentPhase: res.phase ?? 'setup',
           isAlive: res.isAlive ?? true,
           daySubPhase: res.daySubPhase ?? null,
@@ -122,6 +122,8 @@ export function useConnection() {
           gamePlayers: res.gamePlayers ?? [],
           evilInfo: res.evilInfo ?? null,
           butlerMasterName: res.butlerMasterName ?? null,
+          nomination: res.nomination ?? null,
+          executionCandidate: res.executionCandidate ?? null,
         });
         resolve(true);
         // Fire and forget

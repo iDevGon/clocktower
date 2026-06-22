@@ -21,7 +21,7 @@ function handleRejoin(socket: AppSocket) {
     }
     usePlayerStore.getState().set({
       role: res.roleId ? (getRoleById(res.roleId) ?? null) : null,
-      drunkAs: res.drunkAs ?? null,
+      philosopherGrantedRole: res.philosopherGrantedRole ?? null,
       currentPhase: res.phase ?? 'setup',
       isAlive: res.isAlive ?? true,
       daySubPhase: res.daySubPhase ?? null,
@@ -31,6 +31,7 @@ function handleRejoin(socket: AppSocket) {
       nightCount: res.nightCount ?? usePlayerStore.getState().nightCount,
       gamePlayers: res.gamePlayers ?? usePlayerStore.getState().gamePlayers,
       evilInfo: res.evilInfo ?? null,
+      butlerMasterName: res.butlerMasterName ?? null,
       nomination: res.nomination ?? null,
       executionCandidate: res.executionCandidate ?? null,
     });
@@ -180,12 +181,14 @@ export function attachGameListeners(socket: AppSocket) {
 
   socket.on('game:playerUpdate', (player) => {
     const state = usePlayerStore.getState();
+    const publiclyAlive =
+      player.isAlive && !player.statuses.includes('zombuul_registers_dead');
     if (player.id === state.playerId) {
-      const wasDeath = state.isAlive && !player.isAlive;
-      const wasRevive = !state.isAlive && player.isAlive;
+      const wasDeath = state.isAlive && !publiclyAlive;
+      const wasRevive = !state.isAlive && publiclyAlive;
       // onlyWhenDead 역할(까마귀지기 등)의 밤 사망은 전용 오버레이로 이미 알렸으므로
       // DeathOverlay 스킵 (낮 처형 등 다른 사유로 죽으면 정상 표시)
-      const effectiveRoleId = state.drunkAs ?? state.role?.id;
+      const effectiveRoleId = state.role?.id;
       const isOnlyWhenDead =
         effectiveRoleId != null &&
         NIGHT_ACTIONS[effectiveRoleId]?.onlyWhenDead === true;
@@ -193,7 +196,7 @@ export function attachGameListeners(socket: AppSocket) {
         !state.deathReason || state.deathReason === 'night_kill';
       const showDeathOverlay = wasDeath && !(isOnlyWhenDead && isNightKill);
       usePlayerStore.getState().set({
-        isAlive: player.isAlive,
+        isAlive: publiclyAlive,
         deadVoteUsed: player.deadVoteUsed,
         philosopherGrantedRole: player.philosopherGrantedRole ?? null,
         ...(wasRevive ? { moonchildUsed: false } : {}),
@@ -208,7 +211,7 @@ export function attachGameListeners(socket: AppSocket) {
     }
     const updated = state.gamePlayers.map((p) =>
       p.id === player.id
-        ? { ...p, isAlive: player.isAlive, deadVoteUsed: player.deadVoteUsed }
+        ? { ...p, isAlive: publiclyAlive, deadVoteUsed: player.deadVoteUsed }
         : p,
     );
     usePlayerStore.getState().set({ gamePlayers: updated });

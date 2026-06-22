@@ -229,6 +229,29 @@ describe('getBmrDeathWarnings', () => {
     ).toContain('zombuul_registers_dead');
   });
 
+  it('중독된 좀버얼 첫 사망은 사망 위장 선택지를 반환하지 않는다', () => {
+    const target = player({
+      id: 'zombuul',
+      role: {
+        id: 'zombuul',
+        name: '좀버얼',
+        team: 'demon',
+        ability: '',
+        edition: 'bad_moon_rising',
+      },
+      statuses: ['poisoned'],
+    });
+
+    expect(
+      warningKinds({
+        roleId: 'execution',
+        method: 'execution',
+        timing: 'day',
+        target,
+      }),
+    ).not.toContain('zombuul_registers_dead');
+  });
+
   it('맑고 건강한 평화주의자가 있으면 선한 플레이어 처형 생존 선택지를 반환한다', () => {
     const target = player({ id: 'target', alignment: 'good' });
     const pacifist = player({

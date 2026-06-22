@@ -4,6 +4,8 @@ import {
   type EvilInfoPayload,
   getRoleById,
   hasPoisonStatus,
+  NIGHT_ACTIONS,
+  type NightActionDef,
   type NightFeedbackPayload,
   type Player,
   type ServerToClientEvents,
@@ -19,6 +21,11 @@ import {
 } from '../pushNotifications.js';
 import { WhisperTracker } from '../whisper.js';
 import { pendingApprovals } from './pendingApprovals.js';
+import {
+  toPublicGameState,
+  toPublicNightProgress,
+  toPublicPlayer,
+} from './publicPayloads.js';
 import { startClockwiseVote } from './storyteller.js';
 
 type PlayerNamespace = Namespace<ClientToServerEvents, ServerToClientEvents>;
@@ -92,6 +99,36 @@ function getOrderedPlayerInfoList(game: GameManager) {
   return orderedPlayers.map(toPlayerInfo);
 }
 
+function isPubliclyAlive(player: Player): boolean {
+  return player.isAlive && !player.statuses.includes('zombuul_registers_dead');
+}
+
+function validateNightActionTargets(
+  game: GameManager,
+  actorId: string,
+  actionDef: NightActionDef,
+  targetIds: string[],
+): string | null {
+  for (const targetId of targetIds) {
+    const target = game.getPlayer(targetId);
+    if (!target) return '대상을 찾을 수 없습니다';
+    if (actionDef.excludeSelf && target.id === actorId) {
+      return '자기 자신은 선택할 수 없습니다';
+    }
+    if (actionDef.excludeTraveller && target.isTraveller) {
+      return '여행자는 선택할 수 없습니다';
+    }
+    if (actionDef.deadTargetsOnly) {
+      if (target.isAlive) return '사망한 대상만 선택할 수 있습니다';
+      continue;
+    }
+    if (!actionDef.includeDeadTargets && !isPubliclyAlive(target)) {
+      return '생존한 대상만 선택할 수 있습니다';
+    }
+  }
+  return null;
+}
+
 function emitDeliveredFeedbackRecord(
   game: GameManager,
   storytellerIo: StorytellerNamespace,
@@ -143,6 +180,10 @@ function getEvilInfoForPlayer(
   const demons = state.players.filter((p) => p.role?.team === 'demon');
   const minions = state.players.filter((p) => p.role?.team === 'minion');
 
+  if (role.id === 'lunatic') {
+    return game.getLunaticEvilInfo(player.id);
+  }
+
   if (role.team === 'demon') {
     const bluffRoles = game.getBluffRoles();
     return {
@@ -171,23 +212,31 @@ function getEvilInfoForPlayer(
 }
 
 function emitDeathTriggers(
+  game: GameManager,
   player: Player | undefined,
   storytellerIo: StorytellerNamespace,
   options: { isNight: boolean },
 ): void {
   if (!player?.role) return;
-  if (player.role.id === 'sweetheart') {
+  if (
+    player.role.id === 'sweetheart' &&
+    game.markSweetheartDrunkPending(player.id)
+  ) {
     storytellerIo.emit('sweetheart:died', {
       sweetheartName: player.name,
     });
   }
-  if (player.role.id === 'mayor' && options.isNight) {
+  if (
+    player.role.id === 'mayor' &&
+    options.isNight &&
+    game.markMayorRedirectPending(player.id)
+  ) {
     storytellerIo.emit('mayor:nightDeath', {
       mayorId: player.id,
       mayorName: player.name,
     });
   }
-  if (player.role.id === 'barber') {
+  if (player.role.id === 'barber' && game.markBarberSwapPending(player.id)) {
     storytellerIo.emit('barber:died', {
       barberName: player.name,
     });
@@ -206,8 +255,52 @@ function emitTriggeredDeathUpdates(
 ): void {
   for (const playerId of game.consumeTriggeredDeathIds()) {
     const player = game.getPlayer(playerId);
-    if (player) playerIo.emit('game:playerUpdate', player);
+    if (player) playerIo.emit('game:playerUpdate', toPublicPlayer(player));
   }
+}
+
+function emitPromotionIfAny(
+  game: GameManager,
+  playerIo: PlayerNamespace,
+  storytellerIo: StorytellerNamespace,
+): void {
+  const promoted = game.consumePromotedPlayer();
+  if (promoted?.role) {
+    playerIo.to(promoted.id).emit('role:assign', {
+      roleId: promoted.role.id,
+      roleName: promoted.role.name,
+    });
+    storytellerIo.emit('game:state', game.getStorytellerState());
+  }
+}
+
+function emitNightDeathResolution(
+  game: GameManager,
+  playerIo: PlayerNamespace,
+  storytellerIo: StorytellerNamespace,
+  killedTargetIds: (string | undefined)[] | undefined,
+): void {
+  const resolvedKilledTargetIds = killedTargetIds?.filter(
+    (id): id is string => id != null,
+  );
+  if (!resolvedKilledTargetIds || resolvedKilledTargetIds.length === 0) return;
+
+  for (const killedTargetId of resolvedKilledTargetIds) {
+    emitDeathTriggers(game, game.getPlayer(killedTargetId), storytellerIo, {
+      isNight: true,
+    });
+  }
+
+  const winResult = game.checkWinCondition();
+  if (winResult) {
+    playerIo.emit('game:end', winResult);
+    playerIo.emit('game:phase', 'ended');
+    storytellerIo.emit('game:end', winResult);
+    storytellerIo.emit('game:state', game.getStorytellerState());
+    return;
+  }
+
+  emitPromotionIfAny(game, playerIo, storytellerIo);
 }
 
 function emitProfessorImmediateWake(
@@ -231,8 +324,7 @@ function emitProfessorImmediateWake(
     `${roleName}, 행동을 수행하세요`,
   );
   playerIo.to(revived.id).emit('night:activeRole', {
-    roleId,
-    order,
+    ...toPublicNightProgress(roleId, order),
     players: getOrderedPlayerInfoList(game),
   });
   playerIo.to(revived.id).emit('night:wakeUp', { roleId });
@@ -310,7 +402,7 @@ export function registerPlayerHandlers(
       socket.emit('game:settings', game.getSettings());
       // 이야기꾼에게 알림 (역할 배정을 위해)
       storytellerIo.emit('game:state', game.getStorytellerState());
-      playerIo.emit('game:state', game.getState());
+      playerIo.emit('game:state', toPublicGameState(game.getState()));
       console.log(`Traveller joined lobby: ${playerName}`);
     });
 
@@ -340,13 +432,20 @@ export function registerPlayerHandlers(
       let nightProgress:
         | {
             activeRoleId: string | null;
+            activeIndex: number;
             order: string[];
             players: ReturnType<typeof toPlayerInfo>[];
           }
         | undefined;
       if (state.phase === 'night') {
         const np = game.getNightProgress();
-        nightProgress = { ...np, players: gamePlayers };
+        const publicProgress = toPublicNightProgress(np.activeRoleId, np.order);
+        nightProgress = {
+          activeRoleId: publicProgress.roleId,
+          activeIndex: publicProgress.activeIndex,
+          order: publicProgress.order,
+          players: gamePlayers,
+        };
       }
 
       // 집사의 주인 이름 조회
@@ -407,10 +506,9 @@ export function registerPlayerHandlers(
         success: true,
         playerName: player.name,
         roleId: roleIdForPlayer,
-        drunkAs: player.drunkAs ?? undefined,
-        lunaticAs: player.lunaticAs ?? undefined,
+        philosopherGrantedRole: player.philosopherGrantedRole ?? undefined,
         phase: state.phase,
-        isAlive: player.isAlive,
+        isAlive: isPubliclyAlive(player),
         daySubPhase: state.daySubPhase,
         hasNominatedToday: player.hasNominatedToday,
         deadVoteUsed: player.deadVoteUsed,
@@ -424,7 +522,7 @@ export function registerPlayerHandlers(
       });
       // 설정 + 전체 상태 전송 (백그라운드 복귀 시 놓친 이벤트 보상)
       socket.emit('game:settings', state.settings);
-      socket.emit('game:state', state);
+      socket.emit('game:state', toPublicGameState(state));
 
       // 추방 투표 진행 중이면 상태 복원
       const exileVote = game.getExileVote();
@@ -493,7 +591,7 @@ export function registerPlayerHandlers(
         const nominator = game.getPlayer(playerId);
         const executionResult = game.resolveExecution(result.virginKill);
         if (executionResult.killed) {
-          emitDeathTriggers(nominator, storytellerIo, { isNight: false });
+          emitDeathTriggers(game, nominator, storytellerIo, { isNight: false });
         }
         playerIo.emit('virgin:triggered', {
           virginName: virgin?.name ?? nomineeId,
@@ -519,7 +617,7 @@ export function registerPlayerHandlers(
             reason: 'virgin',
             detail: `${killedNominator.name}이(가) 성결자를 지목하여 처형되었습니다`,
           });
-          playerIo.emit('game:playerUpdate', killedNominator);
+          playerIo.emit('game:playerUpdate', toPublicPlayer(killedNominator));
         }
         storytellerIo.emit('game:state', game.getStorytellerState());
 
@@ -625,6 +723,42 @@ export function registerPlayerHandlers(
               : player.role.id;
       const isLunaticFakeAction =
         player.role.id === 'lunatic' && player.lunaticAs === effectiveRoleId;
+      const actionDef = NIGHT_ACTIONS[effectiveRoleId];
+      if (actionDef && actionDef.type !== 'passive') {
+        const allowedTargetCounts =
+          actionDef.allowedTargetCounts ??
+          (actionDef.type === 'select_two' ? [2] : [1]);
+        if (
+          !Array.isArray(targets) ||
+          !allowedTargetCounts.includes(targets.length)
+        ) {
+          callback?.({
+            success: false,
+            error: `대상 ${allowedTargetCounts.join('/')}명을 선택해야 합니다`,
+          });
+          return;
+        }
+        if (new Set(targets).size !== targets.length) {
+          callback?.({
+            success: false,
+            error: '서로 다른 대상을 선택해야 합니다',
+          });
+          return;
+        }
+        const targetValidationError = validateNightActionTargets(
+          game,
+          playerId,
+          actionDef,
+          targets,
+        );
+        if (targetValidationError) {
+          callback?.({
+            success: false,
+            error: targetValidationError,
+          });
+          return;
+        }
+      }
 
       // 집사(Butler) 주인 선택 저장 (철학자가 집사 능력 가진 경우 포함)
       if (effectiveRoleId === 'butler' && targets.length > 0) {
@@ -655,6 +789,12 @@ export function registerPlayerHandlers(
         const result = game.resolvePukkaSelection(playerId, targets[0]);
         if (rejectInvalidAction(result)) return;
         storytellerIo.emit('game:state', game.getStorytellerState());
+        emitNightDeathResolution(
+          game,
+          playerIo,
+          storytellerIo,
+          result.success ? [result.killedTargetId] : undefined,
+        );
       }
 
       if (
@@ -665,12 +805,24 @@ export function registerPlayerHandlers(
         const result = game.resolveShabalothSelection(playerId, targets);
         if (rejectInvalidAction(result)) return;
         storytellerIo.emit('game:state', game.getStorytellerState());
+        emitNightDeathResolution(
+          game,
+          playerIo,
+          storytellerIo,
+          result.success ? result.killedTargetIds : undefined,
+        );
       }
 
       if (!isLunaticFakeAction && effectiveRoleId === 'po') {
         const result = game.resolvePoSelection(playerId, targets);
         if (rejectInvalidAction(result)) return;
         storytellerIo.emit('game:state', game.getStorytellerState());
+        emitNightDeathResolution(
+          game,
+          playerIo,
+          storytellerIo,
+          result.success ? result.killedTargetIds : undefined,
+        );
       }
 
       if (effectiveRoleId === 'professor' && targets.length > 0) {
@@ -749,12 +901,24 @@ export function registerPlayerHandlers(
         const result = game.resolveAssassinSelection(playerId, targets[0]);
         if (rejectInvalidAction(result)) return;
         storytellerIo.emit('game:state', game.getStorytellerState());
+        emitNightDeathResolution(
+          game,
+          playerIo,
+          storytellerIo,
+          result.success ? [result.killedTargetId] : undefined,
+        );
       }
 
       if (effectiveRoleId === 'godfather' && targets.length > 0) {
         const result = game.resolveGodfatherSelection(playerId, targets[0]);
         if (rejectInvalidAction(result)) return;
         storytellerIo.emit('game:state', game.getStorytellerState());
+        emitNightDeathResolution(
+          game,
+          playerIo,
+          storytellerIo,
+          result.success ? [result.killedTargetId] : undefined,
+        );
       }
 
       if (
@@ -765,6 +929,12 @@ export function registerPlayerHandlers(
         const result = game.resolveZombuulSelection(playerId, targets[0]);
         if (rejectInvalidAction(result)) return;
         storytellerIo.emit('game:state', game.getStorytellerState());
+        emitNightDeathResolution(
+          game,
+          playerIo,
+          storytellerIo,
+          result.success ? [result.killedTargetId] : undefined,
+        );
       }
 
       // 밤 행동 타깃 기록 (임프 자해 감지용)
@@ -897,7 +1067,7 @@ export function registerPlayerHandlers(
       }
 
       game.kill(targetId);
-      emitDeathTriggers(target, storytellerIo, {
+      emitDeathTriggers(game, target, storytellerIo, {
         isNight: false,
       });
       const killedTarget = game.getPlayer(targetId);
@@ -914,7 +1084,7 @@ export function registerPlayerHandlers(
           reason: 'slayer',
           detail: `${player.name}의 처단자 능력으로 ${killedTarget.name}이(가) 사망했습니다`,
         });
-        playerIo.emit('game:playerUpdate', killedTarget);
+        playerIo.emit('game:playerUpdate', toPublicPlayer(killedTarget));
         emitTriggeredDeathUpdates(game, playerIo);
       }
       storytellerIo.emit('game:state', game.getStorytellerState());
@@ -927,6 +1097,8 @@ export function registerPlayerHandlers(
         playerIo.emit('game:phase', 'ended');
         storytellerIo.emit('game:end', winResult);
         storytellerIo.emit('game:state', game.getStorytellerState());
+      } else {
+        emitPromotionIfAny(game, playerIo, storytellerIo);
       }
 
       console.log(`Slayer: ${player.name} -> ${target.name}`);
@@ -1021,10 +1193,17 @@ export function registerPlayerHandlers(
       callback({ success: true });
 
       // 철학자 본인에게 갱신된 Player 정보 전달 (philosopherGrantedRole 동기화)
-      playerIo.to(playerId).emit('game:playerUpdate', player);
+      playerIo
+        .to(playerId)
+        .emit(
+          'game:playerUpdate',
+          toPublicPlayer(player, { includeOwnFields: true }),
+        );
       // 중독된 보유자가 있으면 해당 플레이어에게도 업데이트 전달
       if (holder && holder.id !== playerId) {
-        playerIo.to(holder.id).emit('game:playerUpdate', holder);
+        playerIo
+          .to(holder.id)
+          .emit('game:playerUpdate', toPublicPlayer(holder));
       }
       // 이야기꾼에게 grant 알림 + 전체 상태 갱신
       storytellerIo.emit('philosopher:granted', {
@@ -1100,7 +1279,7 @@ export function registerPlayerHandlers(
       const blocked = isPoisonedOrDrunkStatus(player.statuses);
       if (!blocked) {
         game.kill(targetId);
-        emitDeathTriggers(target, storytellerIo, {
+        emitDeathTriggers(game, target, storytellerIo, {
           isNight: false,
         });
       }
@@ -1119,7 +1298,7 @@ export function registerPlayerHandlers(
       storytellerIo.emit('gunslinger:fired', payload);
       const updatedTarget = game.getPlayer(targetId);
       if (updatedTarget) {
-        playerIo.emit('game:playerUpdate', updatedTarget);
+        playerIo.emit('game:playerUpdate', toPublicPlayer(updatedTarget));
         emitTriggeredDeathUpdates(game, playerIo);
       }
       storytellerIo.emit('game:state', game.getStorytellerState());
@@ -1130,7 +1309,11 @@ export function registerPlayerHandlers(
         winResult.cause = 'gunslinger';
         winResult.reason = `${player.name}(총잡이)이(가) ${target.name}을(를) 사살했습니다`;
         playerIo.emit('game:end', winResult);
+        playerIo.emit('game:phase', 'ended');
         storytellerIo.emit('game:end', winResult);
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      } else if (!blocked) {
+        emitPromotionIfAny(game, playerIo, storytellerIo);
       }
     });
 
@@ -1175,7 +1358,7 @@ export function registerPlayerHandlers(
         giverAlignment: alignment ?? 'good',
         tokenCount,
       });
-      playerIo.emit('game:playerUpdate', giver);
+      playerIo.emit('game:playerUpdate', toPublicPlayer(giver));
       storytellerIo.emit('game:state', game.getStorytellerState());
       console.log(
         `Beggar token: ${giver.name} → ${beggar.name} (total ${tokenCount})`,
@@ -1346,7 +1529,10 @@ export function registerPlayerHandlers(
         });
         return;
       }
-      if (player.isAlive) {
+      if (
+        player.isAlive &&
+        !player.statuses.includes('zombuul_registers_dead')
+      ) {
         callback({
           success: false,
           error: '사망한 상태에서만 선택할 수 있습니다',
@@ -1708,7 +1894,8 @@ export function registerPlayerHandlers(
               playerName: target?.name ?? closeResult.targetId,
               roleName: target?.role?.name ?? '???',
             });
-            if (target) playerIo.emit('game:playerUpdate', target);
+            if (target)
+              playerIo.emit('game:playerUpdate', toPublicPlayer(target));
             storytellerIo.emit('game:state', game.getStorytellerState());
           }
           console.log(
