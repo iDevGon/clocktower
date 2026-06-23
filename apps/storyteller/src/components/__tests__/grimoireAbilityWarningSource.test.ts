@@ -83,4 +83,10 @@ describe('grimoire ability malfunction warnings', () => {
     );
     expect(source).toContain('if (result.success) setWitchCursePending(null)');
   });
+
+  it('레드헤링 수동 지정 모달은 서버 성공 후에 닫는다', () => {
+    expect(source).toContain('await assignRedHerring(');
+    expect(source).not.toContain(`assignRedHerring(playerId);
+      setShowRedHerringModal(false);`);
+  });
 });

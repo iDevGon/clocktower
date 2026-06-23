@@ -87,14 +87,25 @@ export function useGameActions() {
       roleId: string,
       drunkAs?: string,
       bluffRoleIds?: string[],
-    ) =>
-      socket?.emit('game:assignRole', {
-        playerId,
-        roleId,
-        drunkAs,
-        bluffRoleIds,
+    ): Promise<{ success: boolean; error?: string }> =>
+      new Promise((resolve, reject) => {
+        const s = getSocket();
+        if (!s) return reject(new Error('Not connected'));
+        s.emit(
+          'game:assignRole',
+          {
+            playerId,
+            roleId,
+            drunkAs,
+            bluffRoleIds,
+          },
+          (res) => {
+            if (res.success) resolve(res);
+            else reject(new Error(res.error ?? '역할 배정 실패'));
+          },
+        );
       }),
-    [socket],
+    [],
   );
 
   const kill = useCallback(
@@ -188,8 +199,16 @@ export function useGameActions() {
   );
 
   const assignRedHerring = useCallback(
-    (playerId: string) => socket?.emit('game:assignRedHerring', playerId),
-    [socket],
+    (playerId: string): Promise<{ success: boolean; error?: string }> =>
+      new Promise((resolve, reject) => {
+        const s = getSocket();
+        if (!s) return reject(new Error('Not connected'));
+        s.emit('game:assignRedHerring', playerId, (res) => {
+          if (res.success) resolve(res);
+          else reject(new Error(res.error ?? '레드헤링 지정 실패'));
+        });
+      }),
+    [],
   );
 
   const sweetheartDrunk = useCallback(

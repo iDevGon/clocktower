@@ -400,6 +400,30 @@ describe('E2E: S&V 여행자 진행 이벤트', () => {
     expect(result.targetRoleName).toBeDefined();
   }, 20000);
 
+  it('잘못된 탕녀 방문 응답은 콜백 실패를 반환한다', async () => {
+    const { playerIds } = await setupFullGame(ctx);
+    await addTravellerWithRole(ctx, 'Harlot', 'harlot', 'good');
+
+    const targetSocket = ctx.players[0] as Socket;
+    const result = await new Promise<{
+      success: boolean | 'timeout';
+      error?: string;
+    }>((resolve) => {
+      const timer = setTimeout(() => resolve({ success: 'timeout' }), 250);
+      targetSocket.emit(
+        'harlot:respond',
+        { harlotId: playerIds[1], accepted: true },
+        (res: { success: boolean; error?: string }) => {
+          clearTimeout(timer);
+          resolve(res);
+        },
+      );
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBeTruthy();
+  }, 20000);
+
   it('취한 매춘부는 방문 동의를 받아도 실제 역할명을 받지 않는다', async () => {
     const { playerIds } = await setupFullGame(ctx);
     const harlot = await addTravellerWithRole(ctx, 'Harlot', 'harlot', 'good');

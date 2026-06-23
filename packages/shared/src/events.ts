@@ -481,7 +481,10 @@ export interface ClientToServerEvents {
     callback?: (res: { success: boolean; error?: string }) => void,
   ) => void;
   /** 탕녀 방문 요청에 대한 대상 플레이어의 동의/거절 */
-  'harlot:respond': (data: { harlotId: string; accepted: boolean }) => void;
+  'harlot:respond': (
+    data: { harlotId: string; accepted: boolean },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   /** 여행자로 게임에 참가 (게임 진행 중에도 가능) */
   'game:joinAsTraveller': (
     data: { playerName: string },
@@ -503,14 +506,17 @@ export interface StorytellerToServerEvents {
     options?: { skipExecution?: boolean },
   ) => void;
   'day:setSubPhase': (subPhase: DaySubPhase) => void;
-  'game:assignRole': (data: {
-    playerId: string;
-    roleId: string;
-    drunkAs?: string;
-    lunaticAs?: string;
-    /** 악마 역할 배정 시 이야기꾼이 사전 선택한 블러프 역할 ID (최대 3개) */
-    bluffRoleIds?: string[];
-  }) => void;
+  'game:assignRole': (
+    data: {
+      playerId: string;
+      roleId: string;
+      drunkAs?: string;
+      lunaticAs?: string;
+      /** 악마 역할 배정 시 이야기꾼이 사전 선택한 블러프 역할 ID (최대 3개) */
+      bluffRoleIds?: string[];
+    },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   'game:unassignAllRoles': () => void;
   'game:kill': (playerId: string) => void;
   'game:revive': (playerId: string) => void;
@@ -555,7 +561,10 @@ export interface StorytellerToServerEvents {
       redHerringPlayerId?: string;
     }) => void,
   ) => void;
-  'game:assignRedHerring': (playerId: string) => void;
+  'game:assignRedHerring': (
+    playerId: string,
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   'game:sweetheartDrunk': (
     playerId: string,
     callback?: (res: { success: boolean; error?: string }) => void,

@@ -910,10 +910,20 @@ export function registerStorytellerHandlers(
 
     socket.on(
       'game:assignRole',
-      ({ playerId, roleId, drunkAs, lunaticAs, bluffRoleIds }) => {
+      ({ playerId, roleId, drunkAs, lunaticAs, bluffRoleIds }, callback) => {
         // 이미 다른 플레이어가 같은 역할을 갖고 있으면 스왑
         const state = game.getState();
         const currentPlayer = state.players.find((p) => p.id === playerId);
+        const requestedRole = getRoleById(roleId);
+        if (!currentPlayer) {
+          callback?.({ success: false, error: '플레이어를 찾을 수 없습니다' });
+          return;
+        }
+        if (!requestedRole) {
+          callback?.({ success: false, error: '역할을 찾을 수 없습니다' });
+          return;
+        }
+
         const existingOwner = state.players.find(
           (p) => p.id !== playerId && p.role?.id === roleId,
         );
@@ -1010,6 +1020,7 @@ export function registerStorytellerHandlers(
           game.assignFortuneTellerRedHerring();
         }
         storytellerIo.emit('game:state', game.getStorytellerState());
+        callback?.({ success: true });
       },
     );
 
@@ -1149,9 +1160,14 @@ export function registerStorytellerHandlers(
     // 투표 관련 핸들러 등록 (별도 모듈)
     registerVoteHandlers(socket, storytellerIo, playerIo, game);
 
-    socket.on('game:assignRedHerring', (playerId) => {
-      game.setRedHerring(playerId);
+    socket.on('game:assignRedHerring', (playerId, callback) => {
+      const assigned = game.setRedHerring(playerId);
+      if (!assigned) {
+        callback?.({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
       storytellerIo.emit('game:state', game.getStorytellerState());
+      callback?.({ success: true });
     });
 
     socket.on(

@@ -960,12 +960,21 @@ export function registerPlayerHandlers(
       );
     });
 
-    socket.on('harlot:respond', ({ harlotId, accepted }) => {
+    socket.on('harlot:respond', ({ harlotId, accepted }, callback) => {
       const playerId = getPlayerIdFromSocket(socket);
-      if (!playerId) return;
+      if (!playerId) {
+        callback?.({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
 
       const result = game.resolveHarlotConsent(playerId, harlotId, accepted);
-      if (!result) return;
+      if (!result) {
+        callback?.({
+          success: false,
+          error: '탕녀 방문 요청을 찾을 수 없습니다',
+        });
+        return;
+      }
 
       const payload = {
         harlotId: result.harlot.id,
@@ -979,6 +988,7 @@ export function registerPlayerHandlers(
       storytellerIo.emit('harlot:consentResult', payload);
       playerIo.to(result.harlot.id).emit('harlot:consentResult', payload);
       playerIo.to(result.target.id).emit('harlot:consentResult', payload);
+      callback?.({ success: true });
     });
 
     // 처단자(Slayer) 능력 사용

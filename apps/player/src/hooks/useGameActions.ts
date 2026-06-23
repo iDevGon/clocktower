@@ -304,8 +304,11 @@ export function useGameActions() {
     (harlotId: string, accepted: boolean) => {
       const socket = useConnectionStore.getState().socket;
       if (socket) {
-        socket.emit('harlot:respond', { harlotId, accepted });
-        usePlayerStore.getState().set({ harlotConsentRequest: null });
+        socket.emit('harlot:respond', { harlotId, accepted }, (res) => {
+          if (res.success) {
+            usePlayerStore.getState().set({ harlotConsentRequest: null });
+          }
+        });
       }
     },
     [],

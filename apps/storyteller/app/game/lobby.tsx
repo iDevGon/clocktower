@@ -92,15 +92,19 @@ export default function LobbyScreen() {
   }, [gameState, selectedEditionId, additionalRoleIds]);
 
   const handleBluffConfirm = useCallback(
-    (selectedIds: string[]) => {
+    async (selectedIds: string[]) => {
       if (!bluffChangePlayer) return;
-      assignRole(
-        bluffChangePlayer.id,
-        bluffChangePlayer.role?.id ?? '',
-        undefined,
-        selectedIds,
-      );
-      setBluffChangePlayer(null);
+      try {
+        await assignRole(
+          bluffChangePlayer.id,
+          bluffChangePlayer.role?.id ?? '',
+          undefined,
+          selectedIds,
+        );
+        setBluffChangePlayer(null);
+      } catch (e) {
+        Alert.alert('오류', e instanceof Error ? e.message : '배정 실패');
+      }
     },
     [bluffChangePlayer, assignRole],
   );
@@ -219,10 +223,14 @@ export default function LobbyScreen() {
   }, [gameState]);
 
   const handleChangeDrunkFakeRole = useCallback(
-    (fakeRoleId: string) => {
+    async (fakeRoleId: string) => {
       if (!drunkModalPlayer) return;
-      assignRole(drunkModalPlayer.id, 'drunk', fakeRoleId);
-      setDrunkModalPlayer(null);
+      try {
+        await assignRole(drunkModalPlayer.id, 'drunk', fakeRoleId);
+        setDrunkModalPlayer(null);
+      } catch (e) {
+        Alert.alert('오류', e instanceof Error ? e.message : '배정 실패');
+      }
     },
     [drunkModalPlayer, assignRole],
   );

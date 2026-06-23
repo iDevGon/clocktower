@@ -431,20 +431,28 @@ export default function GrimoireScreen() {
     return players.find((p) => p.statuses?.includes('cursed'))?.id ?? null;
   }, [players]);
 
-  const handleRedHerringConfirmAuto = useCallback(() => {
+  const handleRedHerringConfirmAuto = useCallback(async () => {
     if (redHerringCandidates.length === 0) return;
     const random =
       redHerringCandidates[
         Math.floor(Math.random() * redHerringCandidates.length)
       ];
-    assignRedHerring(random.id);
-    setShowRedHerringModal(false);
+    try {
+      await assignRedHerring(random.id);
+      setShowRedHerringModal(false);
+    } catch (e) {
+      Alert.alert('오류', e instanceof Error ? e.message : '지정 실패');
+    }
   }, [redHerringCandidates, assignRedHerring]);
 
   const handleRedHerringSelectManual = useCallback(
-    (playerId: string) => {
-      assignRedHerring(playerId);
-      setShowRedHerringModal(false);
+    async (playerId: string) => {
+      try {
+        await assignRedHerring(playerId);
+        setShowRedHerringModal(false);
+      } catch (e) {
+        Alert.alert('오류', e instanceof Error ? e.message : '지정 실패');
+      }
     },
     [assignRedHerring],
   );

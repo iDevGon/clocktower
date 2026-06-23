@@ -234,22 +234,26 @@ export default function AssignRoleScreen() {
   }, [availableRoles, gameState]);
 
   const handleBluffConfirm = useCallback(
-    (selectedIds: string[]) => {
+    async (selectedIds: string[]) => {
       if (!playerId || !pendingDemonRoleId) return;
-      assignRole(
-        playerId,
-        pendingDemonRoleId,
-        undefined,
-        selectedIds.length > 0 ? selectedIds : undefined,
-      );
-      setBluffModalVisible(false);
-      setPendingDemonRoleId(null);
-      router.back();
+      try {
+        await assignRole(
+          playerId,
+          pendingDemonRoleId,
+          undefined,
+          selectedIds.length > 0 ? selectedIds : undefined,
+        );
+        setBluffModalVisible(false);
+        setPendingDemonRoleId(null);
+        router.back();
+      } catch (e) {
+        Alert.alert('오류', e instanceof Error ? e.message : '배정 실패');
+      }
     },
     [playerId, pendingDemonRoleId, assignRole, router],
   );
 
-  const handleRandomAssign = useCallback(() => {
+  const handleRandomAssign = useCallback(async () => {
     if (!playerId) return;
     // 일반 역할 중에서만 랜덤 (여행자 역할 제외)
     const unassignedRoles = availableRoles.filter(
@@ -261,20 +265,25 @@ export default function AssignRoleScreen() {
     if (unassignedRoles.length === 0) return;
     const randomRole =
       unassignedRoles[Math.floor(Math.random() * unassignedRoles.length)];
-    if (randomRole.id !== 'drunk') {
-      assignRole(playerId, randomRole.id);
+    try {
+      if (randomRole.id !== 'drunk') {
+        await assignRole(playerId, randomRole.id);
+        router.back();
+        return;
+      }
+      // 주정뱅이가 랜덤 선택된 경우 가짜 역할도 랜덤 배정
+      const townsfolk = unassignedRoles.filter((r) => r.team === 'townsfolk');
+      if (townsfolk.length > 0) {
+        const fakeRole =
+          townsfolk[Math.floor(Math.random() * townsfolk.length)];
+        await assignRole(playerId, 'drunk', fakeRole.id);
+      } else {
+        await assignRole(playerId, 'drunk');
+      }
       router.back();
-      return;
+    } catch (e) {
+      Alert.alert('오류', e instanceof Error ? e.message : '배정 실패');
     }
-    // 주정뱅이가 랜덤 선택된 경우 가짜 역할도 랜덤 배정
-    const townsfolk = unassignedRoles.filter((r) => r.team === 'townsfolk');
-    if (townsfolk.length > 0) {
-      const fakeRole = townsfolk[Math.floor(Math.random() * townsfolk.length)];
-      assignRole(playerId, 'drunk', fakeRole.id);
-    } else {
-      assignRole(playerId, 'drunk');
-    }
-    router.back();
   }, [
     playerId,
     availableRoles,
@@ -285,7 +294,7 @@ export default function AssignRoleScreen() {
   ]);
 
   const handleAssign = useCallback(
-    (roleId: string) => {
+    async (roleId: string) => {
       if (!playerId) return;
       // 여행자 역할이면 진영 선택 모달
       const traveller = ALL_TRAVELLER_ROLES.find((r) => r.id === roleId);
@@ -303,8 +312,12 @@ export default function AssignRoleScreen() {
         setBluffModalVisible(true);
         return;
       }
-      assignRole(playerId, roleId);
-      router.back();
+      try {
+        await assignRole(playerId, roleId);
+        router.back();
+      } catch (e) {
+        Alert.alert('오류', e instanceof Error ? e.message : '배정 실패');
+      }
     },
     [playerId, assignRole, router],
   );
@@ -325,11 +338,15 @@ export default function AssignRoleScreen() {
   );
 
   const handleDrunkAssign = useCallback(
-    (fakeRoleId: string) => {
+    async (fakeRoleId: string) => {
       if (!playerId) return;
-      assignRole(playerId, 'drunk', fakeRoleId);
-      setDrunkModalVisible(false);
-      router.back();
+      try {
+        await assignRole(playerId, 'drunk', fakeRoleId);
+        setDrunkModalVisible(false);
+        router.back();
+      } catch (e) {
+        Alert.alert('오류', e instanceof Error ? e.message : '배정 실패');
+      }
     },
     [playerId, assignRole, router],
   );

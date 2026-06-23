@@ -74,6 +74,79 @@ describe('E2E: 게임 라이프사이클', () => {
     expect(roleData.roleName).toBe('임프');
   }, 10000);
 
+  it('이야기꾼 수동 역할 배정은 유효한 플레이어와 역할에만 성공한다', async () => {
+    const { playerIds } = await setupFullGame(ctx);
+
+    const invalidRole = await new Promise<{
+      success: boolean | 'timeout';
+      error?: string;
+    }>((resolve) => {
+      const timer = setTimeout(() => resolve({ success: 'timeout' }), 250);
+      ctx.storyteller.emit(
+        'game:assignRole',
+        { playerId: playerIds[0], roleId: 'not_a_role' },
+        (res: { success: boolean; error?: string }) => {
+          clearTimeout(timer);
+          resolve(res);
+        },
+      );
+    });
+    expect(invalidRole.success).toBe(false);
+
+    const invalidPlayer = await new Promise<{
+      success: boolean | 'timeout';
+      error?: string;
+    }>((resolve) => {
+      const timer = setTimeout(() => resolve({ success: 'timeout' }), 250);
+      ctx.storyteller.emit(
+        'game:assignRole',
+        { playerId: 'missing-player', roleId: 'imp' },
+        (res: { success: boolean; error?: string }) => {
+          clearTimeout(timer);
+          resolve(res);
+        },
+      );
+    });
+    expect(invalidPlayer.success).toBe(false);
+  }, 15000);
+
+  it('이야기꾼 레드헤링 수동 지정은 유효한 플레이어에게만 성공한다', async () => {
+    const { playerIds } = await setupFullGame(ctx);
+
+    const valid = await new Promise<{
+      success: boolean | 'timeout';
+      error?: string;
+    }>((resolve) => {
+      const timer = setTimeout(() => resolve({ success: 'timeout' }), 250);
+      ctx.storyteller.emit(
+        'game:assignRedHerring',
+        playerIds[0],
+        (res: { success: boolean; error?: string }) => {
+          clearTimeout(timer);
+          resolve(res);
+        },
+      );
+    });
+    expect(valid.success).toBe(true);
+
+    const result = await new Promise<{
+      success: boolean | 'timeout';
+      error?: string;
+    }>((resolve) => {
+      const timer = setTimeout(() => resolve({ success: 'timeout' }), 250);
+      ctx.storyteller.emit(
+        'game:assignRedHerring',
+        'missing-player',
+        (res: { success: boolean; error?: string }) => {
+          clearTimeout(timer);
+          resolve(res);
+        },
+      );
+    });
+
+    expect(result.success).toBe(false);
+  }, 15000);
+
   it('게임 재시작 시 플레이어가 유지된다', async () => {
     await setupFullGame(ctx);
 
