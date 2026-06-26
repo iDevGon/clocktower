@@ -1,4 +1,4 @@
-import type { Phase, PlayerInfo } from '@clocktower/shared';
+import type { Phase, PlayerInfo, Role, Team } from '@clocktower/shared';
 import { colors } from '@clocktower/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -20,6 +20,7 @@ interface SeatingChartProps {
   players: PlayerInfo[];
   myId: string;
   phase: Phase;
+  roleOptions: Role[];
   roleNotes: Record<string, string>;
   voteHistory: VoteHistoryEntry[];
   onSetRoleNote: (playerId: string, note: string) => void;
@@ -30,12 +31,27 @@ const TOKEN_SIZE = 56;
 const MODAL_HORIZONTAL_PADDING = 68;
 const MAX_RING_SIZE = 400;
 const MIN_RING_SIZE = 280;
+const TEAM_ORDER: Team[] = [
+  'townsfolk',
+  'outsider',
+  'minion',
+  'demon',
+  'traveller',
+];
+const TEAM_LABELS: Record<Team, string> = {
+  townsfolk: '마을주민',
+  outsider: '외지인',
+  minion: '하수인',
+  demon: '악마',
+  traveller: '여행자',
+};
 
 export function SeatingChart({
   visible,
   players,
   myId,
   phase,
+  roleOptions,
   roleNotes,
   voteHistory,
   onSetRoleNote,
@@ -44,7 +60,7 @@ export function SeatingChart({
   // 밤 진입 시점의 사망자 ID를 스냅샷으로 저장
   const deadBeforeNight = useRef<Set<string>>(new Set());
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
-  const [draftNote, setDraftNote] = useState('');
+  const [roleSearch, setRoleSearch] = useState('');
   const [selectedVoteId, setSelectedVoteId] = useState<string | null>(null);
   const { width: windowWidth } = useWindowDimensions();
 
@@ -102,11 +118,25 @@ export function SeatingChart({
     () => players.find((p) => p.id === editingPlayerId) ?? null,
     [editingPlayerId, players],
   );
+  const filteredRoleGroups = useMemo(() => {
+    const query = roleSearch.trim().toLowerCase();
+    return TEAM_ORDER.map((team) => {
+      const roles = roleOptions.filter((role) => {
+        if (role.team !== team) return false;
+        if (!query) return true;
+        return (
+          role.name.toLowerCase().includes(query) ||
+          role.id.toLowerCase().includes(query)
+        );
+      });
+      return { team, roles };
+    }).filter((group) => group.roles.length > 0);
+  }, [roleOptions, roleSearch]);
 
   useEffect(() => {
     if (!visible) {
       setEditingPlayerId(null);
-      setDraftNote('');
+      setRoleSearch('');
       setSelectedVoteId(null);
     }
   }, [visible]);
@@ -120,24 +150,30 @@ export function SeatingChart({
     }
   }, [selectedVoteId, voteHistory]);
 
-  const openNoteEditor = useCallback(
-    (player: PlayerInfo) => {
-      setEditingPlayerId(player.id);
-      setDraftNote(roleNotes[player.id] ?? '');
-    },
-    [roleNotes],
-  );
+  const openNoteEditor = useCallback((player: PlayerInfo) => {
+    setEditingPlayerId(player.id);
+    setRoleSearch('');
+  }, []);
 
   const closeNoteEditor = useCallback(() => {
     setEditingPlayerId(null);
-    setDraftNote('');
+    setRoleSearch('');
   }, []);
 
-  const saveNote = useCallback(() => {
+  const selectRoleNote = useCallback(
+    (roleName: string) => {
+      if (!editingPlayerId) return;
+      onSetRoleNote(editingPlayerId, roleName);
+      closeNoteEditor();
+    },
+    [closeNoteEditor, editingPlayerId, onSetRoleNote],
+  );
+
+  const clearNote = useCallback(() => {
     if (!editingPlayerId) return;
-    onSetRoleNote(editingPlayerId, draftNote);
+    onSetRoleNote(editingPlayerId, '');
     closeNoteEditor();
-  }, [closeNoteEditor, draftNote, editingPlayerId, onSetRoleNote]);
+  }, [closeNoteEditor, editingPlayerId, onSetRoleNote]);
 
   const renderSelectedVoteOverlay = useCallback(() => {
     if (!selectedVote) return null;
@@ -401,29 +437,76 @@ export function SeatingChart({
                 <Text style={s.noteEditorName}>{editingPlayer.name}</Text>
                 <Text style={s.noteEditorLabel}>예상 직업</Text>
                 <TextInput
-                  value={draftNote}
-                  onChangeText={setDraftNote}
-                  style={s.noteInput}
-                  placeholder="예: 임프"
+                  value={roleSearch}
+                  onChangeText={setRoleSearch}
+                  style={s.roleSearchInput}
+                  placeholder="직업 검색"
                   placeholderTextColor="#6f6870"
                   maxLength={24}
                   autoFocus
                   autoCorrect={false}
                 />
+                <ScrollView
+                  style={s.rolePickerList}
+                  contentContainerStyle={s.rolePickerContent}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {filteredRoleGroups.length === 0 ? (
+                    <Text style={s.emptyRoleSearch}>검색 결과 없음</Text>
+                  ) : (
+                    filteredRoleGroups.map((group) => (
+                      <View key={group.team} style={s.roleGroup}>
+                        <Text style={s.roleGroupTitle}>
+                          {TEAM_LABELS[group.team]}
+                        </Text>
+                        <View style={s.roleOptionList}>
+                          {group.roles.map((role) => {
+                            const selected =
+                              roleNotes[editingPlayer.id] === role.name;
+                            return (
+                              <Pressable
+                                key={role.id}
+                                onPress={() => selectRoleNote(role.name)}
+                                style={[
+                                  s.roleOptionButton,
+                                  selected && s.roleOptionButtonSelected,
+                                ]}
+                                accessibilityRole="button"
+                                accessibilityLabel={`${role.name} 예상 직업 선택`}
+                              >
+                                <Text
+                                  style={[
+                                    s.roleOptionName,
+                                    selected && s.roleOptionNameSelected,
+                                  ]}
+                                  numberOfLines={1}
+                                >
+                                  {role.name}
+                                </Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    ))
+                  )}
+                </ScrollView>
                 <View style={s.noteEditorActions}>
+                  {roleNotes[editingPlayer.id] ? (
+                    <Pressable
+                      onPress={clearNote}
+                      style={[s.noteButton, s.noteButtonSecondary]}
+                      accessibilityRole="button"
+                    >
+                      <Text style={s.noteButtonSecondaryText}>지우기</Text>
+                    </Pressable>
+                  ) : null}
                   <Pressable
                     onPress={closeNoteEditor}
                     style={[s.noteButton, s.noteButtonSecondary]}
                     accessibilityRole="button"
                   >
-                    <Text style={s.noteButtonSecondaryText}>취소</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={saveNote}
-                    style={[s.noteButton, s.noteButtonPrimary]}
-                    accessibilityRole="button"
-                  >
-                    <Text style={s.noteButtonPrimaryText}>저장</Text>
+                    <Text style={s.noteButtonSecondaryText}>닫기</Text>
                   </Pressable>
                 </View>
               </View>

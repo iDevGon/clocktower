@@ -1,4 +1,4 @@
-import { getRolesForEdition } from '@clocktower/shared';
+import { getRoleById, getRolesForEdition, type Role } from '@clocktower/shared';
 import { BaseToast, DictionaryModal, SpriteIcon } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -108,6 +108,34 @@ export default function GameScreen() {
       ...new Set([...editionRoles, ...(gameSettings?.additionalRoleIds ?? [])]),
     ];
   }, [gameSettings?.setupEditionId, gameSettings?.additionalRoleIds, role]);
+  const seatingRoleOptions = useMemo(() => {
+    const setupEditionId = gameSettings?.setupEditionId ?? role?.edition;
+    const roleById = new Map<string, Role>();
+
+    if (setupEditionId) {
+      for (const option of getRolesForEdition(setupEditionId)) {
+        roleById.set(option.id, option);
+      }
+    }
+
+    for (const roleId of gameSettings?.additionalRoleIds ?? []) {
+      const option = getRoleById(roleId);
+      if (option) roleById.set(option.id, option);
+    }
+
+    for (const player of gamePlayers) {
+      if (!player.travellerRoleId) continue;
+      const option = getRoleById(player.travellerRoleId);
+      if (option) roleById.set(option.id, option);
+    }
+
+    return [...roleById.values()];
+  }, [
+    gamePlayers,
+    gameSettings?.setupEditionId,
+    gameSettings?.additionalRoleIds,
+    role,
+  ]);
   const executionHappenedToday = usePlayerStore(
     (s) => s.executionHappenedToday,
   );
@@ -1027,6 +1055,7 @@ export default function GameScreen() {
         players={gamePlayers}
         myId={playerId}
         phase={currentPhase}
+        roleOptions={seatingRoleOptions}
         roleNotes={seatingRoleNotes}
         voteHistory={voteHistory}
         onSetRoleNote={setSeatingRoleNote}

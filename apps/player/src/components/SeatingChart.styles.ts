@@ -282,7 +282,8 @@ export const styles = StyleSheet.create({
   },
   noteEditorPanel: {
     width: '100%',
-    maxWidth: 320,
+    maxWidth: 380,
+    maxHeight: '88%',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(180,155,104,0.35)',
@@ -300,7 +301,7 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  noteInput: {
+  roleSearchInput: {
     height: 44,
     borderRadius: 6,
     borderWidth: 1,
@@ -310,6 +311,56 @@ export const styles = StyleSheet.create({
     color: colors.text.primary,
     fontSize: 15,
     fontWeight: '700',
+  },
+  rolePickerList: {
+    maxHeight: 330,
+  },
+  rolePickerContent: {
+    gap: 14,
+    paddingBottom: 4,
+  },
+  roleGroup: {
+    gap: 8,
+  },
+  roleGroupTitle: {
+    color: '#d4a030',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  roleOptionList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  roleOptionButton: {
+    maxWidth: '48%',
+    minHeight: 36,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(180,155,104,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  roleOptionButtonSelected: {
+    borderColor: '#d4a030',
+    backgroundColor: 'rgba(90,63,14,0.45)',
+  },
+  roleOptionName: {
+    color: colors.text.primary,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  roleOptionNameSelected: {
+    color: '#f0d98f',
+  },
+  emptyRoleSearch: {
+    color: colors.text.tertiary,
+    fontSize: 13,
+    fontWeight: '700',
+    paddingVertical: 18,
+    textAlign: 'center',
   },
   noteEditorActions: {
     flexDirection: 'row',
