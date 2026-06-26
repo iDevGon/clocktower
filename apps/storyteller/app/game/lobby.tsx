@@ -14,6 +14,10 @@ import { arcaneUiSprite, uiIcon } from '../../src/assets/ui';
 import { BluffSelectModal } from '../../src/components/BluffSelectModal';
 import { ClockSpeedSetting } from '../../src/components/ClockSpeedSetting';
 import { CollapsibleSection } from '../../src/components/CollapsibleSection';
+import {
+  type CircularPosition,
+  DraggablePlayerToken,
+} from '../../src/components/DraggablePlayerToken';
 import { DrunkFakeRoleModal } from '../../src/components/DrunkFakeRoleModal';
 import { RoleExcludeModal } from '../../src/components/RoleExcludeModal';
 import { RoleMixModal } from '../../src/components/RoleMixModal';
@@ -58,6 +62,7 @@ export default function LobbyScreen() {
   const [mixSearch, setMixSearch] = useState('');
   const [roleSettingsOpen, setRoleSettingsOpen] = useState(false);
   const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
+  const [showSeatingBoard, setShowSeatingBoard] = useState(true);
   const [rolesVeiled, setRolesVeiled] = useState(false);
   const [seatArea, setSeatArea] = useState({ width: 0, height: 0 });
   const [selectedSeatPlayerId, setSelectedSeatPlayerId] = useState<
@@ -289,28 +294,33 @@ export default function LobbyScreen() {
 
   const selectSeatPlayer = useCallback(
     (playerId: string) => {
-      if (!selectedSeatPlayerId) {
-        setSelectedSeatPlayerId(playerId);
-        return;
-      }
       if (selectedSeatPlayerId === playerId) {
         setSelectedSeatPlayerId(null);
         return;
       }
-
-      const nextOrder = [...currentPlayerOrder];
-      const fromIndex = nextOrder.indexOf(selectedSeatPlayerId);
-      const toIndex = nextOrder.indexOf(playerId);
-      if (fromIndex >= 0 && toIndex >= 0) {
-        [nextOrder[fromIndex], nextOrder[toIndex]] = [
-          nextOrder[toIndex],
-          nextOrder[fromIndex],
-        ];
-        commitPlayerOrder(nextOrder);
-      }
-      setSelectedSeatPlayerId(null);
+      setSelectedSeatPlayerId(playerId);
     },
-    [commitPlayerOrder, currentPlayerOrder, selectedSeatPlayerId],
+    [selectedSeatPlayerId],
+  );
+
+  const handleSeatSwap = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      const nextOrder = [...currentPlayerOrder];
+      if (
+        fromIndex < 0 ||
+        toIndex < 0 ||
+        fromIndex >= nextOrder.length ||
+        toIndex >= nextOrder.length
+      ) {
+        return;
+      }
+      [nextOrder[fromIndex], nextOrder[toIndex]] = [
+        nextOrder[toIndex],
+        nextOrder[fromIndex],
+      ];
+      commitPlayerOrder(nextOrder);
+    },
+    [commitPlayerOrder, currentPlayerOrder],
   );
 
   const renderSeatingBoard = (mode: 'desktop' | 'mobile') => {
@@ -324,9 +334,21 @@ export default function LobbyScreen() {
       total > 0
         ? Math.max(
             0,
-            Math.min(boardWidth, boardHeight) / 2 - tokenSize / 2 - s(12),
+            Math.min(boardWidth, boardHeight) / 2 - tokenSize / 2 - s(16),
           )
         : 0;
+    const circularPositions: CircularPosition[] =
+      boardWidth > 0 && boardHeight > 0
+        ? orderedPlayers.map((_player, index) => {
+            const angle =
+              (index / Math.max(total, 1)) * 2 * Math.PI - Math.PI / 2;
+            return {
+              x: centerX + radius * Math.cos(angle),
+              y: centerY + radius * Math.sin(angle),
+              index,
+            };
+          })
+        : [];
 
     return (
       <View style={styles.seatingBoard}>
@@ -345,40 +367,31 @@ export default function LobbyScreen() {
           {orderedPlayers.map((player, index) => {
             const angle =
               (index / Math.max(total, 1)) * 2 * Math.PI - Math.PI / 2;
-            const left = centerX + radius * Math.cos(angle) - tokenSize / 2;
-            const top = centerY + radius * Math.sin(angle) - tokenSize / 2;
+            const x = centerX + radius * Math.cos(angle);
+            const y = centerY + radius * Math.sin(angle);
             const selected = selectedSeatPlayerId === player.id;
-            const roleLabel = player.role
-              ? rolesVeiled
-                ? '???'
-                : player.role.name
-              : '미배정';
+            const displayPlayer =
+              rolesVeiled && player.role
+                ? {
+                    ...player,
+                    role: { ...player.role, name: '???' },
+                    drunkAs: undefined,
+                  }
+                : player;
             return (
-              <Pressable
+              <DraggablePlayerToken
                 key={player.id}
+                player={displayPlayer}
+                highlighted={selected}
+                tokenSize={tokenSize}
+                initialX={x}
+                initialY={y}
+                circularPositions={circularPositions}
+                positionIndex={index}
+                zIndex={index + 1}
                 onPress={() => selectSeatPlayer(player.id)}
-                onLongPress={() => confirmKickPlayer(player)}
-                style={[
-                  styles.seatToken,
-                  selected && styles.seatTokenSelected,
-                  player.role && styles.seatTokenAssigned,
-                  {
-                    width: tokenSize,
-                    height: tokenSize,
-                    borderRadius: tokenSize / 2,
-                    left,
-                    top,
-                  },
-                ]}
-              >
-                <Text style={styles.seatIndex}>{index + 1}</Text>
-                <Text style={styles.seatName} numberOfLines={1}>
-                  {player.name}
-                </Text>
-                <Text style={styles.seatRole} numberOfLines={1}>
-                  {roleLabel}
-                </Text>
-              </Pressable>
+                onSwap={handleSeatSwap}
+              />
             );
           })}
         </View>
@@ -438,6 +451,93 @@ export default function LobbyScreen() {
       </View>
     );
   };
+
+  const renderPlayerList = (mode: 'desktop' | 'mobile') => (
+    <ScrollView
+      contentContainerStyle={
+        mode === 'desktop'
+          ? styles.desktopPlayerListContent
+          : styles.playerListContent
+      }
+      bounces={false}
+    >
+      {orderedPlayers.map((player, index) => {
+        const roleText = player.role
+          ? rolesVeiled
+            ? '???'
+            : player.isTraveller
+              ? `${player.role.name} (${player.travellerAlignment === 'evil' ? '악' : '선'})`
+              : player.role.name
+          : player.isTraveller
+            ? '여행자 (미배정)'
+            : '미배정';
+        return (
+          <Pressable
+            key={player.id}
+            onPress={() => openAssignRole(player)}
+            onLongPress={() => confirmKickPlayer(player)}
+            style={({ pressed }) => [
+              styles.playerRow,
+              mode === 'desktop' && styles.desktopPlayerRow,
+              player.role && styles.playerRowAssigned,
+              pressed && styles.distributeButtonPressed,
+            ]}
+          >
+            <View style={styles.playerNameRow}>
+              <View style={lobbyDynamic.aliveDot(player.isAlive, s)} />
+              <View style={styles.playerIdentity}>
+                <Text style={styles.playerName} numberOfLines={1}>
+                  {index + 1}. {player.name}
+                </Text>
+                {player.isTraveller && (
+                  <Text
+                    style={[
+                      styles.travellerBadge,
+                      player.travellerAlignment === 'evil'
+                        ? styles.travellerBadgeEvil
+                        : styles.travellerBadgeGood,
+                    ]}
+                  >
+                    여행자
+                  </Text>
+                )}
+              </View>
+            </View>
+            <View style={styles.playerRoleContainer}>
+              <Text
+                style={
+                  player.role
+                    ? lobbyDynamic.playerRoleText(rolesVeiled, s)
+                    : styles.unassignedRoleText
+                }
+                numberOfLines={1}
+              >
+                {roleText}
+              </Text>
+              {!rolesVeiled &&
+                player.role?.id === 'drunk' &&
+                player.drunkAs && (
+                  <Pressable
+                    onPress={() => setDrunkModalPlayer(player)}
+                    style={styles.drunkChangeButton}
+                  >
+                    <Text style={styles.drunkChangeText}>가짜 역할 변경</Text>
+                  </Pressable>
+                )}
+              {!rolesVeiled && player.role?.team === 'demon' && (
+                <Pressable
+                  onPress={() => setBluffChangePlayer(player)}
+                  style={styles.drunkChangeButton}
+                >
+                  <Text style={styles.drunkChangeText}>블러프 변경</Text>
+                </Pressable>
+              )}
+            </View>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
 
   const confirmKickPlayer = (item: Player) => {
     Alert.alert(
@@ -805,7 +905,17 @@ export default function LobbyScreen() {
                   )}
                 </View>
               )}
-              {renderSeatingBoard('desktop')}
+              <View style={styles.settingsToggleRow}>
+                <SettingToggle
+                  label="좌석 배치"
+                  value={showSeatingBoard}
+                  onValueChange={setShowSeatingBoard}
+                  scale={scale}
+                />
+              </View>
+              {showSeatingBoard
+                ? renderSeatingBoard('desktop')
+                : renderPlayerList('desktop')}
             </View>
 
             <View style={styles.desktopControlColumn}>
@@ -954,6 +1064,12 @@ export default function LobbyScreen() {
                 {distribution[2]} 악마{distribution[3]}
               </Text>
             )}
+            <SettingToggle
+              label="좌석 배치"
+              value={showSeatingBoard}
+              onValueChange={setShowSeatingBoard}
+              scale={scale}
+            />
           </View>
 
           <View style={styles.distributeContainer}>
@@ -972,7 +1088,9 @@ export default function LobbyScreen() {
           <View style={styles.listContainer}>
             {advancedSettingsOpen && gameState
               ? renderSettingsControls('mobile')
-              : renderSeatingBoard('mobile')}
+              : showSeatingBoard
+                ? renderSeatingBoard('mobile')
+                : renderPlayerList('mobile')}
           </View>
 
           <View style={styles.footer}>
