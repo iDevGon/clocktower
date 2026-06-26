@@ -8,8 +8,16 @@ import {
 } from '@clocktower/shared';
 import { SpriteIcon } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Alert,
+  Animated,
+  type LayoutChangeEvent,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { arcaneUiSprite, uiIcon } from '../../src/assets/ui';
 import { BluffSelectModal } from '../../src/components/BluffSelectModal';
 import { ClockSpeedSetting } from '../../src/components/ClockSpeedSetting';
@@ -27,6 +35,10 @@ import { useGameActions } from '../../src/hooks/useGameActions';
 import { useResponsive } from '../../src/hooks/useResponsive';
 import { useGameStore } from '../../src/stores/gameStore';
 import { createLobbyStyles, lobbyDynamic } from '../../src/styles/lobby.styles';
+
+const DESKTOP_SETTINGS_EXPANDED_TOP = 74;
+const DESKTOP_SETTINGS_PANEL_GAP = 14;
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export default function LobbyScreen() {
   const router = useRouter();
@@ -62,6 +74,8 @@ export default function LobbyScreen() {
   const [mixSearch, setMixSearch] = useState('');
   const [roleSettingsOpen, setRoleSettingsOpen] = useState(false);
   const [advancedSettingsOpen, setAdvancedSettingsOpen] = useState(false);
+  const [settingsFocused, setSettingsFocused] = useState(false);
+  const [setupPanelHeight, setSetupPanelHeight] = useState(0);
   const [showSeatingBoard, setShowSeatingBoard] = useState(true);
   const [rolesVeiled, setRolesVeiled] = useState(false);
   const [seatArea, setSeatArea] = useState({ width: 0, height: 0 });
@@ -69,6 +83,9 @@ export default function LobbyScreen() {
     string | null
   >(null);
   const setLocalPlayerOrder = useGameStore((s) => s.setPlayerOrder);
+  const settingsFocusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settingsInteractionActive = useRef(false);
+  const settingsPanelProgress = useRef(new Animated.Value(0)).current;
 
   // 주정뱅이 가짜 역할 변경 모달 상태
   const [drunkModalPlayer, setDrunkModalPlayer] = useState<Player | null>(null);
@@ -177,6 +194,72 @@ export default function LobbyScreen() {
   const selectedEdition =
     EDITIONS.find((edition) => edition.id === selectedEditionId) ?? EDITIONS[0];
   const distribution = ROLE_DISTRIBUTION[playerCount];
+  const focusSettingsPanel = useCallback(() => {
+    if (settingsFocusTimer.current) {
+      clearTimeout(settingsFocusTimer.current);
+      settingsFocusTimer.current = null;
+    }
+    setSettingsFocused(true);
+  }, []);
+  const blurSettingsPanel = useCallback(() => {
+    if (settingsFocusTimer.current) clearTimeout(settingsFocusTimer.current);
+    settingsFocusTimer.current = setTimeout(() => {
+      if (settingsInteractionActive.current) {
+        blurSettingsPanel();
+        return;
+      }
+      setSettingsFocused(false);
+      settingsFocusTimer.current = null;
+    }, 90);
+  }, []);
+  const startSettingsInteraction = useCallback(() => {
+    settingsInteractionActive.current = true;
+    focusSettingsPanel();
+  }, [focusSettingsPanel]);
+  const endSettingsInteraction = useCallback(() => {
+    settingsInteractionActive.current = false;
+  }, []);
+  const handleSetupPanelLayout = useCallback((event: LayoutChangeEvent) => {
+    setSetupPanelHeight(event.nativeEvent.layout.height);
+  }, []);
+
+  useEffect(() => {
+    Animated.timing(settingsPanelProgress, {
+      toValue: settingsFocused ? 1 : 0,
+      duration: 180,
+      useNativeDriver: false,
+    }).start();
+  }, [settingsFocused, settingsPanelProgress]);
+
+  const collapsedSettingsTop =
+    setupPanelHeight > 0
+      ? setupPanelHeight + DESKTOP_SETTINGS_PANEL_GAP
+      : DESKTOP_SETTINGS_EXPANDED_TOP;
+  const settingsPanelAnimatedStyle = useMemo(
+    () => ({
+      top: settingsPanelProgress.interpolate({
+        inputRange: [0, 1],
+        outputRange: [collapsedSettingsTop, DESKTOP_SETTINGS_EXPANDED_TOP],
+      }),
+    }),
+    [collapsedSettingsTop, settingsPanelProgress],
+  );
+  const setupPanelAnimatedStyle = useMemo(
+    () => ({
+      opacity: settingsPanelProgress.interpolate({
+        inputRange: [0, 1],
+        outputRange: [1, 0.48],
+      }),
+    }),
+    [settingsPanelProgress],
+  );
+
+  useEffect(
+    () => () => {
+      if (settingsFocusTimer.current) clearTimeout(settingsFocusTimer.current);
+    },
+    [],
+  );
 
   const handleDistributeRoles = async () => {
     if (!canDistribute) {
@@ -767,6 +850,8 @@ export default function LobbyScreen() {
                 onChange={(val: number) =>
                   setGameSettings({ whisperClockSeconds: val })
                 }
+                onInteractionStart={startSettingsInteraction}
+                onInteractionEnd={endSettingsInteraction}
                 scale={scale}
                 showOff
                 options={[10, 300, 600, 900, 1200]}
@@ -784,6 +869,8 @@ export default function LobbyScreen() {
                 onChange={(val: number) =>
                   setGameSettings({ voteClockSeconds: val })
                 }
+                onInteractionStart={startSettingsInteraction}
+                onInteractionEnd={endSettingsInteraction}
                 scale={scale}
                 options={[2, 3, 4, 5, 6]}
               />
@@ -796,6 +883,8 @@ export default function LobbyScreen() {
               onChange={(val: number) =>
                 setGameSettings({ discussionClockSeconds: val })
               }
+              onInteractionStart={startSettingsInteraction}
+              onInteractionEnd={endSettingsInteraction}
               scale={scale}
               showOff
               options={[600, 1200, 1800]}
@@ -809,6 +898,8 @@ export default function LobbyScreen() {
               onChange={(val: number) =>
                 setGameSettings({ nominationClockSeconds: val })
               }
+              onInteractionStart={startSettingsInteraction}
+              onInteractionEnd={endSettingsInteraction}
               scale={scale}
               showOff
               options={[300, 600, 900]}
@@ -822,6 +913,8 @@ export default function LobbyScreen() {
               onChange={(val: number) =>
                 setGameSettings({ defenseClockSeconds: val })
               }
+              onInteractionStart={startSettingsInteraction}
+              onInteractionEnd={endSettingsInteraction}
               scale={scale}
               showOff
               options={[30, 60, 90, 120, 180, 300]}
@@ -923,7 +1016,14 @@ export default function LobbyScreen() {
             </View>
 
             <View style={styles.desktopControlColumn}>
-              <View style={styles.desktopSetupPanel}>
+              <Animated.View
+                onLayout={handleSetupPanelLayout}
+                style={[
+                  styles.desktopSetupPanel,
+                  styles.desktopSetupPanelCovered,
+                  setupPanelAnimatedStyle,
+                ]}
+              >
                 <View style={styles.panelHeader}>
                   <Text style={styles.panelKicker}>직업 구성</Text>
                   <Text style={styles.panelTitle}>에디션과 배분</Text>
@@ -986,9 +1086,18 @@ export default function LobbyScreen() {
                 >
                   <Text style={styles.startButtonText}>게임 시작</Text>
                 </Pressable>
-              </View>
+              </Animated.View>
 
-              <View style={styles.desktopSettingsPanel}>
+              <AnimatedPressable
+                onFocus={focusSettingsPanel}
+                onBlur={blurSettingsPanel}
+                onPressIn={focusSettingsPanel}
+                style={[
+                  styles.desktopSettingsPanel,
+                  settingsFocused && styles.desktopSettingsPanelFocused,
+                  settingsPanelAnimatedStyle,
+                ]}
+              >
                 <View style={styles.panelHeader}>
                   <Text style={styles.panelKicker}>진행 설정</Text>
                   <Text style={styles.panelTitle}>타이머와 운영</Text>
@@ -997,7 +1106,7 @@ export default function LobbyScreen() {
                   </Text>
                 </View>
                 {renderSettingsControls('desktop')}
-              </View>
+              </AnimatedPressable>
             </View>
           </View>
         </View>

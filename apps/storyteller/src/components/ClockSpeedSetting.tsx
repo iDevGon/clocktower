@@ -16,6 +16,8 @@ export function ClockSpeedSetting({
   showOff = false,
   options = [30, 45, 60, 90, 120],
   formatOption,
+  onInteractionStart,
+  onInteractionEnd,
 }: {
   value: number;
   onChange: (val: number) => void;
@@ -24,6 +26,8 @@ export function ClockSpeedSetting({
   showOff?: boolean;
   options?: number[];
   formatOption?: (val: number) => string;
+  onInteractionStart?: () => void;
+  onInteractionEnd?: () => void;
 }) {
   const st = useMemo(
     () => createClockSpeedSettingStyles((v: number) => Math.round(v * scale)),
@@ -93,8 +97,13 @@ export function ClockSpeedSetting({
         onLayout={onRowLayout}
         onStartShouldSetResponder={() => true}
         onMoveShouldSetResponder={() => true}
-        onResponderGrant={resolveFromTouch}
+        onResponderGrant={(event) => {
+          onInteractionStart?.();
+          resolveFromTouch(event);
+        }}
         onResponderMove={resolveFromTouch}
+        onResponderRelease={() => onInteractionEnd?.()}
+        onResponderTerminate={() => onInteractionEnd?.()}
       >
         {/* 트랙 (셀 중앙 ~ 셀 중앙, absolute) */}
         <View style={st.trackWrapper}>

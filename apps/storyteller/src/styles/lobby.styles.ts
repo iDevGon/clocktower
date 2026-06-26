@@ -271,6 +271,7 @@ export function createLobbyStyles(scale: number) {
       maxWidth: 520,
       gap: 14,
       minHeight: 0,
+      position: 'relative',
     },
     desktopSetupPanel: {
       borderWidth: 1,
@@ -279,13 +280,29 @@ export function createLobbyStyles(scale: number) {
       padding: 18,
       gap: 14,
     },
+    desktopSetupPanelCovered: {
+      opacity: 0.48,
+    },
     desktopSettingsPanel: {
-      flex: 1,
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
       borderWidth: 1,
       borderColor: arcane.border.brassDim,
       backgroundColor: arcane.surface.ledger,
       padding: 18,
       minHeight: 0,
+    },
+    desktopSettingsPanelFocused: {
+      zIndex: 8,
+      elevation: 8,
+      borderColor: arcane.border.brass,
+      backgroundColor: arcane.surface.ledger,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.35,
+      shadowRadius: 18,
     },
     panelHeader: {
       borderBottomWidth: 1,
