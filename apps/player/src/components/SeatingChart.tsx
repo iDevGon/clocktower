@@ -2,13 +2,13 @@ import type { Phase, PlayerInfo } from '@clocktower/shared';
 import { colors } from '@clocktower/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Dimensions,
   Image,
   Modal,
   Pressable,
   ScrollView,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { voteHandDown, voteHandRaised } from '../assets/ui';
@@ -27,7 +27,9 @@ interface SeatingChartProps {
 }
 
 const TOKEN_SIZE = 56;
-const SCREEN = Dimensions.get('window');
+const MODAL_HORIZONTAL_PADDING = 68;
+const MAX_RING_SIZE = 400;
+const MIN_RING_SIZE = 280;
 
 export function SeatingChart({
   visible,
@@ -44,6 +46,7 @@ export function SeatingChart({
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [draftNote, setDraftNote] = useState('');
   const [selectedVoteId, setSelectedVoteId] = useState<string | null>(null);
+  const { width: windowWidth } = useWindowDimensions();
 
   useEffect(() => {
     if (phase === 'night') {
@@ -54,9 +57,12 @@ export function SeatingChart({
   }, [phase, players]);
 
   const areaSize = useMemo(() => {
-    const side = Math.min(SCREEN.width - 48, SCREEN.height * 0.55, 400);
-    return side;
-  }, []);
+    const availableWidth = Math.max(0, windowWidth - MODAL_HORIZONTAL_PADDING);
+    return Math.max(
+      Math.min(MIN_RING_SIZE, availableWidth),
+      Math.min(availableWidth, MAX_RING_SIZE),
+    );
+  }, [windowWidth]);
 
   const tokenSize = useMemo(() => {
     if (players.length <= 6) return TOKEN_SIZE;

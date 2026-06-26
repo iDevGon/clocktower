@@ -305,6 +305,7 @@ export default function GameScreen() {
   const canUseSlayer =
     isAlive &&
     !slayerUsed &&
+    dictionaryRoleIds.includes('slayer') &&
     role?.team !== 'traveller' &&
     (currentPhase === 'day' || currentPhase === 'vote');
 
