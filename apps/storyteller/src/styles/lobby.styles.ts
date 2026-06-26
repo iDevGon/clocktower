@@ -293,6 +293,21 @@ export function createLobbyStyles(scale: number) {
       paddingBottom: 12,
       marginBottom: 14,
     },
+    panelHeaderTop: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    panelHeaderText: {
+      flex: 1,
+      minWidth: 0,
+    },
+    panelHeaderActions: {
+      alignItems: 'flex-end',
+      justifyContent: 'flex-start',
+      paddingTop: 2,
+    },
     panelKicker: {
       color: arcane.text.label,
       fontFamily: typography.fontFamily.bodyMedium,

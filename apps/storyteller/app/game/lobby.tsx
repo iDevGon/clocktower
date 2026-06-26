@@ -877,13 +877,25 @@ export default function LobbyScreen() {
           <View style={styles.desktopBody}>
             <View style={styles.desktopRosterPanel}>
               <View style={styles.panelHeader}>
-                <Text style={styles.panelKicker}>참가자</Text>
-                <Text style={styles.panelTitle}>참가자 명부</Text>
-                <Text style={styles.panelSubtitle}>
-                  {allRolesAssigned
-                    ? '모든 일반 플레이어 배정 완료'
-                    : `미배정 ${Math.max(playerCount - assignedRegularCount, 0)}명`}
-                </Text>
+                <View style={styles.panelHeaderTop}>
+                  <View style={styles.panelHeaderText}>
+                    <Text style={styles.panelKicker}>참가자</Text>
+                    <Text style={styles.panelTitle}>참가자 명부</Text>
+                    <Text style={styles.panelSubtitle}>
+                      {allRolesAssigned
+                        ? '모든 일반 플레이어 배정 완료'
+                        : `미배정 ${Math.max(playerCount - assignedRegularCount, 0)}명`}
+                    </Text>
+                  </View>
+                  <View style={styles.panelHeaderActions}>
+                    <SettingToggle
+                      label="좌석 배치"
+                      value={showSeatingBoard}
+                      onValueChange={setShowSeatingBoard}
+                      scale={scale}
+                    />
+                  </View>
+                </View>
               </View>
               {IS_DEV && (
                 <View style={styles.devButtonRow}>
@@ -905,14 +917,6 @@ export default function LobbyScreen() {
                   )}
                 </View>
               )}
-              <View style={styles.settingsToggleRow}>
-                <SettingToggle
-                  label="좌석 배치"
-                  value={showSeatingBoard}
-                  onValueChange={setShowSeatingBoard}
-                  scale={scale}
-                />
-              </View>
               {showSeatingBoard
                 ? renderSeatingBoard('desktop')
                 : renderPlayerList('desktop')}

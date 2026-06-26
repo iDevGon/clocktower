@@ -20,4 +20,11 @@ describe('lobby seating source', () => {
     expect(lobbySource).toContain('renderPlayerList');
     expect(lobbySource).toContain('좌석 배치');
   });
+
+  it('좌석 배치 토글은 참가자 명부 헤더의 우측 액션으로 배치한다', () => {
+    expect(lobbySource).toContain('styles.panelHeaderActions');
+    expect(lobbySource).toMatch(
+      /<View style=\{styles\.panelHeader\}>[\s\S]*styles\.panelHeaderActions[\s\S]*label="좌석 배치"[\s\S]*<\/View>/,
+    );
+  });
 });
