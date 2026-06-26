@@ -77,12 +77,24 @@ export function NightOrderPanel({
     : day <= 1
       ? FIRST_NIGHT_ORDER
       : OTHER_NIGHT_ORDER;
+  const visibleOrder = useMemo(
+    () =>
+      baseOrder.filter((roleId) => {
+        const role = getRoleById(roleId);
+        return role?.team !== 'traveller' || activeRoleIds.includes(roleId);
+      }),
+    [activeRoleIds, baseOrder],
+  );
+
   // 철학자가 부여받은 첫 밤 역할처럼 표준 순서엔 없지만 활성화가 필요한 역할을 끝에 append
   const order = useMemo(() => {
-    if (extraRoleIds.length === 0) return baseOrder;
-    const extras = extraRoleIds.filter((id) => !baseOrder.includes(id));
-    return extras.length === 0 ? baseOrder : [...baseOrder, ...extras];
-  }, [baseOrder, extraRoleIds]);
+    const baseVisibleOrder = visibleOrder;
+    if (extraRoleIds.length === 0) return baseVisibleOrder;
+    const extras = extraRoleIds.filter((id) => !baseVisibleOrder.includes(id));
+    return extras.length === 0
+      ? baseVisibleOrder
+      : [...baseVisibleOrder, ...extras];
+  }, [extraRoleIds, visibleOrder]);
 
   const [activeIndex, setActiveIndex] = useState<number | null>(() => {
     if (activeNightRoleId) {
