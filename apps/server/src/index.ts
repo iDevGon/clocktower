@@ -1,8 +1,8 @@
 import { exec } from 'node:child_process';
-import os from 'node:os';
 // @ts-expect-error no types
 import qrcode from 'qrcode-terminal';
 import { createApp } from './createApp.js';
+import { getLocalIP } from './network.js';
 
 const { httpServer } = createApp();
 
@@ -28,11 +28,3 @@ httpServer.listen(PORT, () => {
         : 'xdg-open';
   exec(`${openCmd} ${dashboardUrl}`);
 });
-
-function getLocalIP(): string {
-  const interfaces = os.networkInterfaces();
-  const match = Object.values(interfaces)
-    .flat()
-    .find((iface) => iface?.family === 'IPv4' && !iface.internal);
-  return match?.address ?? 'localhost';
-}

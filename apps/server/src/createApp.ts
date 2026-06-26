@@ -1,5 +1,4 @@
 import { createServer, type Server as HttpServer } from 'node:http';
-import os from 'node:os';
 import path from 'node:path';
 import type {
   ClientToServerEvents,
@@ -14,6 +13,7 @@ import { getDashboardHtml } from './dashboard.js';
 import { GameManager } from './game.js';
 import { registerPlayerHandlers } from './handlers/player.js';
 import { registerStorytellerHandlers } from './handlers/storyteller.js';
+import { getLocalIP } from './network.js';
 import { WhisperTracker } from './whisper.js';
 
 export interface AppInstance {
@@ -91,11 +91,4 @@ export function createApp(): AppInstance {
     });
 
   return { httpServer, io, game, close };
-}
-
-function getLocalIP(): string {
-  const match = Object.values(os.networkInterfaces())
-    .flat()
-    .find((iface) => iface?.family === 'IPv4' && !iface.internal);
-  return match?.address ?? 'localhost';
 }
