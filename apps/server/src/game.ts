@@ -62,6 +62,21 @@ const TEMPORARY_TRAVELLER_STATUSES: PlayerStatus[] = [
   'barista_acts_twice',
 ];
 
+const VOTE_CLOSE_LOCK_MS = 3000;
+
+const MANUAL_NIGHT_ROLE_IDS = new Set([
+  'gossip',
+  'tinker',
+  'moonchild',
+  'grandmother',
+]);
+
+const ONCE_PER_GAME_NIGHT_ROLE_IDS = new Set([
+  'courtier',
+  'professor',
+  'assassin',
+]);
+
 const PROFESSOR_IMMEDIATE_WAKE_ROLE_IDS = new Set([
   'washerwoman',
   'librarian',
@@ -253,6 +268,7 @@ export class GameManager {
   private nightWakeUpRoleId: string | null = null;
   // 변론 중 투표 동의 (ready) 플레이어 추적
   private voteConsentReady = new Set<string>();
+  private voteCloseLockedUntil = 0;
   // 지목 타이머 일시정지/재개용 남은 시간 (ms)
   private nominationRemainingMs: number | null = null;
   private nominationStartedAt: number | null = null;
@@ -979,6 +995,17 @@ export class GameManager {
     return true;
   }
 
+  convertTravellerToRegular(playerId: string): boolean {
+    const player = this.getPlayer(playerId);
+    if (!player || !player.isTraveller) return false;
+
+    player.isTraveller = false;
+    player.role = undefined;
+    player.travellerAlignment = undefined;
+    player.statuses = filterSoberHealthyBlockedStatuses(player, []);
+    return true;
+  }
+
   /**
    * 여행자를 추방(exile)합니다.
    * 추방은 처형과 다릅니다:
@@ -1449,12 +1476,19 @@ export class GameManager {
   }
 
   shouldWakeRole(roleId: string): boolean {
+    if (MANUAL_NIGHT_ROLE_IDS.has(roleId)) return false;
     if (roleId === 'godfather') return this.outsiderDiedToday;
     if (roleId === 'zombuul') return !this.dayDeathToday;
     return true;
   }
 
   shouldWakePlayerForRole(roleId: string, player: Player): boolean {
+    if (
+      ONCE_PER_GAME_NIGHT_ROLE_IDS.has(roleId) &&
+      player.statuses.includes('no_ability')
+    ) {
+      return false;
+    }
     if (
       PROFESSOR_IMMEDIATE_WAKE_ROLE_IDS.has(roleId) &&
       this.nightAwakenedPlayerIds.has(player.id)
@@ -3627,6 +3661,14 @@ export class GameManager {
 
   setVoteClockInterval(interval: ReturnType<typeof setInterval>): void {
     this.voteClockInterval = interval;
+  }
+
+  markVoteCloseLocked(now = Date.now()): void {
+    this.voteCloseLockedUntil = now + VOTE_CLOSE_LOCK_MS;
+  }
+
+  canCloseVote(now = Date.now()): boolean {
+    return now >= this.voteCloseLockedUntil;
   }
 
   preselectVote(playerId: string, guilty: boolean | null): void {

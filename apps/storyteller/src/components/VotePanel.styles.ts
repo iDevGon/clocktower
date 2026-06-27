@@ -236,6 +236,10 @@ export function createVotePanelStyles(scale: number) {
       paddingVertical: s(10),
       alignItems: 'center',
     },
+    closeVoteButtonDisabled: {
+      backgroundColor: '#4a3a3a',
+      opacity: 0.65,
+    },
     closeVoteText: {
       color: '#e0ddd8',
       fontSize: s(15),

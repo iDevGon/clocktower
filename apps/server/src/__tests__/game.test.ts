@@ -74,6 +74,22 @@ describe('GameManager', () => {
       expect(gm.removePlayer('nonexistent')).toBe(false);
     });
 
+    it('여행자를 일반 플레이어로 되돌리면 여행자 역할과 진영을 제거한다', () => {
+      const gm = new GameManager();
+      gm.create();
+      const player = gm.addTraveller('Traveller');
+      expect(player).not.toBeNull();
+      gm.assignTravellerRole(player?.id ?? '', 'scapegoat', 'evil');
+
+      const success = gm.convertTravellerToRegular(player?.id ?? '');
+
+      const converted = gm.getPlayer(player?.id ?? '');
+      expect(success).toBe(true);
+      expect(converted?.isTraveller).toBe(false);
+      expect(converted?.role).toBeUndefined();
+      expect(converted?.travellerAlignment).toBeUndefined();
+    });
+
     it('getPlayer로 플레이어를 조회할 수 있다', () => {
       const gm = new GameManager();
       gm.create();
@@ -2553,6 +2569,39 @@ describe('GameManager', () => {
       const settings = gm.getSettings();
       expect(settings.voteClockSeconds).toBe(10);
       expect(settings.whisperMode).toBe('chat');
+    });
+  });
+
+  describe('투표 종료 보호 시간', () => {
+    it('투표 시작 직후에는 종료할 수 없고 보호 시간이 지나면 종료할 수 있다', () => {
+      const gm = new GameManager();
+      const now = 10_000;
+
+      gm.markVoteCloseLocked(now);
+
+      expect(gm.canCloseVote(now + 2_999)).toBe(false);
+      expect(gm.canCloseVote(now + 3_000)).toBe(true);
+    });
+  });
+
+  describe('밤 차례 스킵', () => {
+    it('BMR 수동 처리 역할은 플레이어를 깨우지 않는다', () => {
+      const gm = new GameManager();
+
+      expect(gm.shouldWakeRole('gossip')).toBe(false);
+      expect(gm.shouldWakeRole('tinker')).toBe(false);
+      expect(gm.shouldWakeRole('moonchild')).toBe(false);
+      expect(gm.shouldWakeRole('grandmother')).toBe(false);
+    });
+
+    it('공통 능력 소진 상태가 있으면 1회성 밤 역할을 깨우지 않는다', () => {
+      const { gm, players } = createTestGame(5);
+      const player = players[0];
+      player.statuses.push('no_ability');
+
+      expect(gm.shouldWakePlayerForRole('courtier', player)).toBe(false);
+      expect(gm.shouldWakePlayerForRole('professor', player)).toBe(false);
+      expect(gm.shouldWakePlayerForRole('assassin', player)).toBe(false);
     });
   });
 

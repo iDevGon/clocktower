@@ -607,6 +607,11 @@ export interface StorytellerToServerEvents {
     },
     callback: (res: { success: boolean; error?: string }) => void,
   ) => void;
+  /** 여행자를 일반 플레이어로 전환 */
+  'traveller:convertToRegular': (
+    playerId: string,
+    callback: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   /** 이야기꾼이 추방 투표를 강제 종료 */
   'exile:forceClose': (
     data: { exiled: boolean },

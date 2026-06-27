@@ -32,6 +32,14 @@ describe('lobby seating source', () => {
     );
   });
 
+  it('좌석 선택 액션에서 여행자와 일반 플레이어 전환을 제공한다', () => {
+    expect(lobbySource).toContain('convertTravellerToRegular');
+    expect(lobbySource).toContain('confirmConvertTravellerToRegular');
+    expect(lobbySource).toContain(
+      "selectedSeatPlayer?.isTraveller ? '일반' : '여행자'",
+    );
+  });
+
   it('데스크톱 운영 패널은 포커스 시 에디션 배분 영역 위로 확장된다', () => {
     expect(lobbySource).toContain('settingsFocused');
     expect(lobbySource).toContain('setSettingsFocused(true)');

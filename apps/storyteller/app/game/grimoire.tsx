@@ -148,6 +148,19 @@ const ALL_STATUSES: PlayerStatus[] = [
   'master',
 ];
 
+const BMR_MANUAL_NIGHT_ROLE_IDS = [
+  'gossip',
+  'tinker',
+  'moonchild',
+  'grandmother',
+];
+
+const BMR_ONCE_PER_GAME_NIGHT_ROLE_STATUS: Record<string, PlayerStatus> = {
+  assassin: 'assassin_spent',
+  professor: 'professor_spent',
+  courtier: 'courtier_spent',
+};
+
 const PHASE_LABELS: Record<string, string> = {
   night: '밤',
   day: '낮',
@@ -1612,9 +1625,26 @@ export default function GrimoireScreen() {
     : null;
 
   const skippedNightRoles = useMemo(() => {
-    if (!executedPlayerId) return ['undertaker'];
-    return [];
-  }, [executedPlayerId]);
+    const skipped = new Set<string>(BMR_MANUAL_NIGHT_ROLE_IDS);
+    if (!executedPlayerId) skipped.add('undertaker');
+
+    (players ?? []).forEach((player) => {
+      const roleId = player.role?.id;
+      if (!roleId) return;
+
+      const statuses = playerStatuses[player.id] ?? player.statuses;
+      if (statuses.includes('no_ability')) {
+        skipped.add(roleId);
+        return;
+      }
+
+      const spentStatus = BMR_ONCE_PER_GAME_NIGHT_ROLE_STATUS[roleId];
+      if (!spentStatus) return;
+      if (statuses.includes(spentStatus)) skipped.add(roleId);
+    });
+
+    return [...skipped];
+  }, [executedPlayerId, playerStatuses, players]);
 
   // Memoize activeRoleIds and dormantRoleIds for NightOrderPanel
   const activeRoleIds = useMemo(() => {

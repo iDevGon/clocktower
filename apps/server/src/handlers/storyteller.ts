@@ -1375,6 +1375,27 @@ export function registerStorytellerHandlers(
       );
     });
 
+    socket.on('traveller:convertToRegular', (playerId, callback) => {
+      const player = game.getPlayer(playerId);
+      if (!player) {
+        callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+        return;
+      }
+      if (!game.convertTravellerToRegular(playerId)) {
+        callback({ success: false, error: '여행자 전환에 실패했습니다' });
+        return;
+      }
+
+      playerIo.to(playerId).emit('role:assign', {
+        roleId: '',
+        roleName: '',
+      });
+      playerIo.emit('game:state', toPublicGameState(game.getState()));
+      storytellerIo.emit('game:state', game.getStorytellerState());
+      callback({ success: true });
+      console.log(`Traveller converted to regular player: ${player.name}`);
+    });
+
     socket.on('traveller:exile', (playerId, callback) => {
       const player = game.getPlayer(playerId);
       if (!player) {
@@ -1807,10 +1828,10 @@ export function registerStorytellerHandlers(
         return;
       }
       const playerName = player.name;
-      game.removePlayer(playerId);
 
-      // 강퇴 대상에게 알림 후 방에서 제거
+      // 강퇴 대상에게 먼저 알린 뒤 상태에서 제거
       playerIo.to(playerId).emit('player:kicked');
+      game.removePlayer(playerId);
       playerIo.in(playerId).socketsLeave(playerId);
 
       // 나머지 플레이어와 이야기꾼에게 알림

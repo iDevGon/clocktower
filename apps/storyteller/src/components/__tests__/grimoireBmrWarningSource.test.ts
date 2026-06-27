@@ -39,4 +39,16 @@ describe('grimoire BMR death warnings', () => {
     expect(source).toContain('playerStatuses[p.id] ?? p.statuses');
     expect(source).toContain("'zombuul_registers_dead'");
   });
+
+  it('BMR 수동 처리 역할과 능력 소진 역할을 밤 순서에서 스킵 표시한다', () => {
+    expect(source).toContain('BMR_MANUAL_NIGHT_ROLE_IDS');
+    expect(source).toContain("'gossip'");
+    expect(source).toContain("'tinker'");
+    expect(source).toContain("'moonchild'");
+    expect(source).toContain("'grandmother'");
+    expect(source).toContain("statuses.includes('no_ability')");
+    expect(source).toContain("'assassin_spent'");
+    expect(source).toContain("'professor_spent'");
+    expect(source).toContain("'courtier_spent'");
+  });
 });

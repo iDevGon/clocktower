@@ -474,6 +474,19 @@ export function useGameActions() {
     [],
   );
 
+  const convertTravellerToRegular = useCallback(
+    (playerId: string): Promise<{ success: boolean; error?: string }> =>
+      new Promise((resolve, reject) => {
+        const s = getSocket();
+        if (!s) return reject(new Error('Not connected'));
+        s.emit('traveller:convertToRegular', playerId, (res) => {
+          if (res.success) resolve(res);
+          else reject(new Error(res.error ?? '일반 플레이어 전환 실패'));
+        });
+      }),
+    [],
+  );
+
   const exileTraveller = useCallback(
     (playerId: string): Promise<{ success: boolean; error?: string }> =>
       new Promise((resolve, reject) => {
@@ -570,6 +583,7 @@ export function useGameActions() {
     sendChatToPlayer,
     kickPlayer,
     addTraveller,
+    convertTravellerToRegular,
     exileTraveller,
     forceCloseExile,
     unassignAllRoles,

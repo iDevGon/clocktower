@@ -76,6 +76,8 @@ export interface NightActionDef {
   deadTargetsOnly?: boolean;
   /** 선택 가능한 대상 수 목록. 예: 포는 1명 또는 3명 */
   allowedTargetCounts?: number[];
+  /** 능력을 사용하지 않고 이번 차례를 넘길 수 있는 밤 행동 */
+  canSkip?: boolean;
 }
 
 export interface NightAction {

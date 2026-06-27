@@ -54,6 +54,7 @@ export default function LobbyScreen() {
     removeDummyPlayers,
     setGameSettings,
     kickPlayer,
+    convertTravellerToRegular,
     unassignAllRoles,
     setPlayerOrder: syncPlayerOrder,
   } = useGameActions();
@@ -500,6 +501,25 @@ export default function LobbyScreen() {
             </Pressable>
             <Pressable
               disabled={!selectedSeatPlayer}
+              onPress={() => {
+                if (!selectedSeatPlayer) return;
+                if (selectedSeatPlayer.isTraveller) {
+                  confirmConvertTravellerToRegular(selectedSeatPlayer);
+                  return;
+                }
+                openAssignRole(selectedSeatPlayer);
+              }}
+              style={[
+                styles.seatActionButton,
+                !selectedSeatPlayer && styles.seatActionButtonDisabled,
+              ]}
+            >
+              <Text style={styles.seatActionButtonText}>
+                {selectedSeatPlayer?.isTraveller ? '일반' : '여행자'}
+              </Text>
+            </Pressable>
+            <Pressable
+              disabled={!selectedSeatPlayer}
               onPress={() =>
                 selectedSeatPlayer && confirmKickPlayer(selectedSeatPlayer)
               }
@@ -638,6 +658,31 @@ export default function LobbyScreen() {
               Alert.alert(
                 '오류',
                 e instanceof Error ? e.message : '강퇴에 실패했습니다.',
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const confirmConvertTravellerToRegular = (item: Player) => {
+    Alert.alert(
+      `${item.name} 일반 플레이어 전환`,
+      '여행자 역할과 진영을 제거하고 일반 플레이어로 전환하시겠습니까?',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '전환',
+          onPress: async () => {
+            try {
+              await convertTravellerToRegular(item.id);
+            } catch (e) {
+              Alert.alert(
+                '오류',
+                e instanceof Error
+                  ? e.message
+                  : '일반 플레이어 전환에 실패했습니다.',
               );
             }
           },

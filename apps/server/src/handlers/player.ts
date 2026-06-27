@@ -728,13 +728,16 @@ export function registerPlayerHandlers(
         const allowedTargetCounts =
           actionDef.allowedTargetCounts ??
           (actionDef.type === 'select_two' ? [2] : [1]);
+        const validTargetCounts = actionDef.canSkip
+          ? [...new Set([0, ...allowedTargetCounts])]
+          : allowedTargetCounts;
         if (
           !Array.isArray(targets) ||
-          !allowedTargetCounts.includes(targets.length)
+          !validTargetCounts.includes(targets.length)
         ) {
           callback?.({
             success: false,
-            error: `대상 ${allowedTargetCounts.join('/')}명을 선택해야 합니다`,
+            error: `대상 ${validTargetCounts.join('/')}명을 선택해야 합니다`,
           });
           return;
         }

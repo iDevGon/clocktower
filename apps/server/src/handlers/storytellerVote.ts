@@ -354,6 +354,7 @@ export function registerVoteHandlers(
 
     // 변론 → 투표 페이즈 전환
     game.setPhase('vote');
+    game.markVoteCloseLocked();
     playerIo.emit('game:phase', 'vote');
     playerIo.emit('vote:proceedToVote');
     storytellerIo.emit('vote:proceedToVote');

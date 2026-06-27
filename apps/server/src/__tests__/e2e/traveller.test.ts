@@ -304,6 +304,53 @@ describe('E2E: 여행자 역할 배정 및 알림', () => {
     expect(player?.isTraveller).toBeFalsy();
     expect(player?.role?.id).toBe('chef');
   }, 15000);
+
+  it('이야기꾼이 여행자를 일반 플레이어로 전환한다', async () => {
+    await setupFullGame(ctx);
+
+    const { playerId, socket } = await addTravellerWithRole(
+      ctx,
+      'Traveller1',
+      'scapegoat',
+      'good',
+    );
+    const roleAssignPromise = waitForEvent<{
+      roleId: string;
+      roleName: string;
+    }>(socket as Socket, 'role:assign');
+
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.storyteller.emit('traveller:convertToRegular', playerId, resolve);
+      },
+    );
+    const roleAssign = await roleAssignPromise;
+    const player = ctx.app.game.getPlayer(playerId);
+
+    expect(result.success).toBe(true);
+    expect(roleAssign).toEqual({ roleId: '', roleName: '' });
+    expect(player?.isTraveller).toBe(false);
+    expect(player?.role).toBeUndefined();
+    expect(player?.travellerAlignment).toBeUndefined();
+  }, 15000);
+
+  it('이야기꾼이 강퇴한 플레이어는 kicked 이벤트를 받는다', async () => {
+    const { playerIds } = await setupFullGame(ctx);
+    const kickedPromise = waitForEvent<void>(
+      ctx.players[0] as Socket,
+      'player:kicked',
+    );
+
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.storyteller.emit('player:kick', playerIds[0], resolve);
+      },
+    );
+    await kickedPromise;
+
+    expect(result.success).toBe(true);
+    expect(ctx.app.game.getPlayer(playerIds[0])).toBeUndefined();
+  }, 15000);
 });
 
 describe('E2E: S&V 여행자 진행 이벤트', () => {

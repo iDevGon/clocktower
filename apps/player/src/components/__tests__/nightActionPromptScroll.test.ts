@@ -27,4 +27,10 @@ describe('NightActionPrompt allowed target counts', () => {
     expect(source).toContain('actionDef.deadTargetsOnly');
     expect(source).toContain('return !p.isAlive');
   });
+
+  it('shows a skip action for night actions that are optional', () => {
+    expect(source).toContain('actionDef.canSkip');
+    expect(source).toContain('onSubmit([])');
+    expect(source).toContain('스킵');
+  });
 });

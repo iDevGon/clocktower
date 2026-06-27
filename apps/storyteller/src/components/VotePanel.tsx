@@ -31,6 +31,8 @@ interface VotePanelProps {
   onDismissResult?: () => void;
 }
 
+const VOTE_CLOSE_LOCK_MS = 3000;
+
 export function VotePanel({
   nomination,
   players,
@@ -52,14 +54,22 @@ export function VotePanel({
   const votePreselections = useGameStore((s) => s.votePreselections);
   const voteConfirmed = useGameStore((s) => s.voteConfirmed);
 
+  const [voteCloseLockedUntil, setVoteCloseLockedUntil] = useState(0);
   const [, forceUpdate] = useState(0);
+
+  useEffect(() => {
+    if (gameState?.phase !== 'vote' || !nomination.nomineeId) return;
+    setVoteCloseLockedUntil(Date.now() + VOTE_CLOSE_LOCK_MS);
+  }, [gameState?.phase, nomination.nomineeId]);
 
   // Re-render periodically to update timer and countdown
   useEffect(() => {
-    if (!voteClock && !voteCountdown) return;
+    if (!voteClock && !voteCountdown && Date.now() >= voteCloseLockedUntil) {
+      return;
+    }
     const interval = setInterval(() => forceUpdate((n) => n + 1), 1000);
     return () => clearInterval(interval);
-  }, [voteClock, voteCountdown]);
+  }, [voteClock, voteCountdown, voteCloseLockedUntil]);
 
   // 카운트다운 계산
   const countdownRemaining = useMemo(() => {
@@ -69,6 +79,8 @@ export function VotePanel({
   }, [voteCountdown]);
 
   const isCountingDown = voteCountdown !== null && countdownRemaining > 0;
+  const isCloseVoteDisabled =
+    isCountingDown || Date.now() < voteCloseLockedUntil;
 
   const guiltyCount =
     Object.keys(nomination.votes).length +
@@ -287,7 +299,14 @@ export function VotePanel({
           <Text style={styles.closeVoteText}>투표 시작</Text>
         </Pressable>
       ) : (
-        <Pressable onPress={onCloseVote} style={styles.closeVoteButton}>
+        <Pressable
+          onPress={onCloseVote}
+          style={[
+            styles.closeVoteButton,
+            isCloseVoteDisabled && styles.closeVoteButtonDisabled,
+          ]}
+          disabled={isCloseVoteDisabled}
+        >
           <Text style={styles.closeVoteText}>투표 종료</Text>
         </Pressable>
       )}

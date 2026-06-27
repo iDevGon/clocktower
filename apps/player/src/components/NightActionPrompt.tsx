@@ -188,6 +188,11 @@ export function NightActionPrompt({
           확인
         </Text>
       </Pressable>
+      {actionDef.canSkip && (
+        <Pressable onPress={() => onSubmit([])} style={styles.submitButton}>
+          <Text style={styles.submitText}>스킵</Text>
+        </Pressable>
+      )}
     </View>
   );
 }

@@ -1384,6 +1384,7 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     excludeSelf: true,
     includeDeadTargets: true,
     deadTargetsOnly: true,
+    canSkip: true,
   },
   lunatic: {
     type: 'passive',
@@ -1416,6 +1417,7 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     instruction: '암살할 플레이어를 선택하세요 (1회 사용)',
     excludeSelf: false,
     includeDeadTargets: true,
+    canSkip: true,
   },
   zombuul: {
     type: 'select_one',

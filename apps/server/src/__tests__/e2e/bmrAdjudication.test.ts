@@ -1179,6 +1179,36 @@ describe('E2E: 피로물든달 판정 보조', () => {
     expect(playerStateReceived).toBe(false);
   });
 
+  it('선택형 1회성 밤 행동은 대상 없이 스킵할 수 있다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'gambler' },
+      { roleId: 'godfather' },
+      { roleId: 'assassin' },
+    ]);
+
+    const actionPromise = waitForEvent<{
+      playerId: string;
+      roleId: string;
+      targets: string[];
+    }>(ctx.storyteller, 'night:actionReceived');
+
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.players[4].emit('night:action', { targets: [] }, resolve);
+      },
+    );
+    const action = await actionPromise;
+
+    expect(result).toEqual({ success: true });
+    expect(action).toMatchObject({
+      playerId: playerIds[4],
+      roleId: 'assassin',
+      targets: [],
+    });
+  });
+
   it('플레이어 암살자 밤 행동으로 악마가 사망하면 즉시 선 팀 승리로 종료한다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [
       { roleId: 'grandmother' },
