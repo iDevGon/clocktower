@@ -373,6 +373,7 @@ export function registerStorytellerHandlers(
       game.clearPreselectedBluffIds();
 
       const state = game.getState();
+      playerIo.emit('game:state', toPublicGameState(state));
       playerIo.emit('game:phase', 'night');
       const order = getNightOrder(state.day, game.getEditionId());
       const players = getPlayerInfoList(game);

@@ -32,6 +32,89 @@ describe('E2E: 게임 라이프사이클', () => {
     expect(serverState.players.every((p) => p.role !== undefined)).toBe(true);
   }, 15000);
 
+  it('게임 시작 시 플레이어에게 최신 좌석 순서가 포함된 상태를 전송한다', async () => {
+    const createStatePromise = waitForEvent(
+      ctx.storyteller as Socket,
+      'game:state',
+    );
+    await new Promise<void>((resolve) => {
+      ctx.storyteller.emit('game:create', (res) => {
+        expect(res.success).toBe(true);
+        resolve();
+      });
+    });
+    await createStatePromise;
+
+    const playerIds: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const playerSocket = await ctx.connectPlayer();
+      ctx.players.push(playerSocket);
+
+      const joinStatePromise = waitForEvent(
+        ctx.storyteller as Socket,
+        'game:state',
+      );
+      const joinResult = await new Promise<{
+        success: boolean;
+        playerId?: string;
+      }>((resolve) => {
+        playerSocket.emit(
+          'game:join',
+          { playerName: `Player${i + 1}` },
+          resolve,
+        );
+      });
+      expect(joinResult.success).toBe(true);
+      expect(joinResult.playerId).toBeDefined();
+      playerIds.push(joinResult.playerId ?? '');
+      await joinStatePromise;
+    }
+
+    const distStatePromise = waitForEvent(
+      ctx.storyteller as Socket,
+      'game:state',
+    );
+    await new Promise<void>((resolve, reject) => {
+      ctx.storyteller.emit('game:distributeRoles', {}, (res) => {
+        if (res.success) resolve();
+        else reject(new Error(res.error));
+      });
+    });
+    await distStatePromise;
+
+    const reordered = [
+      playerIds[2],
+      playerIds[0],
+      playerIds[4],
+      playerIds[1],
+      playerIds[3],
+    ];
+    const orderStatePromise = waitForEvent(
+      ctx.players[0] as Socket,
+      'game:state',
+    );
+    ctx.storyteller.emit('game:setPlayerOrder', reordered);
+    await orderStatePromise;
+
+    const startPlayerStatePromise = waitForEvent<{
+      playerOrder: string[];
+    }>(ctx.players[0] as Socket, 'game:state', 500);
+    const startStorytellerStatePromise = waitForEvent(
+      ctx.storyteller as Socket,
+      'game:state',
+    );
+    await new Promise<void>((resolve, reject) => {
+      ctx.storyteller.emit('game:start', (res) => {
+        if (res.success) resolve();
+        else reject(new Error(res.error));
+      });
+    });
+    await startStorytellerStatePromise;
+    const playerState = await startPlayerStatePromise;
+
+    expect(playerState.playerOrder).toEqual(reordered);
+  }, 15000);
+
   it('플레이어가 role:assign 이벤트를 수신한다', async () => {
     // 게임 생성 — 리스너 먼저 등록
     const statePromise = waitForEvent(ctx.storyteller as Socket, 'game:state');
