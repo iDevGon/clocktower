@@ -2222,6 +2222,7 @@ export default function GrimoireScreen() {
         visible={dictionaryVisible}
         onClose={() => setDictionaryVisible(false)}
         groupRolesByTeam={false}
+        editionId={detectedEditionId}
       />
 
       {/* 사랑꾼 사망 → 취하게 할 대상 선택 모달 */}

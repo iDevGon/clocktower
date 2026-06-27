@@ -4,8 +4,9 @@ import {
   DAY_SUB_PHASE_ENTRIES,
   EDITION_COLORS,
   EDITION_LABELS,
-  GAME_FLOW,
   GAME_RULES,
+  getNightOrderForEdition,
+  getRoleById,
   PHASE_ENTRIES,
   STATUS_ENTRIES,
   TEAM_COLORS,
@@ -43,6 +44,7 @@ interface DictionaryModalProps {
    * @default true
    */
   groupRolesByTeam?: boolean;
+  editionId?: string;
   roleIds?: string[];
 }
 
@@ -52,6 +54,104 @@ const TEAM_ORDER: Array<{ team: Team; label: string }> = [
   { team: 'minion', label: '하수인' },
   { team: 'demon', label: '악마' },
 ];
+
+const FLOW_BANDS = [
+  {
+    id: 'first',
+    label: '첫째 밤',
+    description: '게임 시작 첫 밤에만 진행되는 정보와 선택입니다.',
+    backgroundColor: 'rgba(93, 173, 226, 0.13)',
+  },
+  {
+    id: 'every',
+    label: '모든 밤',
+    description: '첫째 밤과 이후 밤에 모두 등장하는 반복 순서입니다.',
+    backgroundColor: 'rgba(183, 149, 79, 0.14)',
+  },
+  {
+    id: 'other',
+    label: '이후 밤',
+    description: '둘째 밤부터 새벽 전까지 진행되는 순서입니다.',
+    backgroundColor: 'rgba(176, 92, 92, 0.14)',
+  },
+  {
+    id: 'dusk',
+    label: '황혼',
+    description: '처형, 낮 능력, 밤 진입 전 공개 판정을 이야기꾼이 정리합니다.',
+    backgroundColor: 'rgba(165, 105, 189, 0.13)',
+  },
+] as const;
+
+function getTeamColor(role: Role) {
+  return TEAM_COLORS[role.team] ?? colors.arcane.text.label;
+}
+
+function getOrderedRoles(order: string[], allowedRoleIds?: Set<string>) {
+  return order
+    .filter((roleId) => !allowedRoleIds || allowedRoleIds.has(roleId))
+    .map((roleId) => getRoleById(roleId))
+    .filter((role): role is Role => Boolean(role));
+}
+
+function FlowRail({ label, roles }: { label: string; roles: Role[] }) {
+  return (
+    <View style={tabStyles.flowRail}>
+      <Text style={tabStyles.flowRailLabel}>{label}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={tabStyles.flowRailTrack}>
+          {roles.map((role, index) => (
+            <View key={`${label}-${role.id}`} style={tabStyles.flowNodeGroup}>
+              <View
+                style={[
+                  tabStyles.flowNode,
+                  {
+                    borderColor: getTeamColor(role),
+                    backgroundColor: `${getTeamColor(role)}22`,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    tabStyles.flowNodeText,
+                    { color: getTeamColor(role) },
+                  ]}
+                >
+                  {role.name}
+                </Text>
+              </View>
+              {index < roles.length - 1 && (
+                <Text
+                  style={[
+                    tabStyles.flowArrow,
+                    { color: getTeamColor(roles[index + 1]) },
+                  ]}
+                >
+                  →
+                </Text>
+              )}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+function FlowRoleRow({ role }: { role: Role }) {
+  return (
+    <View style={tabStyles.flowRoleRow}>
+      <View
+        style={[tabStyles.flowRoleDot, { backgroundColor: getTeamColor(role) }]}
+      />
+      <Text style={[tabStyles.flowRoleName, { color: getTeamColor(role) }]}>
+        {role.name}
+      </Text>
+      <Text style={tabStyles.flowRoleAbility} numberOfLines={2}>
+        {role.ability}
+      </Text>
+    </View>
+  );
+}
 
 function GroupedRolesTab({ roles }: { roles: Role[] }) {
   return (
@@ -239,13 +339,67 @@ function RulesTab() {
   );
 }
 
-function FlowTab() {
+function FlowTab({
+  editionId,
+  roleIds,
+}: {
+  editionId?: string;
+  roleIds?: string[];
+}) {
+  const flowEditionId = editionId ?? 'trouble_brewing';
+  const allowedRoleIds = roleIds ? new Set(roleIds) : undefined;
+  const firstOrder = getOrderedRoles(
+    getNightOrderForEdition(flowEditionId, 1),
+    allowedRoleIds,
+  );
+  const otherOrder = getOrderedRoles(
+    getNightOrderForEdition(flowEditionId, 2),
+    allowedRoleIds,
+  );
+  const firstRoleIds = new Set(firstOrder.map((role) => role.id));
+  const otherRoleIds = new Set(otherOrder.map((role) => role.id));
+  const firstOnlyRoles = firstOrder.filter(
+    (role) => !otherRoleIds.has(role.id),
+  );
+  const everyNightRoles = firstOrder.filter((role) =>
+    otherRoleIds.has(role.id),
+  );
+  const otherOnlyRoles = otherOrder.filter(
+    (role) => !firstRoleIds.has(role.id),
+  );
+  const bandRoles = {
+    first: firstOnlyRoles,
+    every: everyNightRoles,
+    other: otherOnlyRoles,
+    dusk: [],
+  };
+
   return (
     <View style={tabStyles.section}>
-      {GAME_FLOW.map((item) => (
-        <View key={item.step} style={tabStyles.card}>
-          <Text style={tabStyles.flowStep}>{item.step}</Text>
-          <Text style={tabStyles.abilityText}>{item.description}</Text>
+      <View style={tabStyles.flowRails}>
+        <FlowRail label="첫째 밤" roles={firstOrder} />
+        <FlowRail label="이후 밤" roles={otherOrder} />
+      </View>
+
+      {FLOW_BANDS.map((band) => (
+        <View
+          key={band.id}
+          style={[
+            tabStyles.flowBand,
+            { backgroundColor: band.backgroundColor },
+          ]}
+        >
+          <Text style={tabStyles.flowBandLabel}>{band.label}</Text>
+          <Text style={tabStyles.flowBandDescription}>{band.description}</Text>
+          {bandRoles[band.id].length > 0 ? (
+            bandRoles[band.id].map((role) => (
+              <FlowRoleRow key={`${band.id}-${role.id}`} role={role} />
+            ))
+          ) : (
+            <Text style={tabStyles.flowEmptyText}>
+              이 구간에 표시할 밤 역할이 없습니다.
+            </Text>
+          )}
         </View>
       ))}
     </View>
@@ -256,6 +410,7 @@ export function DictionaryModal({
   visible,
   onClose,
   groupRolesByTeam = true,
+  editionId,
   roleIds,
 }: DictionaryModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('roles');
@@ -309,7 +464,9 @@ export function DictionaryModal({
         ))}
       {activeTab === 'statuses' && <StatusesTab />}
       {activeTab === 'rules' && <RulesTab />}
-      {activeTab === 'flow' && <FlowTab />}
+      {activeTab === 'flow' && (
+        <FlowTab editionId={editionId} roleIds={roleIds} />
+      )}
     </ScrollView>
   );
 
@@ -535,10 +692,98 @@ const tabStyles = StyleSheet.create({
     fontFamily: typography.fontFamily.bodyBold,
     marginBottom: 6,
   },
-  flowStep: {
+  flowRails: {
+    gap: 8,
+    backgroundColor: colors.arcane.surface.base,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.arcane.border.parchment,
+    padding: 10,
+  },
+  flowRail: {
+    gap: 6,
+  },
+  flowRailLabel: {
+    color: colors.arcane.text.label,
+    fontSize: 12,
+    fontFamily: typography.fontFamily.bodyBold,
+  },
+  flowRailTrack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 36,
+  },
+  flowNodeGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  flowNode: {
+    minWidth: 58,
+    maxWidth: 92,
+    minHeight: 30,
+    borderRadius: 6,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    justifyContent: 'center',
+  },
+  flowNodeText: {
+    fontSize: 11,
+    fontFamily: typography.fontFamily.bodyBold,
+    textAlign: 'center',
+  },
+  flowArrow: {
+    width: 20,
+    textAlign: 'center',
+    fontSize: 14,
+    fontFamily: typography.fontFamily.bodyBold,
+  },
+  flowBand: {
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.arcane.border.parchment,
+    padding: 12,
+    gap: 8,
+  },
+  flowBandLabel: {
     color: colors.arcane.accent.sapphireLens,
     fontSize: 15,
     fontFamily: typography.fontFamily.bodyBold,
-    marginBottom: 6,
+  },
+  flowBandDescription: {
+    color: colors.arcane.text.muted,
+    fontSize: 12,
+    lineHeight: 18,
+    fontFamily: typography.fontFamily.body,
+  },
+  flowRoleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.arcane.border.brassDim,
+    paddingTop: 8,
+  },
+  flowRoleDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  flowRoleName: {
+    width: 76,
+    fontSize: 13,
+    fontFamily: typography.fontFamily.bodyBold,
+  },
+  flowRoleAbility: {
+    flex: 1,
+    color: colors.arcane.text.muted,
+    fontSize: 12,
+    lineHeight: 17,
+    fontFamily: typography.fontFamily.body,
+  },
+  flowEmptyText: {
+    color: colors.arcane.text.dead,
+    fontSize: 12,
+    fontFamily: typography.fontFamily.body,
   },
 });

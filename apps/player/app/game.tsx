@@ -957,6 +957,7 @@ export default function GameScreen() {
       <DictionaryModal
         visible={dictionaryVisible}
         onClose={() => setDictionaryVisible(false)}
+        editionId={gameSettings?.setupEditionId ?? role?.edition}
         roleIds={dictionaryRoleIds}
       />
 
