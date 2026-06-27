@@ -1180,6 +1180,7 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     type: 'select_one',
     instruction: '죽일 플레이어를 선택하세요',
     excludeSelf: false,
+    includeDeadTargets: true,
   },
   butler: {
     type: 'select_one',
@@ -1312,21 +1313,25 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     type: 'select_one',
     instruction: '죽일 플레이어를 선택하세요 (외지인 사망 시 역할 교환)',
     excludeSelf: false,
+    includeDeadTargets: true,
   },
   vigormortis: {
     type: 'select_one',
     instruction: '죽일 플레이어를 선택하세요 (하수인 사망 시 능력 유지)',
     excludeSelf: false,
+    includeDeadTargets: true,
   },
   no_dashii: {
     type: 'select_one',
     instruction: '죽일 플레이어를 선택하세요',
     excludeSelf: false,
+    includeDeadTargets: true,
   },
   vortox: {
     type: 'select_one',
     instruction: '죽일 플레이어를 선택하세요',
     excludeSelf: false,
+    includeDeadTargets: true,
   },
   evil_twin: {
     type: 'passive',
@@ -1470,6 +1475,7 @@ export const NIGHT_ACTIONS: Record<string, NightActionDef> = {
     instruction: '능력을 되찾을 죽은 플레이어를 선택하세요 (1회 사용)',
     excludeSelf: true,
     includeDeadTargets: true,
+    deadTargetsOnly: true,
   },
   harlot: {
     type: 'select_one',

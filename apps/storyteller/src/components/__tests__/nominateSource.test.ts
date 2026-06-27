@@ -12,4 +12,11 @@ describe('NominateScreen source', () => {
     expect(source).toContain('nominate(nominatorId, nomineeId, (result) => {');
     expect(source).toContain('if (result.success) router.back()');
   });
+
+  it('피지목자는 사망 플레이어도 선택할 수 있다', () => {
+    expect(source).toContain('nominatorPlayers');
+    expect(source).toContain('nomineePlayers');
+    expect(source).toContain('players.filter((p) => p.isAlive)');
+    expect(source).toContain('players.filter((p) => p.id !== nominatorId)');
+  });
 });

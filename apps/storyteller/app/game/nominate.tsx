@@ -17,7 +17,8 @@ export default function NominateScreen() {
   const [nominatorId, setNominatorId] = useState<string | null>(null);
   const [nomineeId, setNomineeId] = useState<string | null>(null);
 
-  const alivePlayers = players.filter((p) => p.isAlive);
+  const nominatorPlayers = players.filter((p) => p.isAlive);
+  const nomineePlayers = players.filter((p) => p.id !== nominatorId);
 
   const handleSubmit = () => {
     if (nominatorId && nomineeId) {
@@ -51,7 +52,7 @@ export default function NominateScreen() {
 
       <View style={styles.listContainer}>
         <PlayerList
-          players={alivePlayers}
+          players={nominatorId ? nomineePlayers : nominatorPlayers}
           onPlayerPress={(p) => {
             if (!nominatorId) setNominatorId(p.id);
             else if (!nomineeId && p.id !== nominatorId) setNomineeId(p.id);

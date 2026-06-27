@@ -466,6 +466,15 @@ describe('GameManager', () => {
       expect(result.success).toBe(false);
     });
 
+    it('사망한 플레이어도 지목당할 수 있다', () => {
+      const { gm, players } = createStartedGame();
+      gm.setPhase('day');
+      gm.setDaySubPhase('nomination');
+      gm.kill(players[1].id);
+      const result = gm.nominate(players[0].id, players[1].id);
+      expect(result.success).toBe(true);
+    });
+
     it('이미 지명한 플레이어는 다시 지명할 수 없다', () => {
       const { gm, players } = createStartedGame();
       gm.setPhase('day');

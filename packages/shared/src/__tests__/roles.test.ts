@@ -993,6 +993,29 @@ describe('BMR 밤 행동 정의', () => {
     }
   });
 
+  it('악마의 살해 능력은 사망 플레이어도 대상으로 선택할 수 있다', () => {
+    for (const id of [
+      'imp',
+      'fang_gu',
+      'vigormortis',
+      'no_dashii',
+      'vortox',
+      'zombuul',
+      'pukka',
+      'shabaloth',
+      'po',
+    ]) {
+      expect(NIGHT_ACTIONS[id]?.includeDeadTargets).toBe(true);
+    }
+  });
+
+  it('시체 수집가는 사망 플레이어만 대상으로 선택한다', () => {
+    expect(NIGHT_ACTIONS.bone_collector).toMatchObject({
+      includeDeadTargets: true,
+      deadTargetsOnly: true,
+    });
+  });
+
   it('앱에서 처리되는 BMR 보조 역할 안내는 수동 처리로 표시하지 않는다', () => {
     for (const id of ['courtier', 'gambler', 'gossip', 'moonchild']) {
       expect(NIGHT_ACTIONS[id]?.instruction).not.toContain('수동');

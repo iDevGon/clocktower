@@ -428,10 +428,7 @@ export default function GameScreen() {
   };
 
   const nominatablePlayers = useMemo(
-    () =>
-      gamePlayers.filter(
-        (p) => p.isAlive && p.id !== playerId && !p.isTraveller,
-      ),
+    () => gamePlayers.filter((p) => p.id !== playerId && !p.isTraveller),
     [gamePlayers, playerId],
   );
 
