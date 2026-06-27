@@ -100,6 +100,7 @@ interface PlayerState {
   nightFeedback: NightFeedbackPayload | null;
   feedbackHistory: FeedbackHistoryEntry[];
   seatingRoleNotes: Record<string, string>;
+  seatingPlayerNotes: Record<string, string>;
   voteHistory: VoteHistoryEntry[];
   nightCount: number;
   gamePlayers: PlayerInfo[];
@@ -233,6 +234,7 @@ interface PlayerState {
   set: (partial: Partial<PlayerState>) => void;
   addFeedback: (day: number, feedback: NightFeedbackPayload) => void;
   setSeatingRoleNote: (playerId: string, note: string) => void;
+  setSeatingPlayerNote: (playerId: string, note: string) => void;
   reset: () => void;
 }
 
@@ -255,6 +257,7 @@ const initialState = {
   nightFeedback: null,
   feedbackHistory: [],
   seatingRoleNotes: {} as Record<string, string>,
+  seatingPlayerNotes: {} as Record<string, string>,
   voteHistory: [] as VoteHistoryEntry[],
   nightCount: 0,
   gamePlayers: [],
@@ -372,6 +375,17 @@ export const usePlayerStore = create<PlayerState>()(
           }
           return { seatingRoleNotes: next };
         }),
+      setSeatingPlayerNote: (playerId, note) =>
+        set((s) => {
+          const trimmed = note.trim();
+          const next = { ...s.seatingPlayerNotes };
+          if (trimmed) {
+            next[playerId] = trimmed;
+          } else {
+            delete next[playerId];
+          }
+          return { seatingPlayerNotes: next };
+        }),
       reset: () => set(initialState),
     }),
     {
@@ -381,6 +395,7 @@ export const usePlayerStore = create<PlayerState>()(
         playerId: state.playerId,
         playerName: state.playerName,
         seatingRoleNotes: state.seatingRoleNotes,
+        seatingPlayerNotes: state.seatingPlayerNotes,
         voteHistory: state.voteHistory,
       }),
     },

@@ -38,6 +38,14 @@ describe('playerStore', () => {
     expect(usePlayerStore.getState().seatingRoleNotes.p1).toBeUndefined();
   });
 
+  it('좌석 플레이어 직접 메모를 저장하고 빈 값으로 삭제한다', () => {
+    usePlayerStore.getState().setSeatingPlayerNote('p1', '거짓말 많음');
+    expect(usePlayerStore.getState().seatingPlayerNotes.p1).toBe('거짓말 많음');
+
+    usePlayerStore.getState().setSeatingPlayerNote('p1', '   ');
+    expect(usePlayerStore.getState().seatingPlayerNotes.p1).toBeUndefined();
+  });
+
   it('reset: 초기 상태로 복원된다', () => {
     usePlayerStore
       .getState()

@@ -22,8 +22,10 @@ interface SeatingChartProps {
   phase: Phase;
   roleOptions: Role[];
   roleNotes: Record<string, string>;
+  playerNotes: Record<string, string>;
   voteHistory: VoteHistoryEntry[];
   onSetRoleNote: (playerId: string, note: string) => void;
+  onSetPlayerNote: (playerId: string, note: string) => void;
   onClose: () => void;
 }
 
@@ -53,8 +55,10 @@ export function SeatingChart({
   phase,
   roleOptions,
   roleNotes,
+  playerNotes,
   voteHistory,
   onSetRoleNote,
+  onSetPlayerNote,
   onClose,
 }: SeatingChartProps) {
   // 밤 진입 시점의 사망자 ID를 스냅샷으로 저장
@@ -227,6 +231,7 @@ export function SeatingChart({
       const pos = positions[index];
       const fontSize = tokenSize <= 44 ? 10 : 11;
       const note = roleNotes[player.id];
+      const playerNote = playerNotes[player.id];
 
       // 밤에는 밤 진입 전 이미 죽었던 사람만 사망 표시
       // 그 외 페이즈에서는 서버 상태 그대로 표시
@@ -296,6 +301,14 @@ export function SeatingChart({
               {note}
             </Text>
           )}
+          {playerNote && (
+            <Text
+              style={[s.playerNote, { fontSize: fontSize - 2 }]}
+              numberOfLines={1}
+            >
+              {playerNote}
+            </Text>
+          )}
           {player.isTraveller && (
             <Text style={[s.travellerTag, { fontSize: fontSize - 2 }]}>
               여행자
@@ -346,6 +359,7 @@ export function SeatingChart({
     [
       myId,
       openNoteEditor,
+      playerNotes,
       positions,
       roleNotes,
       selectedEligibleVoterIds,
@@ -444,6 +458,19 @@ export function SeatingChart({
                   placeholderTextColor="#6f6870"
                   maxLength={24}
                   autoFocus
+                  autoCorrect={false}
+                />
+                <Text style={s.noteEditorLabel}>직접 메모</Text>
+                <TextInput
+                  value={playerNotes[editingPlayer.id] ?? ''}
+                  onChangeText={(text) =>
+                    onSetPlayerNote(editingPlayer.id, text)
+                  }
+                  style={s.playerNoteInput}
+                  placeholder="플레이어별 메모 입력"
+                  placeholderTextColor="#6f6870"
+                  maxLength={80}
+                  multiline
                   autoCorrect={false}
                 />
                 <ScrollView

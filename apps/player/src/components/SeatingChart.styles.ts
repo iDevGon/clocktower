@@ -129,6 +129,12 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 1,
   },
+  playerNote: {
+    color: '#9fb7d6',
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: 1,
+  },
   deadRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -311,6 +317,20 @@ export const styles = StyleSheet.create({
     color: colors.text.primary,
     fontSize: 15,
     fontWeight: '700',
+  },
+  playerNoteInput: {
+    minHeight: 58,
+    maxHeight: 90,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(120,150,190,0.36)',
+    backgroundColor: 'rgba(120,150,190,0.08)',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: '700',
+    textAlignVertical: 'top',
   },
   rolePickerList: {
     maxHeight: 330,

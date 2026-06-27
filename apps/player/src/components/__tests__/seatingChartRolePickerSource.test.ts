@@ -18,4 +18,13 @@ describe('SeatingChart role picker source', () => {
     expect(seatingSource).toContain('TEAM_ORDER');
     expect(seatingSource).toContain('filteredRoleGroups');
   });
+
+  it('supports free-form player notes separately from expected role notes', () => {
+    expect(gameSource).toContain('seatingPlayerNotes');
+    expect(gameSource).toContain('setSeatingPlayerNote');
+    expect(seatingSource).toContain('playerNotes');
+    expect(seatingSource).toContain('onSetPlayerNote');
+    expect(seatingSource).toContain('직접 메모');
+    expect(seatingSource).toContain('playerNoteInput');
+  });
 });
