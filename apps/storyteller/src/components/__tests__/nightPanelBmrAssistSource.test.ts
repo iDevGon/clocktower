@@ -60,4 +60,25 @@ describe('NightPanel BMR assist callbacks', () => {
       "!player.statuses.includes('zombuul_registers_dead')",
     );
   });
+
+  it('궁정대신과 도박사 역할 후보는 현재 스크립트 역할만 사용한다', () => {
+    expect(componentSource).toContain(
+      'const gameRoles = useGameEditionRoles(players)',
+    );
+    expect(componentSource).toContain('gameRoles.map((role)');
+    expect(componentSource).not.toContain('ALL_ROLES.map((role)');
+  });
+
+  it('BMR 행동 차례에 역할별 판정 보조 안내를 보여준다', () => {
+    expect(componentSource).toContain('BMR_ROLE_ASSIST_NOTES');
+    expect(componentSource).toContain(
+      '하녀가 선택한 두 플레이어 중 오늘 밤 자기 능력으로 깨어난 수',
+    );
+    expect(componentSource).toContain(
+      '푸카는 이전 중독자를 먼저 사망 처리하고 새 중독 대상을 기록',
+    );
+    expect(componentSource).toContain(
+      '포가 아무도 선택하지 않으면 다음 밤 3명 처치가 가능',
+    );
+  });
 });

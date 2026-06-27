@@ -4,16 +4,12 @@ import type {
   Player,
   PlayerStatus,
 } from '@clocktower/shared';
-import {
-  ALL_ROLES,
-  getRoleById,
-  NIGHT_ACTIONS,
-  NIGHT_FEEDBACK,
-} from '@clocktower/shared';
+import { getRoleById, NIGHT_ACTIONS, NIGHT_FEEDBACK } from '@clocktower/shared';
 import { colors } from '@clocktower/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import type { createGrimoireStyles } from '../styles/grimoire.styles';
+import { useGameEditionRoles } from './feedback/useGameEditionRoles';
 import { NightActionLog, NightFeedbackPanel } from './NightActionLog';
 import { NightOrderPanel } from './NightOrderPanel';
 import {
@@ -24,6 +20,41 @@ import { isAbilityMalfunctioning, isDetectedAsEvil } from './nightRoleLogic';
 import { SpyGrimoireComposer } from './SpyGrimoireComposer';
 
 type BmrAssistResult = { success: boolean; error?: string };
+
+const BMR_ROLE_ASSIST_NOTES: Partial<Record<string, string[]>> = {
+  chambermaid: [
+    '하녀가 선택한 두 플레이어 중 오늘 밤 자기 능력으로 깨어난 수를 피드백합니다.',
+    '취함/중독 상태라면 숫자를 임의로 조정해 잘못된 정보를 줄 수 있습니다.',
+  ],
+  sailor: [
+    '선원은 본인 또는 선택 대상 중 한 명이 취합니다.',
+    '행동 로그에서 선원 취함 대상을 바로 적용할 수 있습니다.',
+  ],
+  innkeeper: [
+    '여관 주인은 선택한 두 명을 밤 사망으로부터 보호합니다.',
+    '보호 대상 중 한 명은 취합니다. 행동 로그에서 보호와 취함을 각각 적용하세요.',
+  ],
+  pukka: [
+    '푸카는 이전 중독자를 먼저 사망 처리하고 새 중독 대상을 기록합니다.',
+    '이전 푸카 중독자가 달의 자손이면 공개 선택 예약까지 확인하세요.',
+  ],
+  assassin: [
+    '암살자는 보호를 무시할 수 있습니다.',
+    '행동 로그의 BMR 경고에서 보호 우회와 능력 소모 처리를 확인하세요.',
+  ],
+  shabaloth: [
+    '사발로스는 최대 2명을 죽이고 표식을 남깁니다.',
+    '표식이 있는 사망자는 이후 사발로스 차례에서 토해내기 후보로 표시됩니다.',
+  ],
+  po: [
+    '포가 아무도 선택하지 않으면 다음 밤 3명 처치가 가능합니다.',
+    '0명 선택 시 행동 로그에서 포 휴식 상태를 적용하세요.',
+  ],
+  professor: [
+    '교수는 사망한 마을주민 1명을 부활시킬 수 있습니다.',
+    '부활 처리 후 교수 능력 소모 상태를 같이 적용하세요.',
+  ],
+};
 
 interface NightPanelProps {
   day: number;
@@ -273,6 +304,10 @@ export function NightPanel({
     [playerStatuses, players],
   );
   const gamblerCandidatePlayers = players;
+  const gameRoles = useGameEditionRoles(players);
+  const bmrRoleAssistNotes = activeNightRoleId
+    ? BMR_ROLE_ASSIST_NOTES[activeNightRoleId]
+    : undefined;
   const activeNightRolePlayerNames = activeNightRoleId
     ? getNightRolePlayerNames(players, activeNightRoleId)
     : [];
@@ -556,6 +591,28 @@ export function NightPanel({
             </View>
           )}
 
+          {bmrRoleAssistNotes && (
+            <View
+              style={{
+                marginTop: 12,
+                borderWidth: 1,
+                borderColor: '#3a3a42',
+                backgroundColor: '#17171b',
+                padding: 12,
+                gap: 8,
+              }}
+            >
+              <Text style={{ color: '#e0ddd8', fontWeight: '700' }}>
+                피로물든달 판정 힌트
+              </Text>
+              {bmrRoleAssistNotes.map((note) => (
+                <Text key={note} style={{ color: '#a9a29a' }}>
+                  - {note}
+                </Text>
+              ))}
+            </View>
+          )}
+
           {showBmrAssistPanel && activeRolePlayer && (
             <View
               style={{
@@ -578,7 +635,7 @@ export function NightPanel({
                   <View
                     style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
                   >
-                    {ALL_ROLES.map((role) =>
+                    {gameRoles.map((role) =>
                       renderChip(
                         role.id,
                         role.name,
@@ -630,7 +687,7 @@ export function NightPanel({
                   <View
                     style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
                   >
-                    {ALL_ROLES.map((role) =>
+                    {gameRoles.map((role) =>
                       renderChip(
                         role.id,
                         role.name,

@@ -1,32 +1,39 @@
-import type { Player, Role } from '@clocktower/shared';
-import { EDITION_ROLES } from '@clocktower/shared';
+import type { GameSettings, Player, Role } from '@clocktower/shared';
+import { EDITION_ROLES, getRoleById } from '@clocktower/shared';
 import { useMemo } from 'react';
+import { useGameStore } from '../../stores/gameStore';
+
+export function buildGameScriptRoles(
+  players: Player[],
+  settings?: Pick<GameSettings, 'setupEditionId' | 'additionalRoleIds'> | null,
+): Role[] {
+  const roleById = new Map<string, Role>();
+  const setupEditionId = settings?.setupEditionId ?? 'trouble_brewing';
+
+  for (const role of EDITION_ROLES[setupEditionId] ??
+    EDITION_ROLES.trouble_brewing) {
+    roleById.set(role.id, role);
+  }
+
+  for (const roleId of settings?.additionalRoleIds ?? []) {
+    const role = getRoleById(roleId);
+    if (role) roleById.set(role.id, role);
+  }
+
+  for (const player of players) {
+    if (!player.isTraveller || !player.role) continue;
+    roleById.set(player.role.id, player.role);
+  }
+
+  return [...roleById.values()];
+}
 
 /**
- * 현재 게임 플레이어들의 역할에서 에디션을 추론하고,
- * 해당 에디션(들)의 전체 역할 목록을 반환한다.
- * 크로스 에디션 믹싱이 있으면 관련 에디션 역할도 포함.
+ * 현재 게임 설정의 기본 에디션, 추가 역할, 참가 중인 여행자 역할만 반환한다.
  */
 export function useGameEditionRoles(players: Player[]): Role[] {
+  const settings = useGameStore((s) => s.gameState?.settings);
   return useMemo(() => {
-    const editions = new Set<string>();
-    for (const p of players) {
-      if (p.role?.edition && !p.isTraveller) {
-        editions.add(p.role.edition);
-      }
-    }
-    if (editions.size === 0) editions.add('trouble_brewing');
-
-    const roles: Role[] = [];
-    const seen = new Set<string>();
-    for (const editionId of editions) {
-      for (const role of EDITION_ROLES[editionId] ?? []) {
-        if (!seen.has(role.id)) {
-          seen.add(role.id);
-          roles.push(role);
-        }
-      }
-    }
-    return roles;
-  }, [players]);
+    return buildGameScriptRoles(players, settings);
+  }, [players, settings]);
 }
