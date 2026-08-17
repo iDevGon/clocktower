@@ -955,14 +955,24 @@ export const BMR_OTHER_NIGHT_ORDER: string[] = [
 export function getNightOrderForEdition(
   editionId: string,
   day: number,
+  additionalRoleIds: string[] = [],
 ): string[] {
+  let baseOrder: string[];
   if (editionId === 'sects_and_violets') {
-    return day <= 1 ? SV_FIRST_NIGHT_ORDER : SV_OTHER_NIGHT_ORDER;
+    baseOrder = day <= 1 ? SV_FIRST_NIGHT_ORDER : SV_OTHER_NIGHT_ORDER;
+  } else if (editionId === 'bad_moon_rising') {
+    baseOrder = day <= 1 ? BMR_FIRST_NIGHT_ORDER : BMR_OTHER_NIGHT_ORDER;
+  } else {
+    baseOrder = day <= 1 ? FIRST_NIGHT_ORDER : OTHER_NIGHT_ORDER;
   }
-  if (editionId === 'bad_moon_rising') {
-    return day <= 1 ? BMR_FIRST_NIGHT_ORDER : BMR_OTHER_NIGHT_ORDER;
-  }
-  return day <= 1 ? FIRST_NIGHT_ORDER : OTHER_NIGHT_ORDER;
+
+  const additionalOrder = additionalRoleIds.filter((roleId) => {
+    if (baseOrder.includes(roleId)) return false;
+    const role = getRoleById(roleId);
+    return role != null && getNightOrderForEdition(role.edition, day).includes(roleId);
+  });
+
+  return [...baseOrder, ...additionalOrder];
 }
 
 export function getRoleById(roleId: string): Role | undefined {

@@ -55,6 +55,20 @@ describe('S&V GameManager', () => {
       gm.detectEdition();
       expect(gm.getEditionId()).toBe('trouble_brewing');
     });
+
+    it('기본 에디션과 추가 역할을 섞어도 기본 에디션을 유지한다', () => {
+      const { gm, players } = createSVGame(5);
+      gm.assignRole(players[0].id, 'pukka');
+      gm.assignRole(players[1].id, 'washerwoman');
+      gm.assignRole(players[2].id, 'empath');
+      gm.assignRole(players[3].id, 'poisoner');
+      gm.assignRole(players[4].id, 'baron');
+      gm.setRoleSetup('trouble_brewing', ['pukka']);
+      gm.start();
+      gm.detectEdition();
+
+      expect(gm.getEditionId()).toBe('trouble_brewing');
+    });
   });
 
   describe('마녀 저주', () => {

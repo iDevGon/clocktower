@@ -11,11 +11,9 @@ import type {
 import {
   ALL_ROLES,
   distributeRoles,
-  FIRST_NIGHT_ORDER,
   getNightOrderForEdition,
   getRoleById,
   NIGHT_ACTIONS,
-  OTHER_NIGHT_ORDER,
 } from '@clocktower/shared/logic';
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
@@ -44,11 +42,19 @@ type StorytellerNamespace = Namespace<
 >;
 const RANDOM_BLUFF_EXCLUDED_ROLE_IDS = new Set(['drunk', 'lunatic']);
 
-function getNightOrder(day: number, editionId?: string): string[] {
+function getNightOrder(
+  day: number,
+  editionId?: string,
+  additionalRoleIds: string[] = [],
+): string[] {
   if (editionId) {
-    return getNightOrderForEdition(editionId, day);
+    return getNightOrderForEdition(editionId, day, additionalRoleIds);
   }
-  return day <= 1 ? FIRST_NIGHT_ORDER : OTHER_NIGHT_ORDER;
+  return getNightOrderForEdition(
+    'trouble_brewing',
+    day,
+    additionalRoleIds,
+  );
 }
 
 function emitDeliveredFeedbackRecord(
@@ -378,7 +384,11 @@ export function registerStorytellerHandlers(
       const state = game.getState();
       playerIo.emit('game:state', toPublicGameState(state));
       playerIo.emit('game:phase', 'night');
-      const order = getNightOrder(state.day, game.getEditionId());
+      const order = getNightOrder(
+        state.day,
+        game.getEditionId(),
+        game.getSettings().additionalRoleIds,
+      );
       const players = getPlayerInfoList(game);
       game.setNightProgress(null, order);
       playerIo.emit('night:activeRole', {
@@ -486,7 +496,11 @@ export function registerStorytellerHandlers(
       playerIo.emit('game:phase', phase);
       if (phase === 'night') {
         const state = game.getState();
-        const order = getNightOrder(state.day, game.getEditionId());
+        const order = getNightOrder(
+          state.day,
+          game.getEditionId(),
+          game.getSettings().additionalRoleIds,
+        );
         const players = getPlayerInfoList(game);
         game.setNightProgress(null, order);
         playerIo.emit('night:activeRole', {
@@ -687,7 +701,11 @@ export function registerStorytellerHandlers(
       }
 
       const state = game.getState();
-      const order = getNightOrder(state.day, game.getEditionId());
+      const order = getNightOrder(
+        state.day,
+        game.getEditionId(),
+        game.getSettings().additionalRoleIds,
+      );
       const players = getPlayerInfoList(game);
       game.setNightProgress(roleId, order);
       playerIo.emit('night:activeRole', {

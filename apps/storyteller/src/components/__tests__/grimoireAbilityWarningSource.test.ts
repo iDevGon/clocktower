@@ -23,6 +23,10 @@ describe('grimoire ability malfunction warnings', () => {
     expect(source).toContain("hasSv ? 'sects_and_violets'");
   });
 
+  it('uses the configured setup edition before role-based fallback', () => {
+    expect(source).toContain('gameState?.settings.setupEditionId');
+  });
+
   it('얼뜨기 선택 모달은 서버 성공 콜백 후에 닫는다', () => {
     expect(source).toContain('klutzChoose(klutzDiedPending.klutzId, playerId,');
     expect(source).toContain('if (result.success) setKlutzDiedPending(null)');

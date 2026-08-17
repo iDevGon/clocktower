@@ -417,6 +417,31 @@ describe('GameManager', () => {
       const result = gm.castVote(players[0].id);
       expect(result.success).toBe(true);
     });
+
+    it('제한된 사망 집사는 실패한 투표에서 유령 투표권을 소비하지 않는다', () => {
+      const { gm, players } = createTestGame(5);
+      gm.assignRole(players[0].id, 'butler');
+      gm.assignRole(players[1].id, 'empath');
+      gm.assignRole(players[2].id, 'fortune_teller');
+      gm.assignRole(players[3].id, 'poisoner');
+      gm.assignRole(players[4].id, 'imp');
+      gm.start();
+      gm.kill(players[0].id);
+      gm.setPhase('day');
+      gm.setDaySubPhase('nomination');
+      gm.setButlerMaster(players[0].id, players[1].id);
+      gm.nominate(players[2].id, players[3].id);
+
+      const result = gm.castVote(players[0].id);
+
+      expect(result.success).toBe(false);
+      expect(gm.getPlayer(players[0].id)?.deadVoteUsed).toBe(false);
+      expect(gm.isGhostVoteUsed(players[0].id)).toBe(false);
+      expect(gm.getState().nominations.at(-1)?.votes).not.toHaveProperty(
+        players[0].id,
+      );
+    });
+
   });
 
   describe('초공감자', () => {

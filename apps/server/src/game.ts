@@ -3409,6 +3409,14 @@ export class GameManager {
     if (!player)
       return { success: false, error: '플레이어를 찾을 수 없습니다' };
 
+    // 집사 투표 제한: 주인이 투표해야만 투표 가능 (중독된 집사는 제한 없음)
+    if (this.isButlerRestricted(playerId)) {
+      return {
+        success: false,
+        error: '주인이 투표하지 않았습니다',
+      };
+    }
+
     // 거지: 투표 토큰이 필요. 토큰이 없으면 투표 불가
     if (player.role?.id === 'beggar' && isPubliclyAlive(player)) {
       if (!this.consumeBeggarToken(playerId)) {
@@ -3428,15 +3436,6 @@ export class GameManager {
       player.deadVoteUsed = true;
       this.ghostVotesUsed.add(playerId);
     }
-
-    // 집사 투표 제한: 주인이 투표해야만 투표 가능 (중독된 집사는 제한 없음)
-    if (this.isButlerRestricted(playerId)) {
-      return {
-        success: false,
-        error: '주인이 투표하지 않았습니다',
-      };
-    }
-
     const current = this.state.nominations[this.state.nominations.length - 1];
     if (current) {
       current.votes[playerId] = true;
@@ -3870,10 +3869,15 @@ export class GameManager {
 
   /** 현재 게임의 에디션을 자동 감지하여 설정합니다 */
   detectEdition(): void {
-    const primaryEdition =
-      this.state.players.find((p) => p.role)?.role?.edition ??
-      this.state.settings.setupEditionId ??
-      'trouble_brewing';
+    const setupEditionId =
+      this.state.settings.setupEditionId ?? 'trouble_brewing';
+    const hasConfiguredSetup =
+      setupEditionId !== 'trouble_brewing' ||
+      this.state.settings.additionalRoleIds.length > 0;
+    const primaryEdition = hasConfiguredSetup
+      ? setupEditionId
+      : (this.state.players.find((p) => p.role)?.role?.edition ??
+        setupEditionId);
     this.setEditionId(primaryEdition);
   }
 

@@ -190,6 +190,8 @@ export default function GrimoireScreen() {
   );
   const detectedEditionId = useMemo(() => {
     if (!players) return 'trouble_brewing';
+    const configuredEditionId = gameState?.settings.setupEditionId;
+    if (configuredEditionId) return configuredEditionId;
     const hasBmr = players.some((p) => p.role && bmrRoleIds.has(p.role.id));
     if (hasBmr) return 'bad_moon_rising';
     const hasSv = players.some((p) => p.role && svRoleIds.has(p.role.id));
@@ -1673,7 +1675,13 @@ export default function GrimoireScreen() {
     const standardOrder = detectedEditionId
       ? getNightOrderForEdition(detectedEditionId, gameState.day)
       : [];
-    const extras: string[] = [];
+    const extras = detectedEditionId
+      ? getNightOrderForEdition(
+          detectedEditionId,
+          gameState.day,
+          gameState.settings.additionalRoleIds,
+        ).filter((roleId) => !standardOrder.includes(roleId))
+      : [];
     for (const p of players) {
       if (
         p.isAlive &&

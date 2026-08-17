@@ -769,6 +769,22 @@ describe('S&V 밤 진행 순서', () => {
       SV_OTHER_NIGHT_ORDER,
     );
   });
+
+  it('추가 역할은 자기 에디션의 밤 순서와 낮 조건을 따라 뒤에 추가된다', () => {
+    const firstNight = getNightOrderForEdition('trouble_brewing', 1, [
+      'courtier',
+      'po',
+    ]);
+    const otherNight = getNightOrderForEdition('trouble_brewing', 2, [
+      'courtier',
+      'po',
+    ]);
+
+    expect(firstNight.at(-1)).toBe('courtier');
+    expect(firstNight).not.toContain('po');
+    expect(otherNight.at(-2)).toBe('courtier');
+    expect(otherNight.at(-1)).toBe('po');
+  });
 });
 
 describe('Bad Moon Rising 역할 정의', () => {
