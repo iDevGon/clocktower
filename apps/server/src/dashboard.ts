@@ -1,7 +1,3 @@
-const IOS_EXPO_GO_URL = 'https://apps.apple.com/app/expo-go/id982107779';
-const ANDROID_EXPO_GO_URL =
-  'https://play.google.com/store/apps/details?id=host.exp.exponent';
-
 function qrImgUrl(data: string, size = 280): string {
   return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
 }
@@ -39,7 +35,6 @@ export function getDashboardHtml(
   playerUrl: string,
   storytellerUrl: string,
   playerExpUrl: string,
-  storytellerExpUrl: string,
 ): string {
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -73,21 +68,20 @@ h1{font-family:var(--display);font-size:clamp(40px,5.7vw,72px);line-height:.9;ma
 .note{margin:9px 0 0;color:var(--muted);font-size:13px;line-height:1.45;max-width:780px}
 .server-pill{display:grid;gap:6px;justify-items:end;color:var(--muted);font-size:12px}
 .server-pill code{color:var(--strong);background:rgba(18,13,9,.82);border:1px solid var(--brass-dim);border-radius:4px;padding:6px 9px;font-size:14px}
-.panels{min-height:0;display:grid;grid-template-columns:1.05fr 1.05fr .9fr;gap:14px}
+.panels{min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .panel{min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);gap:12px;position:relative;overflow:hidden;border:1px solid var(--brass-dim);border-radius:6px;padding:16px;background:linear-gradient(180deg,rgba(33,25,17,.92),rgba(18,13,9,.95));box-shadow:0 18px 58px rgba(0,0,0,.28)}
 .panel::before{content:"";position:absolute;inset:6px;border:1px solid rgba(142,119,88,.15);pointer-events:none}
 .panel.player{border-color:rgba(141,53,41,.9)}
 .panel.storyteller{border-color:rgba(47,79,143,.95);background:linear-gradient(180deg,rgba(16,24,47,.9),rgba(18,13,9,.95))}
-.panel.install{background:linear-gradient(180deg,rgba(13,9,6,.86),rgba(18,13,9,.96))}
 .panel-head{position:relative;z-index:1;display:grid;gap:6px}
 .panel-kicker{color:var(--brass);font-size:12px;font-weight:700}
 .panel h2{margin:0;color:var(--strong);font-size:clamp(24px,2vw,34px);line-height:1.08}
 .panel p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
 .qr-set{position:relative;z-index:1;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:0;border-top:1px solid rgba(142,119,88,.24);padding-top:10px}
-.install .qr-set{grid-template-columns:1fr;grid-template-rows:repeat(2,minmax(0,1fr))}
+.player .qr-set{grid-template-columns:minmax(220px,340px) minmax(0,1fr)}
+.storyteller .qr-set{grid-template-columns:minmax(220px,340px) minmax(0,1fr)}
 .qr-card{min-width:0;min-height:0;display:grid;grid-template-rows:auto auto auto auto auto;align-content:start;gap:7px;position:relative;overflow:hidden;padding:2px 12px 0;cursor:pointer;transition:opacity .14s ease,filter .14s ease,background-color .14s ease}
 .qr-card + .qr-card{border-left:1px solid rgba(142,119,88,.22)}
-.install .qr-card + .qr-card{border-left:0;border-top:1px solid rgba(142,119,88,.22);padding-top:12px}
 .qr-card:hover{background:rgba(230,215,192,.045)}
 .qr-card.is-dim{opacity:.24;filter:saturate(.55)}
 .qr-card.is-dim .qr-frame::after{content:"숨김";position:absolute;inset:0;display:grid;place-items:center;background:rgba(13,9,6,.76);color:var(--strong);font-weight:700;font-size:22px}
@@ -95,18 +89,20 @@ h1{font-family:var(--display);font-size:clamp(40px,5.7vw,72px);line-height:.9;ma
 .qr-subtitle{color:var(--muted);font-size:12px;line-height:1.25;min-height:30px}
 .qr-frame{position:relative;align-self:start;justify-self:center;margin-top:4px;background:#f8f1df;border:1px solid #fff4d0;border-radius:4px;padding:9px;box-shadow:0 0 0 1px rgba(0,0,0,.34)}
 .qr-frame img{display:block;width:min(22vh,190px);height:min(22vh,190px)}
-.install .qr-frame img{width:min(17vh,150px);height:min(17vh,150px)}
 .qr-url{color:var(--dead);font-size:10px;line-height:1.25;text-align:center;word-break:break-all;min-height:24px;display:grid;place-items:center}
-.install .qr-url{display:none}
 .link-button,.scan-only{display:grid;place-items:center;min-height:34px;border-radius:5px;border:1px solid var(--brass);font-weight:700;font-size:13px}
 .link-button{background:linear-gradient(135deg,var(--ink),var(--blue),#4d5f86);color:var(--strong)}
 .player .link-button{background:linear-gradient(135deg,#5e1d18,var(--blood),#8e5f58)}
 .scan-only{color:var(--muted);background:rgba(13,9,6,.48);border-color:rgba(142,119,88,.22)}
+.flow{min-width:0;display:grid;align-content:start;gap:10px;padding:4px 12px 0;border-left:1px solid rgba(142,119,88,.22)}
+.flow-step{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start;color:var(--text);font-size:14px;line-height:1.45}
+.flow-step span{display:grid;place-items:center;width:28px;height:28px;border:1px solid var(--brass);border-radius:50%;color:var(--strong);font-weight:700;background:rgba(13,9,6,.48)}
+.flow-step b{color:var(--strong)}
 .help{position:relative;z-index:1;margin-top:2px;border-top:1px solid rgba(142,119,88,.28);padding-top:10px;color:var(--muted);font-size:12px;line-height:1.45}
 .help b{color:var(--brass)}
 .foot{display:flex;justify-content:space-between;gap:12px;color:var(--dead);font-size:12px;line-height:1.2}
-@media(max-width:1180px){html,body{overflow:auto}.dashboard{height:auto;min-height:100vh}.panels{grid-template-columns:1fr}.install .qr-set{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:none}.qr-frame img,.install .qr-frame img{width:170px;height:170px}}
-@media(max-width:720px){.top{grid-template-columns:1fr}.server-pill{justify-items:start}.qr-set,.install .qr-set{grid-template-columns:1fr}.foot{display:grid}.dashboard{width:min(100vw - 24px,560px)}}
+@media(max-width:1180px){html,body{overflow:auto}.dashboard{height:auto;min-height:100vh}.panels{grid-template-columns:1fr}.qr-frame img{width:170px;height:170px}}
+@media(max-width:720px){.top{grid-template-columns:1fr}.server-pill{justify-items:start}.qr-set,.player .qr-set{grid-template-columns:1fr}.flow{border-left:0;border-top:1px solid rgba(142,119,88,.22);padding-top:12px}.foot{display:grid}.dashboard{width:min(100vw - 24px,560px)}}
 </style>
 </head>
 <body>
@@ -128,23 +124,20 @@ h1{font-family:var(--display);font-size:clamp(40px,5.7vw,72px);line-height:.9;ma
       <div class="panel-head">
         <div class="panel-kicker">참가자</div>
         <h2>플레이어 입장</h2>
-        <p>참가자는 웹 또는 Expo Go 중 하나만 스캔합니다.</p>
+        <p>Expo Go는 앱스토어 또는 플레이스토어에서 설치한 뒤, 아래 게임 앱 QR만 스캔합니다.</p>
       </div>
       <div class="qr-set">
         ${qrCard({
-          title: '플레이어 웹 QR',
-          subtitle: '설치 없이 브라우저에서 참가',
-          qrData: playerUrl,
-          alt: '플레이어 웹 QR',
-          buttonHref: playerUrl,
-          buttonText: '플레이어 웹 열기',
-        })}
-        ${qrCard({
-          title: '플레이어 Expo Go QR',
-          subtitle: 'Expo Go 앱으로 참가',
+          title: '게임 앱 QR',
+          subtitle: 'Expo Go 설치 후 이 QR을 스캔',
           qrData: playerExpUrl,
-          alt: '플레이어 Expo Go QR',
+          alt: '게임 앱 QR',
         })}
+        <div class="flow" aria-label="플레이어 접속 순서">
+          <div class="flow-step"><span>1</span><div><b>Expo Go는 앱스토어 또는 플레이스토어에서 설치</b>합니다.</div></div>
+          <div class="flow-step"><span>2</span><div><b>게임 앱 QR을 스캔해 앱을 연 뒤</b> 참가자 화면으로 들어갑니다.</div></div>
+          <div class="flow-step"><span>3</span><div>앱 내부 QR 기능으로 진행자의 <b>서버 접속 QR</b>을 스캔합니다.</div></div>
+        </div>
       </div>
     </article>
 
@@ -152,53 +145,25 @@ h1{font-family:var(--display);font-size:clamp(40px,5.7vw,72px);line-height:.9;ma
       <div class="panel-head">
         <div class="panel-kicker">진행자</div>
         <h2>이야기꾼 준비</h2>
-        <p>먼저 서버를 연결하고, PC 진행 콘솔은 버튼으로 엽니다.</p>
+        <p>진행자는 PC 웹 콘솔을 열고, 참가자 앱 연결용 서버 접속 QR만 필요할 때 보여줍니다.</p>
       </div>
       <div class="qr-set">
         ${qrCard({
-          title: '서버 연결 QR',
-          subtitle: '이야기꾼 앱 첫 화면에서 스캔',
+          title: '서버 접속 QR',
+          subtitle: '앱 내부 QR 기능으로 스캔',
           qrData: serverUrl,
-          alt: '서버 연결 QR',
+          alt: '서버 접속 QR',
           buttonHref: serverUrl,
           buttonText: '서버 상태 열기',
         })}
-        ${qrCard({
-          title: '이야기꾼 Expo Go QR',
-          subtitle: '태블릿/모바일 기록지',
-          qrData: storytellerExpUrl,
-          alt: '이야기꾼 Expo Go QR',
-        })}
+        <div class="flow" aria-label="이야기꾼 접속 순서">
+          <div class="flow-step"><span>1</span><div><b>PC 진행 콘솔</b>을 브라우저에서 엽니다.</div></div>
+          <div class="flow-step"><span>2</span><div>플레이어가 앱을 연 뒤 요청하면 <b>서버 접속 QR</b>을 보여줍니다.</div></div>
+        </div>
       </div>
       <div class="help">
         <b>PC 진행 콘솔:</b> <a href="${storytellerUrl}" target="_blank" rel="noreferrer">${storytellerUrl}</a>
         <a class="link-button" href="${storytellerUrl}" target="_blank" rel="noreferrer">이야기꾼 웹 열기</a>
-      </div>
-    </article>
-
-    <article class="panel install">
-      <div class="panel-head">
-        <div class="panel-kicker">설치</div>
-        <h2>Expo Go 설치</h2>
-        <p>Expo QR이 열리지 않을 때만 OS에 맞는 설치 QR을 스캔합니다.</p>
-      </div>
-      <div class="qr-set">
-        ${qrCard({
-          title: 'Expo Go iOS 설치 QR',
-          subtitle: 'iPhone / iPad',
-          qrData: IOS_EXPO_GO_URL,
-          alt: 'Expo Go iOS 설치 QR',
-          buttonHref: IOS_EXPO_GO_URL,
-          buttonText: 'iOS 설치 열기',
-        })}
-        ${qrCard({
-          title: 'Expo Go Android 설치 QR',
-          subtitle: 'Android 기기',
-          qrData: ANDROID_EXPO_GO_URL,
-          alt: 'Expo Go Android 설치 QR',
-          buttonHref: ANDROID_EXPO_GO_URL,
-          buttonText: 'Android 설치 열기',
-        })}
       </div>
     </article>
   </section>

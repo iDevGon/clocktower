@@ -69,17 +69,10 @@ export function createApp(): AppInstance {
     const playerUrl = `${baseUrl}:8081`;
     const storytellerUrl = `${baseUrl}:8082`;
     const playerExpUrl = `exp://${host}:8081`;
-    const storytellerExpUrl = `exp://${host}:8082`;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(
-      getDashboardHtml(
-        serverUrl,
-        playerUrl,
-        storytellerUrl,
-        playerExpUrl,
-        storytellerExpUrl,
-      ),
+      getDashboardHtml(serverUrl, playerUrl, storytellerUrl, playerExpUrl),
     );
   });
 
