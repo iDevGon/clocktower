@@ -905,6 +905,11 @@ describe('BMR 밤 진행 순서', () => {
     );
   });
 
+  it('수습생은 첫 밤에만 밤 순서에 포함된다', () => {
+    expect(BMR_FIRST_NIGHT_ORDER).toContain('apprentice');
+    expect(BMR_OTHER_NIGHT_ORDER).not.toContain('apprentice');
+  });
+
   it('BMR 밤 순서의 모든 역할이 조회 가능하다', () => {
     for (const id of [...BMR_FIRST_NIGHT_ORDER, ...BMR_OTHER_NIGHT_ORDER]) {
       expect(getRoleById(id)).toBeDefined();

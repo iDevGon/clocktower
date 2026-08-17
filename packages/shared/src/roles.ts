@@ -947,7 +947,6 @@ export const BMR_OTHER_NIGHT_ORDER: string[] = [
   'gossip',
   'tinker',
   'moonchild',
-  'apprentice',
   'grandmother',
   'chambermaid',
 ];
