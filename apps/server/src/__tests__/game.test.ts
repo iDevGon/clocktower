@@ -679,6 +679,24 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[2].id)?.role?.id).toBe('imp');
     });
 
+    it('취한 탕녀는 악마 사망 후 승계하지 않는다', () => {
+      const { gm, players } = createTestGame(6);
+      gm.assignRole(players[0].id, 'washerwoman');
+      gm.assignRole(players[1].id, 'empath');
+      gm.assignRole(players[2].id, 'fortune_teller');
+      gm.assignRole(players[3].id, 'scarlet_woman');
+      gm.assignRole(players[4].id, 'poisoner');
+      gm.assignRole(players[5].id, 'imp');
+      gm.start();
+      gm.setPlayerStatuses(players[3].id, ['drunk']);
+
+      gm.kill(players[5].id);
+      const result = gm.checkWinCondition('imp', players[5].id);
+
+      expect(result?.winningTeam).toBe('good');
+      expect(gm.getPlayer(players[3].id)?.role?.id).toBe('scarlet_woman');
+    });
+
     it('생존자 2명 이하 → 악 승리', () => {
       const { gm, players } = createStartedGame();
       gm.kill(players[0].id);

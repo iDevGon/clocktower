@@ -40,6 +40,30 @@ describe('E2E: S&V 낮 능력 검증', () => {
     expect(result.error).toContain('백치천재');
   }, 15000);
 
+  it('보르톡스는 첫 낮에 처형이 없으면 악 팀을 승리시킨다', async () => {
+    await setupGameWithRoles(ctx, [
+      { roleId: 'clockmaker' },
+      { roleId: 'dreamer' },
+      { roleId: 'flowergirl' },
+      { roleId: 'oracle' },
+      { roleId: 'seamstress' },
+      { roleId: 'witch' },
+      { roleId: 'vortox' },
+    ]);
+    await advanceToDay(ctx);
+
+    const gameEndPromise = waitForEvent<{ winningTeam: string; cause?: string }>(
+      ctx.storyteller as Socket,
+      'game:end',
+    );
+    ctx.storyteller.emit('game:setPhase', 'night');
+
+    const result = await gameEndPromise;
+    expect(result.winningTeam).toBe('evil');
+    expect(result.cause).toBe('vortox_no_execution');
+    expect(ctx.app.game.getState().phase).toBe('ended');
+  }, 15000);
+
   it('백치천재는 하루에 한 번만 정보를 요청할 수 있다', async () => {
     await setupGameWithRoles(ctx, [
       { roleId: 'clockmaker' },

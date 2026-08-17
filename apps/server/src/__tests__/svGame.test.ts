@@ -240,7 +240,7 @@ describe('S&V GameManager', () => {
       expect(gm.getPlayer(players[0].id)?.role?.id).toBe('artist');
     });
 
-    it('역할 변경은 플레이어의 현재 진영을 바꾸지 않는다', () => {
+    it('역할 변경은 플레이어의 현재 진영을 유지한다', () => {
       const { gm, players } = createStartedSVGame();
       expect(gm.getPlayerAlignment(players[0].id)).toBe('good');
 
@@ -249,6 +249,18 @@ describe('S&V GameManager', () => {
       expect(success).toBe(true);
       expect(gm.getPlayer(players[0].id)?.role?.id).toBe('vortox');
       expect(gm.getPlayerAlignment(players[0].id)).toBe('good');
+    });
+
+    it('역할 변경 시 이전 철학자 능력을 제거한다', () => {
+      const { gm, players } = createStartedSVGame();
+      gm.getPlayer(players[0].id)!.philosopherGrantedRole = 'artist';
+      gm.setPlayerStatuses(players[0].id, ['professor_spent']);
+
+      const success = gm.changePlayerRole(players[0].id, 'vortox');
+
+      expect(success).toBe(true);
+      expect(gm.getPlayer(players[0].id)?.philosopherGrantedRole).toBeUndefined();
+      expect(gm.getPlayer(players[0].id)?.statuses).not.toContain('professor_spent');
     });
 
     it('이미 게임에 있는 역할로는 변경할 수 없다', () => {
@@ -541,6 +553,25 @@ describe('S&V GameManager', () => {
 
       expect(result?.winningTeam).toBe('evil');
       expect(result?.cause).toBe('vortox_no_execution');
+    });
+  });
+
+  describe('이발사 역할 교환', () => {
+    it('역할 교환 시 진영은 유지되고 이전 철학자 능력은 제거된다', () => {
+      const { gm, players } = createStartedSVGame();
+      gm.assignRole(players[0].id, 'philosopher');
+      gm.getPlayer(players[0].id)!.philosopherGrantedRole = 'artist';
+      gm.assignRole(players[1].id, 'vortox');
+
+      const success = gm.swapPlayerRoles(players[0].id, players[1].id);
+
+      expect(success).toBe(true);
+      expect(gm.getPlayer(players[0].id)?.role?.id).toBe('vortox');
+      expect(gm.getPlayerAlignment(players[0].id)).toBe('good');
+      expect(gm.getPlayer(players[0].id)?.philosopherGrantedRole).toBeUndefined();
+      expect(gm.getPlayer(players[1].id)?.role?.id).toBe('philosopher');
+      expect(gm.getPlayer(players[1].id)?.philosopherGrantedRole).toBeUndefined();
+      expect(gm.getPlayerAlignment(players[1].id)).toBe('evil');
     });
   });
 

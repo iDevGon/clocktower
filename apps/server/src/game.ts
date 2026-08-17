@@ -62,6 +62,15 @@ const TEMPORARY_TRAVELLER_STATUSES: PlayerStatus[] = [
   'barista_acts_twice',
 ];
 
+const CHARACTER_ABILITY_STATUSES = new Set<PlayerStatus>([
+  'no_ability',
+  'fool_spent',
+  'assassin_spent',
+  'professor_spent',
+  'courtier_spent',
+  'po_chose_no_one',
+]);
+
 const VOTE_CLOSE_LOCK_MS = 3000;
 
 const MANUAL_NIGHT_ROLE_IDS = new Set([
@@ -102,6 +111,13 @@ function isPoisonedOrDrunk(player: Player): boolean {
   if (isSoberHealthy(player)) return false;
   return (
     hasPoisonStatus(player.statuses) || player.statuses.some(isDrunkStatus)
+  );
+}
+
+function clearCharacterAbilityState(player: Player): void {
+  player.philosopherGrantedRole = undefined;
+  player.statuses = player.statuses.filter(
+    (status) => !CHARACTER_ABILITY_STATUSES.has(status),
   );
 }
 
@@ -4026,6 +4042,7 @@ export class GameManager {
     player.drunkAs = undefined;
     player.lunaticAs = undefined;
     player.statuses = player.statuses.filter((s) => s !== 'drunk');
+    clearCharacterAbilityState(player);
     this.syncContinuousPoisoning();
 
     return true;
@@ -4222,6 +4239,8 @@ export class GameManager {
     const lunaticAs1 = p1.lunaticAs;
     p1.lunaticAs = p2.lunaticAs;
     p2.lunaticAs = lunaticAs1;
+    clearCharacterAbilityState(p1);
+    clearCharacterAbilityState(p2);
 
     // 점쟁이 Red Herring 재배정: 교환된 플레이어 중 점쟁이가 있으면
     if (p1.role?.id === 'fortune_teller' || p2.role?.id === 'fortune_teller') {
@@ -4451,7 +4470,7 @@ export class GameManager {
 
       // 탕녀 승계: 생존자 5명 이상이고 살아있는 (중독되지 않은) 탕녀가 있으면 게임 계속
       const aliveScarletWoman = alivePlayers.find(
-        (p) => p.role?.id === 'scarlet_woman' && !hasPoisonStatus(p.statuses),
+        (p) => p.role?.id === 'scarlet_woman' && !isPoisonedOrDrunk(p),
       );
       if (aliveScarletWoman && aliveCount >= 5) {
         // 탕녀를 임프로 자동 승계
