@@ -400,6 +400,52 @@ describe('E2E: 블러프 역할 필터링', () => {
     expect(new Set(bluffIds).size).toBe(3);
   }, 15000);
 
+  it('랜덤 블러프에는 주정뱅이가 포함되지 않는다', async () => {
+    const { bluffRoles } = await setupAndGetBluffs(ctx, [
+      { roleId: 'imp' },
+      { roleId: 'poisoner' },
+      { roleId: 'washerwoman' },
+      { roleId: 'librarian' },
+      { roleId: 'investigator' },
+      { roleId: 'chef' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+      { roleId: 'undertaker' },
+      { roleId: 'monk' },
+      { roleId: 'ravenkeeper' },
+      { roleId: 'virgin' },
+      { roleId: 'slayer' },
+      { roleId: 'soldier' },
+      { roleId: 'mayor' },
+      { roleId: 'saint' },
+    ]);
+
+    expect(bluffRoles.map((b) => b.id)).not.toContain('drunk');
+  }, 15000);
+
+  it('랜덤 블러프에는 미치광이가 포함되지 않는다', async () => {
+    const { bluffRoles } = await setupAndGetBluffs(ctx, [
+      { roleId: 'zombuul' },
+      { roleId: 'godfather' },
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'chambermaid' },
+      { roleId: 'exorcist' },
+      { roleId: 'innkeeper' },
+      { roleId: 'gambler' },
+      { roleId: 'gossip' },
+      { roleId: 'courtier' },
+      { roleId: 'professor' },
+      { roleId: 'minstrel' },
+      { roleId: 'tea_lady' },
+      { roleId: 'pacifist' },
+      { roleId: 'fool' },
+      { roleId: 'moonchild' },
+    ]);
+
+    expect(bluffRoles.map((b) => b.id)).not.toContain('lunatic');
+  }, 15000);
+
   it('플레이어가 발생시킨 상태 갱신 후에도 이야기꾼 상태에는 블러프가 유지된다', async () => {
     const preselected = ['monk', 'ravenkeeper', 'slayer'];
     const { playerIds } = await setupAndGetBluffs(

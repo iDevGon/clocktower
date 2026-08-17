@@ -42,6 +42,7 @@ type StorytellerNamespace = Namespace<
   StorytellerToServerEvents,
   ServerToStorytellerEvents
 >;
+const RANDOM_BLUFF_EXCLUDED_ROLE_IDS = new Set(['drunk', 'lunatic']);
 
 function getNightOrder(day: number, editionId?: string): string[] {
   if (editionId) {
@@ -179,7 +180,9 @@ function resolveBluffRoles(
 
   // 나머지를 랜덤으로 채우기
   if (selected.length < 3) {
-    const remaining = notInPlayGood.filter((r) => !usedIds.has(r.id));
+    const remaining = notInPlayGood.filter(
+      (r) => !usedIds.has(r.id) && !RANDOM_BLUFF_EXCLUDED_ROLE_IDS.has(r.id),
+    );
     const shuffled = [...remaining].sort(() => Math.random() - 0.5);
     for (const r of shuffled) {
       if (selected.length >= 3) break;
