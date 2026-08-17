@@ -328,6 +328,12 @@ export interface ServerToStorytellerEvents {
     demonId: string;
     demonName: string;
   }) => void;
+  /** 마귀할멈이 새 악마를 만들어 이야기꾼의 임의 사망 판정이 필요한 경우 */
+  'pitHag:demonCreated': (data: {
+    pitHagId: string;
+    targetId: string;
+    newRoleId: string;
+  }) => void;
   /** 백치천재가 낮에 능력 사용을 요청함 (이야기꾼이 참/거짓 정보 2개 입력 필요) */
   'savant:requested': (data: { playerId: string; playerName: string }) => void;
   /** 화가가 낮에 능력 사용을 요청함 (이야기꾼이 예/아니오 답변 필요, 게임 중 1회) */

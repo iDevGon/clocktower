@@ -600,6 +600,14 @@ export class GameManager {
     if (method === 'assassin') return false;
 
     if (
+      isDemonDeathMethod(method) &&
+      target.role?.id === 'soldier' &&
+      !isPoisonedOrDrunk(target)
+    ) {
+      return true;
+    }
+
+    if (
       target.role?.id === 'sailor' &&
       !isPoisonedOrDrunk(target) &&
       !target.statuses.includes('sailor_drunk')
@@ -608,6 +616,14 @@ export class GameManager {
     }
 
     if (timing === 'night' && target.statuses.includes('innkeeper_protected')) {
+      return true;
+    }
+
+    if (
+      timing === 'night' &&
+      isDemonDeathMethod(method) &&
+      target.statuses.includes('protected')
+    ) {
       return true;
     }
 

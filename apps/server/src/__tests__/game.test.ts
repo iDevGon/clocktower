@@ -1687,6 +1687,22 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[2].id)?.statuses).toContain('assassin_spent');
     });
 
+    it('수도승 보호 대상은 악마의 밤 사망을 막는다', () => {
+      const { gm, players } = createBmrActionGame();
+      gm.assignRole(players[5].id, 'monk');
+      gm.setPlayerStatuses(players[5].id, ['protected']);
+
+      const result = gm.resolvePoSelection(players[6].id, [players[5].id]);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        rested: false,
+        killedTargetIds: [],
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(true);
+    });
+
     it('암살자는 건달을 공격하면 건달을 죽이고 건달은 암살자의 진영이 된다', () => {
       const { gm, players } = createBmrActionGame();
       gm.assignRole(players[5].id, 'goon');
@@ -1905,6 +1921,35 @@ describe('GameManager', () => {
       gm.start();
       return { gm, players };
     }
+
+    it('맑고 건강한 군인은 BMR 악마의 밤 사망을 막는다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.assignRole(players[6].id, 'soldier');
+
+      const result = gm.resolvePoSelection(players[7].id, [players[6].id]);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        rested: false,
+        killedTargetIds: [],
+      });
+      expect(gm.getPlayer(players[6].id)?.isAlive).toBe(true);
+    });
+
+    it('수도승 보호는 악마가 아닌 밤 사망까지 막지는 않는다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.setPlayerStatuses(players[5].id, ['protected']);
+
+      const result = gm.resolveGossipKill(players[2].id, players[5].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        killedTargetId: players[5].id,
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(false);
+    });
 
     it('험담 공개발언은 플레이어별 하루 1회 기록되고 다음 낮에 다시 사용할 수 있다', () => {
       const { gm, players } = createBmrAssistGame();

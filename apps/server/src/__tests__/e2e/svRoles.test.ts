@@ -364,6 +364,35 @@ describe('E2E: S&V 사망 트리거', () => {
     expect(event.barberName).toBe('Player1');
   }, 15000);
 
+  it('마귀할멈이 악마를 만들면 이야기꾼에게 추가 사망 판정을 알린다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'pit_hag' },
+      { roleId: 'dreamer' },
+      { roleId: 'flowergirl' },
+      { roleId: 'witch' },
+      { roleId: 'seamstress' },
+    ]);
+
+    const demonCreatedPromise = waitForEvent<{
+      pitHagId: string;
+      targetId: string;
+      newRoleId: string;
+    }>(ctx.storyteller as Socket, 'pitHag:demonCreated');
+    ctx.storyteller.emit('pitHag:changeRole', {
+      pitHagId: playerIds[0],
+      targetPlayerId: playerIds[1],
+      newRoleId: 'vortox',
+    });
+
+    const event = await demonCreatedPromise;
+    expect(event).toEqual({
+      pitHagId: playerIds[0],
+      targetId: playerIds[1],
+      newRoleId: 'vortox',
+    });
+    expect(ctx.app.game.getPlayer(playerIds[1])?.role?.id).toBe('vortox');
+  }, 15000);
+
   it('이발사 역할 교환은 이발사 사망 후 한 번만 적용된다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [
       { roleId: 'barber' },

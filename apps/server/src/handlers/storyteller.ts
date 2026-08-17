@@ -1798,6 +1798,13 @@ export function registerStorytellerHandlers(
             roleId: player.role.id,
             roleName: player.role.name,
           });
+          if (player.role.team === 'demon') {
+            storytellerIo.emit('pitHag:demonCreated', {
+              pitHagId,
+              targetId: targetPlayerId,
+              newRoleId,
+            });
+          }
         }
         // 에디션 재감지 (새로운 역할이 다른 에디션일 수 있음)
         game.detectEdition();
