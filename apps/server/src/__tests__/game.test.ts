@@ -441,7 +441,6 @@ describe('GameManager', () => {
         players[0].id,
       );
     });
-
   });
 
   describe('초공감자', () => {
@@ -625,6 +624,25 @@ describe('GameManager', () => {
 
       gm.nominate(players[3].id, players[4].id);
       expect(gm.castVote(players[2].id).success).toBe(false);
+    });
+
+    it('거지가 같은 지명에 중복 투표해도 토큰을 한 번만 소비한다', () => {
+      const { gm, players } = createStartedGame();
+      const beggar = gm.addTraveller('Beggar');
+      expect(beggar).not.toBeNull();
+      gm.assignTravellerRole(beggar?.id ?? '', 'beggar', 'good');
+      gm.addBeggarToken(beggar?.id ?? '');
+      gm.setPhase('day');
+      gm.nominate(players[0].id, players[1].id);
+
+      expect(gm.castVote(beggar?.id ?? '').success).toBe(true);
+      expect(gm.castVote(beggar?.id ?? '').success).toBe(false);
+      expect(gm.getBeggarTokens(beggar?.id ?? '')).toBe(0);
+      expect(
+        Object.keys(gm.getState().nominations.at(-1)?.votes ?? {}).filter(
+          (id) => id === beggar?.id,
+        ),
+      ).toHaveLength(1);
     });
 
     it('closeVote: 과반수 판정', () => {

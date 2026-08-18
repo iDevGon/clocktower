@@ -700,6 +700,11 @@ export interface StorytellerToServerEvents {
     },
     callback?: (res: { success: boolean; error?: string }) => void,
   ) => void;
+  /** 마귀할멈이 만든 악마의 임의 사망 판정을 확정하거나 건너뜀 */
+  'pitHag:resolveDemonCreation': (
+    data: { killPlayerIds: string[] },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
   /** 사악한 쌍둥이 선한 쌍둥이 지정 */
   'evilTwin:assignGoodTwin': (
     data: {

@@ -58,6 +58,7 @@ import {
 } from '../../src/components/nightRoleLogic';
 import { PhaseBar } from '../../src/components/PhaseBar';
 import { PhaseTipToast } from '../../src/components/PhaseTipToast';
+import { PitHagDemonCreationModal } from '../../src/components/PitHagDemonCreationModal';
 import { PlayerPickerModal } from '../../src/components/PlayerPickerModal';
 import { ChefHintBar, EmpathHintBar } from '../../src/components/RoleHintBars';
 import { RoleRevealWaitingOverlay } from '../../src/components/RoleRevealWaitingOverlay';
@@ -196,7 +197,7 @@ export default function GrimoireScreen() {
     if (hasBmr) return 'bad_moon_rising';
     const hasSv = players.some((p) => p.role && svRoleIds.has(p.role.id));
     return hasSv ? 'sects_and_violets' : 'trouble_brewing';
-  }, [players, bmrRoleIds, svRoleIds]);
+  }, [players, bmrRoleIds, svRoleIds, gameState?.settings.setupEditionId]);
   const nightActions = useGameStore((s) => s.nightActions);
   const deliveredFeedbackHistory = useGameStore(
     (s) => s.deliveredFeedbackHistory,
@@ -245,6 +246,7 @@ export default function GrimoireScreen() {
     snakeCharmerSwap,
     vigormortisKillMinion,
     pitHagChangeRole,
+    pitHagResolveDemonCreation,
     assignGoodTwin,
     boneCollectorRestore,
     applyBaristaEffect,
@@ -298,6 +300,12 @@ export default function GrimoireScreen() {
   const setBarberDiedPending = useGameStore((s) => s.setBarberDiedPending);
   const klutzDiedPending = useGameStore((s) => s.klutzDiedPending);
   const setKlutzDiedPending = useGameStore((s) => s.setKlutzDiedPending);
+  const pitHagDemonCreationPending = useGameStore(
+    (s) => s.pitHagDemonCreationPending,
+  );
+  const setPitHagDemonCreationPending = useGameStore(
+    (s) => s.setPitHagDemonCreationPending,
+  );
 
   // 사랑꾼 사망 시 취하게 할 대상 후보: 살아있는 플레이어 (사랑꾼 본인 제외)
   const sweetheartDrunkCandidates = useMemo(() => {
@@ -2185,6 +2193,24 @@ export default function GrimoireScreen() {
       )}
 
       <EventToast />
+
+      <PitHagDemonCreationModal
+        visible={pitHagDemonCreationPending !== null}
+        pending={pitHagDemonCreationPending}
+        players={gameState.players}
+        onResolve={(killPlayerIds) =>
+          pitHagResolveDemonCreation(killPlayerIds, (result) => {
+            if (result.success) {
+              setPitHagDemonCreationPending(null);
+            } else {
+              Alert.alert(
+                '판정 실패',
+                result.error ?? '마귀할멈 판정을 처리하지 못했습니다.',
+              );
+            }
+          })
+        }
+      />
 
       <ActionModal
         visible={modal.visible}

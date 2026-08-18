@@ -95,6 +95,18 @@ interface GameStore {
   setKlutzDiedPending: (
     pending: { klutzId: string; klutzName: string } | null,
   ) => void;
+  pitHagDemonCreationPending: {
+    pitHagId: string;
+    targetId: string;
+    newRoleId: string;
+  } | null;
+  setPitHagDemonCreationPending: (
+    pending: {
+      pitHagId: string;
+      targetId: string;
+      newRoleId: string;
+    } | null,
+  ) => void;
   nightWakeUpTargets: string[];
   setNightWakeUpTargets: (ids: string[]) => void;
   chatToast: { playerName: string; message: string } | null;
@@ -315,6 +327,9 @@ export const useGameStore = create<GameStore>()(
       setBarberDiedPending: (pending) => set({ barberDiedPending: pending }),
       klutzDiedPending: null,
       setKlutzDiedPending: (pending) => set({ klutzDiedPending: pending }),
+      pitHagDemonCreationPending: null,
+      setPitHagDemonCreationPending: (pending) =>
+        set({ pitHagDemonCreationPending: pending }),
       chatToast: null,
       showChatToast: (toast) => set({ chatToast: toast }),
       dismissChatToast: () => set({ chatToast: null }),
@@ -568,6 +583,7 @@ export const useGameStore = create<GameStore>()(
           witchCursePending: null,
           barberDiedPending: null,
           klutzDiedPending: null,
+          pitHagDemonCreationPending: null,
           voteConsentReadyIds: [],
           savantRequest: null,
           artistRequest: null,

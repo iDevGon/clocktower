@@ -52,10 +52,10 @@ describe('E2E: S&V 낮 능력 검증', () => {
     ]);
     await advanceToDay(ctx);
 
-    const gameEndPromise = waitForEvent<{ winningTeam: string; cause?: string }>(
-      ctx.storyteller as Socket,
-      'game:end',
-    );
+    const gameEndPromise = waitForEvent<{
+      winningTeam: string;
+      cause?: string;
+    }>(ctx.storyteller as Socket, 'game:end');
     ctx.storyteller.emit('game:setPhase', 'night');
 
     const result = await gameEndPromise;
@@ -391,6 +391,20 @@ describe('E2E: S&V 사망 트리거', () => {
       newRoleId: 'vortox',
     });
     expect(ctx.app.game.getPlayer(playerIds[1])?.role?.id).toBe('vortox');
+
+    const resolveResult = await new Promise<{
+      success: boolean;
+      error?: string;
+    }>((resolve) => {
+      ctx.storyteller.emit(
+        'pitHag:resolveDemonCreation',
+        { killPlayerIds: [playerIds[2]] },
+        resolve,
+      );
+    });
+
+    expect(resolveResult.success).toBe(true);
+    expect(ctx.app.game.getPlayer(playerIds[2])?.isAlive).toBe(false);
   }, 15000);
 
   it('이발사 역할 교환은 이발사 사망 후 한 번만 적용된다', async () => {

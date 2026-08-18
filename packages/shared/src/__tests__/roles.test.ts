@@ -772,12 +772,12 @@ describe('S&V 밤 진행 순서', () => {
 
   it('추가 역할은 자기 에디션의 밤 순서와 낮 조건을 따라 뒤에 추가된다', () => {
     const firstNight = getNightOrderForEdition('trouble_brewing', 1, [
-      'courtier',
       'po',
+      'courtier',
     ]);
     const otherNight = getNightOrderForEdition('trouble_brewing', 2, [
-      'courtier',
       'po',
+      'courtier',
     ]);
 
     expect(firstNight.at(-1)).toBe('courtier');

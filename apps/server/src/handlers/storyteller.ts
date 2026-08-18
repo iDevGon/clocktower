@@ -50,11 +50,7 @@ function getNightOrder(
   if (editionId) {
     return getNightOrderForEdition(editionId, day, additionalRoleIds);
   }
-  return getNightOrderForEdition(
-    'trouble_brewing',
-    day,
-    additionalRoleIds,
-  );
+  return getNightOrderForEdition('trouble_brewing', day, additionalRoleIds);
 }
 
 function emitDeliveredFeedbackRecord(
@@ -328,6 +324,10 @@ export function registerStorytellerHandlers(
     const currentState = game.getStorytellerState();
     if (currentState.id) {
       socket.emit('game:state', currentState);
+      const pitHagPending = game.getPitHagDemonCreationPending();
+      if (pitHagPending) {
+        socket.emit('pitHag:demonCreated', pitHagPending);
+      }
     } else {
       socket.emit('game:reset');
     }
@@ -1816,12 +1816,9 @@ export function registerStorytellerHandlers(
             roleId: player.role.id,
             roleName: player.role.name,
           });
-          if (player.role.team === 'demon') {
-            storytellerIo.emit('pitHag:demonCreated', {
-              pitHagId,
-              targetId: targetPlayerId,
-              newRoleId,
-            });
+          const pending = game.getPitHagDemonCreationPending();
+          if (pending?.targetId === targetPlayerId) {
+            storytellerIo.emit('pitHag:demonCreated', pending);
           }
         }
         // 에디션 재감지 (새로운 역할이 다른 에디션일 수 있음)
@@ -1830,6 +1827,46 @@ export function registerStorytellerHandlers(
         callback?.({ success: true });
       },
     );
+
+    socket.on('pitHag:resolveDemonCreation', ({ killPlayerIds }, callback) => {
+      const pending = game.consumePitHagDemonCreationPending();
+      if (!pending) {
+        callback?.({
+          success: false,
+          error: '처리할 마귀할멈 악마 생성 판정이 없습니다',
+        });
+        return;
+      }
+
+      const isNight = game.getState().phase === 'night';
+      for (const playerId of new Set(killPlayerIds)) {
+        const player = game.getPlayer(playerId);
+        if (!player?.isAlive) continue;
+
+        game.kill(playerId);
+        emitDeathTriggers(game, player, storytellerIo, { isNight });
+        if (isNight) {
+          game.addPendingNightKill(playerId);
+          game.consumeTriggeredDeathIds();
+        } else {
+          playerIo.emit('game:playerUpdate', toPublicPlayer(player));
+          emitTriggeredDeathUpdates(game, playerIo);
+        }
+      }
+
+      storytellerIo.emit('game:state', game.getStorytellerState());
+      const winResult = game.checkWinCondition();
+      if (winResult) {
+        playerIo.emit('game:end', winResult);
+        playerIo.emit('game:phase', 'ended');
+        storytellerIo.emit('game:end', winResult);
+        storytellerIo.emit('game:state', game.getStorytellerState());
+        callback?.({ success: true });
+        return;
+      }
+      emitPromotionIfAny(game, playerIo, storytellerIo);
+      callback?.({ success: true });
+    });
 
     socket.on(
       'evilTwin:assignGoodTwin',

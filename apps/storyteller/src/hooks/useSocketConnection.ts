@@ -255,8 +255,11 @@ export function useSocketConnection() {
           });
         });
         newSocket.on('pitHag:demonCreated', (data) => {
+          useGameStore.getState().setPitHagDemonCreationPending(data);
           const gs = useGameStore.getState().gameState;
-          const target = gs?.players.find((player) => player.id === data.targetId);
+          const target = gs?.players.find(
+            (player) => player.id === data.targetId,
+          );
           const targetName = target?.name ?? data.targetId;
           const message = `${targetName}이(가) 새 악마가 되었습니다. 오늘 밤 임의 사망 판정을 처리하세요.`;
           useGameStore.getState().showEventToast({

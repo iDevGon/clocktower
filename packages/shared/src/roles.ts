@@ -952,25 +952,44 @@ export const BMR_OTHER_NIGHT_ORDER: string[] = [
 ];
 
 /** 에디션별 밤 진행 순서를 반환합니다. */
+function getBaseNightOrder(editionId: string, day: number): string[] {
+  if (editionId === 'sects_and_violets') {
+    return day <= 1 ? SV_FIRST_NIGHT_ORDER : SV_OTHER_NIGHT_ORDER;
+  }
+  if (editionId === 'bad_moon_rising') {
+    return day <= 1 ? BMR_FIRST_NIGHT_ORDER : BMR_OTHER_NIGHT_ORDER;
+  }
+  return day <= 1 ? FIRST_NIGHT_ORDER : OTHER_NIGHT_ORDER;
+}
+
 export function getNightOrderForEdition(
   editionId: string,
   day: number,
   additionalRoleIds: string[] = [],
 ): string[] {
-  let baseOrder: string[];
-  if (editionId === 'sects_and_violets') {
-    baseOrder = day <= 1 ? SV_FIRST_NIGHT_ORDER : SV_OTHER_NIGHT_ORDER;
-  } else if (editionId === 'bad_moon_rising') {
-    baseOrder = day <= 1 ? BMR_FIRST_NIGHT_ORDER : BMR_OTHER_NIGHT_ORDER;
-  } else {
-    baseOrder = day <= 1 ? FIRST_NIGHT_ORDER : OTHER_NIGHT_ORDER;
-  }
+  const baseOrder = getBaseNightOrder(editionId, day);
 
-  const additionalOrder = additionalRoleIds.filter((roleId) => {
-    if (baseOrder.includes(roleId)) return false;
-    const role = getRoleById(roleId);
-    return role != null && getNightOrderForEdition(role.edition, day).includes(roleId);
-  });
+  const additionalOrder = additionalRoleIds
+    .filter((roleId, index, ids) => {
+      if (ids.indexOf(roleId) !== index || baseOrder.includes(roleId)) {
+        return false;
+      }
+      const role = getRoleById(roleId);
+      return (
+        role != null && getBaseNightOrder(role.edition, day).includes(roleId)
+      );
+    })
+    .sort((a, b) => {
+      const roleA = getRoleById(a);
+      const roleB = getRoleById(b);
+      const orderA = roleA
+        ? getBaseNightOrder(roleA.edition, day).indexOf(a)
+        : -1;
+      const orderB = roleB
+        ? getBaseNightOrder(roleB.edition, day).indexOf(b)
+        : -1;
+      return orderA - orderB;
+    });
 
   return [...baseOrder, ...additionalOrder];
 }
