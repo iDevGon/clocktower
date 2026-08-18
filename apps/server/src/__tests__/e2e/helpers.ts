@@ -149,6 +149,9 @@ export async function setupFullGame(
     ctx.storyteller as Socket,
     'game:state',
   );
+  const nightReadyPromises = ctx.players.map((player) =>
+    waitForEvent(player as Socket, 'night:activeRole'),
+  );
   await new Promise<void>((resolve, reject) => {
     ctx.storyteller.emit('game:start', (res) => {
       if (res.success) resolve();
@@ -156,6 +159,7 @@ export async function setupFullGame(
     });
   });
   await startStatePromise;
+  await Promise.all(nightReadyPromises);
 
   return { playerIds };
 }
@@ -224,6 +228,9 @@ export async function setupGameWithRoles(
     ctx.storyteller as Socket,
     'game:state',
   );
+  const nightReadyPromises = ctx.players.map((player) =>
+    waitForEvent(player as Socket, 'night:activeRole'),
+  );
   await new Promise<void>((resolve, reject) => {
     ctx.storyteller.emit('game:start', (res) => {
       if (res.success) resolve();
@@ -231,6 +238,7 @@ export async function setupGameWithRoles(
     });
   });
   await startStatePromise;
+  await Promise.all(nightReadyPromises);
 
   return { playerIds };
 }

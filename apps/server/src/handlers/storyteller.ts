@@ -11,11 +11,9 @@ import type {
 import {
   ALL_ROLES,
   distributeRoles,
-  FIRST_NIGHT_ORDER,
   getNightOrderForEdition,
   getRoleById,
   NIGHT_ACTIONS,
-  OTHER_NIGHT_ORDER,
 } from '@clocktower/shared/logic';
 import type { Namespace } from 'socket.io';
 import type { GameManager } from '../game.js';
@@ -44,11 +42,15 @@ type StorytellerNamespace = Namespace<
 >;
 const RANDOM_BLUFF_EXCLUDED_ROLE_IDS = new Set(['drunk', 'lunatic']);
 
-function getNightOrder(day: number, editionId?: string): string[] {
+function getNightOrder(
+  day: number,
+  editionId?: string,
+  additionalRoleIds: string[] = [],
+): string[] {
   if (editionId) {
-    return getNightOrderForEdition(editionId, day);
+    return getNightOrderForEdition(editionId, day, additionalRoleIds);
   }
-  return day <= 1 ? FIRST_NIGHT_ORDER : OTHER_NIGHT_ORDER;
+  return getNightOrderForEdition('trouble_brewing', day, additionalRoleIds);
 }
 
 function emitDeliveredFeedbackRecord(
@@ -322,6 +324,10 @@ export function registerStorytellerHandlers(
     const currentState = game.getStorytellerState();
     if (currentState.id) {
       socket.emit('game:state', currentState);
+      const pitHagPending = game.getPitHagDemonCreationPending();
+      if (pitHagPending) {
+        socket.emit('pitHag:demonCreated', pitHagPending);
+      }
     } else {
       socket.emit('game:reset');
     }
@@ -378,7 +384,11 @@ export function registerStorytellerHandlers(
       const state = game.getState();
       playerIo.emit('game:state', toPublicGameState(state));
       playerIo.emit('game:phase', 'night');
-      const order = getNightOrder(state.day, game.getEditionId());
+      const order = getNightOrder(
+        state.day,
+        game.getEditionId(),
+        game.getSettings().additionalRoleIds,
+      );
       const players = getPlayerInfoList(game);
       game.setNightProgress(null, order);
       playerIo.emit('night:activeRole', {
@@ -486,7 +496,11 @@ export function registerStorytellerHandlers(
       playerIo.emit('game:phase', phase);
       if (phase === 'night') {
         const state = game.getState();
-        const order = getNightOrder(state.day, game.getEditionId());
+        const order = getNightOrder(
+          state.day,
+          game.getEditionId(),
+          game.getSettings().additionalRoleIds,
+        );
         const players = getPlayerInfoList(game);
         game.setNightProgress(null, order);
         playerIo.emit('night:activeRole', {
@@ -687,7 +701,11 @@ export function registerStorytellerHandlers(
       }
 
       const state = game.getState();
-      const order = getNightOrder(state.day, game.getEditionId());
+      const order = getNightOrder(
+        state.day,
+        game.getEditionId(),
+        game.getSettings().additionalRoleIds,
+      );
       const players = getPlayerInfoList(game);
       game.setNightProgress(roleId, order);
       playerIo.emit('night:activeRole', {
@@ -1798,6 +1816,10 @@ export function registerStorytellerHandlers(
             roleId: player.role.id,
             roleName: player.role.name,
           });
+          const pending = game.getPitHagDemonCreationPending();
+          if (pending?.targetId === targetPlayerId) {
+            storytellerIo.emit('pitHag:demonCreated', pending);
+          }
         }
         // 에디션 재감지 (새로운 역할이 다른 에디션일 수 있음)
         game.detectEdition();
@@ -1805,6 +1827,46 @@ export function registerStorytellerHandlers(
         callback?.({ success: true });
       },
     );
+
+    socket.on('pitHag:resolveDemonCreation', ({ killPlayerIds }, callback) => {
+      const pending = game.consumePitHagDemonCreationPending();
+      if (!pending) {
+        callback?.({
+          success: false,
+          error: '처리할 마귀할멈 악마 생성 판정이 없습니다',
+        });
+        return;
+      }
+
+      const isNight = game.getState().phase === 'night';
+      for (const playerId of new Set(killPlayerIds)) {
+        const player = game.getPlayer(playerId);
+        if (!player?.isAlive) continue;
+
+        game.kill(playerId);
+        emitDeathTriggers(game, player, storytellerIo, { isNight });
+        if (isNight) {
+          game.addPendingNightKill(playerId);
+          game.consumeTriggeredDeathIds();
+        } else {
+          playerIo.emit('game:playerUpdate', toPublicPlayer(player));
+          emitTriggeredDeathUpdates(game, playerIo);
+        }
+      }
+
+      storytellerIo.emit('game:state', game.getStorytellerState());
+      const winResult = game.checkWinCondition();
+      if (winResult) {
+        playerIo.emit('game:end', winResult);
+        playerIo.emit('game:phase', 'ended');
+        storytellerIo.emit('game:end', winResult);
+        storytellerIo.emit('game:state', game.getStorytellerState());
+        callback?.({ success: true });
+        return;
+      }
+      emitPromotionIfAny(game, playerIo, storytellerIo);
+      callback?.({ success: true });
+    });
 
     socket.on(
       'evilTwin:assignGoodTwin',

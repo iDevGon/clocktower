@@ -318,6 +318,12 @@ export function useGameActions() {
     [socket],
   );
 
+  const pitHagResolveDemonCreation = useCallback(
+    (killPlayerIds: string[], callback?: BmrAssistCallback) =>
+      socket?.emit('pitHag:resolveDemonCreation', { killPlayerIds }, callback),
+    [socket],
+  );
+
   const assignGoodTwin = useCallback(
     (
       evilTwinPlayerId: string,
@@ -571,6 +577,7 @@ export function useGameActions() {
     snakeCharmerSwap,
     vigormortisKillMinion,
     pitHagChangeRole,
+    pitHagResolveDemonCreation,
     assignGoodTwin,
     boneCollectorRestore,
     applyBaristaEffect,

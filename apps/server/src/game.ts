@@ -56,11 +56,26 @@ type PendingMoonchildKill = {
   targetWasGood: boolean;
 };
 
+type PendingPitHagDemonCreation = {
+  pitHagId: string;
+  targetId: string;
+  newRoleId: string;
+};
+
 const TEMPORARY_TRAVELLER_STATUSES: PlayerStatus[] = [
   'bone_collector_ability',
   'barista_sober_healthy',
   'barista_acts_twice',
 ];
+
+const CHARACTER_ABILITY_STATUSES = new Set<PlayerStatus>([
+  'no_ability',
+  'fool_spent',
+  'assassin_spent',
+  'professor_spent',
+  'courtier_spent',
+  'po_chose_no_one',
+]);
 
 const VOTE_CLOSE_LOCK_MS = 3000;
 
@@ -102,6 +117,13 @@ function isPoisonedOrDrunk(player: Player): boolean {
   if (isSoberHealthy(player)) return false;
   return (
     hasPoisonStatus(player.statuses) || player.statuses.some(isDrunkStatus)
+  );
+}
+
+function clearCharacterAbilityState(player: Player): void {
+  player.philosopherGrantedRole = undefined;
+  player.statuses = player.statuses.filter(
+    (status) => !CHARACTER_ABILITY_STATUSES.has(status),
   );
 }
 
@@ -322,6 +344,8 @@ export class GameManager {
   private pendingHarlotConsents = new Map<string, { harlotId: string }>();
   // 현재 에디션 ID (밤 순서 결정에 사용)
   private editionId = 'trouble_brewing';
+  private editionWasConfigured = false;
+  private pitHagDemonCreationPending: PendingPitHagDemonCreation | null = null;
 
   private getDefaultAlignmentForRole(
     role: Role | undefined,
@@ -584,6 +608,14 @@ export class GameManager {
     if (method === 'assassin') return false;
 
     if (
+      isDemonDeathMethod(method) &&
+      target.role?.id === 'soldier' &&
+      !isPoisonedOrDrunk(target)
+    ) {
+      return true;
+    }
+
+    if (
       target.role?.id === 'sailor' &&
       !isPoisonedOrDrunk(target) &&
       !target.statuses.includes('sailor_drunk')
@@ -592,6 +624,14 @@ export class GameManager {
     }
 
     if (timing === 'night' && target.statuses.includes('innkeeper_protected')) {
+      return true;
+    }
+
+    if (
+      timing === 'night' &&
+      isDemonDeathMethod(method) &&
+      target.statuses.includes('protected')
+    ) {
       return true;
     }
 
@@ -749,6 +789,8 @@ export class GameManager {
     this.boneCollectorRestoredTargets.clear();
     this.pendingHarlotConsents.clear();
     this.editionId = 'trouble_brewing';
+    this.editionWasConfigured = false;
+    this.pitHagDemonCreationPending = null;
     this.clearVoteTimer();
     this.clearNominationTimer();
     return id;
@@ -857,6 +899,8 @@ export class GameManager {
     this.boneCollectorRestoredTargets.clear();
     this.pendingHarlotConsents.clear();
     this.editionId = 'trouble_brewing';
+    this.editionWasConfigured = false;
+    this.pitHagDemonCreationPending = null;
     this.clearVoteTimer();
     this.clearNominationTimer();
   }
@@ -3377,6 +3421,19 @@ export class GameManager {
     if (!player)
       return { success: false, error: '플레이어를 찾을 수 없습니다' };
 
+    // 집사 투표 제한: 주인이 투표해야만 투표 가능 (중독된 집사는 제한 없음)
+    if (this.isButlerRestricted(playerId)) {
+      return {
+        success: false,
+        error: '주인이 투표하지 않았습니다',
+      };
+    }
+
+    const current = this.state.nominations[this.state.nominations.length - 1];
+    if (current && Object.hasOwn(current.votes, playerId)) {
+      return { success: false, error: '이미 투표했습니다' };
+    }
+
     // 거지: 투표 토큰이 필요. 토큰이 없으면 투표 불가
     if (player.role?.id === 'beggar' && isPubliclyAlive(player)) {
       if (!this.consumeBeggarToken(playerId)) {
@@ -3396,16 +3453,6 @@ export class GameManager {
       player.deadVoteUsed = true;
       this.ghostVotesUsed.add(playerId);
     }
-
-    // 집사 투표 제한: 주인이 투표해야만 투표 가능 (중독된 집사는 제한 없음)
-    if (this.isButlerRestricted(playerId)) {
-      return {
-        success: false,
-        error: '주인이 투표하지 않았습니다',
-      };
-    }
-
-    const current = this.state.nominations[this.state.nominations.length - 1];
     if (current) {
       current.votes[playerId] = true;
     }
@@ -3599,6 +3646,9 @@ export class GameManager {
 
   setSettings(partial: Partial<GameSettings>): void {
     this.state.settings = { ...this.state.settings, ...partial };
+    if ('setupEditionId' in partial || 'additionalRoleIds' in partial) {
+      this.editionWasConfigured = true;
+    }
   }
 
   // ── 플레이어 순서 (시계방향) ──
@@ -3612,6 +3662,7 @@ export class GameManager {
   }
 
   setRoleSetup(editionId: string, additionalRoleIds: string[] = []): void {
+    this.editionWasConfigured = true;
     this.editionId = editionId;
     this.state.settings.setupEditionId = editionId;
     this.state.settings.additionalRoleIds = [...additionalRoleIds];
@@ -3838,10 +3889,12 @@ export class GameManager {
 
   /** 현재 게임의 에디션을 자동 감지하여 설정합니다 */
   detectEdition(): void {
-    const primaryEdition =
-      this.state.players.find((p) => p.role)?.role?.edition ??
-      this.state.settings.setupEditionId ??
-      'trouble_brewing';
+    const setupEditionId =
+      this.state.settings.setupEditionId ?? 'trouble_brewing';
+    const primaryEdition = this.editionWasConfigured
+      ? setupEditionId
+      : (this.state.players.find((p) => p.role)?.role?.edition ??
+        setupEditionId);
     this.setEditionId(primaryEdition);
   }
 
@@ -3994,6 +4047,27 @@ export class GameManager {
 
   // ── 마귀할멈: 역할 변경 ──
 
+  private clearCharacterAbilityUsage(playerId: string): void {
+    this.slayerUsed.delete(playerId);
+    this.artistUsed.delete(playerId);
+    this.savantUsedToday.delete(playerId);
+    this.philosopherUsed.delete(playerId);
+    this.jugglerUsed.delete(playerId);
+    this.jugglerGuesses.delete(playerId);
+  }
+
+  getPitHagDemonCreationPending(): PendingPitHagDemonCreation | null {
+    return this.pitHagDemonCreationPending
+      ? { ...this.pitHagDemonCreationPending }
+      : null;
+  }
+
+  consumePitHagDemonCreationPending(): PendingPitHagDemonCreation | null {
+    const pending = this.getPitHagDemonCreationPending();
+    this.pitHagDemonCreationPending = null;
+    return pending;
+  }
+
   changePlayerRole(
     playerId: string,
     newRoleId: string,
@@ -4014,6 +4088,11 @@ export class GameManager {
 
     const newRole = getRoleById(newRoleId);
     if (!newRole) return false;
+    if (newRole.team === 'demon' && this.pitHagDemonCreationPending) {
+      return false;
+    }
+
+    const wasDrunkRole = player.role?.id === 'drunk';
 
     // 같은 역할이 이미 있는지 확인
     const existing = this.state.players.find(
@@ -4022,10 +4101,22 @@ export class GameManager {
     if (existing) return false; // 중복 역할은 이야기꾼이 처리
 
     player.role = newRole;
-    // 주정뱅이 상태 제거 (역할 변경 시)
     player.drunkAs = undefined;
     player.lunaticAs = undefined;
-    player.statuses = player.statuses.filter((s) => s !== 'drunk');
+    if (newRoleId === 'drunk') {
+      if (!player.statuses.includes('drunk')) player.statuses.push('drunk');
+    } else if (wasDrunkRole) {
+      player.statuses = player.statuses.filter((s) => s !== 'drunk');
+    }
+    this.clearCharacterAbilityUsage(player.id);
+    clearCharacterAbilityState(player);
+    if (pitHagId && newRole.team === 'demon') {
+      this.pitHagDemonCreationPending = {
+        pitHagId,
+        targetId: playerId,
+        newRoleId,
+      };
+    }
     this.syncContinuousPoisoning();
 
     return true;
@@ -4222,6 +4313,10 @@ export class GameManager {
     const lunaticAs1 = p1.lunaticAs;
     p1.lunaticAs = p2.lunaticAs;
     p2.lunaticAs = lunaticAs1;
+    this.clearCharacterAbilityUsage(p1.id);
+    this.clearCharacterAbilityUsage(p2.id);
+    clearCharacterAbilityState(p1);
+    clearCharacterAbilityState(p2);
 
     // 점쟁이 Red Herring 재배정: 교환된 플레이어 중 점쟁이가 있으면
     if (p1.role?.id === 'fortune_teller' || p2.role?.id === 'fortune_teller') {
@@ -4451,7 +4546,7 @@ export class GameManager {
 
       // 탕녀 승계: 생존자 5명 이상이고 살아있는 (중독되지 않은) 탕녀가 있으면 게임 계속
       const aliveScarletWoman = alivePlayers.find(
-        (p) => p.role?.id === 'scarlet_woman' && !hasPoisonStatus(p.statuses),
+        (p) => p.role?.id === 'scarlet_woman' && !isPoisonedOrDrunk(p),
       );
       if (aliveScarletWoman && aliveCount >= 5) {
         // 탕녀를 임프로 자동 승계

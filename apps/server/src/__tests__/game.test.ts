@@ -417,6 +417,30 @@ describe('GameManager', () => {
       const result = gm.castVote(players[0].id);
       expect(result.success).toBe(true);
     });
+
+    it('제한된 사망 집사는 실패한 투표에서 유령 투표권을 소비하지 않는다', () => {
+      const { gm, players } = createTestGame(5);
+      gm.assignRole(players[0].id, 'butler');
+      gm.assignRole(players[1].id, 'empath');
+      gm.assignRole(players[2].id, 'fortune_teller');
+      gm.assignRole(players[3].id, 'poisoner');
+      gm.assignRole(players[4].id, 'imp');
+      gm.start();
+      gm.kill(players[0].id);
+      gm.setPhase('day');
+      gm.setDaySubPhase('nomination');
+      gm.setButlerMaster(players[0].id, players[1].id);
+      gm.nominate(players[2].id, players[3].id);
+
+      const result = gm.castVote(players[0].id);
+
+      expect(result.success).toBe(false);
+      expect(gm.getPlayer(players[0].id)?.deadVoteUsed).toBe(false);
+      expect(gm.isGhostVoteUsed(players[0].id)).toBe(false);
+      expect(gm.getState().nominations.at(-1)?.votes).not.toHaveProperty(
+        players[0].id,
+      );
+    });
   });
 
   describe('초공감자', () => {
@@ -602,6 +626,25 @@ describe('GameManager', () => {
       expect(gm.castVote(players[2].id).success).toBe(false);
     });
 
+    it('거지가 같은 지명에 중복 투표해도 토큰을 한 번만 소비한다', () => {
+      const { gm, players } = createStartedGame();
+      const beggar = gm.addTraveller('Beggar');
+      expect(beggar).not.toBeNull();
+      gm.assignTravellerRole(beggar?.id ?? '', 'beggar', 'good');
+      gm.addBeggarToken(beggar?.id ?? '');
+      gm.setPhase('day');
+      gm.nominate(players[0].id, players[1].id);
+
+      expect(gm.castVote(beggar?.id ?? '').success).toBe(true);
+      expect(gm.castVote(beggar?.id ?? '').success).toBe(false);
+      expect(gm.getBeggarTokens(beggar?.id ?? '')).toBe(0);
+      expect(
+        Object.keys(gm.getState().nominations.at(-1)?.votes ?? {}).filter(
+          (id) => id === beggar?.id,
+        ),
+      ).toHaveLength(1);
+    });
+
     it('closeVote: 과반수 판정', () => {
       const { gm, players } = createStartedGame();
       gm.setPhase('day');
@@ -677,6 +720,24 @@ describe('GameManager', () => {
       const result = gm.checkWinCondition();
       expect(result).toBeNull();
       expect(gm.getPlayer(players[2].id)?.role?.id).toBe('imp');
+    });
+
+    it('취한 탕녀는 악마 사망 후 승계하지 않는다', () => {
+      const { gm, players } = createTestGame(6);
+      gm.assignRole(players[0].id, 'washerwoman');
+      gm.assignRole(players[1].id, 'empath');
+      gm.assignRole(players[2].id, 'fortune_teller');
+      gm.assignRole(players[3].id, 'scarlet_woman');
+      gm.assignRole(players[4].id, 'poisoner');
+      gm.assignRole(players[5].id, 'imp');
+      gm.start();
+      gm.setPlayerStatuses(players[3].id, ['drunk']);
+
+      gm.kill(players[5].id);
+      const result = gm.checkWinCondition('imp', players[5].id);
+
+      expect(result?.winningTeam).toBe('good');
+      expect(gm.getPlayer(players[3].id)?.role?.id).toBe('scarlet_woman');
     });
 
     it('생존자 2명 이하 → 악 승리', () => {
@@ -1669,6 +1730,22 @@ describe('GameManager', () => {
       expect(gm.getPlayer(players[2].id)?.statuses).toContain('assassin_spent');
     });
 
+    it('수도승 보호 대상은 악마의 밤 사망을 막는다', () => {
+      const { gm, players } = createBmrActionGame();
+      gm.assignRole(players[5].id, 'monk');
+      gm.setPlayerStatuses(players[5].id, ['protected']);
+
+      const result = gm.resolvePoSelection(players[6].id, [players[5].id]);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        rested: false,
+        killedTargetIds: [],
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(true);
+    });
+
     it('암살자는 건달을 공격하면 건달을 죽이고 건달은 암살자의 진영이 된다', () => {
       const { gm, players } = createBmrActionGame();
       gm.assignRole(players[5].id, 'goon');
@@ -1887,6 +1964,35 @@ describe('GameManager', () => {
       gm.start();
       return { gm, players };
     }
+
+    it('맑고 건강한 군인은 BMR 악마의 밤 사망을 막는다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.assignRole(players[6].id, 'soldier');
+
+      const result = gm.resolvePoSelection(players[7].id, [players[6].id]);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        rested: false,
+        killedTargetIds: [],
+      });
+      expect(gm.getPlayer(players[6].id)?.isAlive).toBe(true);
+    });
+
+    it('수도승 보호는 악마가 아닌 밤 사망까지 막지는 않는다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.setPlayerStatuses(players[5].id, ['protected']);
+
+      const result = gm.resolveGossipKill(players[2].id, players[5].id);
+
+      expect(result).toEqual({
+        success: true,
+        blocked: false,
+        killedTargetId: players[5].id,
+      });
+      expect(gm.getPlayer(players[5].id)?.isAlive).toBe(false);
+    });
 
     it('험담 공개발언은 플레이어별 하루 1회 기록되고 다음 낮에 다시 사용할 수 있다', () => {
       const { gm, players } = createBmrAssistGame();

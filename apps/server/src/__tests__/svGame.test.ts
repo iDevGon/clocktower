@@ -55,6 +55,34 @@ describe('S&V GameManager', () => {
       gm.detectEdition();
       expect(gm.getEditionId()).toBe('trouble_brewing');
     });
+
+    it('기본 에디션과 추가 역할을 섞어도 기본 에디션을 유지한다', () => {
+      const { gm, players } = createSVGame(5);
+      gm.assignRole(players[0].id, 'pukka');
+      gm.assignRole(players[1].id, 'washerwoman');
+      gm.assignRole(players[2].id, 'empath');
+      gm.assignRole(players[3].id, 'poisoner');
+      gm.assignRole(players[4].id, 'baron');
+      gm.setRoleSetup('trouble_brewing', ['pukka']);
+      gm.start();
+      gm.detectEdition();
+
+      expect(gm.getEditionId()).toBe('trouble_brewing');
+    });
+
+    it('명시한 기본 에디션은 역할 기반 감지보다 우선한다', () => {
+      const { gm, players } = createSVGame(5);
+      gm.assignRole(players[0].id, 'clockmaker');
+      gm.assignRole(players[1].id, 'dreamer');
+      gm.assignRole(players[2].id, 'flowergirl');
+      gm.assignRole(players[3].id, 'oracle');
+      gm.assignRole(players[4].id, 'vortox');
+      gm.setRoleSetup('trouble_brewing');
+      gm.start();
+      gm.detectEdition();
+
+      expect(gm.getEditionId()).toBe('trouble_brewing');
+    });
   });
 
   describe('마녀 저주', () => {
@@ -240,7 +268,7 @@ describe('S&V GameManager', () => {
       expect(gm.getPlayer(players[0].id)?.role?.id).toBe('artist');
     });
 
-    it('역할 변경은 플레이어의 현재 진영을 바꾸지 않는다', () => {
+    it('역할 변경은 플레이어의 현재 진영을 유지한다', () => {
       const { gm, players } = createStartedSVGame();
       expect(gm.getPlayerAlignment(players[0].id)).toBe('good');
 
@@ -249,6 +277,24 @@ describe('S&V GameManager', () => {
       expect(success).toBe(true);
       expect(gm.getPlayer(players[0].id)?.role?.id).toBe('vortox');
       expect(gm.getPlayerAlignment(players[0].id)).toBe('good');
+    });
+
+    it('역할 변경 시 이전 철학자 능력을 제거한다', () => {
+      const { gm, players } = createStartedSVGame();
+      const player = gm.getPlayer(players[0].id);
+      if (!player) throw new Error('player not found');
+      player.philosopherGrantedRole = 'artist';
+      gm.setPlayerStatuses(players[0].id, ['professor_spent']);
+
+      const success = gm.changePlayerRole(players[0].id, 'vortox');
+
+      expect(success).toBe(true);
+      expect(
+        gm.getPlayer(players[0].id)?.philosopherGrantedRole,
+      ).toBeUndefined();
+      expect(gm.getPlayer(players[0].id)?.statuses).not.toContain(
+        'professor_spent',
+      );
     });
 
     it('이미 게임에 있는 역할로는 변경할 수 없다', () => {
@@ -271,6 +317,38 @@ describe('S&V GameManager', () => {
 
       expect(success).toBe(false);
       expect(gm.getPlayer(players[0].id)?.role?.id).toBe('clockmaker');
+    });
+
+    it('역할 변경 시 플레이어 키 능력 사용 상태를 초기화한다', () => {
+      const { gm, players } = createStartedSVGame();
+      gm.markSlayerUsed(players[0].id);
+      gm.markArtistUsed(players[0].id);
+      gm.markSavantUsedToday(players[0].id);
+      gm.markPhilosopherUsed(players[0].id);
+      gm.recordJugglerGuesses(players[0].id, []);
+
+      expect(gm.changePlayerRole(players[0].id, 'artist')).toBe(true);
+      expect(gm.isSlayerUsed(players[0].id)).toBe(false);
+      expect(gm.isArtistUsed(players[0].id)).toBe(false);
+      expect(gm.isSavantUsedToday(players[0].id)).toBe(false);
+      expect(gm.isPhilosopherUsed(players[0].id)).toBe(false);
+      expect(gm.isJugglerUsed(players[0].id)).toBe(false);
+    });
+
+    it('역할 변경 시 역할과 무관하게 부여된 취함 상태는 보존한다', () => {
+      const { gm, players } = createStartedSVGame();
+      gm.setPlayerStatuses(players[0].id, ['drunk']);
+
+      expect(gm.changePlayerRole(players[0].id, 'artist')).toBe(true);
+      expect(gm.getPlayer(players[0].id)?.statuses).toContain('drunk');
+    });
+
+    it('주정뱅이 역할에서 바뀌면 역할로 부여된 취함 상태는 제거한다', () => {
+      const { gm, players } = createStartedSVGame();
+      gm.changePlayerRole(players[0].id, 'drunk');
+
+      expect(gm.changePlayerRole(players[0].id, 'artist')).toBe(true);
+      expect(gm.getPlayer(players[0].id)?.statuses).not.toContain('drunk');
     });
   });
 
@@ -541,6 +619,31 @@ describe('S&V GameManager', () => {
 
       expect(result?.winningTeam).toBe('evil');
       expect(result?.cause).toBe('vortox_no_execution');
+    });
+  });
+
+  describe('이발사 역할 교환', () => {
+    it('역할 교환 시 진영은 유지되고 이전 철학자 능력은 제거된다', () => {
+      const { gm, players } = createStartedSVGame();
+      gm.assignRole(players[0].id, 'philosopher');
+      const player = gm.getPlayer(players[0].id);
+      if (!player) throw new Error('player not found');
+      player.philosopherGrantedRole = 'artist';
+      gm.assignRole(players[1].id, 'vortox');
+
+      const success = gm.swapPlayerRoles(players[0].id, players[1].id);
+
+      expect(success).toBe(true);
+      expect(gm.getPlayer(players[0].id)?.role?.id).toBe('vortox');
+      expect(gm.getPlayerAlignment(players[0].id)).toBe('good');
+      expect(
+        gm.getPlayer(players[0].id)?.philosopherGrantedRole,
+      ).toBeUndefined();
+      expect(gm.getPlayer(players[1].id)?.role?.id).toBe('philosopher');
+      expect(
+        gm.getPlayer(players[1].id)?.philosopherGrantedRole,
+      ).toBeUndefined();
+      expect(gm.getPlayerAlignment(players[1].id)).toBe('evil');
     });
   });
 

@@ -40,6 +40,30 @@ describe('E2E: S&V 낮 능력 검증', () => {
     expect(result.error).toContain('백치천재');
   }, 15000);
 
+  it('보르톡스는 첫 낮에 처형이 없으면 악 팀을 승리시킨다', async () => {
+    await setupGameWithRoles(ctx, [
+      { roleId: 'clockmaker' },
+      { roleId: 'dreamer' },
+      { roleId: 'flowergirl' },
+      { roleId: 'oracle' },
+      { roleId: 'seamstress' },
+      { roleId: 'witch' },
+      { roleId: 'vortox' },
+    ]);
+    await advanceToDay(ctx);
+
+    const gameEndPromise = waitForEvent<{
+      winningTeam: string;
+      cause?: string;
+    }>(ctx.storyteller as Socket, 'game:end');
+    ctx.storyteller.emit('game:setPhase', 'night');
+
+    const result = await gameEndPromise;
+    expect(result.winningTeam).toBe('evil');
+    expect(result.cause).toBe('vortox_no_execution');
+    expect(ctx.app.game.getState().phase).toBe('ended');
+  }, 15000);
+
   it('백치천재는 하루에 한 번만 정보를 요청할 수 있다', async () => {
     await setupGameWithRoles(ctx, [
       { roleId: 'clockmaker' },
@@ -338,6 +362,49 @@ describe('E2E: S&V 사망 트리거', () => {
 
     const event = await barberPromise;
     expect(event.barberName).toBe('Player1');
+  }, 15000);
+
+  it('마귀할멈이 악마를 만들면 이야기꾼에게 추가 사망 판정을 알린다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'pit_hag' },
+      { roleId: 'dreamer' },
+      { roleId: 'flowergirl' },
+      { roleId: 'witch' },
+      { roleId: 'seamstress' },
+    ]);
+
+    const demonCreatedPromise = waitForEvent<{
+      pitHagId: string;
+      targetId: string;
+      newRoleId: string;
+    }>(ctx.storyteller as Socket, 'pitHag:demonCreated');
+    ctx.storyteller.emit('pitHag:changeRole', {
+      pitHagId: playerIds[0],
+      targetPlayerId: playerIds[1],
+      newRoleId: 'vortox',
+    });
+
+    const event = await demonCreatedPromise;
+    expect(event).toEqual({
+      pitHagId: playerIds[0],
+      targetId: playerIds[1],
+      newRoleId: 'vortox',
+    });
+    expect(ctx.app.game.getPlayer(playerIds[1])?.role?.id).toBe('vortox');
+
+    const resolveResult = await new Promise<{
+      success: boolean;
+      error?: string;
+    }>((resolve) => {
+      ctx.storyteller.emit(
+        'pitHag:resolveDemonCreation',
+        { killPlayerIds: [playerIds[2]] },
+        resolve,
+      );
+    });
+
+    expect(resolveResult.success).toBe(true);
+    expect(ctx.app.game.getPlayer(playerIds[2])?.isAlive).toBe(false);
   }, 15000);
 
   it('이발사 역할 교환은 이발사 사망 후 한 번만 적용된다', async () => {

@@ -769,6 +769,22 @@ describe('S&V 밤 진행 순서', () => {
       SV_OTHER_NIGHT_ORDER,
     );
   });
+
+  it('추가 역할은 자기 에디션의 밤 순서와 낮 조건을 따라 뒤에 추가된다', () => {
+    const firstNight = getNightOrderForEdition('trouble_brewing', 1, [
+      'po',
+      'courtier',
+    ]);
+    const otherNight = getNightOrderForEdition('trouble_brewing', 2, [
+      'po',
+      'courtier',
+    ]);
+
+    expect(firstNight.at(-1)).toBe('courtier');
+    expect(firstNight).not.toContain('po');
+    expect(otherNight.at(-2)).toBe('courtier');
+    expect(otherNight.at(-1)).toBe('po');
+  });
 });
 
 describe('Bad Moon Rising 역할 정의', () => {
@@ -903,6 +919,11 @@ describe('BMR 밤 진행 순서', () => {
     expect(new Set(BMR_OTHER_NIGHT_ORDER).size).toBe(
       BMR_OTHER_NIGHT_ORDER.length,
     );
+  });
+
+  it('수습생은 첫 밤에만 밤 순서에 포함된다', () => {
+    expect(BMR_FIRST_NIGHT_ORDER).toContain('apprentice');
+    expect(BMR_OTHER_NIGHT_ORDER).not.toContain('apprentice');
   });
 
   it('BMR 밤 순서의 모든 역할이 조회 가능하다', () => {

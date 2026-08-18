@@ -328,6 +328,12 @@ export interface ServerToStorytellerEvents {
     demonId: string;
     demonName: string;
   }) => void;
+  /** 마귀할멈이 새 악마를 만들어 이야기꾼의 임의 사망 판정이 필요한 경우 */
+  'pitHag:demonCreated': (data: {
+    pitHagId: string;
+    targetId: string;
+    newRoleId: string;
+  }) => void;
   /** 백치천재가 낮에 능력 사용을 요청함 (이야기꾼이 참/거짓 정보 2개 입력 필요) */
   'savant:requested': (data: { playerId: string; playerName: string }) => void;
   /** 화가가 낮에 능력 사용을 요청함 (이야기꾼이 예/아니오 답변 필요, 게임 중 1회) */
@@ -692,6 +698,11 @@ export interface StorytellerToServerEvents {
       targetPlayerId: string;
       newRoleId: string;
     },
+    callback?: (res: { success: boolean; error?: string }) => void,
+  ) => void;
+  /** 마귀할멈이 만든 악마의 임의 사망 판정을 확정하거나 건너뜀 */
+  'pitHag:resolveDemonCreation': (
+    data: { killPlayerIds: string[] },
     callback?: (res: { success: boolean; error?: string }) => void,
   ) => void;
   /** 사악한 쌍둥이 선한 쌍둥이 지정 */

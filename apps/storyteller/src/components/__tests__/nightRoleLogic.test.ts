@@ -238,6 +238,32 @@ describe('nightRoleLogic', () => {
   });
 
   it.each([
+    'pukka',
+    'shabaloth',
+    'po',
+    'zombuul',
+  ] as const)('%s는 수도승 보호 대상을 사망 처리하지 않는다', (roleId) => {
+    const demon = player({
+      id: 'demon',
+      role: {
+        id: roleId,
+        name: roleId,
+        team: 'demon',
+        ability: '',
+        edition: 'bad_moon_rising',
+      },
+    });
+    const protectedTarget = player({
+      id: 'target',
+      statuses: ['protected'],
+    });
+
+    expect(getKillActionBlockReason(roleId, demon, protectedTarget)).toBe(
+      'protected',
+    );
+  });
+
+  it.each([
     'poisoned',
     'drunk',
   ] as const)('%s 상태의 군인은 임프 처치 면역을 제공하지 않는다', (status) => {

@@ -7,6 +7,10 @@ const DEMON_KILL_ROLES = new Set([
   'vigormortis',
   'no_dashii',
   'vortox',
+  'pukka',
+  'shabaloth',
+  'po',
+  'zombuul',
 ]);
 
 function isSoberHealthy(player: Pick<Player, 'role' | 'statuses'>): boolean {
