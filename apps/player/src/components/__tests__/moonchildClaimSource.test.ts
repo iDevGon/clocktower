@@ -10,8 +10,9 @@ describe('Moonchild public claim affordance', () => {
     )?.[0];
 
     expect(canUseMoonchild).toContain(
-      "dictionaryRoleIds.includes('moonchild')",
+      "dictionarySetup.roleIds.includes('moonchild')",
     );
     expect(canUseMoonchild).not.toContain("effectiveRoleId === 'moonchild'");
+    expect(canUseMoonchild).not.toContain("role?.id === 'moonchild'");
   });
 });
