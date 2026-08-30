@@ -114,6 +114,21 @@ export function SettingsPanel({
           />
         </View>
 
+        <View style={styles.settingsRow}>
+          <View>
+            <Text style={[styles.settingsLabel, { fontSize: fontSize.md }]}>
+              이전 투표 기록
+            </Text>
+          </View>
+          <Switch
+            value={settings.showVoteHistory}
+            onValueChange={(val) => onSettingsChange({ showVoteHistory: val })}
+            trackColor={{ false: '#3a3a42', true: '#2a4a2a' }}
+            thumbColor={settings.showVoteHistory ? '#2ecc71' : '#908e8a'}
+            accessibilityLabel="이전 투표 기록"
+          />
+        </View>
+
         {settings.whisperMode === 'chat' && (
           <View style={styles.settingsClockMargin}>
             <ClockSpeedSetting

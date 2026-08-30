@@ -886,6 +886,15 @@ export default function LobbyScreen() {
               }
               scale={scale}
             />
+            <View style={styles.settingsDivider} />
+            <SettingToggle
+              label="이전 투표 기록"
+              value={gameState.settings.showVoteHistory}
+              onValueChange={(val: boolean) =>
+                setGameSettings({ showVoteHistory: val })
+              }
+              scale={scale}
+            />
           </View>
           {gameState.settings.whisperMode === 'chat' && (
             <View style={styles.clockSettingContainer}>

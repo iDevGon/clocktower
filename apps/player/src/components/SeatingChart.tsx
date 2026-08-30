@@ -24,6 +24,7 @@ interface SeatingChartProps {
   roleNotes: Record<string, string>;
   playerNotes: Record<string, string>;
   voteHistory: VoteHistoryEntry[];
+  showVoteHistory: boolean;
   onSetRoleNote: (playerId: string, note: string) => void;
   onSetPlayerNote: (playerId: string, note: string) => void;
   onClose: () => void;
@@ -57,6 +58,7 @@ export function SeatingChart({
   roleNotes,
   playerNotes,
   voteHistory,
+  showVoteHistory,
   onSetRoleNote,
   onSetPlayerNote,
   onClose,
@@ -109,8 +111,11 @@ export function SeatingChart({
   );
 
   const selectedVote = useMemo(
-    () => voteHistory.find((entry) => entry.id === selectedVoteId) ?? null,
-    [selectedVoteId, voteHistory],
+    () =>
+      showVoteHistory
+        ? (voteHistory.find((entry) => entry.id === selectedVoteId) ?? null)
+        : null,
+    [selectedVoteId, showVoteHistory, voteHistory],
   );
 
   const selectedEligibleVoterIds = useMemo(
@@ -153,6 +158,12 @@ export function SeatingChart({
       setSelectedVoteId(null);
     }
   }, [selectedVoteId, voteHistory]);
+
+  useEffect(() => {
+    if (!showVoteHistory) {
+      setSelectedVoteId(null);
+    }
+  }, [showVoteHistory]);
 
   const openNoteEditor = useCallback((player: PlayerInfo) => {
     setEditingPlayerId(player.id);
@@ -392,58 +403,63 @@ export function SeatingChart({
           </View>
 
           <View style={[s.ring, { width: areaSize, height: areaSize }]}>
-            {renderSelectedVoteOverlay()}
+            {showVoteHistory && renderSelectedVoteOverlay()}
             {players.map(renderToken)}
           </View>
 
-          <View style={s.historyPanel}>
-            <View style={s.historyHeader}>
-              <Text style={s.historyTitle}>투표 기록</Text>
-              {selectedVote && (
-                <Pressable
-                  onPress={() => setSelectedVoteId(null)}
-                  style={s.clearVoteButton}
-                  accessibilityRole="button"
-                  accessibilityLabel="투표 기록 선택 해제"
+          {showVoteHistory && (
+            <View style={s.historyPanel}>
+              <View style={s.historyHeader}>
+                <Text style={s.historyTitle}>투표 기록</Text>
+                {selectedVote && (
+                  <Pressable
+                    onPress={() => setSelectedVoteId(null)}
+                    style={s.clearVoteButton}
+                    accessibilityRole="button"
+                    accessibilityLabel="투표 기록 선택 해제"
+                  >
+                    <Text style={s.clearVoteText}>해제</Text>
+                  </Pressable>
+                )}
+              </View>
+              {visibleVoteHistory.length === 0 ? (
+                <Text style={s.emptyHistory}>기록 없음</Text>
+              ) : (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={s.historyList}
                 >
-                  <Text style={s.clearVoteText}>해제</Text>
-                </Pressable>
+                  {visibleVoteHistory.map((entry) => {
+                    const guiltyCount = Object.values(entry.votes).filter(
+                      Boolean,
+                    ).length;
+                    const selected = entry.id === selectedVoteId;
+                    return (
+                      <Pressable
+                        key={entry.id}
+                        onPress={() =>
+                          setSelectedVoteId(selected ? null : entry.id)
+                        }
+                        style={[
+                          s.historyChip,
+                          selected && s.historyChipSelected,
+                        ]}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${entry.round}번째 투표 기록`}
+                      >
+                        <Text style={s.historyChipRound}>#{entry.round}</Text>
+                        <Text style={s.historyChipNames} numberOfLines={1}>
+                          {entry.nominatorName} → {entry.nomineeName}
+                        </Text>
+                        <Text style={s.historyChipVotes}>{guiltyCount}표</Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
               )}
             </View>
-            {visibleVoteHistory.length === 0 ? (
-              <Text style={s.emptyHistory}>기록 없음</Text>
-            ) : (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={s.historyList}
-              >
-                {visibleVoteHistory.map((entry) => {
-                  const guiltyCount = Object.values(entry.votes).filter(
-                    Boolean,
-                  ).length;
-                  const selected = entry.id === selectedVoteId;
-                  return (
-                    <Pressable
-                      key={entry.id}
-                      onPress={() =>
-                        setSelectedVoteId(selected ? null : entry.id)
-                      }
-                      style={[s.historyChip, selected && s.historyChipSelected]}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${entry.round}번째 투표 기록`}
-                    >
-                      <Text style={s.historyChipRound}>#{entry.round}</Text>
-                      <Text style={s.historyChipNames} numberOfLines={1}>
-                        {entry.nominatorName} → {entry.nomineeName}
-                      </Text>
-                      <Text style={s.historyChipVotes}>{guiltyCount}표</Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            )}
-          </View>
+          )}
 
           {editingPlayer && (
             <View style={s.noteEditorOverlay}>

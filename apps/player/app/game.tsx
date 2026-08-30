@@ -1065,6 +1065,7 @@ export default function GameScreen() {
         roleNotes={seatingRoleNotes}
         playerNotes={seatingPlayerNotes}
         voteHistory={voteHistory}
+        showVoteHistory={gameSettings?.showVoteHistory ?? true}
         onSetRoleNote={setSeatingRoleNote}
         onSetPlayerNote={setSeatingPlayerNote}
         onClose={() => setSeatingChartVisible(false)}

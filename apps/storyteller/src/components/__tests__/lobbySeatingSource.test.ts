@@ -10,6 +10,10 @@ const clockSpeedSettingSource = readFileSync(
   resolve(process.cwd(), 'src/components/ClockSpeedSetting.tsx'),
   'utf8',
 );
+const settingsPanelSource = readFileSync(
+  resolve(process.cwd(), 'src/components/SettingsPanel.tsx'),
+  'utf8',
+);
 
 describe('lobby seating source', () => {
   it('좌석 배치 화면은 드래그 토큰으로 플레이어 순서를 바꾼다', () => {
@@ -62,5 +66,17 @@ describe('lobby seating source', () => {
     );
     expect(clockSpeedSettingSource).toContain('onInteractionStart?.()');
     expect(clockSpeedSettingSource).toContain('onInteractionEnd?.()');
+  });
+
+  it('로비의 이전 투표 기록 토글은 동기화된 게임 설정을 갱신한다', () => {
+    expect(lobbySource).toMatch(
+      /label="이전 투표 기록"[\s\S]*value=\{gameState\.settings\.showVoteHistory\}[\s\S]*setGameSettings\(\{\s*showVoteHistory: val,?\s*\}\)/,
+    );
+  });
+
+  it('게임 중 설정의 이전 투표 기록 스위치는 부모 설정 변경 콜백을 사용한다', () => {
+    expect(settingsPanelSource).toMatch(
+      /이전 투표 기록[\s\S]*value=\{settings\.showVoteHistory\}[\s\S]*onSettingsChange\(\{\s*showVoteHistory: val,?\s*\}\)/,
+    );
   });
 });
