@@ -1,9 +1,9 @@
-import { getRoleById } from '@clocktower/shared';
 import { useCallback } from 'react';
 import { io } from 'socket.io-client';
 import { registerForPushNotifications } from '../notifications';
 import { useConnectionStore } from '../stores/connectionStore';
 import { usePlayerStore } from '../stores/playerStore';
+import { buildRejoinStatePatch } from './rejoinState';
 import type { AppSocket } from './socketListeners';
 import { attachListeners } from './socketListeners';
 
@@ -107,24 +107,15 @@ export function useConnection() {
           resolve(false);
           return;
         }
-        usePlayerStore.getState().set({
-          playerId,
-          playerName: res.playerName,
-          role: res.roleId ? (getRoleById(res.roleId) ?? null) : null,
-          philosopherGrantedRole: res.philosopherGrantedRole ?? null,
-          currentPhase: res.phase ?? 'setup',
-          isAlive: res.isAlive ?? true,
-          daySubPhase: res.daySubPhase ?? null,
-          hasNominatedToday: res.hasNominatedToday ?? false,
-          deadVoteUsed: res.deadVoteUsed ?? false,
-          nightCount: res.nightCount ?? usePlayerStore.getState().nightCount,
-          nightProgress: res.nightProgress ?? null,
-          gamePlayers: res.gamePlayers ?? [],
-          evilInfo: res.evilInfo ?? null,
-          butlerMasterName: res.butlerMasterName ?? null,
-          nomination: res.nomination ?? null,
-          executionCandidate: res.executionCandidate ?? null,
-        });
+        const previous = usePlayerStore.getState();
+        usePlayerStore
+          .getState()
+          .set(
+            buildRejoinStatePatch(
+              { ...previous, playerId },
+              { ...res, success: true },
+            ),
+          );
         resolve(true);
         // Fire and forget
         registerForPushNotifications().then((token) => {

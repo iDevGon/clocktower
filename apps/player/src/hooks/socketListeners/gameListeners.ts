@@ -1,8 +1,9 @@
-import { getRoleById, NIGHT_ACTIONS } from '@clocktower/shared';
+import { NIGHT_ACTIONS } from '@clocktower/shared';
 import { AppState } from 'react-native';
 import { useChatStore } from '../../stores/chatStore';
 import { usePlayerStore } from '../../stores/playerStore';
 import { useWhisperStore } from '../../stores/whisperStore';
+import { buildRejoinStatePatch } from '../rejoinState';
 import type { AppSocket } from './types';
 
 function handleRejoin(socket: AppSocket) {
@@ -19,22 +20,10 @@ function handleRejoin(socket: AppSocket) {
       useChatStore.getState().reset();
       return;
     }
-    usePlayerStore.getState().set({
-      role: res.roleId ? (getRoleById(res.roleId) ?? null) : null,
-      philosopherGrantedRole: res.philosopherGrantedRole ?? null,
-      currentPhase: res.phase ?? 'setup',
-      isAlive: res.isAlive ?? true,
-      daySubPhase: res.daySubPhase ?? null,
-      hasNominatedToday: res.hasNominatedToday ?? false,
-      deadVoteUsed: res.deadVoteUsed ?? false,
-      nightProgress: res.nightProgress ?? null,
-      nightCount: res.nightCount ?? usePlayerStore.getState().nightCount,
-      gamePlayers: res.gamePlayers ?? usePlayerStore.getState().gamePlayers,
-      evilInfo: res.evilInfo ?? null,
-      butlerMasterName: res.butlerMasterName ?? null,
-      nomination: res.nomination ?? null,
-      executionCandidate: res.executionCandidate ?? null,
-    });
+    const previous = usePlayerStore.getState();
+    usePlayerStore
+      .getState()
+      .set(buildRejoinStatePatch(previous, { ...res, success: true }));
   });
 }
 

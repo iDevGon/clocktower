@@ -238,6 +238,48 @@ interface PlayerState {
   reset: () => void;
 }
 
+export type RejoinStateSnapshot = Pick<
+  PlayerState,
+  | 'playerId'
+  | 'playerName'
+  | 'nightCount'
+  | 'gamePlayers'
+  | 'justDied'
+  | 'deathReason'
+  | 'executionAnnouncement'
+  | 'nightDeathAnnouncement'
+  | 'slayerFizzle'
+  | 'rolePromotion'
+  | 'pendingRolePromotion'
+>;
+
+export type RejoinStatePatch = Pick<
+  PlayerState,
+  | 'playerId'
+  | 'playerName'
+  | 'role'
+  | 'philosopherGrantedRole'
+  | 'currentPhase'
+  | 'isAlive'
+  | 'daySubPhase'
+  | 'hasNominatedToday'
+  | 'deadVoteUsed'
+  | 'nightCount'
+  | 'nightProgress'
+  | 'gamePlayers'
+  | 'evilInfo'
+  | 'butlerMasterName'
+  | 'nomination'
+  | 'executionCandidate'
+  | 'justDied'
+  | 'deathReason'
+  | 'executionAnnouncement'
+  | 'nightDeathAnnouncement'
+  | 'slayerFizzle'
+  | 'rolePromotion'
+  | 'pendingRolePromotion'
+>;
+
 const initialState = {
   playerId: '',
   playerName: '',

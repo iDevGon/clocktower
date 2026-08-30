@@ -8,10 +8,8 @@ describe('useConnection rejoin state restore', () => {
     'utf8',
   );
 
-  it('직접 재접속 경로에서도 진행 중인 지목과 처형 후보를 복원한다', () => {
-    expect(source).toContain('nomination: res.nomination ?? null');
-    expect(source).toContain(
-      'executionCandidate: res.executionCandidate ?? null',
-    );
+  it('직접 재접속 경로도 공통 상태 패치로 서버 상태를 복원한다', () => {
+    expect(source).toContain('buildRejoinStatePatch');
+    expect(source).toContain('{ ...previous, playerId }');
   });
 });
