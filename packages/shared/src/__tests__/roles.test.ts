@@ -52,6 +52,43 @@ describe('getActiveRoles', () => {
     expect(roles.some((role) => role.id === 'librarian')).toBe(false);
     expect(roles.some((role) => role.id === 'sweetheart')).toBe(true);
   });
+
+  it('중복된 추가 역할은 한 번만 포함한다', () => {
+    const roles = getActiveRoles({
+      editionId: 'trouble_brewing',
+      additionalRoleIds: ['sweetheart', 'sweetheart'],
+    });
+
+    expect(roles.filter((role) => role.id === 'sweetheart')).toHaveLength(1);
+  });
+
+  it('에디션에 이미 있는 추가 역할은 중복하지 않는다', () => {
+    const roles = getActiveRoles({
+      editionId: 'trouble_brewing',
+      additionalRoleIds: ['librarian'],
+    });
+
+    expect(roles.filter((role) => role.id === 'librarian')).toHaveLength(1);
+  });
+
+  it('제외된 추가 역할은 포함하지 않는다', () => {
+    const roles = getActiveRoles({
+      editionId: 'trouble_brewing',
+      excludedRoleIds: ['sweetheart'],
+      additionalRoleIds: ['sweetheart'],
+    });
+
+    expect(roles.some((role) => role.id === 'sweetheart')).toBe(false);
+  });
+
+  it('여행자 역할 ID는 추가하지 않는다', () => {
+    const roles = getActiveRoles({
+      editionId: 'trouble_brewing',
+      additionalRoleIds: ['bureaucrat'],
+    });
+
+    expect(roles.some((role) => role.id === 'bureaucrat')).toBe(false);
+  });
 });
 
 describe('getBaseRoleCounts', () => {

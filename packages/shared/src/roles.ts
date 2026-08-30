@@ -829,17 +829,15 @@ export function getRolesForEdition(editionId: string): Role[] {
 }
 
 export interface ActiveRoleOptions {
-  excludedRoleIds?: string[];
-  editionId?: string;
+  editionId: string;
+  excludedRoleIds?: readonly string[];
   /** 다른 에디션에서 추가로 포함할 역할 ID 목록 (크로스 에디션 믹싱) */
-  additionalRoleIds?: string[];
+  additionalRoleIds?: readonly string[];
 }
 
-export function getActiveRoles(options?: ActiveRoleOptions): Role[] {
-  const editionRoles = getRolesForEdition(
-    options?.editionId ?? 'trouble_brewing',
-  );
-  const excluded = new Set(options?.excludedRoleIds ?? []);
+export function getActiveRoles(options: ActiveRoleOptions): Role[] {
+  const editionRoles = getRolesForEdition(options.editionId);
+  const excluded = new Set(options.excludedRoleIds ?? []);
   const activeIds = new Set<string>();
   const activeRoles: Role[] = [];
 
@@ -850,7 +848,7 @@ export function getActiveRoles(options?: ActiveRoleOptions): Role[] {
     }
   }
 
-  for (const roleId of options?.additionalRoleIds ?? []) {
+  for (const roleId of options.additionalRoleIds ?? []) {
     if (activeIds.has(roleId) || excluded.has(roleId)) continue;
     const role = ALL_ROLES.find((candidate) => candidate.id === roleId);
     if (role) {
@@ -1103,20 +1101,16 @@ export function distributeRoles(
 
   let [townsfolkCount, outsiderCount, minionCount, demonCount] = dist;
 
-  const allRoles = getActiveRoles(options);
+  const allRoles = getActiveRoles({
+    editionId: options?.editionId ?? 'trouble_brewing',
+    excludedRoleIds: options?.excludedRoleIds,
+    additionalRoleIds: options?.additionalRoleIds,
+  });
 
-  const townsfolk = allRoles.filter(
-    (r) => r.team === 'townsfolk',
-  );
-  const outsiders = allRoles.filter(
-    (r) => r.team === 'outsider',
-  );
-  const minions = allRoles.filter(
-    (r) => r.team === 'minion',
-  );
-  const demons = allRoles.filter(
-    (r) => r.team === 'demon',
-  );
+  const townsfolk = allRoles.filter((r) => r.team === 'townsfolk');
+  const outsiders = allRoles.filter((r) => r.team === 'outsider');
+  const minions = allRoles.filter((r) => r.team === 'minion');
+  const demons = allRoles.filter((r) => r.team === 'demon');
 
   // 제외 후 역할이 부족하면 배분 불가
   if (
