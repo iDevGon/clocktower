@@ -7,12 +7,16 @@ function isValidDurationSeconds(value: number) {
   return Number.isSafeInteger(value) && value >= 0;
 }
 
-export function splitDurationSeconds(value: number): DurationParts | null {
-  if (!isValidDurationSeconds(value)) return null;
+export function splitDurationSeconds(value: number): DurationParts {
+  if (!Number.isFinite(value) || value < 0) {
+    return { minutes: '0', seconds: '0' };
+  }
+
+  const total = Math.floor(value);
 
   return {
-    minutes: String(Math.floor(value / 60)),
-    seconds: String(value % 60),
+    minutes: String(Math.floor(total / 60)),
+    seconds: String(total % 60),
   };
 }
 

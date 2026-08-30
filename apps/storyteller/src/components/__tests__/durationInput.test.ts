@@ -10,13 +10,29 @@ describe('splitDurationSeconds', () => {
     expect(splitDurationSeconds(0)).toEqual({ minutes: '0', seconds: '0' });
   });
 
+  it('floors finite nonnegative totals before splitting', () => {
+    expect(splitDurationSeconds(125.9)).toEqual({
+      minutes: '2',
+      seconds: '5',
+    });
+  });
+
   it.each([
     -1,
     Number.NaN,
     Number.POSITIVE_INFINITY,
-    Number.MAX_SAFE_INTEGER + 1,
-  ])('rejects an invalid total of %s', (value) => {
-    expect(splitDurationSeconds(value)).toBeNull();
+  ])('normalizes invalid totals of %s to unlimited', (value) => {
+    expect(splitDurationSeconds(value)).toEqual({
+      minutes: '0',
+      seconds: '0',
+    });
+  });
+
+  it('accepts finite totals beyond the safe integer range', () => {
+    expect(splitDurationSeconds(Number.MAX_SAFE_INTEGER + 1)).toEqual({
+      minutes: '150119987579016',
+      seconds: '32',
+    });
   });
 });
 

@@ -72,6 +72,11 @@ describe('lobby seating source', () => {
     expect(clockSpeedSettingSource).toContain('onInteractionEnd?.()');
   });
 
+  it('타이머 입력 blur는 지연 없이 상호작용을 종료한다', () => {
+    expect(clockSpeedSettingSource).toContain('onBlur={endInteraction}');
+    expect(clockSpeedSettingSource).not.toContain('deferInteractionEnd');
+  });
+
   it('로비의 이전 투표 기록 토글은 동기화된 게임 설정을 갱신한다', () => {
     expect(lobbySource).toMatch(
       /label="이전 투표 기록"[\s\S]*value=\{gameState\.settings\.showVoteHistory\}[\s\S]*setGameSettings\(\{\s*showVoteHistory: val,?\s*\}\)/,

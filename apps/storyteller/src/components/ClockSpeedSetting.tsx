@@ -37,55 +37,25 @@ export function ClockSpeedSetting({
   );
   const defaultFormat = (sec: number) => `${sec}초`;
   const fmt = formatOption ?? defaultFormat;
-  const [durationParts, setDurationParts] = useState(
-    () => splitDurationSeconds(value) ?? { minutes: '0', seconds: '0' },
+  const [durationParts, setDurationParts] = useState(() =>
+    splitDurationSeconds(value),
   );
   const durationPartsRef = useRef(durationParts);
-  const interactionActive = useRef(false);
-  const interactionEndTimer = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
 
   useEffect(() => {
     const parts = splitDurationSeconds(value);
-    if (parts) {
-      durationPartsRef.current = parts;
-      setDurationParts(parts);
-    }
+    durationPartsRef.current = parts;
+    setDurationParts(parts);
   }, [value]);
 
-  useEffect(
-    () => () => {
-      if (interactionEndTimer.current)
-        clearTimeout(interactionEndTimer.current);
-    },
-    [],
+  const startInteraction = useCallback(
+    () => onInteractionStart?.(),
+    [onInteractionStart],
   );
-
-  const startInteraction = useCallback(() => {
-    if (interactionEndTimer.current) {
-      clearTimeout(interactionEndTimer.current);
-      interactionEndTimer.current = null;
-    }
-    if (!interactionActive.current) {
-      interactionActive.current = true;
-      onInteractionStart?.();
-    }
-  }, [onInteractionStart]);
-
-  const endInteraction = useCallback(() => {
-    if (interactionActive.current) {
-      interactionActive.current = false;
-      onInteractionEnd?.();
-    }
-  }, [onInteractionEnd]);
-
-  const deferInteractionEnd = useCallback(() => {
-    interactionEndTimer.current = setTimeout(() => {
-      interactionEndTimer.current = null;
-      endInteraction();
-    }, 0);
-  }, [endInteraction]);
+  const endInteraction = useCallback(
+    () => onInteractionEnd?.(),
+    [onInteractionEnd],
+  );
 
   const changeDurationPart = useCallback(
     (part: 'minutes' | 'seconds', nextValue: string) => {
@@ -160,12 +130,12 @@ export function ClockSpeedSetting({
         onStartShouldSetResponder={() => true}
         onMoveShouldSetResponder={() => true}
         onResponderGrant={(event) => {
-          startInteraction();
+          onInteractionStart?.();
           resolveFromTouch(event);
         }}
         onResponderMove={resolveFromTouch}
-        onResponderRelease={endInteraction}
-        onResponderTerminate={endInteraction}
+        onResponderRelease={() => onInteractionEnd?.()}
+        onResponderTerminate={() => onInteractionEnd?.()}
       >
         {/* 트랙 (셀 중앙 ~ 셀 중앙, absolute) */}
         <View style={st.trackWrapper}>
@@ -224,7 +194,7 @@ export function ClockSpeedSetting({
           <TextInput
             accessibilityLabel={`${label} 분`}
             keyboardType="numeric"
-            onBlur={deferInteractionEnd}
+            onBlur={endInteraction}
             onChangeText={(nextValue) =>
               changeDurationPart('minutes', nextValue)
             }
@@ -238,7 +208,7 @@ export function ClockSpeedSetting({
           <TextInput
             accessibilityLabel={`${label} 초`}
             keyboardType="numeric"
-            onBlur={deferInteractionEnd}
+            onBlur={endInteraction}
             onChangeText={(nextValue) =>
               changeDurationPart('seconds', nextValue)
             }
