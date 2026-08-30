@@ -11,6 +11,7 @@ import type {
 import {
   ALL_ROLES,
   distributeRoles,
+  getActiveRoles,
   getNightOrderForEdition,
   getRoleById,
   NIGHT_ACTIONS,
@@ -108,24 +109,24 @@ function emitTriggeredDeathUpdates(
 /**
  * 게임에 등장하지 않는 선한 역할 목록을 반환합니다.
  * Drunk의 drunkAs 및 Lunatic의 lunaticAs 역할도 "등장하는 역할"로 간주합니다.
- * 게임에 배정된 역할들의 에디션에 속하는 역할만 후보로 반환합니다.
+ * 현재 게임 설정에서 활성화된 역할만 후보로 반환합니다.
  */
 function getNotInPlayGoodRoles(game: GameManager) {
   const state = game.getState();
-  const assignedRoles = state.players
-    .map((p) => p.role)
-    .filter((r): r is Role => !!r);
   const assignedRoleIds = new Set(
     state.players
       .flatMap((p) => [p.role?.id, p.drunkAs, p.lunaticAs])
       .filter(Boolean),
   );
-  const activeEditions = new Set(assignedRoles.map((r) => r.edition));
-  return ALL_ROLES.filter(
+  const settings = game.getSettings();
+  return getActiveRoles({
+    editionId: settings.setupEditionId,
+    excludedRoleIds: settings.excludedRoleIds,
+    additionalRoleIds: settings.additionalRoleIds,
+  }).filter(
     (r) =>
       (r.team === 'townsfolk' || r.team === 'outsider') &&
-      !assignedRoleIds.has(r.id) &&
-      activeEditions.has(r.edition),
+      !assignedRoleIds.has(r.id),
   );
 }
 

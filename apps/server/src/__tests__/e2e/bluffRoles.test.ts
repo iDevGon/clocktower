@@ -11,6 +11,11 @@ async function setupAndGetBluffs(
   ctx: TestContext,
   roleAssignments: Array<{ roleId: string; drunkAs?: string }>,
   bluffRoleIds?: string[],
+  setupOptions?: {
+    setupEditionId: string;
+    additionalRoleIds: string[];
+    excludedRoleIds: string[];
+  },
 ): Promise<{
   bluffRoles: { id: string; name: string }[];
   playerIds: string[];
@@ -25,6 +30,15 @@ async function setupAndGetBluffs(
     });
   });
   await statePromise;
+
+  if (setupOptions) {
+    const settingsStatePromise = waitForEvent(
+      ctx.storyteller as Socket,
+      'game:state',
+    );
+    ctx.storyteller.emit('game:setSettings', setupOptions);
+    await settingsStatePromise;
+  }
 
   // 2. 플레이어 참가
   const playerIds: string[] = [];
@@ -251,6 +265,53 @@ describe('E2E: 블러프 역할 필터링', () => {
     expect(bluffRoles).toHaveLength(3);
     const bluffIds = bluffRoles.map((b) => b.id);
     expect(bluffIds).toEqual(expect.arrayContaining(preselected));
+  }, 15000);
+
+  it('활성 설정에서 제외된 역할은 사전 선택한 블러프여도 랜덤 역할로 대체된다', async () => {
+    const { bluffRoles } = await setupAndGetBluffs(
+      ctx,
+      [
+        { roleId: 'imp' },
+        { roleId: 'poisoner' },
+        { roleId: 'washerwoman' },
+        { roleId: 'empath' },
+        { roleId: 'fortune_teller' },
+      ],
+      ['librarian', 'monk', 'ravenkeeper'],
+      {
+        setupEditionId: 'trouble_brewing',
+        additionalRoleIds: ['sweetheart'],
+        excludedRoleIds: ['librarian'],
+      },
+    );
+
+    const bluffIds = bluffRoles.map((role) => role.id);
+    expect(bluffIds).toHaveLength(3);
+    expect(bluffIds).not.toContain('librarian');
+    expect(bluffIds).toEqual(expect.arrayContaining(['monk', 'ravenkeeper']));
+  }, 15000);
+
+  it('활성 설정에 추가된 미배정 역할은 사전 선택한 블러프에 포함된다', async () => {
+    const { bluffRoles } = await setupAndGetBluffs(
+      ctx,
+      [
+        { roleId: 'imp' },
+        { roleId: 'poisoner' },
+        { roleId: 'washerwoman' },
+        { roleId: 'empath' },
+        { roleId: 'fortune_teller' },
+      ],
+      ['sweetheart', 'monk', 'ravenkeeper'],
+      {
+        setupEditionId: 'trouble_brewing',
+        additionalRoleIds: ['sweetheart'],
+        excludedRoleIds: ['librarian'],
+      },
+    );
+
+    expect(bluffRoles.map((role) => role.id)).toEqual(
+      expect.arrayContaining(['sweetheart', 'monk', 'ravenkeeper']),
+    );
   }, 15000);
 
   it('게임 시작 전에 이야기꾼 상태에 보인 블러프와 악마에게 전달된 블러프가 동일하다', async () => {
