@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
-  applyDurationPartEdit,
   canonicalizeDurationParts,
+  createDurationDraft,
   formatDurationOption,
+  getDurationDraftStatus,
   mergeDurationParts,
+  reduceDurationDraft,
   splitDurationSeconds,
-  syncDurationParts,
 } from '../durationInput';
 
 describe('splitDurationSeconds', () => {
@@ -73,40 +74,93 @@ describe('mergeDurationParts', () => {
   });
 });
 
-describe('duration input editing and synchronization', () => {
-  it('keeps invalid draft text without emitting a total', () => {
+describe('duration draft reducer', () => {
+  it('syncs clean drafts from an external value', () => {
     expect(
-      applyDurationPartEdit({ minutes: '2', seconds: '5' }, 'seconds', ''),
-    ).toEqual({
-      parts: { minutes: '2', seconds: '' },
+      reduceDurationDraft(createDurationDraft(30), {
+        type: 'sync',
+        value: 125,
+      }),
+    ).toEqual(createDurationDraft(125));
+  });
+
+  it('preserves a dirty draft through stale external echoes', () => {
+    const dirtyDraft = reduceDurationDraft(createDurationDraft(30), {
+      type: 'edit',
+      part: 'minutes',
+      value: '03',
+    });
+
+    expect(
+      reduceDurationDraft(dirtyDraft, { type: 'sync', value: 30 }),
+    ).toEqual(dirtyDraft);
+  });
+
+  it('rejects invalid drafts for apply without changing the draft', () => {
+    const invalidDraft = reduceDurationDraft(createDurationDraft(125), {
+      type: 'edit',
+      part: 'seconds',
+      value: '',
+    });
+
+    expect(getDurationDraftStatus(invalidDraft, 125)).toEqual({
       totalSeconds: null,
+      canApply: false,
+      error: '분과 초를 숫자로 입력하세요',
     });
+    expect(reduceDurationDraft(invalidDraft, { type: 'apply' })).toEqual(
+      invalidDraft,
+    );
   });
 
-  it('keeps active edits when a stale server echo arrives', () => {
-    const draft = { minutes: '03', seconds: '015' };
+  it.each([
+    [{ minutes: '03', seconds: '015' }, 195, { minutes: '3', seconds: '15' }],
+    [{ minutes: '0', seconds: '75' }, 75, { minutes: '1', seconds: '15' }],
+    [{ minutes: '0', seconds: '0' }, 0, { minutes: '0', seconds: '0' }],
+  ])('canonicalizes valid draft %o for a single apply', (parts, total, canonical) => {
+    const draft = { parts, isDirty: true };
 
-    expect(syncDurationParts(0, draft, true)).toEqual(draft);
-    expect(syncDurationParts(195, draft, true)).toEqual(draft);
-  });
-
-  it('immediately applies external or slider values when not editing', () => {
-    expect(
-      syncDurationParts(125, { minutes: '03', seconds: '015' }, false),
-    ).toEqual({ minutes: '2', seconds: '5' });
-  });
-
-  it('canonicalizes valid drafts on final blur', () => {
-    expect(
-      canonicalizeDurationParts({ minutes: '03', seconds: '015' }),
-    ).toEqual({ minutes: '3', seconds: '15' });
-    expect(canonicalizeDurationParts({ minutes: '0', seconds: '75' })).toEqual({
-      minutes: '1',
-      seconds: '15',
+    expect(getDurationDraftStatus(draft, 125)).toMatchObject({
+      totalSeconds: total,
+      canApply: total !== 125,
     });
+    expect(reduceDurationDraft(draft, { type: 'apply' })).toEqual({
+      parts: canonical,
+      isDirty: false,
+    });
+    expect(
+      getDurationDraftStatus(reduceDurationDraft(draft, { type: 'apply' }), 125)
+        .canApply,
+    ).toBe(false);
   });
 
-  it('leaves invalid drafts unchanged when canonicalizing', () => {
+  it('replaces a dirty draft with a preset before the immediate update', () => {
+    const dirtyDraft = reduceDurationDraft(createDurationDraft(125), {
+      type: 'edit',
+      part: 'seconds',
+      value: '99',
+    });
+
+    expect(
+      reduceDurationDraft(dirtyDraft, { type: 'preset', value: 60 }),
+    ).toEqual(createDurationDraft(60));
+  });
+
+  it('resets a dirty draft to the authoritative value', () => {
+    const dirtyDraft = reduceDurationDraft(createDurationDraft(125), {
+      type: 'edit',
+      part: 'minutes',
+      value: '9',
+    });
+
+    expect(
+      reduceDurationDraft(dirtyDraft, { type: 'reset', value: 125 }),
+    ).toEqual(createDurationDraft(125));
+  });
+});
+
+describe('canonicalizeDurationParts', () => {
+  it('leaves invalid drafts unchanged', () => {
     expect(canonicalizeDurationParts({ minutes: '3', seconds: '' })).toEqual({
       minutes: '3',
       seconds: '',

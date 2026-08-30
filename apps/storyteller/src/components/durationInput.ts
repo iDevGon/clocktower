@@ -3,6 +3,18 @@ export type DurationParts = {
   seconds: string;
 };
 
+export type DurationDraft = {
+  parts: DurationParts;
+  isDirty: boolean;
+};
+
+export type DurationDraftAction =
+  | { type: 'edit'; part: keyof DurationParts; value: string }
+  | { type: 'sync'; value: number }
+  | { type: 'reset'; value: number }
+  | { type: 'preset'; value: number }
+  | { type: 'apply' };
+
 function isValidDurationSeconds(value: number) {
   return Number.isSafeInteger(value) && value >= 0;
 }
@@ -42,30 +54,63 @@ export function mergeDurationParts(
   return isValidDurationSeconds(total) ? total : null;
 }
 
-export function applyDurationPartEdit(
-  parts: DurationParts,
-  part: keyof DurationParts,
-  value: string,
-) {
-  const next = { ...parts, [part]: value };
-
-  return {
-    parts: next,
-    totalSeconds: mergeDurationParts(next.minutes, next.seconds),
-  };
+export function createDurationDraft(value: number): DurationDraft {
+  return { parts: splitDurationSeconds(value), isDirty: false };
 }
 
-export function syncDurationParts(
-  value: number,
-  localParts: DurationParts,
-  isEditing: boolean,
-): DurationParts {
-  return isEditing ? localParts : splitDurationSeconds(value);
+export function reduceDurationDraft(
+  draft: DurationDraft,
+  action: DurationDraftAction,
+): DurationDraft {
+  switch (action.type) {
+    case 'edit':
+      return {
+        parts: { ...draft.parts, [action.part]: action.value },
+        isDirty: true,
+      };
+    case 'sync':
+      return draft.isDirty ? draft : createDurationDraft(action.value);
+    case 'reset':
+    case 'preset':
+      return createDurationDraft(action.value);
+    case 'apply': {
+      const total = mergeDurationParts(
+        draft.parts.minutes,
+        draft.parts.seconds,
+      );
+      return total === null
+        ? draft
+        : { parts: splitDurationSeconds(total), isDirty: false };
+    }
+  }
 }
 
 export function canonicalizeDurationParts(parts: DurationParts): DurationParts {
   const total = mergeDurationParts(parts.minutes, parts.seconds);
   return total === null ? parts : splitDurationSeconds(total);
+}
+
+export function getDurationDraftStatus(
+  draft: DurationDraft,
+  authoritativeValue: number,
+) {
+  const totalSeconds = mergeDurationParts(
+    draft.parts.minutes,
+    draft.parts.seconds,
+  );
+  const canApply =
+    draft.isDirty &&
+    totalSeconds !== null &&
+    totalSeconds !== authoritativeValue;
+
+  return {
+    totalSeconds,
+    canApply,
+    error:
+      draft.isDirty && totalSeconds === null
+        ? '분과 초를 숫자로 입력하세요'
+        : undefined,
+  };
 }
 
 export function formatDurationOption(value: number): string {

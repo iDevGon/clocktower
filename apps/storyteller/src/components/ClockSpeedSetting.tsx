@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type GestureResponderEvent,
+  Keyboard,
   type LayoutChangeEvent,
   Pressable,
   Text,
@@ -9,11 +10,10 @@ import {
 } from 'react-native';
 import { createClockSpeedSettingStyles } from './ClockSpeedSetting.styles';
 import {
-  applyDurationPartEdit,
-  canonicalizeDurationParts,
+  createDurationDraft,
   formatDurationOption,
-  splitDurationSeconds,
-  syncDurationParts,
+  getDurationDraftStatus,
+  reduceDurationDraft,
 } from './durationInput';
 
 export function ClockSpeedSetting({
@@ -42,20 +42,18 @@ export function ClockSpeedSetting({
     [scale],
   );
   const fmt = formatOption ?? formatDurationOption;
-  const [durationParts, setDurationParts] = useState(() =>
-    splitDurationSeconds(value),
+  const [durationDraft, setDurationDraft] = useState(() =>
+    createDurationDraft(value),
   );
-  const durationPartsRef = useRef(durationParts);
-  const focusedPartRef = useRef<keyof typeof durationParts | null>(null);
+  const durationDraftRef = useRef(durationDraft);
 
   useEffect(() => {
-    const parts = syncDurationParts(
+    const next = reduceDurationDraft(durationDraftRef.current, {
+      type: 'sync',
       value,
-      durationPartsRef.current,
-      focusedPartRef.current !== null,
-    );
-    durationPartsRef.current = parts;
-    setDurationParts(parts);
+    });
+    durationDraftRef.current = next;
+    setDurationDraft(next);
   }, [value]);
 
   const startInteraction = useCallback(
@@ -67,39 +65,37 @@ export function ClockSpeedSetting({
     [onInteractionEnd],
   );
 
-  const changeDurationPart = useCallback(
-    (part: keyof typeof durationParts, nextValue: string) => {
-      const edit = applyDurationPartEdit(
-        durationPartsRef.current,
-        part,
-        nextValue,
-      );
-      durationPartsRef.current = edit.parts;
-      setDurationParts(edit.parts);
-      if (edit.totalSeconds !== null) onChange(edit.totalSeconds);
+  const updateDurationDraft = useCallback(
+    (action: Parameters<typeof reduceDurationDraft>[1]) => {
+      const next = reduceDurationDraft(durationDraftRef.current, action);
+      durationDraftRef.current = next;
+      setDurationDraft(next);
+      return next;
     },
-    [onChange],
+    [],
   );
 
-  const beginDurationEditing = useCallback(
-    (part: keyof typeof durationParts) => {
-      focusedPartRef.current = part;
-      startInteraction();
-    },
-    [startInteraction],
-  );
+  const durationStatus = getDurationDraftStatus(durationDraft, value);
 
-  const endDurationEditing = useCallback(
-    (part: keyof typeof durationParts) => {
-      if (focusedPartRef.current === part) {
-        const parts = canonicalizeDurationParts(durationPartsRef.current);
-        durationPartsRef.current = parts;
-        setDurationParts(parts);
-        focusedPartRef.current = null;
-      }
-      endInteraction();
+  const applyDurationDraft = useCallback(() => {
+    const status = getDurationDraftStatus(durationDraftRef.current, value);
+    if (!status.canApply || status.totalSeconds === null) return;
+
+    updateDurationDraft({ type: 'apply' });
+    Keyboard.dismiss();
+    onChange(status.totalSeconds);
+  }, [onChange, updateDurationDraft, value]);
+
+  const resetDurationDraft = useCallback(() => {
+    updateDurationDraft({ type: 'reset', value });
+  }, [updateDurationDraft, value]);
+
+  const selectPreset = useCallback(
+    (preset: number) => {
+      updateDurationDraft({ type: 'preset', value: preset });
+      onChange(preset);
     },
-    [endInteraction],
+    [onChange, updateDurationDraft],
   );
 
   const steps = useMemo(
@@ -143,9 +139,9 @@ export function ClockSpeedSetting({
       if (w <= 0) return;
       const idx = Math.round((x / w) * (steps.length - 1));
       const clamped = Math.max(0, Math.min(steps.length - 1, idx));
-      onChange(steps[clamped]);
+      selectPreset(steps[clamped]);
     },
-    [steps, onChange],
+    [steps, selectPreset],
   );
 
   return (
@@ -197,7 +193,7 @@ export function ClockSpeedSetting({
             <Pressable
               key={step}
               style={st.cell}
-              onPress={() => onChange(step)}
+              onPress={() => selectPreset(step)}
             >
               {active ? (
                 <View
@@ -228,13 +224,17 @@ export function ClockSpeedSetting({
           <TextInput
             accessibilityLabel={`${label} 분`}
             keyboardType="numeric"
-            onBlur={() => endDurationEditing('minutes')}
+            onBlur={endInteraction}
             onChangeText={(nextValue) =>
-              changeDurationPart('minutes', nextValue)
+              updateDurationDraft({
+                type: 'edit',
+                part: 'minutes',
+                value: nextValue,
+              })
             }
-            onFocus={() => beginDurationEditing('minutes')}
+            onFocus={startInteraction}
             style={st.durationInput}
-            value={durationParts.minutes}
+            value={durationDraft.parts.minutes}
           />
           <Text style={st.durationInputLabel}>분</Text>
         </View>
@@ -242,16 +242,56 @@ export function ClockSpeedSetting({
           <TextInput
             accessibilityLabel={`${label} 초`}
             keyboardType="numeric"
-            onBlur={() => endDurationEditing('seconds')}
+            onBlur={endInteraction}
             onChangeText={(nextValue) =>
-              changeDurationPart('seconds', nextValue)
+              updateDurationDraft({
+                type: 'edit',
+                part: 'seconds',
+                value: nextValue,
+              })
             }
-            onFocus={() => beginDurationEditing('seconds')}
+            onFocus={startInteraction}
             style={st.durationInput}
-            value={durationParts.seconds}
+            value={durationDraft.parts.seconds}
           />
           <Text style={st.durationInputLabel}>초</Text>
         </View>
+      </View>
+
+      {durationStatus.error && (
+        <Text accessibilityLiveRegion="polite" style={st.durationInputError}>
+          {durationStatus.error}
+        </Text>
+      )}
+      <View style={st.durationActions}>
+        {durationDraft.isDirty && (
+          <Pressable
+            accessibilityLabel={`${label} 입력 되돌리기`}
+            onPress={resetDurationDraft}
+            style={st.durationResetButton}
+          >
+            <Text style={st.durationResetText}>되돌리기</Text>
+          </Pressable>
+        )}
+        <Pressable
+          accessibilityLabel={`${label} 시간 적용`}
+          accessibilityState={{ disabled: !durationStatus.canApply }}
+          disabled={!durationStatus.canApply}
+          onPress={applyDurationDraft}
+          style={[
+            st.durationApplyButton,
+            !durationStatus.canApply && st.durationApplyButtonDisabled,
+          ]}
+        >
+          <Text
+            style={[
+              st.durationApplyText,
+              !durationStatus.canApply && st.durationApplyTextDisabled,
+            ]}
+          >
+            적용
+          </Text>
+        </Pressable>
       </View>
     </View>
   );

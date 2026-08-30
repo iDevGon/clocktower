@@ -93,6 +93,48 @@ export function createClockSpeedSettingStyles(s: (v: number) => number) {
       fontSize: s(13),
       fontWeight: '600',
     },
+    durationInputError: {
+      color: '#e08080',
+      fontSize: s(12),
+      fontWeight: '600',
+    },
+    durationActions: {
+      minHeight: s(44),
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      gap: s(12),
+    },
+    durationResetButton: {
+      minHeight: s(44),
+      justifyContent: 'center',
+      paddingHorizontal: s(8),
+    },
+    durationResetText: {
+      color: '#908e8a',
+      fontSize: s(13),
+      fontWeight: '600',
+    },
+    durationApplyButton: {
+      minWidth: s(76),
+      minHeight: s(44),
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: s(8),
+      paddingHorizontal: s(16),
+      backgroundColor: '#4a6a9c',
+    },
+    durationApplyButtonDisabled: {
+      backgroundColor: '#343438',
+    },
+    durationApplyText: {
+      color: '#f4f7ff',
+      fontSize: s(13),
+      fontWeight: '700',
+    },
+    durationApplyTextDisabled: {
+      color: '#77767a',
+    },
 
     /* ---- Thumb ---- */
     thumb: {

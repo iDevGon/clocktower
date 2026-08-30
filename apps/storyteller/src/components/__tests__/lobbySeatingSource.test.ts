@@ -76,14 +76,12 @@ describe('lobby seating source', () => {
     expect(clockSpeedSettingSource).toContain('onInteractionEnd?.()');
   });
 
-  it('타이머 입력 blur는 유효한 값을 정규화한 뒤 상호작용을 종료한다', () => {
-    expect(clockSpeedSettingSource).toContain(
-      "onBlur={() => endDurationEditing('minutes')}",
-    );
-    expect(clockSpeedSettingSource).toContain(
-      "onBlur={() => endDurationEditing('seconds')}",
-    );
-    expect(clockSpeedSettingSource).toContain('canonicalizeDurationParts');
+  it('타이머 입력은 로컬 draft를 적용 버튼으로 한 번만 반영한다', () => {
+    expect(clockSpeedSettingSource).toContain('onBlur={endInteraction}');
+    expect(clockSpeedSettingSource).toContain('getDurationDraftStatus');
+    expect(clockSpeedSettingSource).toContain('onChange(status.totalSeconds)');
+    expect(clockSpeedSettingSource).toMatch(/>\s*적용\s*<\/Text>/);
+    expect(clockSpeedSettingSource).not.toContain('if (edit.totalSeconds');
     expect(clockSpeedSettingSource).not.toContain('deferInteractionEnd');
   });
 
