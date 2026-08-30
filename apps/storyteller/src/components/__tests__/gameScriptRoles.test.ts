@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import type { GameSettings, Player } from '@clocktower/shared';
 import { getRoleById } from '@clocktower/shared';
 import { describe, expect, it } from 'vitest';
@@ -49,5 +50,14 @@ describe('buildGameScriptRoles', () => {
     expect(roleIds).toContain('sweetheart');
     expect(roleIds).toContain('judge');
     expect(roleIds).not.toContain('dreamer');
+  });
+});
+
+describe('dictionary setup source', () => {
+  it('keeps the storyteller dictionary ungrouped while filtering roles from game settings', () => {
+    const source = readFileSync('app/game/grimoire.tsx', 'utf8');
+
+    expect(source).toContain('groupRolesByTeam={false}');
+    expect(source).toContain('roleIds={dictionaryRoleIds}');
   });
 });

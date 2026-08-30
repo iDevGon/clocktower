@@ -5,6 +5,7 @@ import {
   EDITION_COLORS,
   EDITION_LABELS,
   GAME_RULES,
+  getBaseRoleCounts,
   getNightOrderForEdition,
   getRoleById,
   PHASE_ENTRIES,
@@ -26,13 +27,14 @@ import { filterDictionaryRoles } from '../utils/dictionaryFilters';
 import { AbilityText } from './AbilityText';
 import { RoleTips } from './RoleTips';
 
-type TabId = 'roles' | 'statuses' | 'rules' | 'flow';
+type TabId = 'roles' | 'statuses' | 'rules' | 'flow' | 'composition';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'roles', label: '역할' },
   { id: 'statuses', label: '표식' },
   { id: 'rules', label: '규칙' },
   { id: 'flow', label: '진행순서' },
+  { id: 'composition', label: '인원 구성' },
 ];
 
 interface DictionaryModalProps {
@@ -46,9 +48,11 @@ interface DictionaryModalProps {
   groupRolesByTeam?: boolean;
   editionId?: string;
   roleIds?: string[];
+  additionalRoleIds?: string[];
+  regularPlayerCount?: number;
 }
 
-const TEAM_ORDER: Array<{ team: Team; label: string }> = [
+const TEAM_ORDER: Array<{ team: Exclude<Team, 'traveller'>; label: string }> = [
   { team: 'townsfolk', label: '마을주민' },
   { team: 'outsider', label: '외지인' },
   { team: 'minion', label: '하수인' },
@@ -339,21 +343,85 @@ function RulesTab() {
   );
 }
 
+function CompositionTab({
+  regularPlayerCount,
+}: {
+  regularPlayerCount?: number;
+}) {
+  if (regularPlayerCount == null) {
+    return (
+      <View style={tabStyles.section}>
+        <View style={tabStyles.card}>
+          <Text style={tabStyles.sectionTitle}>
+            일반 참가자 수를 확인할 수 없습니다.
+          </Text>
+          <Text style={tabStyles.abilityText}>
+            여행자를 제외한 현재 참가자 수가 확인되면 기본 인원 구성을
+            표시합니다.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  const roleCounts = getBaseRoleCounts(regularPlayerCount);
+  if (!roleCounts) {
+    return (
+      <View style={tabStyles.section}>
+        <View style={tabStyles.card}>
+          <Text style={tabStyles.sectionTitle}>
+            이 일반 참가자 수의 기본 인원 구성은 지원하지 않습니다.
+          </Text>
+          <Text style={tabStyles.abilityText}>
+            기본 인원 구성은 일반 참가자 5명부터 20명까지 확인할 수 있습니다.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={tabStyles.section}>
+      <Text style={tabStyles.sectionTitle}>
+        일반 참가자 {regularPlayerCount}명 기본 구성
+      </Text>
+      <Text style={tabStyles.abilityText}>
+        역할 능력으로 인한 인원 변동은 반영하지 않은 기본 구성입니다.
+      </Text>
+      {TEAM_ORDER.map(({ team, label }) => (
+        <View key={team} style={tabStyles.compositionRow}>
+          <View
+            style={[tabStyles.teamDot, { backgroundColor: TEAM_COLORS[team] }]}
+          />
+          <Text
+            style={[tabStyles.compositionLabel, { color: TEAM_COLORS[team] }]}
+          >
+            {label}
+          </Text>
+          <Text style={tabStyles.compositionCount}>{roleCounts[team]}명</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function FlowTab({
   editionId,
   roleIds,
+  additionalRoleIds = [],
 }: {
   editionId?: string;
   roleIds?: string[];
+  additionalRoleIds?: string[];
 }) {
   const flowEditionId = editionId ?? 'trouble_brewing';
   const allowedRoleIds = roleIds ? new Set(roleIds) : undefined;
   const firstOrder = getOrderedRoles(
-    getNightOrderForEdition(flowEditionId, 1),
+    getNightOrderForEdition(flowEditionId, 1, additionalRoleIds),
     allowedRoleIds,
   );
   const otherOrder = getOrderedRoles(
-    getNightOrderForEdition(flowEditionId, 2),
+    getNightOrderForEdition(flowEditionId, 2, additionalRoleIds),
     allowedRoleIds,
   );
   const firstRoleIds = new Set(firstOrder.map((role) => role.id));
@@ -412,6 +480,8 @@ export function DictionaryModal({
   groupRolesByTeam = true,
   editionId,
   roleIds,
+  additionalRoleIds,
+  regularPlayerCount,
 }: DictionaryModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('roles');
   const [roleQuery, setRoleQuery] = useState('');
@@ -465,7 +535,14 @@ export function DictionaryModal({
       {activeTab === 'statuses' && <StatusesTab />}
       {activeTab === 'rules' && <RulesTab />}
       {activeTab === 'flow' && (
-        <FlowTab editionId={editionId} roleIds={roleIds} />
+        <FlowTab
+          editionId={editionId}
+          roleIds={roleIds}
+          additionalRoleIds={additionalRoleIds}
+        />
+      )}
+      {activeTab === 'composition' && (
+        <CompositionTab regularPlayerCount={regularPlayerCount} />
       )}
     </ScrollView>
   );
@@ -785,5 +862,25 @@ const tabStyles = StyleSheet.create({
     color: colors.arcane.text.dead,
     fontSize: 12,
     fontFamily: typography.fontFamily.body,
+  },
+  compositionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.arcane.surface.base,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.arcane.border.parchment,
+    padding: 14,
+  },
+  compositionLabel: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: typography.fontFamily.bodyBold,
+  },
+  compositionCount: {
+    color: colors.arcane.text.strong,
+    fontSize: 15,
+    fontFamily: typography.fontFamily.bodyBold,
   },
 });

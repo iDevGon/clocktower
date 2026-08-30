@@ -1,4 +1,9 @@
-import { getRoleById, getRolesForEdition, type Role } from '@clocktower/shared';
+import {
+  getActiveRoles,
+  getRoleById,
+  getRolesForEdition,
+  type Role,
+} from '@clocktower/shared';
 import { BaseToast, DictionaryModal, SpriteIcon } from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -100,14 +105,25 @@ export default function GameScreen() {
   const evilInfo = usePlayerStore((s) => s.evilInfo);
   const gameSettings = usePlayerStore((s) => s.gameSettings);
   const dictionaryRoleIds = useMemo(() => {
-    const setupEditionId = gameSettings?.setupEditionId ?? role?.edition;
-    const editionRoles = setupEditionId
-      ? getRolesForEdition(setupEditionId).map((r) => r.id)
+    if (gameSettings) {
+      return getActiveRoles({
+        editionId: gameSettings.setupEditionId,
+        excludedRoleIds: gameSettings.excludedRoleIds,
+        additionalRoleIds: gameSettings.additionalRoleIds,
+      }).map((dictionaryRole) => dictionaryRole.id);
+    }
+
+    return role
+      ? getActiveRoles({ editionId: role.edition }).map(
+          (dictionaryRole) => dictionaryRole.id,
+        )
       : [];
-    return [
-      ...new Set([...editionRoles, ...(gameSettings?.additionalRoleIds ?? [])]),
-    ];
-  }, [gameSettings?.setupEditionId, gameSettings?.additionalRoleIds, role]);
+  }, [gameSettings, role]);
+  const dictionaryAdditionalRoleIds = gameSettings?.additionalRoleIds ?? [];
+  const regularPlayerCount = useMemo(
+    () => gamePlayers.filter((player) => !player.isTraveller).length,
+    [gamePlayers],
+  );
   const seatingRoleOptions = useMemo(() => {
     const setupEditionId = gameSettings?.setupEditionId ?? role?.edition;
     const roleById = new Map<string, Role>();
@@ -961,6 +977,8 @@ export default function GameScreen() {
         onClose={() => setDictionaryVisible(false)}
         editionId={gameSettings?.setupEditionId ?? role?.edition}
         roleIds={dictionaryRoleIds}
+        additionalRoleIds={dictionaryAdditionalRoleIds}
+        regularPlayerCount={regularPlayerCount}
       />
 
       <Modal

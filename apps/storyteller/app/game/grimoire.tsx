@@ -3,6 +3,7 @@ import {
   BAD_MOON_RISING_ROLES,
   type BmrDeathWarningKind,
   type GameSettings,
+  getActiveRoles,
   getBmrDeathWarnings,
   getNightOrderForEdition,
   getRandomTipText,
@@ -198,6 +199,19 @@ export default function GrimoireScreen() {
     const hasSv = players.some((p) => p.role && svRoleIds.has(p.role.id));
     return hasSv ? 'sects_and_violets' : 'trouble_brewing';
   }, [players, bmrRoleIds, svRoleIds, gameState?.settings.setupEditionId]);
+  const dictionaryRoleIds = useMemo(() => {
+    if (!gameState) return [];
+    return getActiveRoles({
+      editionId: gameState.settings.setupEditionId,
+      excludedRoleIds: gameState.settings.excludedRoleIds,
+      additionalRoleIds: gameState.settings.additionalRoleIds,
+    }).map((dictionaryRole) => dictionaryRole.id);
+  }, [gameState]);
+  const dictionaryAdditionalRoleIds =
+    gameState?.settings.additionalRoleIds ?? [];
+  const regularPlayerCount = players
+    ? players.filter((player) => !player.isTraveller).length
+    : undefined;
   const nightActions = useGameStore((s) => s.nightActions);
   const deliveredFeedbackHistory = useGameStore(
     (s) => s.deliveredFeedbackHistory,
@@ -2257,6 +2271,9 @@ export default function GrimoireScreen() {
         onClose={() => setDictionaryVisible(false)}
         groupRolesByTeam={false}
         editionId={detectedEditionId}
+        roleIds={dictionaryRoleIds}
+        additionalRoleIds={dictionaryAdditionalRoleIds}
+        regularPlayerCount={regularPlayerCount}
       />
 
       {/* 사랑꾼 사망 → 취하게 할 대상 선택 모달 */}

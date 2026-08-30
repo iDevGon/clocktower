@@ -1,4 +1,4 @@
-import { ALL_ROLES } from '@clocktower/shared';
+import { ALL_ROLES, getBaseRoleCounts } from '@clocktower/shared';
 import { describe, expect, it } from 'vitest';
 import { filterDictionaryRoles } from '../utils/dictionaryFilters';
 
@@ -18,5 +18,20 @@ describe('filterDictionaryRoles', () => {
     });
 
     expect(roles.map((role) => role.id)).toEqual(['empath']);
+  });
+});
+
+describe('기본 인원 구성', () => {
+  it('10명의 일반 참가자 기본 역할 수를 반환한다', () => {
+    expect(getBaseRoleCounts(10)).toEqual({
+      townsfolk: 7,
+      outsider: 0,
+      minion: 2,
+      demon: 1,
+    });
+  });
+
+  it('지원하지 않는 일반 참가자 수는 기본 역할 수를 반환하지 않는다', () => {
+    expect(getBaseRoleCounts(4)).toBeNull();
   });
 });
