@@ -828,6 +828,40 @@ export function getRolesForEdition(editionId: string): Role[] {
   return EDITION_ROLES[editionId] ?? TROUBLE_BREWING_ROLES;
 }
 
+export interface ActiveRoleOptions {
+  excludedRoleIds?: string[];
+  editionId?: string;
+  /** 다른 에디션에서 추가로 포함할 역할 ID 목록 (크로스 에디션 믹싱) */
+  additionalRoleIds?: string[];
+}
+
+export function getActiveRoles(options?: ActiveRoleOptions): Role[] {
+  const editionRoles = getRolesForEdition(
+    options?.editionId ?? 'trouble_brewing',
+  );
+  const excluded = new Set(options?.excludedRoleIds ?? []);
+  const activeIds = new Set<string>();
+  const activeRoles: Role[] = [];
+
+  for (const role of editionRoles) {
+    if (!excluded.has(role.id)) {
+      activeIds.add(role.id);
+      activeRoles.push(role);
+    }
+  }
+
+  for (const roleId of options?.additionalRoleIds ?? []) {
+    if (activeIds.has(roleId) || excluded.has(roleId)) continue;
+    const role = ALL_ROLES.find((candidate) => candidate.id === roleId);
+    if (role) {
+      activeIds.add(role.id);
+      activeRoles.push(role);
+    }
+  }
+
+  return activeRoles;
+}
+
 export const ROLES_BY_ID = new Map(ALL_ROLES.map((r) => [r.id, r]));
 
 export const EDITION_LABELS: Record<string, string> = {
@@ -1021,6 +1055,18 @@ export const ROLE_DISTRIBUTION: Record<
   20: [14, 2, 3, 1],
 };
 
+export function getBaseRoleCounts(playerCount: number): {
+  townsfolk: number;
+  outsider: number;
+  minion: number;
+  demon: number;
+} | null {
+  const distribution = ROLE_DISTRIBUTION[playerCount];
+  if (!distribution) return null;
+  const [townsfolk, outsider, minion, demon] = distribution;
+  return { townsfolk, outsider, minion, demon };
+}
+
 function shuffle<T>(array: T[]): T[] {
   const arr = [...array];
   for (let i = arr.length - 1; i > 0; i--) {
@@ -1057,33 +1103,19 @@ export function distributeRoles(
 
   let [townsfolkCount, outsiderCount, minionCount, demonCount] = dist;
 
-  const excluded = new Set(options?.excludedRoleIds ?? []);
-  const editionRoles = getRolesForEdition(
-    options?.editionId ?? 'trouble_brewing',
-  );
-
-  // 크로스 에디션 믹싱: 다른 에디션 역할 추가
-  const additionalIds = new Set(options?.additionalRoleIds ?? []);
-  const editionRoleIds = new Set(editionRoles.map((r) => r.id));
-  const additionalRoles =
-    additionalIds.size > 0
-      ? ALL_ROLES.filter(
-          (r) => additionalIds.has(r.id) && !editionRoleIds.has(r.id),
-        )
-      : [];
-  const allRoles = [...editionRoles, ...additionalRoles];
+  const allRoles = getActiveRoles(options);
 
   const townsfolk = allRoles.filter(
-    (r) => r.team === 'townsfolk' && !excluded.has(r.id),
+    (r) => r.team === 'townsfolk',
   );
   const outsiders = allRoles.filter(
-    (r) => r.team === 'outsider' && !excluded.has(r.id),
+    (r) => r.team === 'outsider',
   );
   const minions = allRoles.filter(
-    (r) => r.team === 'minion' && !excluded.has(r.id),
+    (r) => r.team === 'minion',
   );
   const demons = allRoles.filter(
-    (r) => r.team === 'demon' && !excluded.has(r.id),
+    (r) => r.team === 'demon',
   );
 
   // 제외 후 역할이 부족하면 배분 불가

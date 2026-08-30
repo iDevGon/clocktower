@@ -8,6 +8,8 @@ import {
   distributeRoles,
   EDITIONS,
   FIRST_NIGHT_ORDER,
+  getActiveRoles,
+  getBaseRoleCounts,
   getNightOrderForEdition,
   getRoleById,
   getRolesForEdition,
@@ -36,6 +38,34 @@ describe('getRolesForEdition', () => {
     const roles = getRolesForEdition('sects_and_violets');
     expect(roles).toHaveLength(25);
     expect(roles.every((r) => r.edition === 'sects_and_violets')).toBe(true);
+  });
+});
+
+describe('getActiveRoles', () => {
+  it('에디션 역할에서 제외 역할을 제거하고 유효한 추가 역할을 포함한다', () => {
+    const roles = getActiveRoles({
+      editionId: 'trouble_brewing',
+      excludedRoleIds: ['librarian'],
+      additionalRoleIds: ['sweetheart'],
+    });
+
+    expect(roles.some((role) => role.id === 'librarian')).toBe(false);
+    expect(roles.some((role) => role.id === 'sweetheart')).toBe(true);
+  });
+});
+
+describe('getBaseRoleCounts', () => {
+  it('7명 구성의 기본 역할 수를 반환한다', () => {
+    expect(getBaseRoleCounts(7)).toEqual({
+      townsfolk: 5,
+      outsider: 0,
+      minion: 1,
+      demon: 1,
+    });
+  });
+
+  it('지원하지 않는 인원 수는 null을 반환한다', () => {
+    expect(getBaseRoleCounts(4)).toBeNull();
   });
 });
 
