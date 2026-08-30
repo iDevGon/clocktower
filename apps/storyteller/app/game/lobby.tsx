@@ -27,6 +27,7 @@ import {
   DraggablePlayerToken,
 } from '../../src/components/DraggablePlayerToken';
 import { DrunkFakeRoleModal } from '../../src/components/DrunkFakeRoleModal';
+import { formatDurationOption } from '../../src/components/durationInput';
 import { RoleExcludeModal } from '../../src/components/RoleExcludeModal';
 import { RoleMixModal } from '../../src/components/RoleMixModal';
 import { SettingToggle } from '../../src/components/SettingToggle';
@@ -914,9 +915,7 @@ export default function LobbyScreen() {
                 scale={scale}
                 showOff
                 options={[10, 300, 600, 900, 1200]}
-                formatOption={(sec: number) =>
-                  sec < 60 ? `${sec}초` : `${sec / 60}분`
-                }
+                formatOption={formatDurationOption}
               />
             </View>
           )}
@@ -932,6 +931,7 @@ export default function LobbyScreen() {
                 onInteractionEnd={endSettingsInteraction}
                 scale={scale}
                 options={[2, 3, 4, 5, 6]}
+                formatOption={formatDurationOption}
               />
             </View>
           )}
@@ -947,7 +947,7 @@ export default function LobbyScreen() {
               scale={scale}
               showOff
               options={[600, 1200, 1800]}
-              formatOption={(sec: number) => `${sec / 60}분`}
+              formatOption={formatDurationOption}
             />
           </View>
           <View style={styles.clockSettingContainer}>
@@ -962,7 +962,7 @@ export default function LobbyScreen() {
               scale={scale}
               showOff
               options={[300, 600, 900]}
-              formatOption={(sec: number) => `${sec / 60}분`}
+              formatOption={formatDurationOption}
             />
           </View>
           <View style={styles.clockSettingContainer}>
@@ -977,9 +977,7 @@ export default function LobbyScreen() {
               scale={scale}
               showOff
               options={[30, 60, 90, 120, 180, 300]}
-              formatOption={(sec: number) =>
-                sec < 60 ? `${sec}초` : `${sec / 60}분`
-              }
+              formatOption={formatDurationOption}
             />
           </View>
         </View>

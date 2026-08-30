@@ -18,6 +18,10 @@ const lobbyStylesSource = readFileSync(
   resolve(process.cwd(), 'src/styles/lobby.styles.ts'),
   'utf8',
 );
+const grimoireStylesSource = readFileSync(
+  resolve(process.cwd(), 'src/styles/grimoire.styles.ts'),
+  'utf8',
+);
 
 describe('lobby seating source', () => {
   it('좌석 배치 화면은 드래그 토큰으로 플레이어 순서를 바꾼다', () => {
@@ -72,9 +76,36 @@ describe('lobby seating source', () => {
     expect(clockSpeedSettingSource).toContain('onInteractionEnd?.()');
   });
 
-  it('타이머 입력 blur는 지연 없이 상호작용을 종료한다', () => {
-    expect(clockSpeedSettingSource).toContain('onBlur={endInteraction}');
+  it('타이머 입력 blur는 유효한 값을 정규화한 뒤 상호작용을 종료한다', () => {
+    expect(clockSpeedSettingSource).toContain(
+      "onBlur={() => endDurationEditing('minutes')}",
+    );
+    expect(clockSpeedSettingSource).toContain(
+      "onBlur={() => endDurationEditing('seconds')}",
+    );
+    expect(clockSpeedSettingSource).toContain('canonicalizeDurationParts');
     expect(clockSpeedSettingSource).not.toContain('deferInteractionEnd');
+  });
+
+  it('게임 중 설정은 키보드를 피하면서 세로로 스크롤한다', () => {
+    expect(settingsPanelSource).toContain('KeyboardAvoidingView');
+    expect(settingsPanelSource).toContain("behavior={Platform.OS === 'ios'");
+    expect(settingsPanelSource).toContain(
+      'keyboardShouldPersistTaps="handled"',
+    );
+    expect(settingsPanelSource).toContain('accessibilityLabel="게임 설정"');
+    expect(grimoireStylesSource).toMatch(
+      /settingsPanel:[\s\S]*maxHeight: '90%'/,
+    );
+  });
+
+  it('모든 타이머 설정은 공통 시간 포맷터를 사용한다', () => {
+    expect(
+      lobbySource.match(/formatOption=\{formatDurationOption\}/g),
+    ).toHaveLength(5);
+    expect(
+      settingsPanelSource.match(/formatOption=\{formatDurationOption\}/g),
+    ).toHaveLength(5);
   });
 
   it('로비의 이전 투표 기록 토글은 동기화된 게임 설정을 갱신한다', () => {

@@ -8,7 +8,13 @@ import {
   View,
 } from 'react-native';
 import { createClockSpeedSettingStyles } from './ClockSpeedSetting.styles';
-import { mergeDurationParts, splitDurationSeconds } from './durationInput';
+import {
+  applyDurationPartEdit,
+  canonicalizeDurationParts,
+  formatDurationOption,
+  splitDurationSeconds,
+  syncDurationParts,
+} from './durationInput';
 
 export function ClockSpeedSetting({
   value,
@@ -35,15 +41,19 @@ export function ClockSpeedSetting({
     () => createClockSpeedSettingStyles((v: number) => Math.round(v * scale)),
     [scale],
   );
-  const defaultFormat = (sec: number) => `${sec}초`;
-  const fmt = formatOption ?? defaultFormat;
+  const fmt = formatOption ?? formatDurationOption;
   const [durationParts, setDurationParts] = useState(() =>
     splitDurationSeconds(value),
   );
   const durationPartsRef = useRef(durationParts);
+  const focusedPartRef = useRef<keyof typeof durationParts | null>(null);
 
   useEffect(() => {
-    const parts = splitDurationSeconds(value);
+    const parts = syncDurationParts(
+      value,
+      durationPartsRef.current,
+      focusedPartRef.current !== null,
+    );
     durationPartsRef.current = parts;
     setDurationParts(parts);
   }, [value]);
@@ -58,14 +68,38 @@ export function ClockSpeedSetting({
   );
 
   const changeDurationPart = useCallback(
-    (part: 'minutes' | 'seconds', nextValue: string) => {
-      const next = { ...durationPartsRef.current, [part]: nextValue };
-      durationPartsRef.current = next;
-      setDurationParts(next);
-      const total = mergeDurationParts(next.minutes, next.seconds);
-      if (total !== null) onChange(total);
+    (part: keyof typeof durationParts, nextValue: string) => {
+      const edit = applyDurationPartEdit(
+        durationPartsRef.current,
+        part,
+        nextValue,
+      );
+      durationPartsRef.current = edit.parts;
+      setDurationParts(edit.parts);
+      if (edit.totalSeconds !== null) onChange(edit.totalSeconds);
     },
     [onChange],
+  );
+
+  const beginDurationEditing = useCallback(
+    (part: keyof typeof durationParts) => {
+      focusedPartRef.current = part;
+      startInteraction();
+    },
+    [startInteraction],
+  );
+
+  const endDurationEditing = useCallback(
+    (part: keyof typeof durationParts) => {
+      if (focusedPartRef.current === part) {
+        const parts = canonicalizeDurationParts(durationPartsRef.current);
+        durationPartsRef.current = parts;
+        setDurationParts(parts);
+        focusedPartRef.current = null;
+      }
+      endInteraction();
+    },
+    [endInteraction],
   );
 
   const steps = useMemo(
@@ -194,11 +228,11 @@ export function ClockSpeedSetting({
           <TextInput
             accessibilityLabel={`${label} 분`}
             keyboardType="numeric"
-            onBlur={endInteraction}
+            onBlur={() => endDurationEditing('minutes')}
             onChangeText={(nextValue) =>
               changeDurationPart('minutes', nextValue)
             }
-            onFocus={startInteraction}
+            onFocus={() => beginDurationEditing('minutes')}
             style={st.durationInput}
             value={durationParts.minutes}
           />
@@ -208,11 +242,11 @@ export function ClockSpeedSetting({
           <TextInput
             accessibilityLabel={`${label} 초`}
             keyboardType="numeric"
-            onBlur={endInteraction}
+            onBlur={() => endDurationEditing('seconds')}
             onChangeText={(nextValue) =>
               changeDurationPart('seconds', nextValue)
             }
-            onFocus={startInteraction}
+            onFocus={() => beginDurationEditing('seconds')}
             style={st.durationInput}
             value={durationParts.seconds}
           />

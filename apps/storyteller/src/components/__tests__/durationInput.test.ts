@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { mergeDurationParts, splitDurationSeconds } from '../durationInput';
+import {
+  applyDurationPartEdit,
+  canonicalizeDurationParts,
+  formatDurationOption,
+  mergeDurationParts,
+  splitDurationSeconds,
+  syncDurationParts,
+} from '../durationInput';
 
 describe('splitDurationSeconds', () => {
   it('splits a total into editable minute and second parts', () => {
@@ -28,10 +35,10 @@ describe('splitDurationSeconds', () => {
     });
   });
 
-  it('accepts finite totals beyond the safe integer range', () => {
+  it('normalizes unsafe finite totals to unlimited', () => {
     expect(splitDurationSeconds(Number.MAX_SAFE_INTEGER + 1)).toEqual({
-      minutes: '150119987579016',
-      seconds: '32',
+      minutes: '0',
+      seconds: '0',
     });
   });
 });
@@ -63,5 +70,54 @@ describe('mergeDurationParts', () => {
     ['0', '9007199254740992'],
   ])('rejects invalid editable parts %j', (minutes, seconds) => {
     expect(mergeDurationParts(minutes, seconds)).toBeNull();
+  });
+});
+
+describe('duration input editing and synchronization', () => {
+  it('keeps invalid draft text without emitting a total', () => {
+    expect(
+      applyDurationPartEdit({ minutes: '2', seconds: '5' }, 'seconds', ''),
+    ).toEqual({
+      parts: { minutes: '2', seconds: '' },
+      totalSeconds: null,
+    });
+  });
+
+  it('keeps active edits when a stale server echo arrives', () => {
+    const draft = { minutes: '03', seconds: '015' };
+
+    expect(syncDurationParts(0, draft, true)).toEqual(draft);
+    expect(syncDurationParts(195, draft, true)).toEqual(draft);
+  });
+
+  it('immediately applies external or slider values when not editing', () => {
+    expect(
+      syncDurationParts(125, { minutes: '03', seconds: '015' }, false),
+    ).toEqual({ minutes: '2', seconds: '5' });
+  });
+
+  it('canonicalizes valid drafts on final blur', () => {
+    expect(
+      canonicalizeDurationParts({ minutes: '03', seconds: '015' }),
+    ).toEqual({ minutes: '3', seconds: '15' });
+    expect(canonicalizeDurationParts({ minutes: '0', seconds: '75' })).toEqual({
+      minutes: '1',
+      seconds: '15',
+    });
+  });
+
+  it('leaves invalid drafts unchanged when canonicalizing', () => {
+    expect(canonicalizeDurationParts({ minutes: '3', seconds: '' })).toEqual({
+      minutes: '3',
+      seconds: '',
+    });
+  });
+});
+
+describe('formatDurationOption', () => {
+  it('uses seconds or minutes with a remainder', () => {
+    expect(formatDurationOption(45)).toBe('45초');
+    expect(formatDurationOption(120)).toBe('2분');
+    expect(formatDurationOption(125)).toBe('2분5초');
   });
 });

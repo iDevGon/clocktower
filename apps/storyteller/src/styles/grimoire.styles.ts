@@ -299,8 +299,15 @@ export function createGrimoireStyles(scale: number) {
       padding: 24,
       width: '80%',
       maxWidth: 400,
+      maxHeight: '90%',
       borderWidth: 1,
       borderColor: '#3a3a42',
+    },
+    settingsScrollView: {
+      flexShrink: 1,
+    },
+    settingsScrollContent: {
+      paddingBottom: 4,
     },
     settingsRow: {
       flexDirection: 'row',

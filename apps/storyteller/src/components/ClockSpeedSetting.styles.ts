@@ -76,7 +76,7 @@ export function createClockSpeedSettingStyles(s: (v: number) => number) {
     },
     durationInput: {
       flex: 1,
-      minHeight: s(40),
+      minHeight: s(44),
       borderWidth: 1,
       borderColor: '#3a3a3e',
       borderRadius: s(8),
