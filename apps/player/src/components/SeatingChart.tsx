@@ -14,6 +14,7 @@ import {
 import { voteHandDown, voteHandRaised } from '../assets/ui';
 import type { VoteHistoryEntry } from '../stores/playerStore';
 import { styles as s } from './SeatingChart.styles';
+import { resolveSelectedVote } from './seatingVoteSelection';
 
 interface SeatingChartProps {
   visible: boolean;
@@ -111,10 +112,7 @@ export function SeatingChart({
   );
 
   const selectedVote = useMemo(
-    () =>
-      showVoteHistory
-        ? (voteHistory.find((entry) => entry.id === selectedVoteId) ?? null)
-        : null,
+    () => resolveSelectedVote(showVoteHistory, selectedVoteId, voteHistory),
     [selectedVoteId, showVoteHistory, voteHistory],
   );
 

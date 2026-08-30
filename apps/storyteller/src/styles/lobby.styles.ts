@@ -748,6 +748,12 @@ export function createLobbyStyles(scale: number) {
       borderWidth: 1,
       borderColor: arcane.border.parchment,
     },
+    mobileSettingsToggleRow: {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+      justifyContent: 'flex-start',
+      gap: s(8),
+    },
     settingsDivider: {
       width: 1,
       backgroundColor: arcane.border.parchment,

@@ -864,7 +864,12 @@ export default function LobbyScreen() {
         bounces={false}
       >
         <View style={styles.settingsGap}>
-          <View style={styles.settingsToggleRow}>
+          <View
+            style={[
+              styles.settingsToggleRow,
+              mode === 'mobile' && styles.mobileSettingsToggleRow,
+            ]}
+          >
             <SettingToggle
               label="채팅 밀담"
               value={gameState.settings.whisperMode === 'chat'}
@@ -875,7 +880,7 @@ export default function LobbyScreen() {
               }
               scale={scale}
             />
-            <View style={styles.settingsDivider} />
+            {mode === 'desktop' && <View style={styles.settingsDivider} />}
             <SettingToggle
               label="온라인 투표"
               value={gameState.settings.votingMode === 'online'}
@@ -886,7 +891,7 @@ export default function LobbyScreen() {
               }
               scale={scale}
             />
-            <View style={styles.settingsDivider} />
+            {mode === 'desktop' && <View style={styles.settingsDivider} />}
             <SettingToggle
               label="이전 투표 기록"
               value={gameState.settings.showVoteHistory}
