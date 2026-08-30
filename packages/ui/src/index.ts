@@ -40,3 +40,4 @@ export {
   formatChatTime,
 } from './utils/chat';
 export { getChosung, isChosungOnly, matchQuery } from './utils/chosung';
+export { buildDictionarySetup } from './utils/dictionaryPresentation';

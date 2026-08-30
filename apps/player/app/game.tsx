@@ -1,10 +1,10 @@
+import { getRoleById, getRolesForEdition, type Role } from '@clocktower/shared';
 import {
-  getActiveRoles,
-  getRoleById,
-  getRolesForEdition,
-  type Role,
-} from '@clocktower/shared';
-import { BaseToast, DictionaryModal, SpriteIcon } from '@clocktower/ui';
+  BaseToast,
+  buildDictionarySetup,
+  DictionaryModal,
+  SpriteIcon,
+} from '@clocktower/ui';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -104,25 +104,14 @@ export default function GameScreen() {
   const deadVoteUsed = usePlayerStore((s) => s.deadVoteUsed);
   const evilInfo = usePlayerStore((s) => s.evilInfo);
   const gameSettings = usePlayerStore((s) => s.gameSettings);
-  const dictionaryRoleIds = useMemo(() => {
-    if (gameSettings) {
-      return getActiveRoles({
-        editionId: gameSettings.setupEditionId,
-        excludedRoleIds: gameSettings.excludedRoleIds,
-        additionalRoleIds: gameSettings.additionalRoleIds,
-      }).map((dictionaryRole) => dictionaryRole.id);
-    }
-
-    return role
-      ? getActiveRoles({ editionId: role.edition }).map(
-          (dictionaryRole) => dictionaryRole.id,
-        )
-      : [];
-  }, [gameSettings, role]);
-  const dictionaryAdditionalRoleIds = gameSettings?.additionalRoleIds ?? [];
-  const regularPlayerCount = useMemo(
-    () => gamePlayers.filter((player) => !player.isTraveller).length,
-    [gamePlayers],
+  const dictionarySetup = useMemo(
+    () =>
+      buildDictionarySetup({
+        settings: gameSettings,
+        players: gamePlayers,
+        fallbackEditionId: role?.edition,
+      }),
+    [gamePlayers, gameSettings, role?.edition],
   );
   const seatingRoleOptions = useMemo(() => {
     const setupEditionId = gameSettings?.setupEditionId ?? role?.edition;
@@ -351,7 +340,7 @@ export default function GameScreen() {
   const canUseSlayer =
     isAlive &&
     !slayerUsed &&
-    dictionaryRoleIds.includes('slayer') &&
+    dictionarySetup.roleIds.includes('slayer') &&
     role?.team !== 'traveller' &&
     (currentPhase === 'day' || currentPhase === 'vote');
 
@@ -377,13 +366,13 @@ export default function GameScreen() {
   const canUseGossip =
     isAlive &&
     !gossipUsedToday &&
-    dictionaryRoleIds.includes('gossip') &&
+    dictionarySetup.roleIds.includes('gossip') &&
     currentPhase === 'day';
 
   const canUseMoonchild =
     !isAlive &&
     !moonchildUsed &&
-    dictionaryRoleIds.includes('moonchild') &&
+    dictionarySetup.roleIds.includes('moonchild') &&
     (currentPhase === 'day' || currentPhase === 'vote');
 
   const handleJugglerSubmit = async (
@@ -975,10 +964,9 @@ export default function GameScreen() {
       <DictionaryModal
         visible={dictionaryVisible}
         onClose={() => setDictionaryVisible(false)}
-        editionId={gameSettings?.setupEditionId ?? role?.edition}
-        roleIds={dictionaryRoleIds}
-        additionalRoleIds={dictionaryAdditionalRoleIds}
-        regularPlayerCount={regularPlayerCount}
+        editionId={dictionarySetup.editionId}
+        roleIds={dictionarySetup.roleIds}
+        regularPlayerCount={dictionarySetup.regularPlayerCount}
       />
 
       <Modal

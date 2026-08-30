@@ -11,8 +11,7 @@ const storytellerGameSource = readFileSync(
 describe('DictionaryModal flow source', () => {
   it('uses selected edition night order instead of static game flow copy', () => {
     expect(source).toContain('editionId?: string');
-    expect(source).toContain('getNightOrderForEdition');
-    expect(source).toContain('flowEditionId');
+    expect(source).toContain('getDictionaryNightRoles');
     expect(source).not.toContain('GAME_FLOW.map');
   });
 
@@ -30,56 +29,35 @@ describe('DictionaryModal flow source', () => {
   it('adds the base composition tab and handles unknown or unsupported counts', () => {
     expect(source).toContain("{ id: 'composition', label: '인원 구성' }");
     expect(source).toContain('regularPlayerCount?: number');
-    expect(source).toContain('getBaseRoleCounts');
-    expect(source).toContain('일반 참가자 수를 확인할 수 없습니다.');
-    expect(source).toContain('기본 인원 구성은 지원하지 않습니다.');
+    expect(source).toContain('getDictionaryComposition');
   });
 
-  it('uses active setup roles and additions for dictionary night-order examples', () => {
-    expect(source).toContain('additionalRoleIds?: string[]');
+  it('has accessible, horizontally scrollable tabs for narrow or large-text layouts', () => {
+    expect(source).toContain('accessibilityRole="tab"');
     expect(source).toContain(
-      'getNightOrderForEdition(flowEditionId, 1, additionalRoleIds)',
+      'accessibilityState={{ selected: activeTab === tab.id }}',
     );
-    expect(source).toContain(
-      'getNightOrderForEdition(flowEditionId, 2, additionalRoleIds)',
-    );
+    expect(source).toContain('<ScrollView horizontal');
+    expect(source).toContain('tabBarContent');
   });
 
   it('player dictionary uses the configured active setup and regular-player count', () => {
-    expect(playerGameSource).toContain('getActiveRoles');
+    expect(playerGameSource).toContain('buildDictionarySetup');
+    expect(playerGameSource).toContain('roleIds={dictionarySetup.roleIds}');
     expect(playerGameSource).toContain(
-      'excludedRoleIds: gameSettings.excludedRoleIds',
+      'regularPlayerCount={dictionarySetup.regularPlayerCount}',
     );
-    expect(playerGameSource).toContain(
-      'additionalRoleIds: gameSettings.additionalRoleIds',
-    );
-    expect(playerGameSource).toContain(
-      'additionalRoleIds={dictionaryAdditionalRoleIds}',
-    );
-    expect(playerGameSource).toContain(
-      'regularPlayerCount={regularPlayerCount}',
-    );
-    expect(playerGameSource).toContain(
-      'gamePlayers.filter((player) => !player.isTraveller)',
-    );
+    expect(playerGameSource).not.toContain('additionalRoleIds={');
   });
 
   it('storyteller dictionary uses the configured active setup and regular-player count', () => {
-    expect(storytellerGameSource).toContain('getActiveRoles');
+    expect(storytellerGameSource).toContain('buildDictionarySetup');
     expect(storytellerGameSource).toContain(
-      'excludedRoleIds: gameState.settings.excludedRoleIds',
+      'roleIds={dictionarySetup.roleIds}',
     );
     expect(storytellerGameSource).toContain(
-      'additionalRoleIds: gameState.settings.additionalRoleIds',
+      'regularPlayerCount={dictionarySetup.regularPlayerCount}',
     );
-    expect(storytellerGameSource).toContain(
-      'additionalRoleIds={dictionaryAdditionalRoleIds}',
-    );
-    expect(storytellerGameSource).toContain(
-      'regularPlayerCount={regularPlayerCount}',
-    );
-    expect(storytellerGameSource).toContain(
-      'players.filter((player) => !player.isTraveller)',
-    );
+    expect(storytellerGameSource).not.toContain('additionalRoleIds={');
   });
 });

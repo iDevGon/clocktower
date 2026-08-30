@@ -58,6 +58,6 @@ describe('dictionary setup source', () => {
     const source = readFileSync('app/game/grimoire.tsx', 'utf8');
 
     expect(source).toContain('groupRolesByTeam={false}');
-    expect(source).toContain('roleIds={dictionaryRoleIds}');
+    expect(source).toContain('roleIds={dictionarySetup.roleIds}');
   });
 });

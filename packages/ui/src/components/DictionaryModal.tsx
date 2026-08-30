@@ -5,9 +5,6 @@ import {
   EDITION_COLORS,
   EDITION_LABELS,
   GAME_RULES,
-  getBaseRoleCounts,
-  getNightOrderForEdition,
-  getRoleById,
   PHASE_ENTRIES,
   STATUS_ENTRIES,
   TEAM_COLORS,
@@ -24,6 +21,10 @@ import {
 } from 'react-native';
 import { colors, typography } from '../tokens';
 import { filterDictionaryRoles } from '../utils/dictionaryFilters';
+import {
+  getDictionaryComposition,
+  getDictionaryNightRoles,
+} from '../utils/dictionaryPresentation';
 import { AbilityText } from './AbilityText';
 import { RoleTips } from './RoleTips';
 
@@ -48,7 +49,6 @@ interface DictionaryModalProps {
   groupRolesByTeam?: boolean;
   editionId?: string;
   roleIds?: string[];
-  additionalRoleIds?: string[];
   regularPlayerCount?: number;
 }
 
@@ -88,13 +88,6 @@ const FLOW_BANDS = [
 
 function getTeamColor(role: Role) {
   return TEAM_COLORS[role.team] ?? colors.arcane.text.label;
-}
-
-function getOrderedRoles(order: string[], allowedRoleIds?: Set<string>) {
-  return order
-    .filter((roleId) => !allowedRoleIds || allowedRoleIds.has(roleId))
-    .map((roleId) => getRoleById(roleId))
-    .filter((role): role is Role => Boolean(role));
 }
 
 function FlowRail({ label, roles }: { label: string; roles: Role[] }) {
@@ -348,33 +341,14 @@ function CompositionTab({
 }: {
   regularPlayerCount?: number;
 }) {
-  if (regularPlayerCount == null) {
-    return (
-      <View style={tabStyles.section}>
-        <View style={tabStyles.card}>
-          <Text style={tabStyles.sectionTitle}>
-            일반 참가자 수를 확인할 수 없습니다.
-          </Text>
-          <Text style={tabStyles.abilityText}>
-            여행자를 제외한 현재 참가자 수가 확인되면 기본 인원 구성을
-            표시합니다.
-          </Text>
-        </View>
-      </View>
-    );
-  }
+  const composition = getDictionaryComposition(regularPlayerCount);
 
-  const roleCounts = getBaseRoleCounts(regularPlayerCount);
-  if (!roleCounts) {
+  if (composition.status !== 'supported') {
     return (
       <View style={tabStyles.section}>
         <View style={tabStyles.card}>
-          <Text style={tabStyles.sectionTitle}>
-            이 일반 참가자 수의 기본 인원 구성은 지원하지 않습니다.
-          </Text>
-          <Text style={tabStyles.abilityText}>
-            기본 인원 구성은 일반 참가자 5명부터 20명까지 확인할 수 있습니다.
-          </Text>
+          <Text style={tabStyles.sectionTitle}>{composition.title}</Text>
+          <Text style={tabStyles.abilityText}>{composition.description}</Text>
         </View>
       </View>
     );
@@ -382,13 +356,9 @@ function CompositionTab({
 
   return (
     <View style={tabStyles.section}>
-      <Text style={tabStyles.sectionTitle}>
-        일반 참가자 {regularPlayerCount}명 기본 구성
-      </Text>
-      <Text style={tabStyles.abilityText}>
-        역할 능력으로 인한 인원 변동은 반영하지 않은 기본 구성입니다.
-      </Text>
-      {TEAM_ORDER.map(({ team, label }) => (
+      <Text style={tabStyles.sectionTitle}>{composition.title}</Text>
+      <Text style={tabStyles.abilityText}>{composition.description}</Text>
+      {composition.teamCounts.map(({ team, label, count }) => (
         <View key={team} style={tabStyles.compositionRow}>
           <View
             style={[tabStyles.teamDot, { backgroundColor: TEAM_COLORS[team] }]}
@@ -398,7 +368,7 @@ function CompositionTab({
           >
             {label}
           </Text>
-          <Text style={tabStyles.compositionCount}>{roleCounts[team]}명</Text>
+          <Text style={tabStyles.compositionCount}>{count}명</Text>
         </View>
       ))}
     </View>
@@ -408,22 +378,12 @@ function CompositionTab({
 function FlowTab({
   editionId,
   roleIds,
-  additionalRoleIds = [],
 }: {
   editionId?: string;
   roleIds?: string[];
-  additionalRoleIds?: string[];
 }) {
-  const flowEditionId = editionId ?? 'trouble_brewing';
-  const allowedRoleIds = roleIds ? new Set(roleIds) : undefined;
-  const firstOrder = getOrderedRoles(
-    getNightOrderForEdition(flowEditionId, 1, additionalRoleIds),
-    allowedRoleIds,
-  );
-  const otherOrder = getOrderedRoles(
-    getNightOrderForEdition(flowEditionId, 2, additionalRoleIds),
-    allowedRoleIds,
-  );
+  const firstOrder = getDictionaryNightRoles(editionId, roleIds, 1);
+  const otherOrder = getDictionaryNightRoles(editionId, roleIds, 2);
   const firstRoleIds = new Set(firstOrder.map((role) => role.id));
   const otherRoleIds = new Set(otherOrder.map((role) => role.id));
   const firstOnlyRoles = firstOrder.filter(
@@ -480,7 +440,6 @@ export function DictionaryModal({
   groupRolesByTeam = true,
   editionId,
   roleIds,
-  additionalRoleIds,
   regularPlayerCount,
 }: DictionaryModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('roles');
@@ -491,10 +450,17 @@ export function DictionaryModal({
   );
 
   const tabBar = (
-    <View style={styles.tabBar}>
+    <ScrollView
+      horizontal
+      style={styles.tabBarScroll}
+      contentContainerStyle={styles.tabBarContent}
+      showsHorizontalScrollIndicator={false}
+    >
       {TABS.map((tab) => (
         <Pressable
           key={tab.id}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === tab.id }}
           onPress={() => setActiveTab(tab.id)}
           style={[styles.tab, activeTab === tab.id && styles.tabActive]}
         >
@@ -508,7 +474,7 @@ export function DictionaryModal({
           </Text>
         </Pressable>
       ))}
-    </View>
+    </ScrollView>
   );
 
   const content = (
@@ -535,11 +501,7 @@ export function DictionaryModal({
       {activeTab === 'statuses' && <StatusesTab />}
       {activeTab === 'rules' && <RulesTab />}
       {activeTab === 'flow' && (
-        <FlowTab
-          editionId={editionId}
-          roleIds={roleIds}
-          additionalRoleIds={additionalRoleIds}
-        />
+        <FlowTab editionId={editionId} roleIds={roleIds} />
       )}
       {activeTab === 'composition' && (
         <CompositionTab regularPlayerCount={regularPlayerCount} />
@@ -649,13 +611,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: typography.fontFamily.bodyBold,
   },
-  tabBar: {
-    flexDirection: 'row',
+  tabBarScroll: {
+    flexGrow: 0,
     borderBottomWidth: 1,
     borderColor: colors.arcane.border.brassDim,
   },
+  tabBarContent: {
+    flexDirection: 'row',
+    flexGrow: 1,
+    minWidth: 480,
+  },
   tab: {
     flex: 1,
+    minWidth: 96,
     paddingVertical: 10,
     alignItems: 'center',
   },
