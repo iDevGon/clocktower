@@ -2682,6 +2682,29 @@ describe('GameManager', () => {
       expect(DEFAULT_GAME_SETTINGS.showVoteHistory).toBe(true);
     });
 
+    it('기본 역할 목록 배열을 게임 간과 초기화 경계에서 공유하지 않는다', () => {
+      const first = new GameManager();
+      first.getSettings().additionalRoleIds.push('sweetheart');
+      first.getState().settings.excludedRoleIds.push('librarian');
+
+      expect(DEFAULT_GAME_SETTINGS.additionalRoleIds).toEqual([]);
+      expect(DEFAULT_GAME_SETTINGS.excludedRoleIds).toEqual([]);
+
+      const second = new GameManager();
+      expect(second.getSettings().additionalRoleIds).toEqual([]);
+      expect(second.getSettings().excludedRoleIds).toEqual([]);
+
+      first.create();
+      expect(first.getSettings().additionalRoleIds).toEqual([]);
+      expect(first.getSettings().excludedRoleIds).toEqual([]);
+
+      first.getSettings().additionalRoleIds.push('sweetheart');
+      first.getSettings().excludedRoleIds.push('librarian');
+      first.reset();
+      expect(first.getSettings().additionalRoleIds).toEqual([]);
+      expect(first.getSettings().excludedRoleIds).toEqual([]);
+    });
+
     it('setSettings로 부분 설정을 병합한다', () => {
       const gm = new GameManager();
       gm.create();

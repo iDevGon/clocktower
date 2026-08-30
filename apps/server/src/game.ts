@@ -13,7 +13,7 @@ import type {
   Role,
 } from '@clocktower/shared/logic';
 import {
-  DEFAULT_GAME_SETTINGS,
+  createDefaultGameSettings,
   getRoleById,
   getTravellerById,
   hasPoisonStatus,
@@ -213,7 +213,7 @@ export class GameManager {
     nominations: [],
     started: false,
     playerOrder: [],
-    settings: { ...DEFAULT_GAME_SETTINGS },
+    settings: createDefaultGameSettings(),
   };
 
   // 시계방향 투표 관련 상태
@@ -729,7 +729,7 @@ export class GameManager {
       nominations: [],
       started: false,
       playerOrder: [],
-      settings: { ...DEFAULT_GAME_SETTINGS },
+      settings: createDefaultGameSettings(),
     };
     this.butlerMasters.clear();
     this.nightActionTargets.clear();
@@ -806,7 +806,7 @@ export class GameManager {
       nominations: [],
       started: false,
       playerOrder: [],
-      settings: { ...DEFAULT_GAME_SETTINGS },
+      settings: createDefaultGameSettings(),
     };
     this.clearInternalState();
   }

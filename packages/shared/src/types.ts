@@ -394,6 +394,14 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
   showVoteHistory: true,
 };
 
+export function createDefaultGameSettings(): GameSettings {
+  return {
+    ...DEFAULT_GAME_SETTINGS,
+    additionalRoleIds: [...DEFAULT_GAME_SETTINGS.additionalRoleIds],
+    excludedRoleIds: [...DEFAULT_GAME_SETTINGS.excludedRoleIds],
+  };
+}
+
 export interface StorytellerMessage {
   id: string;
   playerId: string;
