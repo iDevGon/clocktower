@@ -376,6 +376,8 @@ export interface GameSettings {
   defenseClockSeconds: number;
   setupEditionId: string;
   additionalRoleIds: string[];
+  excludedRoleIds: string[];
+  showVoteHistory: boolean;
 }
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
@@ -388,6 +390,8 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
   defenseClockSeconds: 0,
   setupEditionId: 'trouble_brewing',
   additionalRoleIds: [],
+  excludedRoleIds: [],
+  showVoteHistory: true,
 };
 
 export interface StorytellerMessage {

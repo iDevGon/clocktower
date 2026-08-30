@@ -3661,11 +3661,16 @@ export class GameManager {
     this.state.playerOrder = order;
   }
 
-  setRoleSetup(editionId: string, additionalRoleIds: string[] = []): void {
+  setRoleSetup(
+    editionId: string,
+    additionalRoleIds: string[] = [],
+    excludedRoleIds: string[] = [],
+  ): void {
     this.editionWasConfigured = true;
     this.editionId = editionId;
     this.state.settings.setupEditionId = editionId;
     this.state.settings.additionalRoleIds = [...additionalRoleIds];
+    this.state.settings.excludedRoleIds = [...excludedRoleIds];
   }
 
   /**

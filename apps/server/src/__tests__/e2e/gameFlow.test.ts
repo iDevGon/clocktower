@@ -32,6 +32,21 @@ describe('E2E: 게임 라이프사이클', () => {
     expect(serverState.players.every((p) => p.role !== undefined)).toBe(true);
   }, 15000);
 
+  it('이야기꾼의 투표 기록 표시 설정을 플레이어에게 전송한다', async () => {
+    const playerSocket = await ctx.connectPlayer();
+    ctx.players.push(playerSocket);
+
+    const settingsPromise = waitForEvent<{ showVoteHistory: boolean }>(
+      playerSocket,
+      'game:settings',
+    );
+    ctx.storyteller.emit('game:setSettings', { showVoteHistory: false });
+
+    await expect(settingsPromise).resolves.toMatchObject({
+      showVoteHistory: false,
+    });
+  });
+
   it('게임 시작 시 플레이어에게 최신 좌석 순서가 포함된 상태를 전송한다', async () => {
     const createStatePromise = waitForEvent(
       ctx.storyteller as Socket,

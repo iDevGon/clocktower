@@ -1,4 +1,4 @@
-import type { Player } from '@clocktower/shared/logic';
+import { DEFAULT_GAME_SETTINGS, type Player } from '@clocktower/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameManager } from '../game.js';
 
@@ -2677,6 +2677,11 @@ describe('GameManager', () => {
   });
 
   describe('설정', () => {
+    it('기본 설정에 역할 제외 목록과 투표 기록 표시가 포함된다', () => {
+      expect(DEFAULT_GAME_SETTINGS.excludedRoleIds).toEqual([]);
+      expect(DEFAULT_GAME_SETTINGS.showVoteHistory).toBe(true);
+    });
+
     it('setSettings로 부분 설정을 병합한다', () => {
       const gm = new GameManager();
       gm.create();
@@ -2684,6 +2689,20 @@ describe('GameManager', () => {
       const settings = gm.getSettings();
       expect(settings.voteClockSeconds).toBe(10);
       expect(settings.whisperMode).toBe('chat');
+    });
+
+    it('역할 설정에 추가 및 제외 역할을 저장한다', () => {
+      const gm = new GameManager();
+      gm.create();
+
+      gm.setRoleSetup('trouble_brewing', ['sweetheart'], ['librarian']);
+
+      expect(gm.getSettings()).toMatchObject({
+        setupEditionId: 'trouble_brewing',
+        additionalRoleIds: ['sweetheart'],
+        excludedRoleIds: ['librarian'],
+        showVoteHistory: true,
+      });
     });
   });
 

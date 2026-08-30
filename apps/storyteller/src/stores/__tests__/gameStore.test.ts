@@ -50,6 +50,8 @@ function makeGameState(overrides?: Partial<GameState>): GameState {
       defenseClockSeconds: 0,
       setupEditionId: 'trouble_brewing',
       additionalRoleIds: [],
+      excludedRoleIds: [],
+      showVoteHistory: true,
     },
     ...overrides,
   };

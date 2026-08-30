@@ -853,6 +853,7 @@ export function registerStorytellerHandlers(
       game.setRoleSetup(
         options.editionId ?? game.getSettings().setupEditionId,
         options.additionalRoleIds ?? [],
+        options.excludedRoleIds ?? [],
       );
       const state = game.getState();
       // 여행자는 역할 배분에서 제외

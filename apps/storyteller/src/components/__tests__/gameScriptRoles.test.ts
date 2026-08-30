@@ -22,6 +22,8 @@ function player(id: string, roleId: string, isTraveller = false): Player {
 const settings: GameSettings = {
   setupEditionId: 'trouble_brewing',
   additionalRoleIds: ['sweetheart'],
+  excludedRoleIds: [],
+  showVoteHistory: true,
   whisperMode: 'chat',
   votingMode: 'online',
   voteClockSeconds: 3,
