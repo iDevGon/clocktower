@@ -175,7 +175,9 @@ function resolveBluffRoles(
     for (const id of preselectedIds) {
       if (selected.length >= 3) break;
       const role = notInPlayMap.get(id);
-      if (!role || usedIds.has(id)) continue;
+      if (!role || usedIds.has(id) || RANDOM_BLUFF_EXCLUDED_ROLE_IDS.has(id)) {
+        continue;
+      }
       selected.push({ id: role.id, name: role.name });
       usedIds.add(id);
     }
@@ -245,11 +247,7 @@ function sendEvilInfo(
   preselectedBluffIds?: string[],
 ): void {
   const state = game.getState();
-  const existingBluffRoles = game.getBluffRoles();
-  const bluffRoles =
-    existingBluffRoles.length > 0
-      ? existingBluffRoles
-      : resolveBluffRoles(game, preselectedBluffIds);
+  const bluffRoles = resolveBluffRoles(game, preselectedBluffIds);
 
   // 블러프를 GameManager에 저장 (이야기꾼 표시용)
   game.setBluffRoles(bluffRoles);

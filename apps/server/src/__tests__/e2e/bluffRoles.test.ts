@@ -15,12 +15,23 @@ async function setupAndGetBluffs(
     setupEditionId: string;
     additionalRoleIds: string[];
     excludedRoleIds: string[];
+    settingsBeforeStart?: {
+      setupEditionId: string;
+      additionalRoleIds: string[];
+      excludedRoleIds: string[];
+    };
+    lateAssignmentIndexes?: number[];
   },
 ): Promise<{
   bluffRoles: { id: string; name: string }[];
   playerIds: string[];
 }> {
   const playerCount = roleAssignments.length;
+  const initialSetupOptions = setupOptions && {
+    setupEditionId: setupOptions.setupEditionId,
+    additionalRoleIds: setupOptions.additionalRoleIds,
+    excludedRoleIds: setupOptions.excludedRoleIds,
+  };
 
   // 1. 게임 생성
   const statePromise = waitForEvent(ctx.storyteller as Socket, 'game:state');
@@ -31,12 +42,12 @@ async function setupAndGetBluffs(
   });
   await statePromise;
 
-  if (setupOptions) {
+  if (initialSetupOptions) {
     const settingsStatePromise = waitForEvent(
       ctx.storyteller as Socket,
       'game:state',
     );
-    ctx.storyteller.emit('game:setSettings', setupOptions);
+    ctx.storyteller.emit('game:setSettings', initialSetupOptions);
     await settingsStatePromise;
   }
 
@@ -67,7 +78,9 @@ async function setupAndGetBluffs(
 
   // 악마가 아닌 역할 먼저 배정
   for (let i = 0; i < playerCount; i++) {
-    if (i === demonIndex) continue;
+    if (i === demonIndex || setupOptions?.lateAssignmentIndexes?.includes(i)) {
+      continue;
+    }
     const assignStatePromise = waitForEvent(
       ctx.storyteller as Socket,
       'game:state',
@@ -91,6 +104,28 @@ async function setupAndGetBluffs(
     bluffRoleIds,
   });
   await demonAssignPromise;
+
+  for (const index of setupOptions?.lateAssignmentIndexes ?? []) {
+    const assignStatePromise = waitForEvent(
+      ctx.storyteller as Socket,
+      'game:state',
+    );
+    ctx.storyteller.emit('game:assignRole', {
+      playerId: playerIds[index],
+      roleId: roleAssignments[index].roleId,
+      drunkAs: roleAssignments[index].drunkAs,
+    });
+    await assignStatePromise;
+  }
+
+  if (setupOptions?.settingsBeforeStart) {
+    const settingsStatePromise = waitForEvent(
+      ctx.storyteller as Socket,
+      'game:state',
+    );
+    ctx.storyteller.emit('game:setSettings', setupOptions.settingsBeforeStart);
+    await settingsStatePromise;
+  }
 
   // 4. evil:info 리스너 등록 후 게임 시작
   const demonInfoPromise = waitForEvent<{
@@ -120,13 +155,6 @@ async function setupAndGetBluffs(
 /** TB 에디션의 선한(townsfolk/outsider) 역할 ID 목록 */
 const TB_GOOD_ROLE_IDS = TROUBLE_BREWING_ROLES.filter(
   (r) => r.team === 'townsfolk' || r.team === 'outsider',
-).map((r) => r.id);
-
-/** S&V 에디션의 선한 역할 ID 목록 (ALL_ROLES에 포함된 것만) */
-const SV_GOOD_ROLE_IDS = ALL_ROLES.filter(
-  (r) =>
-    r.edition === 'sects_and_violets' &&
-    (r.team === 'townsfolk' || r.team === 'outsider'),
 ).map((r) => r.id);
 
 describe('E2E: 블러프 역할 필터링', () => {
@@ -207,45 +235,19 @@ describe('E2E: 블러프 역할 필터링', () => {
     }
   }, 15000);
 
-  it('타에디션(S&V) 역할이 배정되면 해당 에디션의 선한 역할도 블러프 후보가 된다', async () => {
-    // sweetheart(S&V 외지인)를 포함하면 S&V 선한 역할도 블러프 후보
-    // 반복 실행하여 S&V 역할이 블러프에 포함될 수 있는지 확인
-    let foundSvBluff = false;
+  it('타에디션 역할 배정만으로는 블러프 후보에 추가되지 않는다', async () => {
+    const { bluffRoles } = await setupAndGetBluffs(ctx, [
+      { roleId: 'imp' },
+      { roleId: 'poisoner' },
+      { roleId: 'sweetheart' },
+      { roleId: 'empath' },
+      { roleId: 'fortune_teller' },
+    ]);
 
-    // 확률적 테스트이므로 여러 번 시도
-    for (let attempt = 0; attempt < 10; attempt++) {
-      if (attempt > 0) {
-        await ctx.cleanup();
-        ctx = await setupTestServer();
-      }
-      const { bluffRoles } = await setupAndGetBluffs(ctx, [
-        { roleId: 'imp' },
-        { roleId: 'poisoner' },
-        { roleId: 'sweetheart' },
-        { roleId: 'empath' },
-        { roleId: 'fortune_teller' },
-      ]);
-
-      expect(bluffRoles).toHaveLength(3);
-      // 모든 블러프는 TB 또는 S&V 선한 역할이어야 함
-      for (const bluff of bluffRoles) {
-        const isTbGood = TB_GOOD_ROLE_IDS.includes(bluff.id);
-        const isSvGood = SV_GOOD_ROLE_IDS.includes(bluff.id);
-        expect(isTbGood || isSvGood).toBe(true);
-        if (isSvGood) foundSvBluff = true;
-      }
-
-      if (foundSvBluff) break;
+    expect(bluffRoles).toHaveLength(3);
+    for (const bluff of bluffRoles) {
+      expect(TB_GOOD_ROLE_IDS).toContain(bluff.id);
     }
-
-    // S&V 역할이 블러프 후보에 포함되는지 확인
-    // (sweetheart는 S&V 유일한 구현 역할이므로 outsider → 제외됨, 다만 activeEditions에 sects_and_violets가 포함됨)
-    // S&V의 선한 역할이 ALL_ROLES에 없으면(sweetheart만 구현) TB만 나올 수 있음
-    if (SV_GOOD_ROLE_IDS.length === 0) {
-      // S&V 선한 역할이 ALL_ROLES에 없으면 TB만 나오는 게 정상
-      expect(foundSvBluff).toBe(false);
-    }
-    // S&V 선한 역할이 있다면 한 번쯤은 나와야 함 (확률적으로)
   }, 60000);
 
   it('이야기꾼이 사전 선택한 블러프가 우선 적용된다', async () => {
@@ -289,6 +291,9 @@ describe('E2E: 블러프 역할 필터링', () => {
     expect(bluffIds).toHaveLength(3);
     expect(bluffIds).not.toContain('librarian');
     expect(bluffIds).toEqual(expect.arrayContaining(['monk', 'ravenkeeper']));
+    for (const bluffId of bluffIds) {
+      expect([...TB_GOOD_ROLE_IDS, 'sweetheart']).toContain(bluffId);
+    }
   }, 15000);
 
   it('활성 설정에 추가된 미배정 역할은 사전 선택한 블러프에 포함된다', async () => {
@@ -312,6 +317,91 @@ describe('E2E: 블러프 역할 필터링', () => {
     expect(bluffRoles.map((role) => role.id)).toEqual(
       expect.arrayContaining(['sweetheart', 'monk', 'ravenkeeper']),
     );
+  }, 15000);
+
+  it('사전 선택한 주정뱅이는 블러프에서 제외된다', async () => {
+    const { bluffRoles } = await setupAndGetBluffs(
+      ctx,
+      [
+        { roleId: 'imp' },
+        { roleId: 'poisoner' },
+        { roleId: 'washerwoman' },
+        { roleId: 'empath' },
+        { roleId: 'fortune_teller' },
+      ],
+      ['drunk', 'monk', 'ravenkeeper'],
+    );
+
+    expect(bluffRoles.map((role) => role.id)).not.toContain('drunk');
+  }, 15000);
+
+  it('사전 선택한 미치광이는 블러프에서 제외된다', async () => {
+    const { bluffRoles } = await setupAndGetBluffs(
+      ctx,
+      [
+        { roleId: 'zombuul' },
+        { roleId: 'godfather' },
+        { roleId: 'grandmother' },
+        { roleId: 'sailor' },
+        { roleId: 'chambermaid' },
+      ],
+      ['lunatic', 'innkeeper', 'gambler'],
+      {
+        setupEditionId: 'bad_moon_rising',
+        additionalRoleIds: [],
+        excludedRoleIds: [],
+      },
+    );
+
+    expect(bluffRoles.map((role) => role.id)).not.toContain('lunatic');
+  }, 15000);
+
+  it('게임 시작 시 설정 변경으로 제외된 캐시 블러프를 대체한다', async () => {
+    const { bluffRoles } = await setupAndGetBluffs(
+      ctx,
+      [
+        { roleId: 'imp' },
+        { roleId: 'poisoner' },
+        { roleId: 'washerwoman' },
+        { roleId: 'empath' },
+        { roleId: 'fortune_teller' },
+      ],
+      ['librarian', 'monk', 'ravenkeeper'],
+      {
+        setupEditionId: 'trouble_brewing',
+        additionalRoleIds: [],
+        excludedRoleIds: [],
+        settingsBeforeStart: {
+          setupEditionId: 'trouble_brewing',
+          additionalRoleIds: [],
+          excludedRoleIds: ['librarian'],
+        },
+      },
+    );
+
+    expect(bluffRoles.map((role) => role.id)).not.toContain('librarian');
+  }, 15000);
+
+  it('게임 시작 시 나중에 배정된 캐시 블러프를 대체한다', async () => {
+    const { bluffRoles } = await setupAndGetBluffs(
+      ctx,
+      [
+        { roleId: 'imp' },
+        { roleId: 'poisoner' },
+        { roleId: 'monk' },
+        { roleId: 'empath' },
+        { roleId: 'fortune_teller' },
+      ],
+      ['monk', 'ravenkeeper', 'slayer'],
+      {
+        setupEditionId: 'trouble_brewing',
+        additionalRoleIds: [],
+        excludedRoleIds: [],
+        lateAssignmentIndexes: [2],
+      },
+    );
+
+    expect(bluffRoles.map((role) => role.id)).not.toContain('monk');
   }, 15000);
 
   it('게임 시작 전에 이야기꾼 상태에 보인 블러프와 악마에게 전달된 블러프가 동일하다', async () => {
