@@ -57,8 +57,41 @@ export function createClockSpeedSettingStyles(s: (v: number) => number) {
     cell: {
       flex: 1,
       alignItems: 'center',
+      minHeight: s(44),
       zIndex: 1,
       gap: s(6),
+    },
+
+    durationInputRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: s(12),
+    },
+    durationInputGroup: {
+      flex: 1,
+      minWidth: s(104),
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: s(6),
+    },
+    durationInput: {
+      flex: 1,
+      minHeight: s(40),
+      borderWidth: 1,
+      borderColor: '#3a3a3e',
+      borderRadius: s(8),
+      paddingHorizontal: s(10),
+      color: '#e8e6e3',
+      backgroundColor: '#252528',
+      fontSize: s(15),
+      fontWeight: '600',
+      textAlign: 'right',
+    },
+    durationInputLabel: {
+      minWidth: s(14),
+      color: '#908e8a',
+      fontSize: s(13),
+      fontWeight: '600',
     },
 
     /* ---- Thumb ---- */

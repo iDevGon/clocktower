@@ -1,12 +1,14 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type GestureResponderEvent,
   type LayoutChangeEvent,
   Pressable,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { createClockSpeedSettingStyles } from './ClockSpeedSetting.styles';
+import { mergeDurationParts, splitDurationSeconds } from './durationInput';
 
 export function ClockSpeedSetting({
   value,
@@ -35,6 +37,66 @@ export function ClockSpeedSetting({
   );
   const defaultFormat = (sec: number) => `${sec}초`;
   const fmt = formatOption ?? defaultFormat;
+  const [durationParts, setDurationParts] = useState(
+    () => splitDurationSeconds(value) ?? { minutes: '0', seconds: '0' },
+  );
+  const durationPartsRef = useRef(durationParts);
+  const interactionActive = useRef(false);
+  const interactionEndTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const parts = splitDurationSeconds(value);
+    if (parts) {
+      durationPartsRef.current = parts;
+      setDurationParts(parts);
+    }
+  }, [value]);
+
+  useEffect(
+    () => () => {
+      if (interactionEndTimer.current)
+        clearTimeout(interactionEndTimer.current);
+    },
+    [],
+  );
+
+  const startInteraction = useCallback(() => {
+    if (interactionEndTimer.current) {
+      clearTimeout(interactionEndTimer.current);
+      interactionEndTimer.current = null;
+    }
+    if (!interactionActive.current) {
+      interactionActive.current = true;
+      onInteractionStart?.();
+    }
+  }, [onInteractionStart]);
+
+  const endInteraction = useCallback(() => {
+    if (interactionActive.current) {
+      interactionActive.current = false;
+      onInteractionEnd?.();
+    }
+  }, [onInteractionEnd]);
+
+  const deferInteractionEnd = useCallback(() => {
+    interactionEndTimer.current = setTimeout(() => {
+      interactionEndTimer.current = null;
+      endInteraction();
+    }, 0);
+  }, [endInteraction]);
+
+  const changeDurationPart = useCallback(
+    (part: 'minutes' | 'seconds', nextValue: string) => {
+      const next = { ...durationPartsRef.current, [part]: nextValue };
+      durationPartsRef.current = next;
+      setDurationParts(next);
+      const total = mergeDurationParts(next.minutes, next.seconds);
+      if (total !== null) onChange(total);
+    },
+    [onChange],
+  );
 
   const steps = useMemo(
     () => (showOff ? [...options, 0] : options),
@@ -98,12 +160,12 @@ export function ClockSpeedSetting({
         onStartShouldSetResponder={() => true}
         onMoveShouldSetResponder={() => true}
         onResponderGrant={(event) => {
-          onInteractionStart?.();
+          startInteraction();
           resolveFromTouch(event);
         }}
         onResponderMove={resolveFromTouch}
-        onResponderRelease={() => onInteractionEnd?.()}
-        onResponderTerminate={() => onInteractionEnd?.()}
+        onResponderRelease={endInteraction}
+        onResponderTerminate={endInteraction}
       >
         {/* 트랙 (셀 중앙 ~ 셀 중앙, absolute) */}
         <View style={st.trackWrapper}>
@@ -155,6 +217,37 @@ export function ClockSpeedSetting({
             </Pressable>
           );
         })}
+      </View>
+
+      <View style={st.durationInputRow}>
+        <View style={st.durationInputGroup}>
+          <TextInput
+            accessibilityLabel={`${label} 분`}
+            keyboardType="numeric"
+            onBlur={deferInteractionEnd}
+            onChangeText={(nextValue) =>
+              changeDurationPart('minutes', nextValue)
+            }
+            onFocus={startInteraction}
+            style={st.durationInput}
+            value={durationParts.minutes}
+          />
+          <Text style={st.durationInputLabel}>분</Text>
+        </View>
+        <View style={st.durationInputGroup}>
+          <TextInput
+            accessibilityLabel={`${label} 초`}
+            keyboardType="numeric"
+            onBlur={deferInteractionEnd}
+            onChangeText={(nextValue) =>
+              changeDurationPart('seconds', nextValue)
+            }
+            onFocus={startInteraction}
+            style={st.durationInput}
+            value={durationParts.seconds}
+          />
+          <Text style={st.durationInputLabel}>초</Text>
+        </View>
       </View>
     </View>
   );
