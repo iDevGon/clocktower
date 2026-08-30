@@ -1,6 +1,6 @@
 import { ALL_ROLES, TROUBLE_BREWING_ROLES } from '@clocktower/shared/logic';
 import type { Socket } from 'socket.io-client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setupTestServer, type TestContext, waitForEvent } from './helpers.js';
 
 /**
@@ -21,10 +21,12 @@ async function setupAndGetBluffs(
       excludedRoleIds: string[];
     };
     lateAssignmentIndexes?: number[];
+    beforeStart?: () => void;
   },
 ): Promise<{
   bluffRoles: { id: string; name: string }[];
   playerIds: string[];
+  storytellerBluffIds: string[];
 }> {
   const playerCount = roleAssignments.length;
   const initialSetupOptions = setupOptions && {
@@ -94,16 +96,15 @@ async function setupAndGetBluffs(
   }
 
   // 악마 역할 배정 (bluffRoleIds 포함)
-  const demonAssignPromise = waitForEvent(
-    ctx.storyteller as Socket,
-    'game:state',
-  );
+  const demonAssignPromise = waitForEvent<{
+    bluffRoles?: { id: string; name: string }[];
+  }>(ctx.storyteller as Socket, 'game:state');
   ctx.storyteller.emit('game:assignRole', {
     playerId: playerIds[demonIndex],
     roleId: roleAssignments[demonIndex].roleId,
     bluffRoleIds,
   });
-  await demonAssignPromise;
+  const beforeStartState = await demonAssignPromise;
 
   for (const index of setupOptions?.lateAssignmentIndexes ?? []) {
     const assignStatePromise = waitForEvent(
@@ -127,6 +128,8 @@ async function setupAndGetBluffs(
     await settingsStatePromise;
   }
 
+  setupOptions?.beforeStart?.();
+
   // 4. evil:info 리스너 등록 후 게임 시작
   const demonInfoPromise = waitForEvent<{
     minionNames?: string[];
@@ -149,6 +152,8 @@ async function setupAndGetBluffs(
   return {
     bluffRoles: demonInfo.bluffRoles ?? [],
     playerIds,
+    storytellerBluffIds:
+      beforeStartState.bluffRoles?.map((role) => role.id) ?? [],
   };
 }
 
@@ -165,6 +170,7 @@ describe('E2E: 블러프 역할 필터링', () => {
   }, 10000);
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     await ctx.cleanup();
   });
 
@@ -402,6 +408,30 @@ describe('E2E: 블러프 역할 필터링', () => {
     );
 
     expect(bluffRoles.map((role) => role.id)).not.toContain('monk');
+  }, 15000);
+
+  it('부분 사전 선택의 유효한 캐시 블러프는 게임 시작 시 유지된다', async () => {
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+    const { bluffRoles, storytellerBluffIds } = await setupAndGetBluffs(
+      ctx,
+      [
+        { roleId: 'imp' },
+        { roleId: 'poisoner' },
+        { roleId: 'washerwoman' },
+        { roleId: 'empath' },
+        { roleId: 'fortune_teller' },
+      ],
+      ['monk'],
+      {
+        setupEditionId: 'trouble_brewing',
+        additionalRoleIds: [],
+        excludedRoleIds: [],
+        beforeStart: () => randomSpy.mockReturnValue(0.999),
+      },
+    );
+
+    expect(storytellerBluffIds).toHaveLength(3);
+    expect(bluffRoles.map((role) => role.id)).toEqual(storytellerBluffIds);
   }, 15000);
 
   it('게임 시작 전에 이야기꾼 상태에 보인 블러프와 악마에게 전달된 블러프가 동일하다', async () => {

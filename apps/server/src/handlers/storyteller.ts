@@ -247,7 +247,11 @@ function sendEvilInfo(
   preselectedBluffIds?: string[],
 ): void {
   const state = game.getState();
-  const bluffRoles = resolveBluffRoles(game, preselectedBluffIds);
+  const cachedBluffIds = game.getBluffRoles().map((role) => role.id);
+  const bluffRoles = resolveBluffRoles(game, [
+    ...(preselectedBluffIds ?? []),
+    ...cachedBluffIds,
+  ]);
 
   // 블러프를 GameManager에 저장 (이야기꾼 표시용)
   game.setBluffRoles(bluffRoles);
