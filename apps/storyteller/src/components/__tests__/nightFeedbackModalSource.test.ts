@@ -44,4 +44,26 @@ describe('night feedback modal shell', () => {
       '{hasNightFeedback && !isFeedbackSent && (',
     );
   });
+
+  it('exposes modal, pending delivery, and floating toggle semantics', () => {
+    expect(panelSource).toContain('accessibilityViewIsModal');
+    expect(panelSource).toContain(
+      'accessibilityLabelledBy="night-feedback-title"',
+    );
+    expect(panelSource).toContain('nativeID="night-feedback-title"');
+    expect(panelSource).toContain(
+      "pointerEvents={isSending ? 'none' : 'auto'}",
+    );
+    expect(panelSource).toContain('accessibilityElementsHidden={isSending}');
+    expect(panelSource).toContain('accessibilityLiveRegion="polite"');
+    expect(panelSource).toContain('피드백 전송 중…');
+
+    expect(nightPanelSource).toContain('accessibilityRole="button"');
+    expect(nightPanelSource).toContain(
+      "feedbackCollapsed ? '피드백 펼치기' : '피드백 접기'",
+    );
+    expect(nightPanelSource).toContain(
+      'accessibilityState={{ expanded: !feedbackCollapsed }}',
+    );
+  });
 });

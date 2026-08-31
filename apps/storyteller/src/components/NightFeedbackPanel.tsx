@@ -10,14 +10,18 @@ import {
   NIGHT_FEEDBACK,
 } from '@clocktower/shared';
 import { AbilityText } from '@clocktower/ui';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
 import { FeedbackComposer } from './FeedbackComposer';
 import { createNightActionLogStyles } from './NightActionLog.styles';
 import { getAbilityTextStyle, modalStyles } from './NightFeedbackPanel.styles';
 import { TEAM_COLORS } from './NightOrderPanel.styles';
-import { getPendingFeedbackIndex } from './nightFeedbackQueue';
+import {
+  createNightFeedbackCompletionGuard,
+  createNightFeedbackDeliveryGuard,
+  getPendingFeedbackIndex,
+} from './nightFeedbackQueue';
 import {
   getAbilityMalfunctionWarning,
   isAbilityMalfunctioning,
@@ -95,6 +99,9 @@ export function NightFeedbackPanel({
   const styles = useMemo(() => createNightActionLogStyles(scale), [scale]);
 
   const [sentIndices, setSentIndices] = useState<Set<number>>(new Set());
+  const [isSending, setIsSending] = useState(false);
+  const deliveryGuardRef = useRef(createNightFeedbackDeliveryGuard());
+  const completionGuardRef = useRef(createNightFeedbackCompletionGuard());
 
   // 대상 플레이어 목록 (서버의 wakeUp 대상과 동기화)
   const targetPlayers = useMemo(() => {
@@ -125,7 +132,8 @@ export function NightFeedbackPanel({
     if (
       targetPlayers.length > 0 &&
       sentIndices.size >= targetPlayers.length &&
-      onAllFeedbackSent
+      onAllFeedbackSent &&
+      completionGuardRef.current.tryComplete()
     ) {
       onAllFeedbackSent();
     }
@@ -166,6 +174,9 @@ export function NightFeedbackPanel({
     TEAM_COLORS[team as keyof typeof TEAM_COLORS] ?? TEAM_COLORS.townsfolk;
 
   const handleSend = (fb: NightFeedbackPayload) => {
+    if (!deliveryGuardRef.current.tryStart()) return;
+    setIsSending(true);
+
     // 점쟁이 yes_no 피드백에 지목 대상 이름 포함
     if (activeRoleId === 'fortune_teller' && fb.type === 'yes_no') {
       const ftAction =
@@ -183,7 +194,10 @@ export function NightFeedbackPanel({
       }
     }
     onSendFeedback(targetPlayer.id, fb, (result) => {
-      if (result.success && currentIndex != null) {
+      const settlement = deliveryGuardRef.current.settle(result.success);
+      if (settlement === 'ignored') return;
+      setIsSending(false);
+      if (settlement === 'advance' && currentIndex != null) {
         setSentIndices((prev) => new Set(prev).add(currentIndex));
       }
     });
@@ -200,10 +214,18 @@ export function NightFeedbackPanel({
       statusBarTranslucent
     >
       <View style={modalStyles.backdrop}>
-        <View style={[modalStyles.modal, { borderColor: cardColors.color }]}>
+        <View
+          style={[modalStyles.modal, { borderColor: cardColors.color }]}
+          accessibilityViewIsModal
+          accessibilityLabelledBy="night-feedback-title"
+          accessibilityLabel="밤 피드백"
+        >
           <View style={modalStyles.header}>
             <View style={modalStyles.headerCopy}>
-              <Text style={[modalStyles.title, { color: teamColor.text }]}>
+              <Text
+                nativeID="night-feedback-title"
+                style={[modalStyles.title, { color: teamColor.text }]}
+              >
                 {role?.name ?? activeRoleId}
               </Text>
               <Text style={modalStyles.target}>
@@ -405,51 +427,70 @@ export function NightFeedbackPanel({
               </Text>
             </View>
 
-            <FeedbackComposer
-              feedbackDef={feedbackDef}
-              players={players.filter((p) => p.id !== targetPlayer.id)}
-              isDrunkUser={isMalfunctioning}
-              action={nightActions?.find(
-                (a) =>
-                  a.roleId === activeRoleId && a.playerId === targetPlayer.id,
-              )}
-              maxNumber={activeRoleId === 'juggler' ? 5 : undefined}
-              suggestedNumber={
-                isMalfunctioning
-                  ? undefined
-                  : activeRoleId === 'empath' && empathHint
-                    ? empathHint.evilCount
-                    : activeRoleId === 'chef' && chefHint
-                      ? chefHint.evilPairCount
-                      : activeRoleId === 'juggler'
-                        ? jugglerCorrectCount?.[targetPlayer.id]
-                        : undefined
+            {isSending && (
+              <Text
+                style={modalStyles.sendingStatus}
+                accessibilityLiveRegion="polite"
+              >
+                피드백 전송 중…
+              </Text>
+            )}
+
+            <View
+              pointerEvents={isSending ? 'none' : 'auto'}
+              accessibilityElementsHidden={isSending}
+              importantForAccessibility={
+                isSending ? 'no-hide-descendants' : 'auto'
               }
-              highlightedRoleName={
-                activeRoleId === 'undertaker' && !isMalfunctioning
-                  ? executedRoleName
-                  : activeRoleId === 'ravenkeeper' && !isMalfunctioning
-                    ? (() => {
-                        const rkAction =
-                          nightActions?.find(
-                            (a) =>
-                              a.roleId === 'ravenkeeper' &&
-                              a.playerId === targetPlayer.id,
-                          ) ??
-                          nightActions?.find((a) => a.roleId === 'ravenkeeper');
-                        if (!rkAction || rkAction.targets.length === 0)
-                          return undefined;
-                        const chosen = players.find(
-                          (p) => p.id === rkAction.targets[0],
-                        );
-                        return chosen?.role
-                          ? getRoleById(chosen.role.id)?.name
-                          : undefined;
-                      })()
-                    : undefined
-              }
-              onSend={handleSend}
-            />
+            >
+              <FeedbackComposer
+                feedbackDef={feedbackDef}
+                players={players.filter((p) => p.id !== targetPlayer.id)}
+                isDrunkUser={isMalfunctioning}
+                action={nightActions?.find(
+                  (a) =>
+                    a.roleId === activeRoleId && a.playerId === targetPlayer.id,
+                )}
+                maxNumber={activeRoleId === 'juggler' ? 5 : undefined}
+                suggestedNumber={
+                  isMalfunctioning
+                    ? undefined
+                    : activeRoleId === 'empath' && empathHint
+                      ? empathHint.evilCount
+                      : activeRoleId === 'chef' && chefHint
+                        ? chefHint.evilPairCount
+                        : activeRoleId === 'juggler'
+                          ? jugglerCorrectCount?.[targetPlayer.id]
+                          : undefined
+                }
+                highlightedRoleName={
+                  activeRoleId === 'undertaker' && !isMalfunctioning
+                    ? executedRoleName
+                    : activeRoleId === 'ravenkeeper' && !isMalfunctioning
+                      ? (() => {
+                          const rkAction =
+                            nightActions?.find(
+                              (a) =>
+                                a.roleId === 'ravenkeeper' &&
+                                a.playerId === targetPlayer.id,
+                            ) ??
+                            nightActions?.find(
+                              (a) => a.roleId === 'ravenkeeper',
+                            );
+                          if (!rkAction || rkAction.targets.length === 0)
+                            return undefined;
+                          const chosen = players.find(
+                            (p) => p.id === rkAction.targets[0],
+                          );
+                          return chosen?.role
+                            ? getRoleById(chosen.role.id)?.name
+                            : undefined;
+                        })()
+                      : undefined
+                }
+                onSend={handleSend}
+              />
+            </View>
           </ScrollView>
         </View>
       </View>

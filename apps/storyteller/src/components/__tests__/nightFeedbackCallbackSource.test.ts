@@ -21,7 +21,7 @@ describe('night feedback server callbacks', () => {
       "socket?.emit('night:sendFeedback', { playerId, feedback }, callback)",
     );
     expect(panelSource).toContain(
-      'if (result.success && currentIndex != null)',
+      "if (settlement === 'advance' && currentIndex != null)",
     );
     expect(panelSource).toContain(
       'setSentIndices((prev) => new Set(prev).add(currentIndex))',
@@ -31,5 +31,25 @@ describe('night feedback server callbacks', () => {
     expect(logSource).toContain('if (!result.success) return;');
     expect(logSource).not.toContain(`onSendFeedback(action.playerId, feedback);
     setSentIndices`);
+  });
+
+  it('guards delivery before dispatch and advances only after one successful settlement', () => {
+    const guardIndex = panelSource.indexOf(
+      'if (!deliveryGuardRef.current.tryStart()) return;',
+    );
+    const dispatchIndex = panelSource.indexOf(
+      'onSendFeedback(targetPlayer.id, fb, (result) => {',
+    );
+
+    expect(guardIndex).toBeGreaterThan(-1);
+    expect(dispatchIndex).toBeGreaterThan(guardIndex);
+    expect(panelSource).toContain(
+      'const settlement = deliveryGuardRef.current.settle(result.success);',
+    );
+    expect(panelSource).toContain("if (settlement === 'ignored') return;");
+    expect(panelSource).toContain(
+      "if (settlement === 'advance' && currentIndex != null)",
+    );
+    expect(panelSource).toContain('completionGuardRef.current.tryComplete()');
   });
 });

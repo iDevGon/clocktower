@@ -429,6 +429,11 @@ export function NightPanel({
                 ) : (
                   <Pressable
                     onPress={() => setFeedbackCollapsed((prev) => !prev)}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      feedbackCollapsed ? '피드백 펼치기' : '피드백 접기'
+                    }
+                    accessibilityState={{ expanded: !feedbackCollapsed }}
                     style={styles.nightFeedbackToggle}
                   >
                     <Text style={styles.nightFeedbackToggleText}>

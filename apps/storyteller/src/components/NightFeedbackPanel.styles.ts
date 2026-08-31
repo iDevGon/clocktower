@@ -86,6 +86,14 @@ export const modalStyles = StyleSheet.create({
     lineHeight: 20,
     marginTop: 3,
   },
+  sendingStatus: {
+    color: '#ddd2b5',
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '800',
+    textAlign: 'center',
+    paddingVertical: 10,
+  },
 });
 
 export const getAbilityTextStyle = (scale: number) => ({
