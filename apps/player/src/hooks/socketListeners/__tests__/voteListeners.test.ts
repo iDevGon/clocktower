@@ -55,6 +55,28 @@ describe('attachVoteListeners', () => {
     expect(usePlayerStore.getState().executionHappenedToday).toBe(false);
   });
 
+  it('투표 중 처단자 발표를 스토어에 보관한다', () => {
+    const socket = new FakeSocket();
+    attachVoteListeners(socket as unknown as AppSocket);
+    usePlayerStore.getState().set({
+      currentPhase: 'vote',
+      playerId: 'me',
+    });
+    const announcement = {
+      executedId: 'other',
+      executedName: 'Other',
+      reason: 'slayer' as const,
+      detail: 'Other died',
+    };
+
+    socket.emitEvent('execution:announced', announcement);
+
+    expect(usePlayerStore.getState()).toMatchObject({
+      currentPhase: 'vote',
+      executionAnnouncement: announcement,
+    });
+  });
+
   it('투표 결과를 좌석 배치에서 다시 볼 수 있도록 히스토리에 저장한다', () => {
     const socket = new FakeSocket();
     attachVoteListeners(socket as unknown as AppSocket);

@@ -74,4 +74,64 @@ describe('selectGameOverlay', () => {
       }),
     ).toBe('none');
   });
+
+  it('defers a personal Slayer death until voting ends', () => {
+    expect(
+      selectGameOverlay({
+        currentPhase: 'vote',
+        justDied: true,
+        deathReason: 'slayer',
+      }),
+    ).toBe('none');
+    expect(
+      selectGameOverlay({
+        currentPhase: 'day',
+        justDied: true,
+        deathReason: 'slayer',
+      }),
+    ).toBe('death');
+  });
+
+  it('defers another player Slayer execution until voting ends', () => {
+    expect(
+      selectGameOverlay({
+        currentPhase: 'vote',
+        executionAnnouncement: true,
+        executionReason: 'slayer',
+      }),
+    ).toBe('none');
+    expect(
+      selectGameOverlay({
+        currentPhase: 'day',
+        executionAnnouncement: true,
+        executionReason: 'slayer',
+      }),
+    ).toBe('execution');
+  });
+
+  it('defers a Slayer fizzle until voting ends', () => {
+    expect(
+      selectGameOverlay({ currentPhase: 'vote', slayerFizzle: true }),
+    ).toBe('none');
+    expect(selectGameOverlay({ currentPhase: 'day', slayerFizzle: true })).toBe(
+      'slayer_fizzle',
+    );
+  });
+
+  it('does not defer non-Slayer deaths during voting', () => {
+    expect(
+      selectGameOverlay({
+        currentPhase: 'vote',
+        justDied: true,
+        deathReason: 'night_kill',
+      }),
+    ).toBe('death');
+    expect(
+      selectGameOverlay({
+        currentPhase: 'vote',
+        executionAnnouncement: true,
+        executionReason: 'execution',
+      }),
+    ).toBe('execution');
+  });
 });

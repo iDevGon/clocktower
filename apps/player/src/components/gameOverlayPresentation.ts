@@ -1,3 +1,5 @@
+import type { DeathReason, ExecutionAnnouncement } from '@clocktower/shared';
+
 export type GameOverlayKey =
   | 'game_end'
   | 'start_reveal'
@@ -18,7 +20,9 @@ interface GameOverlayPresentation {
   showStartReveal?: boolean;
   rolePromotion?: boolean;
   justDied?: boolean;
+  deathReason?: DeathReason | null;
   executionAnnouncement?: boolean;
+  executionReason?: ExecutionAnnouncement['reason'] | null;
   showNightFall?: boolean;
   showRavenkeeper?: boolean;
   nightDeaths?: boolean;
@@ -33,7 +37,9 @@ export function selectGameOverlay({
   showStartReveal = false,
   rolePromotion = false,
   justDied = false,
+  deathReason = null,
   executionAnnouncement = false,
+  executionReason = null,
   showNightFall = false,
   showRavenkeeper = false,
   nightDeaths = false,
@@ -44,12 +50,22 @@ export function selectGameOverlay({
   if (gameHasEnded && role && !gameEndDismissed) return 'game_end';
   if (showStartReveal && role) return 'start_reveal';
   if (rolePromotion) return 'role_promotion';
-  if (justDied) return 'death';
-  if (executionAnnouncement && !gameHasEnded) return 'execution';
+  if (justDied) {
+    return currentPhase === 'vote' && deathReason === 'slayer'
+      ? 'none'
+      : 'death';
+  }
+  if (executionAnnouncement && !gameHasEnded) {
+    return currentPhase === 'vote' && executionReason === 'slayer'
+      ? 'none'
+      : 'execution';
+  }
   if (showNightFall) return 'night_fall';
   if (showRavenkeeper) return 'ravenkeeper';
   if (nightDeaths) return 'night_deaths';
-  if (slayerFizzle) return 'slayer_fizzle';
+  if (slayerFizzle) {
+    return currentPhase === 'vote' ? 'none' : 'slayer_fizzle';
+  }
   return 'none';
 }
 
