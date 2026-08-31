@@ -20,11 +20,13 @@ import { TEAM_COLORS } from './NightOrderPanel.styles';
 import {
   createNightFeedbackCompletionGuard,
   createNightFeedbackDeliveryGuard,
+  getNightActionForFeedbackTargetOccurrence,
   getPendingFeedbackIndex,
 } from './nightFeedbackQueue';
 import { getNightFeedbackSuggestion } from './nightFeedbackSuggestion';
 import {
   getAbilityMalfunctionWarning,
+  getEmpathHint,
   isAbilityMalfunctioning,
 } from './nightRoleLogic';
 
@@ -38,11 +40,6 @@ const TEAM_CARD_COLORS: Record<string, { color: string }> = {
 
 const FALLBACK_CARD_COLORS = TEAM_CARD_COLORS.townsfolk;
 
-interface EmpathHint {
-  neighbors: { id: string; name: string; isEvil: boolean }[];
-  evilCount: number;
-}
-
 interface ChefHint {
   evilPairCount: number;
   evilPairNames: string[][];
@@ -53,8 +50,8 @@ interface NightFeedbackPanelProps {
   onCollapse: () => void;
   activeRoleId: string | null;
   players: Player[];
+  playerOrder: string[];
   nightActions?: NightAction[];
-  empathHint?: EmpathHint;
   chefHint?: ChefHint;
   executedRoleName?: string;
   executedPlayerName?: string;
@@ -85,8 +82,8 @@ export function NightFeedbackPanel({
   onCollapse,
   activeRoleId,
   players,
+  playerOrder,
   nightActions,
-  empathHint,
   chefHint,
   executedRoleName,
   executedPlayerName,
@@ -173,10 +170,19 @@ export function NightFeedbackPanel({
   const cardColors = TEAM_CARD_COLORS[team] ?? FALLBACK_CARD_COLORS;
   const teamColor =
     TEAM_COLORS[team as keyof typeof TEAM_COLORS] ?? TEAM_COLORS.townsfolk;
-  const currentNightAction = nightActions?.find(
-    (action) =>
-      action.roleId === activeRoleId && action.playerId === targetPlayer.id,
-  );
+  const currentNightAction =
+    currentIndex == null
+      ? undefined
+      : getNightActionForFeedbackTargetOccurrence(
+          nightActions,
+          activeRoleId,
+          targetPlayers,
+          currentIndex,
+        );
+  const currentEmpathHint =
+    activeRoleId === 'empath'
+      ? getEmpathHint(players, playerOrder, targetPlayer.id)
+      : undefined;
   const currentNightActionTargetNames =
     currentNightAction?.targets.map(
       (id) => players.find((player) => player.id === id)?.name ?? id,
@@ -189,7 +195,7 @@ export function NightFeedbackPanel({
   const suggestion = getNightFeedbackSuggestion({
     roleId: activeRoleId,
     isMalfunctioning,
-    empathEvilCount: empathHint?.evilCount,
+    empathEvilCount: currentEmpathHint?.evilCount,
     chefEvilPairCount: chefHint?.evilPairCount,
     jugglerCorrectCount: jugglerCorrectCount?.[targetPlayer.id],
     fortuneTellerResult: currentNightAction?.fortuneTellerResult,
@@ -334,8 +340,8 @@ export function NightFeedbackPanel({
               )}
 
             {activeRoleId === 'empath' &&
-              empathHint &&
-              empathHint.neighbors.length > 0 && (
+              currentEmpathHint &&
+              currentEmpathHint.neighbors.length > 0 && (
                 <View
                   style={[
                     styles.drunkBanner,
@@ -346,8 +352,11 @@ export function NightFeedbackPanel({
                   ]}
                 >
                   <Text style={[styles.drunkBannerText, { color: '#2ecc71' }]}>
-                    이웃: {empathHint.neighbors.map((n) => n.name).join(', ')} →
-                    악한 {empathHint.evilCount}명
+                    이웃:{' '}
+                    {currentEmpathHint.neighbors
+                      .map((neighbor) => neighbor.name)
+                      .join(', ')}{' '}
+                    → 악한 {currentEmpathHint.evilCount}명
                     {isMalfunctioning ? ' (가짜 정보 제공 필요)' : ''}
                   </Text>
                 </View>
@@ -415,6 +424,7 @@ export function NightFeedbackPanel({
                 modalStyles.recommendation,
                 suggestion && modalStyles.recommendationSuggested,
               ]}
+              accessibilityLiveRegion="polite"
             >
               <Text
                 style={[

@@ -1,9 +1,33 @@
+import type { NightAction } from '@clocktower/shared';
+
 export function getPendingFeedbackIndex<T>(
   targets: T[],
   sentIndices: Set<number>,
 ): number | null {
   const index = targets.findIndex((_, i) => !sentIndices.has(i));
   return index >= 0 ? index : null;
+}
+
+export function getNightActionForFeedbackTargetOccurrence(
+  actions: NightAction[] | undefined,
+  roleId: string,
+  targets: { id: string }[],
+  currentIndex: number,
+): NightAction | undefined {
+  const currentTarget = targets[currentIndex];
+  if (!currentTarget) return undefined;
+
+  const occurrenceIndex =
+    targets
+      .slice(0, currentIndex + 1)
+      .filter((target) => target.id === currentTarget.id).length - 1;
+
+  return actions
+    ?.filter(
+      (action) =>
+        action.roleId === roleId && action.playerId === currentTarget.id,
+    )
+    .at(occurrenceIndex);
 }
 
 export type NightFeedbackDeliverySettlement = 'advance' | 'retry' | 'ignored';

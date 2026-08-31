@@ -63,17 +63,23 @@ export function isDetectedAsEvil(player: Player): boolean {
 export function getEmpathHint(
   players: Player[],
   playerOrder: string[],
+  empathPlayerId?: string,
 ): {
   neighborIds: Set<string>;
   neighbors: { id: string; name: string; isEvil: boolean }[];
   evilCount: number;
 } {
-  const empathPlayer = players.find(
-    (p) =>
-      p.role?.id === 'empath' ||
-      (p.role?.id === 'drunk' && p.drunkAs === 'empath'),
-  );
-  if (!empathPlayer || empathPlayer.role?.id === 'drunk') {
+  const empathPlayer = empathPlayerId
+    ? players.find((player) => player.id === empathPlayerId)
+    : players.find(
+        (player) =>
+          player.role?.id === 'empath' ||
+          (player.role?.id === 'drunk' && player.drunkAs === 'empath'),
+      );
+  if (
+    !empathPlayer ||
+    (empathPlayerId === undefined && empathPlayer.role?.id === 'drunk')
+  ) {
     return { neighborIds: new Set(), neighbors: [], evilCount: 0 };
   }
 

@@ -1,9 +1,24 @@
+import type { NightAction } from '@clocktower/shared';
 import { describe, expect, it } from 'vitest';
+import * as queueModule from '../nightFeedbackQueue';
 import {
   createNightFeedbackCompletionGuard,
   createNightFeedbackDeliveryGuard,
   getPendingFeedbackIndex,
 } from '../nightFeedbackQueue';
+
+type ResolveActionForOccurrence = (
+  actions: NightAction[] | undefined,
+  roleId: string,
+  targets: { id: string }[],
+  currentIndex: number,
+) => NightAction | undefined;
+
+const resolveActionForOccurrence = (
+  queueModule as typeof queueModule & {
+    getNightActionForFeedbackTargetOccurrence?: ResolveActionForOccurrence;
+  }
+).getNightActionForFeedbackTargetOccurrence;
 
 describe('getPendingFeedbackIndex', () => {
   it('같은 플레이어가 두 번 깨어난 경우에도 순번별로 미전송 대상을 찾는다', () => {
@@ -40,5 +55,52 @@ describe('getPendingFeedbackIndex', () => {
     expect(getPendingFeedbackIndex(targets, sentIndices)).toBeNull();
     expect(completionGuard.tryComplete()).toBe(true);
     expect(completionGuard.tryComplete()).toBe(false);
+  });
+
+  it.each([
+    'fortune_teller',
+    'ravenkeeper',
+  ])('같은 플레이어가 두 번 행동한 %s 차례는 현재 큐 발생 순번과 같은 행동을 사용한다', (roleId) => {
+    expect(resolveActionForOccurrence).toBeTypeOf('function');
+    const targets = [{ id: 'same' }, { id: 'other' }, { id: 'same' }];
+    const firstAction: NightAction = {
+      playerId: 'same',
+      playerName: 'Same',
+      roleId,
+      targets: ['first-target'],
+      fortuneTellerResult: false,
+    };
+    const secondAction: NightAction = {
+      playerId: 'same',
+      playerName: 'Same',
+      roleId,
+      targets: ['second-target'],
+      fortuneTellerResult: true,
+    };
+
+    expect(
+      (resolveActionForOccurrence as ResolveActionForOccurrence)(
+        [firstAction, secondAction],
+        roleId,
+        targets,
+        0,
+      ),
+    ).toBe(firstAction);
+    expect(
+      (resolveActionForOccurrence as ResolveActionForOccurrence)(
+        [firstAction, secondAction],
+        roleId,
+        targets,
+        2,
+      ),
+    ).toBe(secondAction);
+    expect(
+      (resolveActionForOccurrence as ResolveActionForOccurrence)(
+        [firstAction],
+        roleId,
+        targets,
+        2,
+      ),
+    ).toBeUndefined();
   });
 });

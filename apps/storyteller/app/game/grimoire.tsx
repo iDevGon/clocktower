@@ -1873,8 +1873,6 @@ export default function GrimoireScreen() {
         dormantRoleIds={dormantRoleIds}
         skippedNightRoles={skippedNightRoles}
         executedPlayer={executedPlayer}
-        empathNeighborIds={empathNeighborIds}
-        empathEvilCount={empathEvilCount}
         chefEvilPairCount={chefEvilPairCount}
         chefEvilPairNames={chefEvilPairNames}
         playerOrder={playerOrder}

@@ -23,7 +23,10 @@ describe('night feedback suggestion integration', () => {
       "import { getNightFeedbackSuggestion } from './nightFeedbackSuggestion';",
     );
     expect(panelSource.match(/const currentNightAction =/g)).toHaveLength(1);
-    expect(panelSource.match(/nightActions\?\.find\(/g)).toHaveLength(1);
+    expect(panelSource).toContain('getNightActionForFeedbackTargetOccurrence(');
+    expect(panelSource).toContain(
+      'getEmpathHint(players, playerOrder, targetPlayer.id)',
+    );
     expect(panelSource).toContain(
       "currentNightAction?.roleId === 'ravenkeeper'",
     );
@@ -37,7 +40,9 @@ describe('night feedback suggestion integration', () => {
     expect(suggestionCall).toBeDefined();
     expect(suggestionCall).toContain('roleId: activeRoleId');
     expect(suggestionCall).toContain('isMalfunctioning');
-    expect(suggestionCall).toContain('empathEvilCount: empathHint?.evilCount');
+    expect(suggestionCall).toContain(
+      'empathEvilCount: currentEmpathHint?.evilCount',
+    );
     expect(suggestionCall).toContain(
       'chefEvilPairCount: chefHint?.evilPairCount',
     );
@@ -79,5 +84,11 @@ describe('night feedback suggestion integration', () => {
     expect(suggestedStyle).toContain("borderColor: '#d1aa69'");
     expect(suggestedStyle).toContain("shadowColor: '#d1aa69'");
     expect(suggestedStyle).toContain('elevation: 8');
+  });
+
+  it('announces asynchronous recommendation changes politely', () => {
+    expect(panelSource).toMatch(
+      /<View\s+style=\{\[[\s\S]*?modalStyles\.recommendation[\s\S]*?\]\}\s+accessibilityLiveRegion="polite"\s*>/,
+    );
   });
 });

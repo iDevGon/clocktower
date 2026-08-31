@@ -16,7 +16,7 @@ import {
   formatNightRoleLabel,
   getNightRolePlayerNames,
 } from './nightRoleDisplay';
-import { isAbilityMalfunctioning, isDetectedAsEvil } from './nightRoleLogic';
+import { isAbilityMalfunctioning } from './nightRoleLogic';
 import { SpyGrimoireComposer } from './SpyGrimoireComposer';
 
 type BmrAssistResult = { success: boolean; error?: string };
@@ -66,8 +66,6 @@ interface NightPanelProps {
   dormantRoleIds: string[];
   skippedNightRoles: string[];
   executedPlayer: Player | null;
-  empathNeighborIds: Set<string>;
-  empathEvilCount: number;
   chefEvilPairCount: number;
   chefEvilPairNames: string[][];
   playerOrder: string[];
@@ -162,8 +160,6 @@ export function NightPanel({
   dormantRoleIds,
   skippedNightRoles,
   executedPlayer,
-  empathNeighborIds,
-  empathEvilCount,
   chefEvilPairCount,
   chefEvilPairNames,
   playerOrder,
@@ -807,23 +803,10 @@ export function NightPanel({
               onCollapse={() => setFeedbackCollapsed(true)}
               activeRoleId={activeNightRoleId}
               players={players}
+              playerOrder={playerOrder}
               nightActions={nightActions}
               executedRoleName={executedPlayer?.role?.name}
               executedPlayerName={executedPlayer?.name}
-              empathHint={
-                activeNightRoleId === 'empath' && empathNeighborIds.size > 0
-                  ? {
-                      neighbors: players
-                        .filter((p) => empathNeighborIds.has(p.id))
-                        .map((p) => ({
-                          id: p.id,
-                          name: p.name,
-                          isEvil: isDetectedAsEvil(p),
-                        })),
-                      evilCount: empathEvilCount,
-                    }
-                  : undefined
-              }
               chefHint={
                 activeNightRoleId === 'chef'
                   ? {

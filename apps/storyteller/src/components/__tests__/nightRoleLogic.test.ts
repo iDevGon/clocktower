@@ -118,6 +118,79 @@ describe('nightRoleLogic', () => {
     expect(hint.neighbors.find((n) => n.id === 'recluse')?.isEvil).toBe(true);
   });
 
+  it.each([
+    {
+      label: '주정뱅이 초공감자',
+      actor: player({
+        id: 'actor',
+        role: {
+          id: 'drunk',
+          name: '주정뱅이',
+          team: 'outsider',
+          ability: '',
+          edition: 'trouble_brewing',
+        },
+        drunkAs: 'empath',
+      }),
+    },
+    {
+      label: '철학자로 얻은 초공감자',
+      actor: player({
+        id: 'actor',
+        role: {
+          id: 'philosopher',
+          name: '철학자',
+          team: 'townsfolk',
+          ability: '',
+          edition: 'sects_and_violets',
+        },
+        philosopherGrantedRole: 'empath',
+      }),
+    },
+  ])('$label의 명시적 actor 좌석을 기준으로 이웃 근거를 계산한다', ({
+    actor,
+  }) => {
+    const players = [
+      player({
+        id: 'actual-empath',
+        role: {
+          id: 'empath',
+          name: '초공감자',
+          team: 'townsfolk',
+          ability: '',
+          edition: 'trouble_brewing',
+        },
+      }),
+      player({
+        id: 'good-right',
+        alignment: 'good',
+      }),
+      player({
+        id: 'evil-left',
+        alignment: 'evil',
+      }),
+      actor,
+      player({
+        id: 'evil-right',
+        alignment: 'evil',
+      }),
+      player({
+        id: 'good-left',
+        alignment: 'good',
+      }),
+    ];
+    const order = players.map((candidate) => candidate.id);
+
+    expect(getEmpathHint(players, order).evilCount).toBe(0);
+    expect(getEmpathHint(players, order, actor.id)).toMatchObject({
+      evilCount: 2,
+      neighbors: expect.arrayContaining([
+        expect.objectContaining({ id: 'evil-left' }),
+        expect.objectContaining({ id: 'evil-right' }),
+      ]),
+    });
+  });
+
   it('요리사 힌트는 위장된 첩자를 악한 쌍에서 제외한다', () => {
     const players = [
       player({
