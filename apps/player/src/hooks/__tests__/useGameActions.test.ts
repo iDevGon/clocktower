@@ -17,8 +17,14 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
   },
 }));
 
+vi.mock('../../notifications', () => ({
+  vibrateAlert: vi.fn(),
+}));
+
 import { useConnectionStore } from '../../stores/connectionStore';
 import { usePlayerStore } from '../../stores/playerStore';
+import { attachNightListeners } from '../socketListeners/nightListeners';
+import type { AppSocket } from '../socketListeners/types';
 import { useGameActions } from '../useGameActions';
 
 type TimedAck = (
@@ -31,9 +37,18 @@ type TimedAck = (
 class MissingAckSocket {
   connected = true;
   lateAck: (() => void) | null = null;
+  handlers = new Map<string, (data: unknown) => void>();
 
   emit() {
     // Current implementation waits on this missing ack forever.
+  }
+
+  on(event: string, handler: (data: unknown) => void) {
+    this.handlers.set(event, handler);
+  }
+
+  emitServerEvent(event: string, data: unknown) {
+    this.handlers.get(event)?.(data);
   }
 
   timeout(timeoutMs: number) {
@@ -92,6 +107,35 @@ describe('useGameActions submitGamblerGuess', () => {
     expect(usePlayerStore.getState()).toMatchObject({
       gamblerGuessStatus: 'idle',
       gamblerGuessRequestId: null,
+    });
+  });
+
+  it('서버 accepted 이벤트를 받았다면 ack timeout 후에도 pending request를 보존한다', async () => {
+    const socket = new MissingAckSocket();
+    attachNightListeners(socket as unknown as AppSocket);
+    useConnectionStore.getState().set({
+      socket: socket as never,
+      isConnected: true,
+    });
+    usePlayerStore.getState().set({ nightWakeUp: 'gambler' });
+
+    const outcomePromise = useGameActions().submitGamblerGuess(
+      'target-player',
+      'chef',
+    );
+    socket.emitServerEvent('gambler:guessSubmitted', {
+      requestId: 'accepted-request',
+    });
+    await vi.runAllTimersAsync();
+
+    await expect(outcomePromise).resolves.toEqual({
+      success: false,
+      error: '제출 응답 시간이 초과되었습니다. 다시 시도하세요.',
+    });
+    expect(usePlayerStore.getState()).toMatchObject({
+      gamblerGuessStatus: 'pending',
+      gamblerGuessRequestId: 'accepted-request',
+      nightActionSubmitted: false,
     });
   });
 });

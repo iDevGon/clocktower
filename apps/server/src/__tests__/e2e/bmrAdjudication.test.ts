@@ -1201,15 +1201,23 @@ describe('E2E: 피로물든달 판정 보조', () => {
     ]);
 
     await activateGambler(ctx);
+    const acceptedRequestPromise = waitForEvent<Record<string, unknown>>(
+      ctx.players[0],
+      'gambler:guessSubmitted',
+      500,
+    );
     const pendingStatePromise = waitForEvent<GameState>(
       ctx.storyteller,
       'game:state',
     );
     const submitted = await submitGamblerGuess(ctx, 0, playerIds[1], 'sailor');
+    const acceptedRequest = await acceptedRequestPromise;
     const pendingState = await pendingStatePromise;
 
     expect(submitted.success).toBe(true);
     if (!submitted.success) return;
+    expect(acceptedRequest).toEqual({ requestId: submitted.requestId });
+    expectNoGamblerGuessSecrets(acceptedRequest);
     expect(pendingState.pendingGamblerGuess).toEqual({
       requestId: submitted.requestId,
       gamblerId: playerIds[0],

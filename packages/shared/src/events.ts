@@ -45,6 +45,7 @@ export interface DeliveredNightFeedback {
 
 export interface ServerToClientEvents {
   'game:state': (state: GameState) => void;
+  'gambler:guessSubmitted': (data: { requestId: string }) => void;
   'gambler:guessReviewed': (data: {
     requestId: string;
     status: 'approved' | 'rejected';

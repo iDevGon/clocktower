@@ -69,6 +69,60 @@ describe('attachNightListeners', () => {
     });
   });
 
+  it.each([
+    [
+      'approved',
+      {
+        gamblerGuessStatus: 'approved',
+        gamblerGuessRequestId: 'request-1',
+        nightActionSubmitted: true,
+      },
+    ],
+    [
+      'rejected',
+      {
+        gamblerGuessStatus: 'rejected',
+        gamblerGuessRequestId: null,
+        nightActionSubmitted: false,
+      },
+    ],
+  ] as const)('제출 ack 없이 accepted request를 %s 검토 이벤트와 연결한다', (status, expected) => {
+    const socket = new FakeSocket();
+    attachNightListeners(socket as unknown as AppSocket);
+    usePlayerStore.getState().set({ nightWakeUp: 'gambler' });
+
+    socket.emitEvent('gambler:guessSubmitted', {
+      requestId: 'request-1',
+    });
+    expect(usePlayerStore.getState()).toMatchObject({
+      gamblerGuessStatus: 'pending',
+      gamblerGuessRequestId: 'request-1',
+      nightActionSubmitted: false,
+    });
+
+    socket.emitEvent('gambler:guessReviewed', {
+      requestId: 'request-1',
+      status,
+    });
+
+    expect(usePlayerStore.getState()).toMatchObject(expected);
+  });
+
+  it('도박사 차례가 아닌 느지막 accepted request를 무시한다', () => {
+    const socket = new FakeSocket();
+    attachNightListeners(socket as unknown as AppSocket);
+    usePlayerStore.getState().set({ nightWakeUp: 'dreamer' });
+
+    socket.emitEvent('gambler:guessSubmitted', {
+      requestId: 'stale-request',
+    });
+
+    expect(usePlayerStore.getState()).toMatchObject({
+      gamblerGuessStatus: 'idle',
+      gamblerGuessRequestId: null,
+    });
+  });
+
   it('현재 요청의 승인만 행동 완료로 반영한다', () => {
     const socket = new FakeSocket();
     attachNightListeners(socket as unknown as AppSocket);

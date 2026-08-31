@@ -31,6 +31,17 @@ export function attachNightListeners(socket: AppSocket) {
     vibrateAlert();
   });
 
+  socket.on('gambler:guessSubmitted', ({ requestId }) => {
+    const store = usePlayerStore.getState();
+    if (store.nightWakeUp !== 'gambler') return;
+
+    store.set({
+      gamblerGuessStatus: 'pending',
+      gamblerGuessRequestId: requestId,
+      nightActionSubmitted: false,
+    });
+  });
+
   socket.on('gambler:guessReviewed', ({ requestId, status }) => {
     const store = usePlayerStore.getState();
     if (store.gamblerGuessRequestId !== requestId) return;

@@ -599,6 +599,9 @@ export function registerPlayerHandlers(
           return;
         }
 
+        socket.emit('gambler:guessSubmitted', {
+          requestId: result.requestId,
+        });
         storytellerIo.emit('game:state', game.getStorytellerState());
         callback({ success: true, requestId: result.requestId });
       },
