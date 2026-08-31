@@ -134,4 +134,40 @@ describe('selectGameOverlay', () => {
       }),
     ).toBe('execution');
   });
+
+  it('shows a winning Slayer execution after the game-end overlay is dismissed', () => {
+    expect(
+      selectGameOverlay({
+        currentPhase: 'ended',
+        gameResult: true,
+        role: true,
+        gameEndDismissed: false,
+        executionAnnouncement: true,
+        executionReason: 'slayer',
+      }),
+    ).toBe('game_end');
+    expect(
+      selectGameOverlay({
+        currentPhase: 'ended',
+        gameResult: true,
+        role: true,
+        gameEndDismissed: true,
+        executionAnnouncement: true,
+        executionReason: 'slayer',
+      }),
+    ).toBe('execution');
+  });
+
+  it('suppresses non-Slayer execution announcements after the game ends', () => {
+    expect(
+      selectGameOverlay({
+        currentPhase: 'ended',
+        gameResult: true,
+        role: true,
+        gameEndDismissed: true,
+        executionAnnouncement: true,
+        executionReason: 'execution',
+      }),
+    ).toBe('none');
+  });
 });

@@ -55,7 +55,10 @@ export function selectGameOverlay({
       ? 'none'
       : 'death';
   }
-  if (executionAnnouncement && !gameHasEnded) {
+  if (
+    executionAnnouncement &&
+    (!gameHasEnded || (gameEndDismissed && executionReason === 'slayer'))
+  ) {
     return currentPhase === 'vote' && executionReason === 'slayer'
       ? 'none'
       : 'execution';

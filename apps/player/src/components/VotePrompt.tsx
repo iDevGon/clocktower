@@ -14,6 +14,7 @@ import { useGameActions } from '../hooks/useGameActions';
 import { useVoteProgress } from '../hooks/useVoteProgress';
 import { usePlayerStore } from '../stores/playerStore';
 import { EdgeVignette } from './EdgeVignette';
+import { acknowledgeSlayerFizzle } from './slayerAcknowledgement';
 import { VoteClockRing } from './VoteClockRing';
 import { VOTE_CONSENT_READY_ICON } from './VotePrompt.presentation';
 import { styles } from './VotePrompt.styles';
@@ -171,6 +172,9 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
   const voteConsentReadyIds = usePlayerStore((s) => s.voteConsentReadyIds);
   const defenseClock = usePlayerStore((s) => s.defenseClock);
   const gamePlayers = usePlayerStore((s) => s.gamePlayers);
+  const currentPhase = usePlayerStore((s) => s.currentPhase);
+  const slayerFizzle = usePlayerStore((s) => s.slayerFizzle);
+  const slayerAcked = usePlayerStore((s) => s.slayerAcked);
   const isConsentReady = voteConsentReadyIds.includes(playerId);
   const aliveCount = gamePlayers.filter((p) => p.isAlive).length;
   const consentCount = voteConsentReadyIds.length;
@@ -238,6 +242,39 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
         <Text style={styles.playerNameHighlight}>{nomineeName}</Text>
         {'(을)를 지목했습니다'}
       </Text>
+
+      {currentPhase === 'vote' && slayerFizzle && (
+        <View style={styles.slayerAckNotice}>
+          <Text style={styles.slayerAckLabel}>처단자 능력 불발</Text>
+          <Text style={styles.slayerAckResult}>
+            <Text style={styles.playerNameHighlight}>
+              {slayerFizzle.slayerName}
+            </Text>
+            {'의 공격은 '}
+            <Text style={styles.playerNameHighlight}>
+              {slayerFizzle.targetName}
+            </Text>
+            {'에게 효과가 없었습니다.'}
+          </Text>
+          <Pressable
+            style={[
+              styles.slayerAckButton,
+              slayerAcked && styles.slayerAckButtonDisabled,
+            ]}
+            onPress={acknowledgeSlayerFizzle}
+            disabled={slayerAcked}
+            accessibilityLabel="확인하고 투표 계속"
+            accessibilityRole="button"
+            accessibilityState={{ disabled: slayerAcked }}
+          >
+            <Text style={styles.slayerAckButtonText}>
+              {slayerAcked
+                ? '다른 플레이어 확인을 기다리는 중…'
+                : '확인하고 투표 계속'}
+            </Text>
+          </Pressable>
+        </View>
+      )}
 
       {isDefensePhase && (
         <View style={styles.countdownContainer}>
