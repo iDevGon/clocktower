@@ -571,6 +571,43 @@ describe('E2E: 재접속', () => {
     await ctx.cleanup();
   });
 
+  it('게임이 없으면 명시적인 재접속 실패 코드를 반환한다', async () => {
+    const newSocket = await ctx.connectPlayer();
+    const rejoinRes = await new Promise<{
+      success: boolean;
+      error?: string;
+    }>((resolve) => {
+      newSocket.emit('game:rejoin', { playerId: 'missing-player' }, resolve);
+    });
+
+    expect(rejoinRes).toEqual({
+      success: false,
+      error: 'game_not_found',
+    });
+  });
+
+  it('게임에 없는 플레이어면 명시적인 재접속 실패 코드를 반환한다', async () => {
+    await new Promise<void>((resolve) => {
+      ctx.storyteller.emit('game:create', (res) => {
+        expect(res.success).toBe(true);
+        resolve();
+      });
+    });
+
+    const newSocket = await ctx.connectPlayer();
+    const rejoinRes = await new Promise<{
+      success: boolean;
+      error?: string;
+    }>((resolve) => {
+      newSocket.emit('game:rejoin', { playerId: 'missing-player' }, resolve);
+    });
+
+    expect(rejoinRes).toEqual({
+      success: false,
+      error: 'player_not_found',
+    });
+  });
+
   it('재접속 시 상태 복원', async () => {
     const { playerIds } = await setupFullGame(ctx);
 
@@ -591,6 +628,23 @@ describe('E2E: 재접속', () => {
     expect(rejoinRes.playerName).toBe(player.name);
     expect(rejoinRes.roleId).toBeDefined();
     expect(rejoinRes.phase).toBe('night');
+  }, 15000);
+
+  it('재접속 성공 응답에 현재 게임 설정이 포함된다', async () => {
+    const { playerIds } = await setupFullGame(ctx);
+
+    const newSocket = await ctx.connectPlayer();
+    const rejoinRes = await new Promise<{
+      success: boolean;
+      gameSettings?: unknown;
+    }>((resolve) => {
+      newSocket.emit('game:rejoin', { playerId: playerIds[0] }, resolve);
+    });
+
+    expect(rejoinRes).toMatchObject({
+      success: true,
+      gameSettings: ctx.app.game.getState().settings,
+    });
   }, 15000);
 
   it('재접속 시 좌석 순서를 playerOrder 기준으로 복원한다', async () => {

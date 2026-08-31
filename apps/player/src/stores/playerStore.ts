@@ -267,6 +267,7 @@ export type RejoinStatePatch = Pick<
   | 'nightCount'
   | 'nightProgress'
   | 'gamePlayers'
+  | 'gameSettings'
   | 'evilInfo'
   | 'butlerMasterName'
   | 'nomination'

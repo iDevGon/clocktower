@@ -3,9 +3,14 @@ import { io } from 'socket.io-client';
 import { registerForPushNotifications } from '../notifications';
 import { useConnectionStore } from '../stores/connectionStore';
 import { usePlayerStore } from '../stores/playerStore';
-import { buildRejoinStatePatch } from './rejoinState';
+import { buildRejoinStatePatch, isMissingRejoinResponse } from './rejoinState';
 import type { AppSocket } from './socketListeners';
 import { attachListeners } from './socketListeners';
+
+export type RejoinOutcome =
+  | { status: 'success' }
+  | { status: 'missing' }
+  | { status: 'unavailable' };
 
 export function useConnection() {
   const connect = useCallback((): Promise<void> => {
@@ -91,39 +96,59 @@ export function useConnection() {
     [],
   );
 
-  const rejoinGame = useCallback((playerId: string): Promise<boolean> => {
+  const rejoinGame = useCallback((playerId: string): Promise<RejoinOutcome> => {
     return new Promise((resolve) => {
       const socket = useConnectionStore.getState().socket;
       if (!socket || !socket.connected) {
-        resolve(false);
+        resolve({ status: 'unavailable' });
         return;
       }
 
-      const timeout = setTimeout(() => resolve(false), 5000);
-
-      socket.emit('game:rejoin', { playerId }, (res) => {
+      let settled = false;
+      const finish = (outcome: RejoinOutcome) => {
+        if (settled) return;
+        settled = true;
         clearTimeout(timeout);
-        if (!res.success || !res.playerName) {
-          resolve(false);
-          return;
-        }
-        const previous = usePlayerStore.getState();
-        usePlayerStore
-          .getState()
-          .set(
-            buildRejoinStatePatch(
-              { ...previous, playerId },
-              { ...res, success: true },
-            ),
-          );
-        resolve(true);
-        // Fire and forget
-        registerForPushNotifications().then((token) => {
-          if (token && socket.connected) {
-            socket.emit('push:register', { token });
+        resolve(outcome);
+      };
+      const timeout = setTimeout(() => finish({ status: 'unavailable' }), 5000);
+
+      try {
+        socket.emit('game:rejoin', { playerId }, (res) => {
+          if (settled) return;
+          if (!res.success) {
+            if (isMissingRejoinResponse(res)) {
+              usePlayerStore.getState().set({ playerId: '' });
+              finish({ status: 'missing' });
+              return;
+            }
+            finish({ status: 'unavailable' });
+            return;
           }
+          if (!res.playerName) {
+            finish({ status: 'unavailable' });
+            return;
+          }
+          const previous = usePlayerStore.getState();
+          usePlayerStore
+            .getState()
+            .set(
+              buildRejoinStatePatch(
+                { ...previous, playerId },
+                { ...res, success: true },
+              ),
+            );
+          finish({ status: 'success' });
+          // Fire and forget
+          registerForPushNotifications().then((token) => {
+            if (token && socket.connected) {
+              socket.emit('push:register', { token });
+            }
+          });
         });
-      });
+      } catch {
+        finish({ status: 'unavailable' });
+      }
     });
   }, []);
 

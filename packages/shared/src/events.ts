@@ -377,6 +377,7 @@ export interface ClientToServerEvents {
     data: { playerId: string },
     callback: (res: {
       success: boolean;
+      error?: 'game_not_found' | 'player_not_found';
       playerName?: string;
       roleId?: string;
       philosopherGrantedRole?: string;
@@ -406,6 +407,7 @@ export interface ClientToServerEvents {
         guiltyVotes: number;
       };
       evilInfo?: EvilInfoPayload | null;
+      gameSettings?: GameSettings;
     }) => void,
   ) => void;
   'vote:cast': (

@@ -409,12 +409,12 @@ export function registerPlayerHandlers(
     socket.on('game:rejoin', ({ playerId }, callback) => {
       const state = game.getState();
       if (!state.id) {
-        callback({ success: false });
+        callback({ success: false, error: 'game_not_found' });
         return;
       }
       const player = game.getPlayer(playerId);
       if (!player) {
-        callback({ success: false });
+        callback({ success: false, error: 'player_not_found' });
         return;
       }
       socket.join(player.id);
@@ -519,6 +519,7 @@ export function registerPlayerHandlers(
         nomination,
         executionCandidate,
         evilInfo: getEvilInfoForPlayer(game, player),
+        gameSettings: state.settings,
       });
       // 설정 + 전체 상태 전송 (백그라운드 복귀 시 놓친 이벤트 보상)
       socket.emit('game:settings', state.settings);

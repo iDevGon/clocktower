@@ -11,6 +11,17 @@ type RejoinResponse = Parameters<
 
 export type SuccessfulRejoinResponse = RejoinResponse & { success: true };
 
+export function isMissingRejoinResponse(response: {
+  success: boolean;
+  error?: string;
+}): boolean {
+  return (
+    !response.success &&
+    (response.error === 'game_not_found' ||
+      response.error === 'player_not_found')
+  );
+}
+
 export function buildRejoinStatePatch(
   previous: RejoinStateSnapshot,
   response: SuccessfulRejoinResponse,
@@ -28,6 +39,7 @@ export function buildRejoinStatePatch(
     nightCount: response.nightCount ?? previous.nightCount,
     nightProgress: response.nightProgress ?? null,
     gamePlayers: response.gamePlayers ?? previous.gamePlayers,
+    gameSettings: response.gameSettings ?? null,
     evilInfo: response.evilInfo ?? null,
     butlerMasterName: response.butlerMasterName ?? null,
     nomination: response.nomination ?? null,

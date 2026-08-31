@@ -112,4 +112,43 @@ describe('buildRejoinStatePatch', () => {
       pendingRolePromotion: null,
     });
   });
+
+  it('재접속 응답의 게임 설정을 다른 상태와 같은 패치에 포함한다', () => {
+    const gameSettings = {
+      whisperMode: 'offline' as const,
+      votingMode: 'offline' as const,
+      voteClockSeconds: 9,
+      whisperClockSeconds: 8,
+      discussionClockSeconds: 7,
+      nominationClockSeconds: 6,
+      defenseClockSeconds: 5,
+      setupEditionId: 'custom-edition',
+      additionalRoleIds: ['chef'],
+      excludedRoleIds: ['imp'],
+      showVoteHistory: false,
+    };
+    const patch = buildRejoinStatePatch(
+      {
+        playerId: 'p1',
+        playerName: 'Player1',
+        nightCount: 1,
+        gamePlayers: [],
+        justDied: false,
+        deathReason: null,
+        executionAnnouncement: null,
+        nightDeathAnnouncement: null,
+        slayerFizzle: null,
+        rolePromotion: null,
+        pendingRolePromotion: null,
+      },
+      {
+        success: true,
+        playerName: 'Player1',
+        phase: 'day',
+        gameSettings,
+      },
+    );
+
+    expect(patch).toMatchObject({ gameSettings });
+  });
 });

@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 import { useChatStore } from '../../stores/chatStore';
 import { usePlayerStore } from '../../stores/playerStore';
 import { useWhisperStore } from '../../stores/whisperStore';
-import { buildRejoinStatePatch } from '../rejoinState';
+import { buildRejoinStatePatch, isMissingRejoinResponse } from '../rejoinState';
 import type { AppSocket } from './types';
 
 function handleRejoin(socket: AppSocket) {
@@ -13,6 +13,7 @@ function handleRejoin(socket: AppSocket) {
 
   socket.emit('game:rejoin', { playerId }, (res) => {
     if (!res.success) {
+      if (!isMissingRejoinResponse(res)) return;
       const { playerName } = usePlayerStore.getState();
       usePlayerStore.getState().reset();
       usePlayerStore.getState().set({ playerName });

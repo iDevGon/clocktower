@@ -101,6 +101,41 @@ describe('attachGameListeners', () => {
     expect(usePlayerStore.getState().philosopherGrantedRole).toBe('po');
   });
 
+  it('일시적인 재접속 실패는 저장된 플레이어 세션을 보존한다', () => {
+    const socket = new FakeSocket();
+    socket.rejoinResponse = { success: false };
+    usePlayerStore
+      .getState()
+      .set({ playerId: 'p1', playerName: 'Persisted Player' });
+    attachGameListeners(socket as unknown as AppSocket);
+
+    socket.emitEvent('connect', undefined);
+
+    expect(usePlayerStore.getState()).toMatchObject({
+      playerId: 'p1',
+      playerName: 'Persisted Player',
+    });
+  });
+
+  it.each([
+    'game_not_found',
+    'player_not_found',
+  ] as const)('%s 재접속 실패는 저장된 플레이어 세션을 지운다', (error) => {
+    const socket = new FakeSocket();
+    socket.rejoinResponse = { success: false, error };
+    usePlayerStore
+      .getState()
+      .set({ playerId: 'p1', playerName: 'Persisted Player' });
+    attachGameListeners(socket as unknown as AppSocket);
+
+    socket.emitEvent('connect', undefined);
+
+    expect(usePlayerStore.getState()).toMatchObject({
+      playerId: '',
+      playerName: 'Persisted Player',
+    });
+  });
+
   it('플레이어 갱신의 좀버얼 공개 사망 상태를 사망으로 표시한다', () => {
     const socket = new FakeSocket();
     attachGameListeners(socket as unknown as AppSocket);

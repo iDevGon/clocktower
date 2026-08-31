@@ -31,13 +31,20 @@ import { styles } from '../src/styles/index.styles';
 export default function JoinScreen() {
   const tips = useMemo(() => getAllTipTexts('player'), []);
   const savedServerUrl = useConnectionStore((s) => s.serverUrl);
+  const savedPlayerId = usePlayerStore((s) => s.playerId);
   const [serverIp, setServerIp] = useState(savedServerUrl ?? '');
   const savedPlayerName = usePlayerStore((s) => s.playerName);
   const [playerName, setPlayerName] = useState(savedPlayerName ?? '');
   const [error, setError] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [storesHydrated, setStoresHydrated] = useState(
+    () =>
+      useConnectionStore.persist.hasHydrated() &&
+      usePlayerStore.persist.hasHydrated(),
+  );
   const scannedRef = useRef(false);
+  const rejoinAttemptedRef = useRef<string | null>(null);
   const router = useRouter();
   const { connect, joinGame, rejoinGame } = useConnection();
   const [permission, requestPermission] = useCameraPermissions();
@@ -64,19 +71,40 @@ export default function JoinScreen() {
     opacity: interpolate(glowPulse.value, [0, 1], [0.4, 0.8]),
   }));
 
+  useEffect(() => {
+    const updateHydrationState = () => {
+      setStoresHydrated(
+        useConnectionStore.persist.hasHydrated() &&
+          usePlayerStore.persist.hasHydrated(),
+      );
+    };
+    updateHydrationState();
+    const unsubscribeConnection =
+      useConnectionStore.persist.onFinishHydration(updateHydrationState);
+    const unsubscribePlayer =
+      usePlayerStore.persist.onFinishHydration(updateHydrationState);
+
+    return () => {
+      unsubscribeConnection();
+      unsubscribePlayer();
+    };
+  }, []);
+
   // 이전 세션 정보가 있으면 자동 재접속 시도
   useEffect(() => {
-    const tryRejoin = async () => {
-      const { serverUrl } = useConnectionStore.getState();
-      const { playerId } = usePlayerStore.getState();
-      if (!serverUrl || !playerId) return;
+    if (!storesHydrated || !savedServerUrl || !savedPlayerId) return;
 
+    const sessionKey = `${savedServerUrl}:${savedPlayerId}`;
+    if (rejoinAttemptedRef.current === sessionKey) return;
+    rejoinAttemptedRef.current = sessionKey;
+
+    const tryRejoin = async () => {
       setIsJoining(true);
       try {
-        useConnectionStore.getState().set({ serverUrl });
+        useConnectionStore.getState().set({ serverUrl: savedServerUrl });
         await connect();
-        const success = await rejoinGame(playerId);
-        if (success) {
+        const outcome = await rejoinGame(savedPlayerId);
+        if (outcome.status === 'success') {
           router.replace('/game');
           return;
         }
@@ -87,7 +115,14 @@ export default function JoinScreen() {
       }
     };
     tryRejoin();
-  }, [connect, rejoinGame, router.replace]);
+  }, [
+    connect,
+    rejoinGame,
+    router.replace,
+    savedPlayerId,
+    savedServerUrl,
+    storesHydrated,
+  ]);
 
   const doConnect = async () => {
     const trimmedIp = serverIp.trim();
