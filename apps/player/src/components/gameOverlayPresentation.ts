@@ -56,15 +56,20 @@ export function selectGameOverlay({
 interface PersonalDeathPresentationPatch {
   justDied: false;
   deathReason: null;
-  nightDeathAnnouncement: null;
+  nightDeathAnnouncement: Array<{ id: string; name: string }> | null;
 }
 
 export function dismissPersonalDeathPresentation(
   setPresentation: (patch: PersonalDeathPresentationPatch) => void,
+  playerId: string,
+  nightDeathAnnouncement: Array<{ id: string; name: string }> | null,
 ): void {
+  const otherNightDeaths =
+    nightDeathAnnouncement?.filter((death) => death.id !== playerId) ?? [];
   setPresentation({
     justDied: false,
     deathReason: null,
-    nightDeathAnnouncement: null,
+    nightDeathAnnouncement:
+      otherNightDeaths.length > 0 ? otherNightDeaths : null,
   });
 }

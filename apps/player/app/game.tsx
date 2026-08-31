@@ -270,10 +270,15 @@ export default function GameScreen() {
     () => dismissDeath({ rolePromotion: null }),
     [dismissDeath],
   );
-  const dismissPersonalDeath = useCallback(
-    () => dismissPersonalDeathPresentation(dismissDeath),
-    [dismissDeath],
-  );
+  const dismissPersonalDeath = useCallback(() => {
+    const { playerId: currentPlayerId, nightDeathAnnouncement: nightDeaths } =
+      usePlayerStore.getState();
+    dismissPersonalDeathPresentation(
+      dismissDeath,
+      currentPlayerId,
+      nightDeaths,
+    );
+  }, [dismissDeath]);
   const dismissExecution = useCallback(
     () => dismissDeath({ executionAnnouncement: null }),
     [dismissDeath],

@@ -223,7 +223,7 @@ describe('attachGameListeners', () => {
     expect(usePlayerStore.getState().gamePlayers[0]?.deadVoteUsed).toBe(false);
   });
 
-  it('본인의 밤 사망은 단체 사망 발표보다 우선하고 해제 시 중복 발표도 지운다', () => {
+  it('본인의 밤 사망을 해제하면 단체 발표에서 본인만 제외한다', () => {
     const socket = new FakeSocket();
     attachGameListeners(socket as unknown as AppSocket);
     attachNightListeners(socket as unknown as AppSocket);
@@ -240,15 +240,18 @@ describe('attachGameListeners', () => {
       ],
     });
 
-    socket.emitEvent('night:deaths', {
-      deaths: [{ id: 'dead-player', name: 'Dead Player' }],
-    });
     socket.emitEvent('game:playerUpdate', {
       id: 'dead-player',
       name: 'Dead Player',
       isAlive: false,
       deadVoteUsed: false,
       statuses: [],
+    });
+    socket.emitEvent('night:deaths', {
+      deaths: [
+        { id: 'dead-player', name: 'Dead Player' },
+        { id: 'other-dead-player', name: 'Other Dead Player' },
+      ],
     });
 
     let state = usePlayerStore.getState();
@@ -259,19 +262,47 @@ describe('attachGameListeners', () => {
       }),
     ).toBe('death');
 
-    dismissPersonalDeathPresentation(usePlayerStore.getState().set);
+    dismissPersonalDeathPresentation(
+      usePlayerStore.getState().set,
+      state.playerId,
+      state.nightDeathAnnouncement,
+    );
 
     state = usePlayerStore.getState();
     expect(state).toMatchObject({
       justDied: false,
       deathReason: null,
-      nightDeathAnnouncement: null,
+      nightDeathAnnouncement: [
+        { id: 'other-dead-player', name: 'Other Dead Player' },
+      ],
     });
     expect(
       selectGameOverlay({
         justDied: state.justDied,
         nightDeaths: state.nightDeathAnnouncement !== null,
       }),
-    ).toBe('none');
+    ).toBe('night_deaths');
+  });
+
+  it('본인만 포함된 밤 사망 발표는 개인 사망 해제 시 함께 지운다', () => {
+    usePlayerStore.getState().set({
+      playerId: 'dead-player',
+      justDied: true,
+      deathReason: 'night_kill',
+      nightDeathAnnouncement: [{ id: 'dead-player', name: 'Dead Player' }],
+    });
+
+    const state = usePlayerStore.getState();
+    dismissPersonalDeathPresentation(
+      state.set,
+      state.playerId,
+      state.nightDeathAnnouncement,
+    );
+
+    expect(usePlayerStore.getState()).toMatchObject({
+      justDied: false,
+      deathReason: null,
+      nightDeathAnnouncement: null,
+    });
   });
 });
