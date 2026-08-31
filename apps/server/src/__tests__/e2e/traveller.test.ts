@@ -351,6 +351,61 @@ describe('E2E: 여행자 역할 배정 및 알림', () => {
     expect(result.success).toBe(true);
     expect(ctx.app.game.getPlayer(playerIds[0])).toBeUndefined();
   }, 15000);
+
+  it('이야기꾼은 접속이 끊긴 플레이어도 강퇴할 수 있다', async () => {
+    const { playerIds } = await setupFullGame(ctx);
+    const playerId = playerIds[0];
+    const targetSocket = ctx.players[0] as Socket;
+
+    const disconnectedPromise = waitForEvent<void>(targetSocket, 'disconnect');
+    targetSocket.disconnect();
+    await disconnectedPromise;
+
+    await expect
+      .poll(async () => {
+        const remainingRoomSockets = await ctx.app.io
+          .of('/player')
+          .in(playerId)
+          .fetchSockets();
+        return remainingRoomSockets.length;
+      })
+      .toBe(0);
+
+    const statePromise = waitForEvent<{
+      players: Array<{ id: string }>;
+      playerOrder: string[];
+    }>(ctx.storyteller as Socket, 'game:state');
+    const leftPromise = waitForEvent<{ playerId: string; playerName: string }>(
+      ctx.players[1] as Socket,
+      'player:left',
+    );
+    const result = await new Promise<{ success: boolean; error?: string }>(
+      (resolve) => {
+        ctx.storyteller.emit('player:kick', playerId, resolve);
+      },
+    );
+    const [state, left] = await Promise.all([statePromise, leftPromise]);
+
+    expect(result.success).toBe(true);
+    expect(left.playerId).toBe(playerId);
+    expect(ctx.app.game.getPlayer(playerId)).toBeUndefined();
+    expect(ctx.app.game.getPlayerOrder()).not.toContain(playerId);
+    expect(state.players.some((player) => player.id === playerId)).toBe(false);
+    expect(state.playerOrder).not.toContain(playerId);
+
+    const rejoinSocket = await ctx.connectPlayer();
+    const rejoinResult = await new Promise<{
+      success: boolean;
+      error?: string;
+    }>((resolve) => {
+      rejoinSocket.emit('game:rejoin', { playerId }, resolve);
+    });
+
+    expect(rejoinResult).toEqual({
+      success: false,
+      error: 'player_not_found',
+    });
+  }, 15000);
 });
 
 describe('E2E: S&V 여행자 진행 이벤트', () => {
