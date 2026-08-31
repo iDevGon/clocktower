@@ -52,6 +52,17 @@ export interface GameState {
   settings: GameSettings;
   /** 이야기꾼 전용: 악마에게 전달된 블러프 역할 목록 */
   bluffRoles?: { id: string; name: string }[];
+  /** 이야기꾼 전용: 검토 대기 중인 도박사 추측 */
+  pendingGamblerGuess?: PendingGamblerGuess;
+}
+
+export type GamblerGuessStatus = 'idle' | 'pending' | 'approved' | 'rejected';
+
+export interface PendingGamblerGuess {
+  requestId: string;
+  gamblerId: string;
+  targetPlayerId: string;
+  guessedRoleId: string;
 }
 
 export interface Nomination {

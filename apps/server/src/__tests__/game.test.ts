@@ -1,6 +1,7 @@
 import { DEFAULT_GAME_SETTINGS, type Player } from '@clocktower/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameManager } from '../game.js';
+import { toPublicGameState } from '../handlers/publicPayloads.js';
 
 let uuidCounter = 0;
 vi.mock('node:crypto', () => ({
@@ -1965,6 +1966,12 @@ describe('GameManager', () => {
       return { gm, players };
     }
 
+    function startGamblerTurn(gm: GameManager, players: Player[]) {
+      gm.setRoleSetup('bad_moon_rising');
+      gm.setNightProgress('gambler', ['gambler']);
+      gm.markNightWakeUp(players[1].id);
+    }
+
     it('맑고 건강한 군인은 BMR 악마의 밤 사망을 막는다', () => {
       const { gm, players } = createBmrAssistGame();
       gm.assignRole(players[6].id, 'soldier');
@@ -2145,6 +2152,258 @@ describe('GameManager', () => {
         correct: true,
       });
       expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
+    });
+
+    it('도박사 추측 요청을 보류하고 이야기꾼 상태에만 포함한다', () => {
+      const { gm, players } = createBmrAssistGame();
+      startGamblerTurn(gm, players);
+
+      const result = gm.submitGamblerGuess(
+        players[1].id,
+        players[5].id,
+        'grandmother',
+      );
+
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+      expect(gm.getPendingGamblerGuess()).toEqual({
+        requestId: result.requestId,
+        gamblerId: players[1].id,
+        targetPlayerId: players[5].id,
+        guessedRoleId: 'grandmother',
+      });
+      expect(gm.getGamblerGuessStatus(players[1].id)).toBe('pending');
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
+      expect(gm.getStorytellerState().pendingGamblerGuess).toEqual(
+        gm.getPendingGamblerGuess(),
+      );
+      expect(
+        toPublicGameState(gm.getStorytellerState()).pendingGamblerGuess,
+      ).toBeUndefined();
+    });
+
+    it('도박사 추측 거절 후 같은 차례에 새 요청을 할 수 있다', () => {
+      const { gm, players } = createBmrAssistGame();
+      startGamblerTurn(gm, players);
+      const first = gm.submitGamblerGuess(
+        players[1].id,
+        players[5].id,
+        'grandmother',
+      );
+      expect(first.success).toBe(true);
+      if (!first.success) return;
+
+      expect(
+        gm.reviewGamblerGuess(first.requestId, { decision: 'reject' }),
+      ).toMatchObject({ success: true, decision: 'reject' });
+      expect(gm.getGamblerGuessStatus(players[1].id)).toBe('rejected');
+      expect(gm.getPendingGamblerGuess()).toBeNull();
+
+      const second = gm.submitGamblerGuess(
+        players[1].id,
+        players[5].id,
+        'grandmother',
+      );
+      expect(second.success).toBe(true);
+      if (second.success) expect(second.requestId).not.toBe(first.requestId);
+    });
+
+    it('보류 중 중복 제출과 오래된 검토는 현재 요청을 바꾸지 않는다', () => {
+      const { gm, players } = createBmrAssistGame();
+      startGamblerTurn(gm, players);
+      const first = gm.submitGamblerGuess(
+        players[1].id,
+        players[5].id,
+        'grandmother',
+      );
+      expect(first.success).toBe(true);
+      if (!first.success) return;
+
+      expect(
+        gm.submitGamblerGuess(players[1].id, players[5].id, 'grandmother'),
+      ).toMatchObject({ success: false });
+      expect(
+        gm.reviewGamblerGuess('stale-request', { decision: 'reject' }),
+      ).toMatchObject({ success: false });
+      expect(gm.getPendingGamblerGuess()?.requestId).toBe(first.requestId);
+    });
+
+    it('도박사 추측은 밤의 현재 도박사 차례와 유효한 대상 및 역할을 요구한다', () => {
+      const { gm, players } = createBmrAssistGame();
+      gm.setRoleSetup('bad_moon_rising');
+
+      gm.setPhase('day');
+      expect(
+        gm.submitGamblerGuess(players[1].id, players[5].id, 'grandmother'),
+      ).toMatchObject({ success: false });
+
+      gm.setPhase('night');
+      gm.setNightProgress('gossip', ['gossip']);
+      gm.markNightWakeUp(players[1].id);
+      expect(
+        gm.submitGamblerGuess(players[1].id, players[5].id, 'grandmother'),
+      ).toMatchObject({ success: false });
+
+      gm.setNightProgress('gambler', ['gambler']);
+      gm.markNightWakeUp(players[5].id);
+      expect(
+        gm.submitGamblerGuess(players[1].id, players[5].id, 'grandmother'),
+      ).toMatchObject({ success: false });
+
+      gm.markNightWakeUp(players[1].id);
+      expect(
+        gm.submitGamblerGuess(players[1].id, 'missing-player', 'grandmother'),
+      ).toMatchObject({ success: false });
+      expect(
+        gm.submitGamblerGuess(players[1].id, players[5].id, 'unknown-role'),
+      ).toMatchObject({ success: false });
+
+      gm.setRoleSetup('bad_moon_rising', [], ['grandmother']);
+      expect(
+        gm.submitGamblerGuess(players[1].id, players[5].id, 'grandmother'),
+      ).toMatchObject({ success: false });
+    });
+
+    it('이야기꾼이 수정한 올바른 도박사 추측으로 판정한다', () => {
+      const { gm, players } = createBmrAssistGame();
+      startGamblerTurn(gm, players);
+      const submitted = gm.submitGamblerGuess(
+        players[1].id,
+        players[5].id,
+        'sailor',
+      );
+      expect(submitted.success).toBe(true);
+      if (!submitted.success) return;
+
+      expect(
+        gm.reviewGamblerGuess(submitted.requestId, {
+          decision: 'approve',
+          targetPlayerId: players[5].id,
+          guessedRoleId: 'grandmother',
+        }),
+      ).toMatchObject({ success: true, decision: 'approve' });
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
+      expect(gm.getPendingGamblerGuess()).toBeNull();
+    });
+
+    it('승인된 도박사 추측은 현재 wake-up을 소비하고 다음 wake-up에서만 다시 제출한다', () => {
+      const { gm, players } = createBmrAssistGame();
+      startGamblerTurn(gm, players);
+      const first = gm.submitGamblerGuess(
+        players[1].id,
+        players[5].id,
+        'grandmother',
+      );
+      expect(first.success).toBe(true);
+      if (!first.success) return;
+
+      expect(
+        gm.reviewGamblerGuess(first.requestId, {
+          decision: 'approve',
+          targetPlayerId: players[5].id,
+          guessedRoleId: 'grandmother',
+        }),
+      ).toMatchObject({ success: true, decision: 'approve' });
+
+      expect(
+        gm.submitGamblerGuess(players[1].id, players[5].id, 'grandmother'),
+      ).toMatchObject({ success: false });
+      expect(gm.getPendingGamblerGuess()).toBeNull();
+
+      gm.markNightWakeUp(players[1].id);
+      const second = gm.submitGamblerGuess(
+        players[1].id,
+        players[5].id,
+        'grandmother',
+      );
+      expect(second.success).toBe(true);
+      if (second.success) expect(second.requestId).not.toBe(first.requestId);
+    });
+
+    it('이야기꾼이 승인한 틀린 도박사 추측은 도박사를 밤 사망으로 예약한다', () => {
+      const { gm, players } = createBmrAssistGame();
+      startGamblerTurn(gm, players);
+      const submitted = gm.submitGamblerGuess(
+        players[1].id,
+        players[5].id,
+        'sailor',
+      );
+      expect(submitted.success).toBe(true);
+      if (!submitted.success) return;
+
+      const result = gm.reviewGamblerGuess(submitted.requestId, {
+        decision: 'approve',
+        targetPlayerId: players[5].id,
+        guessedRoleId: 'sailor',
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        decision: 'approve',
+        killedTargetId: players[1].id,
+      });
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(false);
+      expect(gm.hasPendingNightKill(players[1].id)).toBe(true);
+    });
+
+    it('중독되었거나 도박사로 취한 주정뱅이의 승인된 추측은 사망 없이 완료된다', () => {
+      const { gm, players } = createBmrAssistGame();
+      startGamblerTurn(gm, players);
+      gm.setPlayerStatuses(players[1].id, ['poisoned']);
+      const poisoned = gm.submitGamblerGuess(
+        players[1].id,
+        players[5].id,
+        'sailor',
+      );
+      expect(poisoned.success).toBe(true);
+      if (!poisoned.success) return;
+      expect(
+        gm.reviewGamblerGuess(poisoned.requestId, {
+          decision: 'approve',
+          targetPlayerId: players[5].id,
+          guessedRoleId: 'sailor',
+        }),
+      ).toMatchObject({ success: true, decision: 'approve' });
+      expect(gm.getPlayer(players[1].id)?.isAlive).toBe(true);
+
+      const drunkGame = createBmrAssistGame();
+      drunkGame.gm.assignRole(drunkGame.players[1].id, 'drunk', 'gambler');
+      startGamblerTurn(drunkGame.gm, drunkGame.players);
+      const drunk = drunkGame.gm.submitGamblerGuess(
+        drunkGame.players[1].id,
+        drunkGame.players[5].id,
+        'sailor',
+      );
+      expect(drunk.success).toBe(true);
+      if (!drunk.success) return;
+      expect(
+        drunkGame.gm.reviewGamblerGuess(drunk.requestId, {
+          decision: 'approve',
+          targetPlayerId: drunkGame.players[5].id,
+          guessedRoleId: 'sailor',
+        }),
+      ).toMatchObject({ success: true, decision: 'approve' });
+      expect(drunkGame.gm.getPlayer(drunkGame.players[1].id)?.isAlive).toBe(
+        true,
+      );
+    });
+
+    it('도박사 추측 요청은 밤 역할 변경과 초기화 시 제거된다', () => {
+      const { gm, players } = createBmrAssistGame();
+      startGamblerTurn(gm, players);
+      expect(
+        gm.submitGamblerGuess(players[1].id, players[5].id, 'grandmother'),
+      ).toMatchObject({ success: true });
+
+      gm.setNightProgress('gossip', ['gossip']);
+      expect(gm.getPendingGamblerGuess()).toBeNull();
+
+      startGamblerTurn(gm, players);
+      expect(
+        gm.submitGamblerGuess(players[1].id, players[5].id, 'grandmother'),
+      ).toMatchObject({ success: true });
+      gm.reset();
+      expect(gm.getPendingGamblerGuess()).toBeNull();
     });
 
     it('미치광이의 가짜 악마 행동은 실제 악마 능력으로 처리되지 않는다', () => {

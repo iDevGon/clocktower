@@ -3,10 +3,12 @@ import type {
   DaySubPhase,
   EvilInfoPayload,
   ExecutionStatus,
+  GamblerGuessStatus,
   GameResult,
   GameSettings,
   GameState,
   Nomination,
+  PendingGamblerGuess,
   Phase,
   Player,
   PlayerStatus,
@@ -14,6 +16,7 @@ import type {
 } from '@clocktower/shared/logic';
 import {
   createDefaultGameSettings,
+  getActiveRoles,
   getRoleById,
   getTravellerById,
   hasPoisonStatus,
@@ -61,6 +64,14 @@ type PendingPitHagDemonCreation = {
   targetId: string;
   newRoleId: string;
 };
+
+type GamblerGuessReview =
+  | { decision: 'reject' }
+  | {
+      decision: 'approve';
+      targetPlayerId: string;
+      guessedRoleId: string;
+    };
 
 const TEMPORARY_TRAVELLER_STATUSES: PlayerStatus[] = [
   'bone_collector_ability',
@@ -279,6 +290,11 @@ export class GameManager {
   // 현재 활성 밤 역할 및 순서 (재접속 시 복원용)
   private currentNightRoleId: string | null = null;
   private currentNightOrder: string[] = [];
+  private currentNightWakeUpPlayerId: string | null = null;
+  private gamblerGuessReview: {
+    request: PendingGamblerGuess;
+    status: 'pending' | 'rejected';
+  } | null = null;
   // 점쟁이 Red Herring (악마로 감지되는 선한 플레이어)
   private fortuneTellerRedHerring: string | null = null;
   // 탕녀 승계로 역할이 변경된 플레이어 (checkWinCondition 호출 후 소비)
@@ -761,6 +777,8 @@ export class GameManager {
     this.minstrelDrunkUntilDuskDay = null;
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
+    this.currentNightWakeUpPlayerId = null;
+    this.gamblerGuessReview = null;
     this.fortuneTellerRedHerring = null;
     this.nightWakeUpQueue = [];
     this.nightWakeUpRoleId = null;
@@ -870,6 +888,8 @@ export class GameManager {
     this.minstrelDrunkUntilDuskDay = null;
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
+    this.currentNightWakeUpPlayerId = null;
+    this.gamblerGuessReview = null;
     this.fortuneTellerRedHerring = null;
     this.nightWakeUpQueue = [];
     this.nightWakeUpRoleId = null;
@@ -923,9 +943,11 @@ export class GameManager {
 
   /** 이야기꾼 전용 상태: 블러프 역할 포함 */
   getStorytellerState(): GameState {
+    const pendingGamblerGuess = this.getPendingGamblerGuess();
     return {
       ...this.getState(),
       bluffRoles: this.bluffRoles.length > 0 ? this.bluffRoles : undefined,
+      ...(pendingGamblerGuess ? { pendingGamblerGuess } : {}),
     };
   }
 
@@ -1230,6 +1252,10 @@ export class GameManager {
   }
 
   setPhase(phase: Phase): void {
+    if (this.state.phase !== phase) {
+      this.currentNightWakeUpPlayerId = null;
+      this.gamblerGuessReview = null;
+    }
     this.state.phase = phase;
     this.state.daySubPhase = null;
     if (phase === 'night') {
@@ -1457,7 +1483,139 @@ export class GameManager {
   }
 
   markNightWakeUp(playerId: string): void {
+    if (this.currentNightWakeUpPlayerId !== playerId) {
+      this.gamblerGuessReview = null;
+    }
+    this.currentNightWakeUpPlayerId = playerId;
     this.nightAwakenedPlayerIds.add(playerId);
+  }
+
+  private validateGamblerGuess(
+    gamblerId: string,
+    targetPlayerId: string,
+    guessedRoleId: string,
+  ): string | null {
+    if (this.state.phase !== 'night') return '밤에만 추측할 수 있습니다';
+    if (this.currentNightRoleId !== 'gambler') {
+      return '도박사 차례가 아닙니다';
+    }
+    if (this.currentNightWakeUpPlayerId !== gamblerId) {
+      return '현재 깨어난 도박사가 아닙니다';
+    }
+
+    const gambler = this.getPlayer(gamblerId);
+    if (!gambler || !canResolveRoleAbility(gambler, 'gambler')) {
+      return '도박사를 찾을 수 없습니다';
+    }
+    if (!this.getPlayer(targetPlayerId)) return '대상을 찾을 수 없습니다';
+
+    const activeRoleIds = new Set(
+      getActiveRoles({
+        editionId: this.state.settings.setupEditionId,
+        additionalRoleIds: this.state.settings.additionalRoleIds,
+        excludedRoleIds: this.state.settings.excludedRoleIds,
+      }).map((role) => role.id),
+    );
+    const isJoinedTravellerRole = this.state.players.some(
+      (player) => player.isTraveller && player.role?.id === guessedRoleId,
+    );
+    if (!activeRoleIds.has(guessedRoleId) && !isJoinedTravellerRole) {
+      return '현재 게임에 없는 역할입니다';
+    }
+    return null;
+  }
+
+  submitGamblerGuess(
+    gamblerId: string,
+    targetPlayerId: string,
+    guessedRoleId: string,
+  ): { success: true; requestId: string } | { success: false; reason: string } {
+    if (this.gamblerGuessReview?.status === 'pending') {
+      return { success: false, reason: '이미 검토 대기 중인 추측이 있습니다' };
+    }
+
+    const reason = this.validateGamblerGuess(
+      gamblerId,
+      targetPlayerId,
+      guessedRoleId,
+    );
+    if (reason) return { success: false, reason };
+
+    const requestId = randomUUID();
+    this.gamblerGuessReview = {
+      request: { requestId, gamblerId, targetPlayerId, guessedRoleId },
+      status: 'pending',
+    };
+    return { success: true, requestId };
+  }
+
+  reviewGamblerGuess(
+    requestId: string,
+    review: GamblerGuessReview,
+  ):
+    | {
+        success: true;
+        decision: 'approve' | 'reject';
+        gamblerId: string;
+        requestId: string;
+        killedTargetId?: string;
+      }
+    | { success: false; reason: string } {
+    const pendingReview = this.gamblerGuessReview;
+    if (
+      !pendingReview ||
+      pendingReview.status !== 'pending' ||
+      pendingReview.request.requestId !== requestId
+    ) {
+      return {
+        success: false,
+        reason: '검토 대기 중인 추측을 찾을 수 없습니다',
+      };
+    }
+
+    const { gamblerId } = pendingReview.request;
+    if (review.decision === 'reject') {
+      pendingReview.status = 'rejected';
+      return { success: true, decision: 'reject', gamblerId, requestId };
+    }
+
+    const reason = this.validateGamblerGuess(
+      gamblerId,
+      review.targetPlayerId,
+      review.guessedRoleId,
+    );
+    if (reason) return { success: false, reason };
+
+    const resolution = this.resolveGamblerGuess(
+      gamblerId,
+      review.targetPlayerId,
+      review.guessedRoleId,
+    );
+    if (!resolution.success && !resolution.blocked) {
+      return { success: false, reason: resolution.reason };
+    }
+
+    this.gamblerGuessReview = null;
+    this.currentNightWakeUpPlayerId = null;
+    return {
+      success: true,
+      decision: 'approve',
+      gamblerId,
+      requestId,
+      ...(resolution.success && resolution.killedTargetId
+        ? { killedTargetId: resolution.killedTargetId }
+        : {}),
+    };
+  }
+
+  getPendingGamblerGuess(): PendingGamblerGuess | null {
+    if (this.gamblerGuessReview?.status !== 'pending') return null;
+    return { ...this.gamblerGuessReview.request };
+  }
+
+  getGamblerGuessStatus(playerId: string): GamblerGuessStatus {
+    if (this.gamblerGuessReview?.request.gamblerId !== playerId) return 'idle';
+    return this.gamblerGuessReview.status;
   }
 
   revive(playerId: string): void {
@@ -1508,6 +1666,10 @@ export class GameManager {
   // ── 밤 진행 상태 (재접속 복원용) ──
 
   setNightProgress(roleId: string | null, order: string[]): void {
+    if (this.currentNightRoleId !== roleId) {
+      this.currentNightWakeUpPlayerId = null;
+      this.gamblerGuessReview = null;
+    }
     this.currentNightRoleId = roleId;
     this.currentNightOrder = order;
   }

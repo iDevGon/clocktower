@@ -35,7 +35,11 @@ export function toPublicPlayer(
 }
 
 export function toPublicGameState(state: GameState): GameState {
-  const { bluffRoles: _bluffRoles, ...publicState } = state;
+  const {
+    bluffRoles: _bluffRoles,
+    pendingGamblerGuess: _pendingGamblerGuess,
+    ...publicState
+  } = state;
   return {
     ...publicState,
     players: state.players.map((player) => toPublicPlayer(player)),

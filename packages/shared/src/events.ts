@@ -3,6 +3,7 @@ import type {
   DaySubPhase,
   ExecutionAnnouncement,
   ExecutionStatus,
+  GamblerGuessStatus,
   GameResult,
   GameSettings,
   GameState,
@@ -44,6 +45,10 @@ export interface DeliveredNightFeedback {
 
 export interface ServerToClientEvents {
   'game:state': (state: GameState) => void;
+  'gambler:guessReviewed': (data: {
+    requestId: string;
+    status: 'approved' | 'rejected';
+  }) => void;
   'game:phase': (phase: Phase) => void;
   'game:playerUpdate': (player: Player) => void;
   'day:subPhase': (subPhase: DaySubPhase) => void;
@@ -408,7 +413,17 @@ export interface ClientToServerEvents {
       };
       evilInfo?: EvilInfoPayload | null;
       gameSettings?: GameSettings;
+      gamblerGuessStatus?: GamblerGuessStatus;
+      gamblerGuessRequestId?: string;
     }) => void,
+  ) => void;
+  'gambler:submitGuess': (
+    data: { targetPlayerId: string; guessedRoleId: string },
+    callback: (
+      res:
+        | { success: true; requestId: string }
+        | { success: false; error: string },
+    ) => void,
   ) => void;
   'vote:cast': (
     callback?: (result: { success: boolean; error?: string }) => void,
@@ -547,6 +562,19 @@ export interface StorytellerToServerEvents {
     callback: (res: { success: boolean; gameId?: string }) => void,
   ) => void;
   'night:setActiveRole': (roleId: string | null) => void;
+  'gambler:reviewGuess': (
+    data:
+      | { requestId: string; decision: 'reject' }
+      | {
+          requestId: string;
+          decision: 'approve';
+          targetPlayerId: string;
+          guessedRoleId: string;
+        },
+    callback: (
+      res: { success: true } | { success: false; error: string },
+    ) => void,
+  ) => void;
   'night:sendFeedback': (
     data: {
       playerId: string;
