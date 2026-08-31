@@ -35,7 +35,7 @@ describe('night feedback server callbacks', () => {
 
   it('guards delivery before dispatch and advances only after one successful settlement', () => {
     const guardIndex = panelSource.indexOf(
-      'if (!deliveryGuardRef.current.tryStart()) return;',
+      'const attemptToken = deliveryGuardRef.current.tryStart();',
     );
     const dispatchIndex = panelSource.indexOf(
       'onSendFeedback(targetPlayer.id, fb, (result) => {',
@@ -43,8 +43,9 @@ describe('night feedback server callbacks', () => {
 
     expect(guardIndex).toBeGreaterThan(-1);
     expect(dispatchIndex).toBeGreaterThan(guardIndex);
-    expect(panelSource).toContain(
-      'const settlement = deliveryGuardRef.current.settle(result.success);',
+    expect(panelSource).toContain('if (attemptToken == null) return;');
+    expect(panelSource).toMatch(
+      /deliveryGuardRef\.current\.settle\(\s*attemptToken,\s*result\.success,?\s*\)/,
     );
     expect(panelSource).toContain("if (settlement === 'ignored') return;");
     expect(panelSource).toContain(

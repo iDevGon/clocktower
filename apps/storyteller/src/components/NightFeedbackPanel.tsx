@@ -174,7 +174,8 @@ export function NightFeedbackPanel({
     TEAM_COLORS[team as keyof typeof TEAM_COLORS] ?? TEAM_COLORS.townsfolk;
 
   const handleSend = (fb: NightFeedbackPayload) => {
-    if (!deliveryGuardRef.current.tryStart()) return;
+    const attemptToken = deliveryGuardRef.current.tryStart();
+    if (attemptToken == null) return;
     setIsSending(true);
 
     // 점쟁이 yes_no 피드백에 지목 대상 이름 포함
@@ -194,7 +195,10 @@ export function NightFeedbackPanel({
       }
     }
     onSendFeedback(targetPlayer.id, fb, (result) => {
-      const settlement = deliveryGuardRef.current.settle(result.success);
+      const settlement = deliveryGuardRef.current.settle(
+        attemptToken,
+        result.success,
+      );
       if (settlement === 'ignored') return;
       setIsSending(false);
       if (settlement === 'advance' && currentIndex != null) {

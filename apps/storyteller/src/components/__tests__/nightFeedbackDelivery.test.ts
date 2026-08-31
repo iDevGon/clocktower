@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest';
 import * as queueModule from '../nightFeedbackQueue';
 
 interface DeliveryGuard {
-  tryStart: () => boolean;
-  settle: (success: boolean) => 'advance' | 'retry' | 'ignored';
+  tryStart: () => number | null;
+  settle: (
+    attemptToken: number,
+    success: boolean,
+  ) => 'advance' | 'retry' | 'ignored';
 }
 
 interface CompletionGuard {
@@ -30,24 +33,36 @@ describe('night feedback delivery guard', () => {
   it('accepts the first dispatch and rejects rapid repeats while pending', () => {
     const guard = createDeliveryGuard();
 
-    expect(guard.tryStart()).toBe(true);
-    expect(guard.tryStart()).toBe(false);
+    expect(guard.tryStart()).toEqual(expect.any(Number));
+    expect(guard.tryStart()).toBeNull();
   });
 
   it('releases a failed delivery so the same choice can be retried', () => {
     const guard = createDeliveryGuard();
-    guard.tryStart();
+    const firstAttempt = guard.tryStart() as number;
 
-    expect(guard.settle(false)).toBe('retry');
-    expect(guard.tryStart()).toBe(true);
+    expect(guard.settle(firstAttempt, false)).toBe('retry');
+    expect(guard.tryStart()).toEqual(expect.any(Number));
   });
 
   it('advances once on success and ignores duplicate settlement callbacks', () => {
     const guard = createDeliveryGuard();
-    guard.tryStart();
+    const attempt = guard.tryStart() as number;
 
-    expect(guard.settle(true)).toBe('advance');
-    expect(guard.settle(true)).toBe('ignored');
+    expect(guard.settle(attempt, true)).toBe('advance');
+    expect(guard.settle(attempt, true)).toBe('ignored');
+  });
+
+  it('ignores a stale callback without settling the current retry attempt', () => {
+    const guard = createDeliveryGuard();
+    const attemptA = guard.tryStart() as number;
+    expect(guard.settle(attemptA, false)).toBe('retry');
+
+    const attemptB = guard.tryStart() as number;
+    expect(attemptB).not.toBe(attemptA);
+    expect(guard.settle(attemptA, true)).toBe('ignored');
+    expect(guard.tryStart()).toBeNull();
+    expect(guard.settle(attemptB, true)).toBe('advance');
   });
 });
 

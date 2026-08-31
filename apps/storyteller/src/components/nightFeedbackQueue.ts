@@ -9,17 +9,22 @@ export function getPendingFeedbackIndex<T>(
 export type NightFeedbackDeliverySettlement = 'advance' | 'retry' | 'ignored';
 
 export function createNightFeedbackDeliveryGuard() {
-  let pending = false;
+  let nextAttemptToken = 0;
+  let pendingAttemptToken: number | null = null;
 
   return {
     tryStart: () => {
-      if (pending) return false;
-      pending = true;
-      return true;
+      if (pendingAttemptToken != null) return null;
+      nextAttemptToken += 1;
+      pendingAttemptToken = nextAttemptToken;
+      return pendingAttemptToken;
     },
-    settle: (success: boolean): NightFeedbackDeliverySettlement => {
-      if (!pending) return 'ignored';
-      pending = false;
+    settle: (
+      attemptToken: number,
+      success: boolean,
+    ): NightFeedbackDeliverySettlement => {
+      if (pendingAttemptToken !== attemptToken) return 'ignored';
+      pendingAttemptToken = null;
       return success ? 'advance' : 'retry';
     },
   };
