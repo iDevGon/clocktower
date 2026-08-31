@@ -164,7 +164,7 @@ export function createNightActionLogStyles(scale: number) {
       backgroundColor: '#1e2038',
       borderWidth: 1,
       borderColor: '#3a3a52',
-      borderRadius: 4,
+      borderRadius: 3,
       width: s(40),
       height: s(36),
       alignItems: 'center',
@@ -194,7 +194,7 @@ export function createNightActionLogStyles(scale: number) {
     // Yes/No
     yesNoButton: {
       flex: 1,
-      borderRadius: 4,
+      borderRadius: 3,
       borderWidth: 1,
       paddingVertical: s(8),
       alignItems: 'center',
@@ -236,7 +236,7 @@ export function createNightActionLogStyles(scale: number) {
       backgroundColor: '#1a1a1e',
       borderWidth: 1,
       borderColor: '#2e2e34',
-      borderRadius: 6,
+      borderRadius: 3,
       paddingHorizontal: s(8),
       paddingVertical: s(4),
     },
@@ -262,7 +262,7 @@ export function createNightActionLogStyles(scale: number) {
     // Send
     sendButton: {
       backgroundColor: '#6a50b0',
-      borderRadius: 6,
+      borderRadius: 3,
       paddingVertical: s(8),
       alignItems: 'center',
       marginTop: s(4),
