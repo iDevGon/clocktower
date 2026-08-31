@@ -22,6 +22,7 @@ import {
   createNightFeedbackDeliveryGuard,
   getPendingFeedbackIndex,
 } from './nightFeedbackQueue';
+import { getNightFeedbackSuggestion } from './nightFeedbackSuggestion';
 import {
   getAbilityMalfunctionWarning,
   isAbilityMalfunctioning,
@@ -172,6 +173,33 @@ export function NightFeedbackPanel({
   const cardColors = TEAM_CARD_COLORS[team] ?? FALLBACK_CARD_COLORS;
   const teamColor =
     TEAM_COLORS[team as keyof typeof TEAM_COLORS] ?? TEAM_COLORS.townsfolk;
+  const currentNightAction = nightActions?.find(
+    (action) =>
+      action.roleId === activeRoleId && action.playerId === targetPlayer.id,
+  );
+  const currentNightActionTargetNames =
+    currentNightAction?.targets.map(
+      (id) => players.find((player) => player.id === id)?.name ?? id,
+    ) ?? [];
+  const ravenkeeperTarget =
+    currentNightAction?.roleId === 'ravenkeeper'
+      ? players.find((player) => player.id === currentNightAction.targets[0])
+      : undefined;
+  const ravenkeeperRoleName = ravenkeeperTarget?.role?.name;
+  const suggestion = getNightFeedbackSuggestion({
+    roleId: activeRoleId,
+    isMalfunctioning,
+    empathEvilCount: empathHint?.evilCount,
+    chefEvilPairCount: chefHint?.evilPairCount,
+    jugglerCorrectCount: jugglerCorrectCount?.[targetPlayer.id],
+    fortuneTellerResult: currentNightAction?.fortuneTellerResult,
+    revealedRoleName:
+      activeRoleId === 'undertaker'
+        ? executedRoleName
+        : activeRoleId === 'ravenkeeper'
+          ? ravenkeeperRoleName
+          : undefined,
+  });
 
   const handleSend = (fb: NightFeedbackPayload) => {
     const attemptToken = deliveryGuardRef.current.tryStart();
@@ -180,18 +208,8 @@ export function NightFeedbackPanel({
 
     // 점쟁이 yes_no 피드백에 지목 대상 이름 포함
     if (activeRoleId === 'fortune_teller' && fb.type === 'yes_no') {
-      const ftAction =
-        nightActions?.find(
-          (a) =>
-            a.roleId === 'fortune_teller' && a.playerId === targetPlayer.id,
-        ) ?? nightActions?.find((a) => a.roleId === 'fortune_teller');
-      if (ftAction) {
-        const targetNames = ftAction.targets
-          .map((id) => players.find((p) => p.id === id)?.name ?? id)
-          .filter(Boolean);
-        if (targetNames.length > 0) {
-          fb = { ...fb, targetNames };
-        }
+      if (currentNightActionTargetNames.length > 0) {
+        fb = { ...fb, targetNames: currentNightActionTargetNames };
       }
     }
     onSendFeedback(targetPlayer.id, fb, (result) => {
@@ -280,52 +298,40 @@ export function NightFeedbackPanel({
             )}
 
             {activeRoleId === 'fortune_teller' &&
-              (() => {
-                const ftAction =
-                  nightActions?.find(
-                    (a) =>
-                      a.roleId === 'fortune_teller' &&
-                      a.playerId === targetPlayer.id,
-                  ) ?? nightActions?.find((a) => a.roleId === 'fortune_teller');
-                if (!ftAction || ftAction.fortuneTellerResult === undefined)
-                  return null;
-                const targetNames = ftAction.targets
-                  .map((id) => players.find((p) => p.id === id)?.name ?? id)
-                  .join(', ');
-                const isPoisoned = hasPoisonStatus(targetPlayer.statuses);
-                return (
-                  <View
+              currentNightAction?.fortuneTellerResult !== undefined && (
+                <View
+                  style={[
+                    styles.drunkBanner,
+                    {
+                      backgroundColor: currentNightAction.fortuneTellerResult
+                        ? 'rgba(106,176,76,0.15)'
+                        : 'rgba(184,92,92,0.15)',
+                      borderColor: currentNightAction.fortuneTellerResult
+                        ? '#6ab04c'
+                        : '#b85c5c',
+                    },
+                  ]}
+                >
+                  <Text
                     style={[
-                      styles.drunkBanner,
+                      styles.drunkBannerText,
                       {
-                        backgroundColor: ftAction.fortuneTellerResult
-                          ? 'rgba(106,176,76,0.15)'
-                          : 'rgba(184,92,92,0.15)',
-                        borderColor: ftAction.fortuneTellerResult
+                        color: currentNightAction.fortuneTellerResult
                           ? '#6ab04c'
                           : '#b85c5c',
                       },
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.drunkBannerText,
-                        {
-                          color: ftAction.fortuneTellerResult
-                            ? '#6ab04c'
-                            : '#b85c5c',
-                        },
-                      ]}
-                    >
-                      {targetNames} →{' '}
-                      {ftAction.fortuneTellerResult
-                        ? '예 (악마/붉은 청어 포함)'
-                        : '아니오'}
-                      {isPoisoned ? ' (중독 반전 적용됨)' : ''}
-                    </Text>
-                  </View>
-                );
-              })()}
+                    {currentNightActionTargetNames.join(', ')} →{' '}
+                    {currentNightAction.fortuneTellerResult
+                      ? '예 (악마/붉은 청어 포함)'
+                      : '아니오'}
+                    {hasPoisonStatus(targetPlayer.statuses)
+                      ? ' (중독 반전 적용됨)'
+                      : ''}
+                  </Text>
+                </View>
+              )}
 
             {activeRoleId === 'empath' &&
               empathHint &&
@@ -347,41 +353,23 @@ export function NightFeedbackPanel({
                 </View>
               )}
 
-            {activeRoleId === 'ravenkeeper' &&
-              (() => {
-                const rkAction =
-                  nightActions?.find(
-                    (a) =>
-                      a.roleId === 'ravenkeeper' &&
-                      a.playerId === targetPlayer.id,
-                  ) ?? nightActions?.find((a) => a.roleId === 'ravenkeeper');
-                if (!rkAction || rkAction.targets.length === 0) return null;
-                const chosen = players.find(
-                  (p) => p.id === rkAction.targets[0],
-                );
-                if (!chosen) return null;
-                const chosenRole = chosen.role
-                  ? getRoleById(chosen.role.id)
-                  : null;
-                return (
-                  <View
-                    style={[
-                      styles.drunkBanner,
-                      {
-                        backgroundColor: 'rgba(64,160,160,0.15)',
-                        borderColor: '#40a0a0',
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[styles.drunkBannerText, { color: '#40a0a0' }]}
-                    >
-                      선택한 대상: {chosen.name} → {chosenRole?.name ?? '???'}
-                      {isMalfunctioning ? ' (가짜 정보 제공 필요)' : ''}
-                    </Text>
-                  </View>
-                );
-              })()}
+            {activeRoleId === 'ravenkeeper' && ravenkeeperTarget && (
+              <View
+                style={[
+                  styles.drunkBanner,
+                  {
+                    backgroundColor: 'rgba(64,160,160,0.15)',
+                    borderColor: '#40a0a0',
+                  },
+                ]}
+              >
+                <Text style={[styles.drunkBannerText, { color: '#40a0a0' }]}>
+                  선택한 대상: {ravenkeeperTarget.name} →{' '}
+                  {ravenkeeperRoleName ?? '???'}
+                  {isMalfunctioning ? ' (가짜 정보 제공 필요)' : ''}
+                </Text>
+              </View>
+            )}
 
             {activeRoleId === 'undertaker' && executedRoleName && (
               <View
@@ -422,12 +410,26 @@ export function NightFeedbackPanel({
               </View>
             )}
 
-            <View style={modalStyles.recommendation}>
-              <Text style={modalStyles.recommendationTitle}>
-                현재 추천 피드백
+            <View
+              style={[
+                modalStyles.recommendation,
+                suggestion && modalStyles.recommendationSuggested,
+              ]}
+            >
+              <Text
+                style={[
+                  modalStyles.recommendationTitle,
+                  suggestion && modalStyles.recommendationTitleSuggested,
+                ]}
+              >
+                {suggestion ? '현재 추천 피드백' : '추천 피드백 없음'}
               </Text>
               <Text style={modalStyles.recommendationBody}>
-                전달할 피드백을 직접 선택하세요.
+                {suggestion
+                  ? suggestion.reason
+                  : isMalfunctioning
+                    ? '취함·중독 등으로 정확한 추천값을 제공하지 않습니다.'
+                    : '확정된 추천 정보가 없습니다.'}
               </Text>
             </View>
 
@@ -451,47 +453,9 @@ export function NightFeedbackPanel({
                 feedbackDef={feedbackDef}
                 players={players.filter((p) => p.id !== targetPlayer.id)}
                 isDrunkUser={isMalfunctioning}
-                action={nightActions?.find(
-                  (a) =>
-                    a.roleId === activeRoleId && a.playerId === targetPlayer.id,
-                )}
+                action={currentNightAction}
                 maxNumber={activeRoleId === 'juggler' ? 5 : undefined}
-                suggestedNumber={
-                  isMalfunctioning
-                    ? undefined
-                    : activeRoleId === 'empath' && empathHint
-                      ? empathHint.evilCount
-                      : activeRoleId === 'chef' && chefHint
-                        ? chefHint.evilPairCount
-                        : activeRoleId === 'juggler'
-                          ? jugglerCorrectCount?.[targetPlayer.id]
-                          : undefined
-                }
-                highlightedRoleName={
-                  activeRoleId === 'undertaker' && !isMalfunctioning
-                    ? executedRoleName
-                    : activeRoleId === 'ravenkeeper' && !isMalfunctioning
-                      ? (() => {
-                          const rkAction =
-                            nightActions?.find(
-                              (a) =>
-                                a.roleId === 'ravenkeeper' &&
-                                a.playerId === targetPlayer.id,
-                            ) ??
-                            nightActions?.find(
-                              (a) => a.roleId === 'ravenkeeper',
-                            );
-                          if (!rkAction || rkAction.targets.length === 0)
-                            return undefined;
-                          const chosen = players.find(
-                            (p) => p.id === rkAction.targets[0],
-                          );
-                          return chosen?.role
-                            ? getRoleById(chosen.role.id)?.name
-                            : undefined;
-                        })()
-                      : undefined
-                }
+                suggestion={suggestion}
                 onSend={handleSend}
               />
             </View>

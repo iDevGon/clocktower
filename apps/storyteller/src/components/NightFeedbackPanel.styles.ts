@@ -69,16 +69,28 @@ export const modalStyles = StyleSheet.create({
   recommendation: {
     backgroundColor: '#1d2130',
     borderWidth: 1,
-    borderColor: '#716955',
+    borderColor: '#4a4f5d',
     borderRadius: 3,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
+  recommendationSuggested: {
+    backgroundColor: 'rgba(209, 170, 105, 0.18)',
+    borderColor: '#d1aa69',
+    shadowColor: '#d1aa69',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55,
+    shadowRadius: 10,
+    elevation: 8,
+  },
   recommendationTitle: {
-    color: '#ddd2b5',
+    color: '#d1d4dc',
     fontSize: 15,
     lineHeight: 21,
     fontWeight: '800',
+  },
+  recommendationTitleSuggested: {
+    color: '#f2d49b',
   },
   recommendationBody: {
     color: '#b7b3aa',

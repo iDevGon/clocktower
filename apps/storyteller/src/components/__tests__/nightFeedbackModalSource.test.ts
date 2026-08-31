@@ -21,7 +21,7 @@ describe('night feedback modal shell', () => {
     expect(panelSource).toContain('animationType="fade"');
     expect(panelSource).toContain('accessibilityLabel="피드백 접기"');
     expect(panelSource).toContain('현재 추천 피드백');
-    expect(panelSource).toContain('전달할 피드백을 직접 선택하세요.');
+    expect(panelSource).toContain('추천 피드백 없음');
     expect(panelSource).not.toContain('Night feedback');
     expect(panelSource).not.toContain('AnimatedBorderCard');
     expect(panelSource).toContain('<ScrollView');
