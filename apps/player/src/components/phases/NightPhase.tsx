@@ -4,7 +4,6 @@ import type { NightProgress as NightProgressData } from '../../stores/playerStor
 import { usePlayerStore } from '../../stores/playerStore';
 import { styles } from '../../styles/game.styles';
 import { NightActionPrompt } from '../NightActionPrompt';
-import { NightProgress } from '../NightProgress';
 
 interface NightPhaseProps {
   visible: boolean;
@@ -32,7 +31,6 @@ export function NightPhase({
   onChoosePhilosopherRole,
 }: NightPhaseProps) {
   const isDead = !usePlayerStore((s) => s.isAlive);
-  const nightWakeUp = usePlayerStore((s) => s.nightWakeUp);
   if (!visible) return null;
   return (
     <View style={styles.phaseContent}>
@@ -42,15 +40,6 @@ export function NightPhase({
       <Text style={styles.phaseDescription}>
         눈을 감으세요. 능력이 발동되면 진동으로 알려드립니다.
       </Text>
-      {nightProgress && (
-        <NightProgress
-          activeRoleId={nightProgress.activeRoleId}
-          activeIndex={nightProgress.activeIndex}
-          order={nightProgress.order}
-          myRole={role}
-          nightWakeUp={nightWakeUp != null}
-        />
-      )}
       {isMyTurn && role && nightProgress && (
         <NightActionPrompt
           role={role}
