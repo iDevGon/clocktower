@@ -26,6 +26,7 @@ export function RoleFeedback({
   const styles = useNightActionLogStyles();
   const [roleQuery, setRoleQuery] = useState('');
   const gameRoles = useGameEditionRoles(players);
+  const hasSuggestion = highlightedRoleName !== undefined;
 
   const filteredRoles = useMemo(() => {
     if (!roleQuery.trim()) return gameRoles;
@@ -46,20 +47,33 @@ export function RoleFeedback({
       <View style={styles.composerChips}>
         {filteredRoles.map((r) => {
           const isHighlighted = r.name === highlightedRoleName;
+          const isDimmed = hasSuggestion && !isHighlighted;
           return (
             <Pressable
               key={r.id}
               onPress={() => onSend({ type: 'role', roleName: r.name })}
-              style={[styles.chip, isHighlighted && styles.chipHinted]}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isHighlighted ? `${r.name}, 추천 피드백` : `${r.name} 피드백`
+              }
+              style={[
+                styles.chip,
+                isHighlighted && styles.chipSuggested,
+                isDimmed && styles.chipDimmed,
+              ]}
             >
               <Text
                 style={[
                   styles.chipText,
-                  isHighlighted && styles.chipTextHinted,
+                  isHighlighted && styles.chipTextSuggested,
+                  isDimmed && styles.chipTextDimmed,
                 ]}
               >
                 {r.name}
               </Text>
+              {isHighlighted && (
+                <Text style={styles.recommendationLabel}>추천</Text>
+              )}
             </Pressable>
           );
         })}

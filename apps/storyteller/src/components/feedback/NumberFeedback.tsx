@@ -34,6 +34,10 @@ export function NumberFeedback({
           <Pressable
             key={n}
             onPress={() => onSend({ type: 'number', value: n })}
+            accessibilityRole="button"
+            accessibilityLabel={
+              isSuggested ? `${n}, 추천 피드백` : `${n} 피드백`
+            }
             style={[
               styles.numberButton,
               isSuggested && styles.numberButtonSuggested,
@@ -49,6 +53,9 @@ export function NumberFeedback({
             >
               {n}
             </Text>
+            {isSuggested && (
+              <Text style={styles.recommendationLabel}>추천</Text>
+            )}
           </Pressable>
         );
       })}

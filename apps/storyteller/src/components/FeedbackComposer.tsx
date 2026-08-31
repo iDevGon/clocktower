@@ -15,6 +15,7 @@ import { RoleFeedback } from './feedback/RoleFeedback';
 import { useGameEditionRoles } from './feedback/useGameEditionRoles';
 import { YesNoFeedback } from './feedback/YesNoFeedback';
 import { createNightActionLogStyles } from './NightActionLog.styles';
+import type { NightFeedbackSuggestion } from './nightFeedbackSuggestion';
 
 interface FeedbackComposerProps {
   feedbackDef: { type: string; roleTeamFilter?: Team; allowNone?: boolean };
@@ -24,6 +25,7 @@ interface FeedbackComposerProps {
   /** number 피드백의 최대 숫자 (기본 3, 곡예사는 5) */
   maxNumber?: number;
   highlightedRoleName?: string;
+  suggestion?: NightFeedbackSuggestion | null;
   action?: NightAction;
   onSend: (feedback: NightFeedbackPayload) => void;
 }
@@ -258,6 +260,7 @@ export function FeedbackComposer({
   suggestedNumber,
   maxNumber,
   highlightedRoleName,
+  suggestion,
   action,
   onSend,
 }: FeedbackComposerProps) {
@@ -265,13 +268,22 @@ export function FeedbackComposer({
     case 'number':
       return (
         <NumberFeedback
-          suggestedNumber={suggestedNumber}
+          suggestedNumber={
+            suggestion?.type === 'number' ? suggestion.value : suggestedNumber
+          }
           maxNumber={maxNumber}
           onSend={onSend}
         />
       );
     case 'yes_no':
-      return <YesNoFeedback onSend={onSend} />;
+      return (
+        <YesNoFeedback
+          suggestedValue={
+            suggestion?.type === 'yes_no' ? suggestion.value : undefined
+          }
+          onSend={onSend}
+        />
+      );
     case 'players_and_role':
       return (
         <PlayersAndRoleFeedback
@@ -300,7 +312,11 @@ export function FeedbackComposer({
         <RoleFeedback
           players={players}
           onSend={onSend}
-          highlightedRoleName={highlightedRoleName}
+          highlightedRoleName={
+            suggestion?.type === 'role'
+              ? suggestion.roleName
+              : highlightedRoleName
+          }
         />
       );
     default:

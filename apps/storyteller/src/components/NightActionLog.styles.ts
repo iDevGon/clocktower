@@ -165,15 +165,21 @@ export function createNightActionLogStyles(scale: number) {
       borderWidth: 1,
       borderColor: '#3a3a52',
       borderRadius: 3,
-      width: s(40),
-      height: s(36),
+      minWidth: Math.max(52, s(52)),
+      minHeight: Math.max(52, s(52)),
+      paddingHorizontal: s(8),
       alignItems: 'center',
       justifyContent: 'center',
     },
     numberButtonSuggested: {
-      backgroundColor: '#2a3560',
-      borderColor: '#5dade2',
+      backgroundColor: 'rgba(209, 170, 105, 0.18)',
+      borderColor: '#d1aa69',
       borderWidth: 2,
+      shadowColor: '#d1aa69',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.75,
+      shadowRadius: s(10),
+      elevation: 8,
     },
     numberButtonDimmed: {
       backgroundColor: '#14151e',
@@ -186,7 +192,7 @@ export function createNightActionLogStyles(scale: number) {
       fontWeight: 'bold',
     },
     numberTextSuggested: {
-      color: '#5dade2',
+      color: '#f2d49b',
     },
     numberTextDimmed: {
       color: '#5c5a68',
@@ -196,8 +202,10 @@ export function createNightActionLogStyles(scale: number) {
       flex: 1,
       borderRadius: 3,
       borderWidth: 1,
+      minHeight: Math.max(52, s(52)),
       paddingVertical: s(8),
       alignItems: 'center',
+      justifyContent: 'center',
     },
     yesButton: {
       backgroundColor: '#1a2618',
@@ -206,6 +214,19 @@ export function createNightActionLogStyles(scale: number) {
     noButton: {
       backgroundColor: '#261a1a',
       borderColor: '#943c3c',
+    },
+    yesNoButtonSuggested: {
+      backgroundColor: 'rgba(209, 170, 105, 0.18)',
+      borderColor: '#d1aa69',
+      borderWidth: 2,
+      shadowColor: '#d1aa69',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.75,
+      shadowRadius: s(10),
+      elevation: 8,
+    },
+    yesNoButtonDimmed: {
+      opacity: 0.5,
     },
     yesText: {
       color: '#6ab04c',
@@ -216,6 +237,12 @@ export function createNightActionLogStyles(scale: number) {
       color: '#b85c5c',
       fontSize: s(14),
       fontWeight: 'bold',
+    },
+    yesNoTextSuggested: {
+      color: '#f2d49b',
+    },
+    yesNoTextDimmed: {
+      color: '#5c5a58',
     },
     // Search
     searchInput: {
@@ -237,8 +264,13 @@ export function createNightActionLogStyles(scale: number) {
       borderWidth: 1,
       borderColor: '#2e2e34',
       borderRadius: 3,
+      minHeight: Math.max(52, s(52)),
       paddingHorizontal: s(8),
       paddingVertical: s(4),
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: s(5),
     },
     chipSelected: {
       borderColor: '#8090c0',
@@ -247,6 +279,19 @@ export function createNightActionLogStyles(scale: number) {
     chipHinted: {
       borderColor: '#5a6a40',
       backgroundColor: '#1a2218',
+    },
+    chipSuggested: {
+      backgroundColor: 'rgba(209, 170, 105, 0.18)',
+      borderColor: '#d1aa69',
+      borderWidth: 2,
+      shadowColor: '#d1aa69',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.75,
+      shadowRadius: s(10),
+      elevation: 8,
+    },
+    chipDimmed: {
+      opacity: 0.5,
     },
     chipText: {
       color: '#706e6a',
@@ -259,12 +304,27 @@ export function createNightActionLogStyles(scale: number) {
     chipTextHinted: {
       color: '#a0b880',
     },
+    chipTextSuggested: {
+      color: '#f2d49b',
+      fontWeight: 'bold',
+    },
+    chipTextDimmed: {
+      color: '#5c5a58',
+    },
+    recommendationLabel: {
+      color: '#d1aa69',
+      fontSize: s(9),
+      fontWeight: '800',
+      letterSpacing: s(1),
+    },
     // Send
     sendButton: {
       backgroundColor: '#6a50b0',
       borderRadius: 3,
+      minHeight: Math.max(52, s(52)),
       paddingVertical: s(8),
       alignItems: 'center',
+      justifyContent: 'center',
       marginTop: s(4),
     },
     sendButtonDisabled: {
