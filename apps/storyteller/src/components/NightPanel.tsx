@@ -795,45 +795,46 @@ export function NightPanel({
               </View>
             )}
 
-          {hasNightFeedback && !feedbackCollapsed && !isFeedbackSent && (
-            <View style={styles.nightFeedbackOverlay}>
-              <NightFeedbackPanel
-                activeRoleId={activeNightRoleId}
-                players={players}
-                nightActions={nightActions}
-                executedRoleName={executedPlayer?.role?.name}
-                executedPlayerName={executedPlayer?.name}
-                empathHint={
-                  activeNightRoleId === 'empath' && empathNeighborIds.size > 0
-                    ? {
-                        neighbors: players
-                          .filter((p) => empathNeighborIds.has(p.id))
-                          .map((p) => ({
-                            id: p.id,
-                            name: p.name,
-                            isEvil: isDetectedAsEvil(p),
-                          })),
-                        evilCount: empathEvilCount,
-                      }
-                    : undefined
-                }
-                chefHint={
-                  activeNightRoleId === 'chef'
-                    ? {
-                        evilPairCount: chefEvilPairCount,
-                        evilPairNames: chefEvilPairNames,
-                      }
-                    : undefined
-                }
-                onSendFeedback={onSendFeedback}
-                onAllFeedbackSent={() => {
-                  setFeedbackSentForRole(activeNightRoleId);
-                  setFeedbackCollapsed(true);
-                }}
-                wakeUpTargetIds={nightWakeUpTargets}
-                jugglerCorrectCount={jugglerCorrectCount}
-              />
-            </View>
+          {hasNightFeedback && !isFeedbackSent && (
+            <NightFeedbackPanel
+              key={activeNightRoleId}
+              visible={!feedbackCollapsed}
+              onCollapse={() => setFeedbackCollapsed(true)}
+              activeRoleId={activeNightRoleId}
+              players={players}
+              nightActions={nightActions}
+              executedRoleName={executedPlayer?.role?.name}
+              executedPlayerName={executedPlayer?.name}
+              empathHint={
+                activeNightRoleId === 'empath' && empathNeighborIds.size > 0
+                  ? {
+                      neighbors: players
+                        .filter((p) => empathNeighborIds.has(p.id))
+                        .map((p) => ({
+                          id: p.id,
+                          name: p.name,
+                          isEvil: isDetectedAsEvil(p),
+                        })),
+                      evilCount: empathEvilCount,
+                    }
+                  : undefined
+              }
+              chefHint={
+                activeNightRoleId === 'chef'
+                  ? {
+                      evilPairCount: chefEvilPairCount,
+                      evilPairNames: chefEvilPairNames,
+                    }
+                  : undefined
+              }
+              onSendFeedback={onSendFeedback}
+              onAllFeedbackSent={() => {
+                setFeedbackSentForRole(activeNightRoleId);
+                setFeedbackCollapsed(true);
+              }}
+              wakeUpTargetIds={nightWakeUpTargets}
+              jugglerCorrectCount={jugglerCorrectCount}
+            />
           )}
         </View>
       </View>

@@ -23,6 +23,9 @@ describe('night feedback server callbacks', () => {
     expect(panelSource).toContain(
       'if (result.success && currentIndex != null)',
     );
+    expect(panelSource).toContain(
+      'setSentIndices((prev) => new Set(prev).add(currentIndex))',
+    );
     expect(panelSource).not.toContain(`onSendFeedback(targetPlayer.id, fb);
     if (currentIndex != null)`);
     expect(logSource).toContain('if (!result.success) return;');

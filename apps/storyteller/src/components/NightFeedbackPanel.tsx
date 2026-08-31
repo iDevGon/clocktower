@@ -10,17 +10,12 @@ import {
   NIGHT_FEEDBACK,
 } from '@clocktower/shared';
 import { AbilityText } from '@clocktower/ui';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
-import { AnimatedBorderCard } from './AnimatedBorderCard';
 import { FeedbackComposer } from './FeedbackComposer';
 import { createNightActionLogStyles } from './NightActionLog.styles';
-import {
-  getAbilityTextStyle,
-  getContentPadding,
-  panelStyles,
-} from './NightFeedbackPanel.styles';
+import { getAbilityTextStyle, modalStyles } from './NightFeedbackPanel.styles';
 import { TEAM_COLORS } from './NightOrderPanel.styles';
 import { getPendingFeedbackIndex } from './nightFeedbackQueue';
 import {
@@ -28,35 +23,12 @@ import {
   isAbilityMalfunctioning,
 } from './nightRoleLogic';
 
-/** Map team → gradient colors for the animated border card */
-const TEAM_CARD_COLORS: Record<
-  string,
-  { color: string; bgStart: string; bgMid: string; bgEnd: string }
-> = {
-  townsfolk: {
-    color: '#5a8ec8',
-    bgStart: '#161e34',
-    bgMid: '#121828',
-    bgEnd: '#0e1220',
-  },
-  outsider: {
-    color: '#4aa890',
-    bgStart: '#142222',
-    bgMid: '#0e1c1a',
-    bgEnd: '#0a1414',
-  },
-  minion: {
-    color: '#c07040',
-    bgStart: '#221812',
-    bgMid: '#1a120e',
-    bgEnd: '#140e0a',
-  },
-  demon: {
-    color: '#c03848',
-    bgStart: '#221014',
-    bgMid: '#1a0c10',
-    bgEnd: '#14080c',
-  },
+/** Map team → modal border color */
+const TEAM_CARD_COLORS: Record<string, { color: string }> = {
+  townsfolk: { color: '#5a8ec8' },
+  outsider: { color: '#4aa890' },
+  minion: { color: '#c07040' },
+  demon: { color: '#c03848' },
 };
 
 const FALLBACK_CARD_COLORS = TEAM_CARD_COLORS.townsfolk;
@@ -72,6 +44,8 @@ interface ChefHint {
 }
 
 interface NightFeedbackPanelProps {
+  visible: boolean;
+  onCollapse: () => void;
   activeRoleId: string | null;
   players: Player[];
   nightActions?: NightAction[];
@@ -102,6 +76,8 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export function NightFeedbackPanel({
+  visible,
+  onCollapse,
   activeRoleId,
   players,
   nightActions,
@@ -119,7 +95,6 @@ export function NightFeedbackPanel({
   const styles = useMemo(() => createNightActionLogStyles(scale), [scale]);
 
   const [sentIndices, setSentIndices] = useState<Set<number>>(new Set());
-  const prevRoleIdRef = useRef(activeRoleId);
 
   // 대상 플레이어 목록 (서버의 wakeUp 대상과 동기화)
   const targetPlayers = useMemo(() => {
@@ -144,12 +119,6 @@ export function NightFeedbackPanel({
     );
     return shuffle(matched);
   }, [activeRoleId, players, wakeUpTargetIds]);
-
-  // activeRoleId 변경 시 sent 상태 초기화
-  if (prevRoleIdRef.current !== activeRoleId) {
-    prevRoleIdRef.current = activeRoleId;
-    setSentIndices(new Set());
-  }
 
   // 모든 피드백 전송 완료 시 부모에게 알림
   useEffect(() => {
@@ -180,13 +149,7 @@ export function NightFeedbackPanel({
     currentIndex == null ? undefined : targetPlayers[currentIndex];
   const allSent = currentTarget == null;
 
-  if (allSent) {
-    return (
-      <View style={styles.feedbackPanel}>
-        <Text style={styles.feedbackPanelSent}>피드백 전송됨</Text>
-      </View>
-    );
-  }
+  if (allSent) return null;
 
   const targetPlayer = currentTarget;
   const isDrunk = targetPlayer.role?.id === 'drunk';
@@ -226,241 +189,270 @@ export function NightFeedbackPanel({
     });
   };
 
-  const progressLabel =
-    targetPlayers.length > 1
-      ? `(${sentIndices.size + 1}/${targetPlayers.length})`
-      : '';
+  const progressLabel = `(${sentIndices.size + 1}/${targetPlayers.length})`;
 
   return (
-    <ScrollView style={panelStyles.scrollViewFlex}>
-      <AnimatedBorderCard
-        color={cardColors.color}
-        bgStart={cardColors.bgStart}
-        bgMid={cardColors.bgMid}
-        bgEnd={cardColors.bgEnd}
-        borderRadius={0}
-        borderWidth={1.5}
-      >
-        <View style={getContentPadding(scale)}>
-          <Text style={[styles.feedbackPanelTitle, { color: teamColor.text }]}>
-            {role?.name ?? activeRoleId} → {targetPlayer.name} {progressLabel}
-          </Text>
-
-          {role?.ability && (
-            <AbilityText
-              text={role.ability}
-              style={getAbilityTextStyle(scale)}
-            />
-          )}
-
-          {isMalfunctioning && (
-            <View
-              style={[
-                styles.drunkBanner,
-                isPoisoned &&
-                  !isDrunk && {
-                    backgroundColor: 'rgba(155,89,182,0.15)',
-                    borderColor: '#9b59b6',
-                  },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.drunkBannerText,
-                  isPoisoned && !isDrunk && { color: '#9b59b6' },
-                ]}
-              >
-                {malfunctionWarningText}
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onCollapse}
+      statusBarTranslucent
+    >
+      <View style={modalStyles.backdrop}>
+        <View style={[modalStyles.modal, { borderColor: cardColors.color }]}>
+          <View style={modalStyles.header}>
+            <View style={modalStyles.headerCopy}>
+              <Text style={[modalStyles.title, { color: teamColor.text }]}>
+                {role?.name ?? activeRoleId}
+              </Text>
+              <Text style={modalStyles.target}>
+                {targetPlayer.name}에게 전달 {progressLabel}
               </Text>
             </View>
-          )}
+            <Pressable
+              onPress={onCollapse}
+              accessibilityRole="button"
+              accessibilityLabel="피드백 접기"
+              style={modalStyles.collapseButton}
+            >
+              <Text style={modalStyles.collapseText}>접기</Text>
+            </Pressable>
+          </View>
+          <ScrollView
+            style={modalStyles.scrollView}
+            contentContainerStyle={modalStyles.content}
+            showsVerticalScrollIndicator
+          >
+            {role?.ability && (
+              <AbilityText
+                text={role.ability}
+                style={getAbilityTextStyle(scale)}
+              />
+            )}
 
-          {activeRoleId === 'fortune_teller' &&
-            (() => {
-              const ftAction =
-                nightActions?.find(
-                  (a) =>
-                    a.roleId === 'fortune_teller' &&
-                    a.playerId === targetPlayer.id,
-                ) ?? nightActions?.find((a) => a.roleId === 'fortune_teller');
-              if (!ftAction || ftAction.fortuneTellerResult === undefined)
-                return null;
-              const targetNames = ftAction.targets
-                .map((id) => players.find((p) => p.id === id)?.name ?? id)
-                .join(', ');
-              const isPoisoned = hasPoisonStatus(targetPlayer.statuses);
-              return (
-                <View
-                  style={[
-                    styles.drunkBanner,
-                    {
-                      backgroundColor: ftAction.fortuneTellerResult
-                        ? 'rgba(106,176,76,0.15)'
-                        : 'rgba(184,92,92,0.15)',
-                      borderColor: ftAction.fortuneTellerResult
-                        ? '#6ab04c'
-                        : '#b85c5c',
+            {isMalfunctioning && (
+              <View
+                style={[
+                  styles.drunkBanner,
+                  isPoisoned &&
+                    !isDrunk && {
+                      backgroundColor: 'rgba(155,89,182,0.15)',
+                      borderColor: '#9b59b6',
                     },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.drunkBannerText,
+                    isPoisoned && !isDrunk && { color: '#9b59b6' },
                   ]}
                 >
-                  <Text
+                  {malfunctionWarningText}
+                </Text>
+              </View>
+            )}
+
+            {activeRoleId === 'fortune_teller' &&
+              (() => {
+                const ftAction =
+                  nightActions?.find(
+                    (a) =>
+                      a.roleId === 'fortune_teller' &&
+                      a.playerId === targetPlayer.id,
+                  ) ?? nightActions?.find((a) => a.roleId === 'fortune_teller');
+                if (!ftAction || ftAction.fortuneTellerResult === undefined)
+                  return null;
+                const targetNames = ftAction.targets
+                  .map((id) => players.find((p) => p.id === id)?.name ?? id)
+                  .join(', ');
+                const isPoisoned = hasPoisonStatus(targetPlayer.statuses);
+                return (
+                  <View
                     style={[
-                      styles.drunkBannerText,
+                      styles.drunkBanner,
                       {
-                        color: ftAction.fortuneTellerResult
+                        backgroundColor: ftAction.fortuneTellerResult
+                          ? 'rgba(106,176,76,0.15)'
+                          : 'rgba(184,92,92,0.15)',
+                        borderColor: ftAction.fortuneTellerResult
                           ? '#6ab04c'
                           : '#b85c5c',
                       },
                     ]}
                   >
-                    {targetNames} →{' '}
-                    {ftAction.fortuneTellerResult
-                      ? '예 (악마/붉은 청어 포함)'
-                      : '아니오'}
-                    {isPoisoned ? ' (중독 반전 적용됨)' : ''}
+                    <Text
+                      style={[
+                        styles.drunkBannerText,
+                        {
+                          color: ftAction.fortuneTellerResult
+                            ? '#6ab04c'
+                            : '#b85c5c',
+                        },
+                      ]}
+                    >
+                      {targetNames} →{' '}
+                      {ftAction.fortuneTellerResult
+                        ? '예 (악마/붉은 청어 포함)'
+                        : '아니오'}
+                      {isPoisoned ? ' (중독 반전 적용됨)' : ''}
+                    </Text>
+                  </View>
+                );
+              })()}
+
+            {activeRoleId === 'empath' &&
+              empathHint &&
+              empathHint.neighbors.length > 0 && (
+                <View
+                  style={[
+                    styles.drunkBanner,
+                    {
+                      backgroundColor: 'rgba(46,204,113,0.15)',
+                      borderColor: '#2ecc71',
+                    },
+                  ]}
+                >
+                  <Text style={[styles.drunkBannerText, { color: '#2ecc71' }]}>
+                    이웃: {empathHint.neighbors.map((n) => n.name).join(', ')} →
+                    악한 {empathHint.evilCount}명
+                    {isMalfunctioning ? ' (가짜 정보 제공 필요)' : ''}
                   </Text>
                 </View>
-              );
-            })()}
+              )}
 
-          {activeRoleId === 'empath' &&
-            empathHint &&
-            empathHint.neighbors.length > 0 && (
+            {activeRoleId === 'ravenkeeper' &&
+              (() => {
+                const rkAction =
+                  nightActions?.find(
+                    (a) =>
+                      a.roleId === 'ravenkeeper' &&
+                      a.playerId === targetPlayer.id,
+                  ) ?? nightActions?.find((a) => a.roleId === 'ravenkeeper');
+                if (!rkAction || rkAction.targets.length === 0) return null;
+                const chosen = players.find(
+                  (p) => p.id === rkAction.targets[0],
+                );
+                if (!chosen) return null;
+                const chosenRole = chosen.role
+                  ? getRoleById(chosen.role.id)
+                  : null;
+                return (
+                  <View
+                    style={[
+                      styles.drunkBanner,
+                      {
+                        backgroundColor: 'rgba(64,160,160,0.15)',
+                        borderColor: '#40a0a0',
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.drunkBannerText, { color: '#40a0a0' }]}
+                    >
+                      선택한 대상: {chosen.name} → {chosenRole?.name ?? '???'}
+                      {isMalfunctioning ? ' (가짜 정보 제공 필요)' : ''}
+                    </Text>
+                  </View>
+                );
+              })()}
+
+            {activeRoleId === 'undertaker' && executedRoleName && (
               <View
                 style={[
                   styles.drunkBanner,
                   {
-                    backgroundColor: 'rgba(46,204,113,0.15)',
-                    borderColor: '#2ecc71',
+                    backgroundColor: 'rgba(90,140,200,0.15)',
+                    borderColor: '#5a8ec8',
                   },
                 ]}
               >
-                <Text style={[styles.drunkBannerText, { color: '#2ecc71' }]}>
-                  이웃: {empathHint.neighbors.map((n) => n.name).join(', ')} →
-                  악한 {empathHint.evilCount}명
+                <Text style={[styles.drunkBannerText, { color: '#5a8ec8' }]}>
+                  어젯밤 처형:{' '}
+                  {executedPlayerName ? `${executedPlayerName} → ` : ''}
+                  {executedRoleName}
                   {isMalfunctioning ? ' (가짜 정보 제공 필요)' : ''}
                 </Text>
               </View>
             )}
 
-          {activeRoleId === 'ravenkeeper' &&
-            (() => {
-              const rkAction =
-                nightActions?.find(
-                  (a) =>
-                    a.roleId === 'ravenkeeper' &&
-                    a.playerId === targetPlayer.id,
-                ) ?? nightActions?.find((a) => a.roleId === 'ravenkeeper');
-              if (!rkAction || rkAction.targets.length === 0) return null;
-              const chosen = players.find((p) => p.id === rkAction.targets[0]);
-              if (!chosen) return null;
-              const chosenRole = chosen.role
-                ? getRoleById(chosen.role.id)
-                : null;
-              return (
-                <View
-                  style={[
-                    styles.drunkBanner,
-                    {
-                      backgroundColor: 'rgba(64,160,160,0.15)',
-                      borderColor: '#40a0a0',
-                    },
-                  ]}
-                >
-                  <Text style={[styles.drunkBannerText, { color: '#40a0a0' }]}>
-                    선택한 대상: {chosen.name} → {chosenRole?.name ?? '???'}
-                    {isMalfunctioning ? ' (가짜 정보 제공 필요)' : ''}
-                  </Text>
-                </View>
-              );
-            })()}
-
-          {activeRoleId === 'undertaker' && executedRoleName && (
-            <View
-              style={[
-                styles.drunkBanner,
-                {
-                  backgroundColor: 'rgba(90,140,200,0.15)',
-                  borderColor: '#5a8ec8',
-                },
-              ]}
-            >
-              <Text style={[styles.drunkBannerText, { color: '#5a8ec8' }]}>
-                어젯밤 처형:{' '}
-                {executedPlayerName ? `${executedPlayerName} → ` : ''}
-                {executedRoleName}
-                {isMalfunctioning ? ' (가짜 정보 제공 필요)' : ''}
-              </Text>
-            </View>
-          )}
-
-          {activeRoleId === 'chef' && chefHint && (
-            <View
-              style={[
-                styles.drunkBanner,
-                {
-                  backgroundColor: 'rgba(176,127,92,0.14)',
-                  borderColor: '#b07f5c',
-                },
-              ]}
-            >
-              <Text style={[styles.drunkBannerText, { color: '#b07f5c' }]}>
-                인접 악한 쌍: {chefHint.evilPairCount}개
-                {chefHint.evilPairNames.length > 0
-                  ? ` (${chefHint.evilPairNames.map((pair) => pair.join('-')).join(', ')})`
-                  : ''}
-                {isMalfunctioning ? ' (가짜 정보 제공 필요)' : ''}
-              </Text>
-            </View>
-          )}
-
-          <FeedbackComposer
-            feedbackDef={feedbackDef}
-            players={players.filter((p) => p.id !== targetPlayer.id)}
-            isDrunkUser={isMalfunctioning}
-            action={nightActions?.find(
-              (a) =>
-                a.roleId === activeRoleId && a.playerId === targetPlayer.id,
+            {activeRoleId === 'chef' && chefHint && (
+              <View
+                style={[
+                  styles.drunkBanner,
+                  {
+                    backgroundColor: 'rgba(176,127,92,0.14)',
+                    borderColor: '#b07f5c',
+                  },
+                ]}
+              >
+                <Text style={[styles.drunkBannerText, { color: '#b07f5c' }]}>
+                  인접 악한 쌍: {chefHint.evilPairCount}개
+                  {chefHint.evilPairNames.length > 0
+                    ? ` (${chefHint.evilPairNames.map((pair) => pair.join('-')).join(', ')})`
+                    : ''}
+                  {isMalfunctioning ? ' (가짜 정보 제공 필요)' : ''}
+                </Text>
+              </View>
             )}
-            maxNumber={activeRoleId === 'juggler' ? 5 : undefined}
-            suggestedNumber={
-              isMalfunctioning
-                ? undefined
-                : activeRoleId === 'empath' && empathHint
-                  ? empathHint.evilCount
-                  : activeRoleId === 'chef' && chefHint
-                    ? chefHint.evilPairCount
-                    : activeRoleId === 'juggler'
-                      ? jugglerCorrectCount?.[targetPlayer.id]
-                      : undefined
-            }
-            highlightedRoleName={
-              activeRoleId === 'undertaker' && !isMalfunctioning
-                ? executedRoleName
-                : activeRoleId === 'ravenkeeper' && !isMalfunctioning
-                  ? (() => {
-                      const rkAction =
-                        nightActions?.find(
-                          (a) =>
-                            a.roleId === 'ravenkeeper' &&
-                            a.playerId === targetPlayer.id,
-                        ) ??
-                        nightActions?.find((a) => a.roleId === 'ravenkeeper');
-                      if (!rkAction || rkAction.targets.length === 0)
-                        return undefined;
-                      const chosen = players.find(
-                        (p) => p.id === rkAction.targets[0],
-                      );
-                      return chosen?.role
-                        ? getRoleById(chosen.role.id)?.name
-                        : undefined;
-                    })()
-                  : undefined
-            }
-            onSend={handleSend}
-          />
+
+            <View style={modalStyles.recommendation}>
+              <Text style={modalStyles.recommendationTitle}>
+                현재 추천 피드백
+              </Text>
+              <Text style={modalStyles.recommendationBody}>
+                전달할 피드백을 직접 선택하세요.
+              </Text>
+            </View>
+
+            <FeedbackComposer
+              feedbackDef={feedbackDef}
+              players={players.filter((p) => p.id !== targetPlayer.id)}
+              isDrunkUser={isMalfunctioning}
+              action={nightActions?.find(
+                (a) =>
+                  a.roleId === activeRoleId && a.playerId === targetPlayer.id,
+              )}
+              maxNumber={activeRoleId === 'juggler' ? 5 : undefined}
+              suggestedNumber={
+                isMalfunctioning
+                  ? undefined
+                  : activeRoleId === 'empath' && empathHint
+                    ? empathHint.evilCount
+                    : activeRoleId === 'chef' && chefHint
+                      ? chefHint.evilPairCount
+                      : activeRoleId === 'juggler'
+                        ? jugglerCorrectCount?.[targetPlayer.id]
+                        : undefined
+              }
+              highlightedRoleName={
+                activeRoleId === 'undertaker' && !isMalfunctioning
+                  ? executedRoleName
+                  : activeRoleId === 'ravenkeeper' && !isMalfunctioning
+                    ? (() => {
+                        const rkAction =
+                          nightActions?.find(
+                            (a) =>
+                              a.roleId === 'ravenkeeper' &&
+                              a.playerId === targetPlayer.id,
+                          ) ??
+                          nightActions?.find((a) => a.roleId === 'ravenkeeper');
+                        if (!rkAction || rkAction.targets.length === 0)
+                          return undefined;
+                        const chosen = players.find(
+                          (p) => p.id === rkAction.targets[0],
+                        );
+                        return chosen?.role
+                          ? getRoleById(chosen.role.id)?.name
+                          : undefined;
+                      })()
+                    : undefined
+              }
+              onSend={handleSend}
+            />
+          </ScrollView>
         </View>
-      </AnimatedBorderCard>
-    </ScrollView>
+      </View>
+    </Modal>
   );
 }
