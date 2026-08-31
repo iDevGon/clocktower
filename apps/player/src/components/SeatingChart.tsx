@@ -14,6 +14,7 @@ import {
 import { voteHandDown, voteHandRaised } from '../assets/ui';
 import type { VoteHistoryEntry } from '../stores/playerStore';
 import { styles as s } from './SeatingChart.styles';
+import { getVoteRightPresentation } from './seatingPresentation';
 import { resolveSelectedVote } from './seatingVoteSelection';
 
 interface SeatingChartProps {
@@ -249,23 +250,24 @@ export function SeatingChart({
           ? deadBeforeNight.current.has(player.id)
           : !player.isAlive && phase !== 'setup';
 
-      // 사망자 중 투표권이 남아있으면 푸른 글로우
-      const hasGhostVote = showDeath && !player.deadVoteUsed;
-      const votingLabel = player.isAlive
-        ? '투표 가능'
-        : player.deadVoteUsed
-          ? '사용됨'
-          : '유령표';
+      const voteRight = getVoteRightPresentation({
+        isAlive: player.isAlive,
+        deadVoteUsed: player.deadVoteUsed === true,
+      });
+      const hasGhostVote = voteRight.state === 'ghost_available';
+      const hasSpentGhostVote = voteRight.state === 'ghost_spent';
       const isSelectedVoteEligible =
         selectedEligibleVoterIds.has(player.id) ||
         selectedVote?.votes[player.id] === true;
       const selectedVoteRaised = selectedVote?.votes[player.id] === true;
 
-      const borderColor = isMe
-        ? colors.phase.day
-        : hasGhostVote
-          ? '#5aa0d0'
-          : '#3a3a42';
+      const borderColor = hasGhostVote
+        ? '#5aa0d0'
+        : hasSpentGhostVote
+          ? '#777780'
+          : isMe
+            ? colors.phase.day
+            : '#3a3a42';
 
       return (
         <Pressable
@@ -273,7 +275,7 @@ export function SeatingChart({
           onPress={() => openNoteEditor(player)}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={`${player.name} 예상 직업 메모`}
+          accessibilityLabel={`${player.name} 예상 직업 메모, ${voteRight.label}`}
           style={({ pressed }) => [
             s.token,
             {
@@ -282,7 +284,12 @@ export function SeatingChart({
               left: pos.x,
               top: pos.y,
               borderColor,
-              borderWidth: isMe ? 2.5 : hasGhostVote ? 2 : 1.5,
+              borderWidth:
+                isMe && voteRight.state === 'alive'
+                  ? 2.5
+                  : hasGhostVote
+                    ? 2
+                    : 1.5,
               opacity: showDeath ? 0.42 : 1,
               shadowColor: hasGhostVote ? '#5aa0d0' : 'transparent',
               shadowOffset: { width: 0, height: 0 },
@@ -290,7 +297,8 @@ export function SeatingChart({
               shadowRadius: hasGhostVote ? 8 : 0,
               elevation: hasGhostVote ? 8 : 0,
             },
-            isMe && s.tokenMe,
+            isMe && voteRight.state === 'alive' && s.tokenMe,
+            hasSpentGhostVote && s.tokenGhostSpent,
             selectedVote?.nominatorId === player.id && s.nominatorToken,
             selectedVote?.nomineeId === player.id && s.nomineeToken,
             pressed && s.tokenPressed,
@@ -331,21 +339,25 @@ export function SeatingChart({
           <View
             style={[
               s.voteRightBadge,
-              player.isAlive
+              voteRight.state === 'alive'
                 ? s.voteRightAlive
-                : player.deadVoteUsed
+                : voteRight.state === 'ghost_spent'
                   ? s.voteRightSpent
                   : s.voteRightGhost,
             ]}
           >
+            {voteRight.state === 'ghost_spent' && (
+              <Text style={s.voteRightSpentGlyph}>×</Text>
+            )}
             <Text
               style={[
                 s.voteRightText,
-                !player.isAlive && !player.deadVoteUsed && s.voteRightGhostText,
+                voteRight.state === 'ghost_available' && s.voteRightGhostText,
+                voteRight.state === 'ghost_spent' && s.voteRightSpentText,
               ]}
               numberOfLines={1}
             >
-              {votingLabel}
+              {voteRight.label}
             </Text>
           </View>
           {selectedVote && isSelectedVoteEligible && (
@@ -471,7 +483,6 @@ export function SeatingChart({
                   placeholder="직업 검색"
                   placeholderTextColor="#6f6870"
                   maxLength={24}
-                  autoFocus
                   autoCorrect={false}
                 />
                 <Text style={s.noteEditorLabel}>직접 메모</Text>

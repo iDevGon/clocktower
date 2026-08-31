@@ -104,6 +104,13 @@ export const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 6,
   },
+  tokenGhostSpent: {
+    backgroundColor: '#29292d',
+    shadowColor: 'transparent',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
   tokenPressed: {
     transform: [{ scale: 0.96 }],
   },
@@ -154,14 +161,16 @@ export const styles = StyleSheet.create({
     position: 'absolute',
     left: '50%',
     bottom: -13,
-    width: 58,
+    width: 64,
     height: 18,
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     borderRadius: 9,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    transform: [{ translateX: -29 }],
+    flexDirection: 'row',
+    gap: 2,
+    transform: [{ translateX: -32 }],
   },
   voteRightAlive: {
     backgroundColor: 'rgba(54,108,68,0.9)',
@@ -172,8 +181,8 @@ export const styles = StyleSheet.create({
     borderColor: 'rgba(90,160,208,0.85)',
   },
   voteRightSpent: {
-    backgroundColor: 'rgba(58,58,66,0.92)',
-    borderColor: 'rgba(132,132,144,0.35)',
+    backgroundColor: 'rgba(48,48,54,0.96)',
+    borderColor: 'rgba(139,139,148,0.58)',
   },
   voteRightText: {
     color: '#dce6dc',
@@ -182,6 +191,14 @@ export const styles = StyleSheet.create({
   },
   voteRightGhostText: {
     color: '#d8efff',
+  },
+  voteRightSpentText: {
+    color: '#b5b5bb',
+  },
+  voteRightSpentGlyph: {
+    color: '#8f8f98',
+    fontSize: 10,
+    fontWeight: '900',
   },
   voteHandBadge: {
     position: 'absolute',
