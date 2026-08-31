@@ -1,4 +1,8 @@
-import type { NightFeedbackPayload, Role } from '@clocktower/shared';
+import type {
+  GamblerGuessStatus,
+  NightFeedbackPayload,
+  Role,
+} from '@clocktower/shared';
 import { Text, View } from 'react-native';
 import type { NightProgress as NightProgressData } from '../../stores/playerStore';
 import { usePlayerStore } from '../../stores/playerStore';
@@ -16,6 +20,12 @@ interface NightPhaseProps {
   onSubmitNightAction: (targets: string[]) => void;
   philosopherGrantedRoleId?: string | null;
   onChoosePhilosopherRole?: (roleId: string) => Promise<void> | void;
+  gamblerRoles: Role[];
+  gamblerGuessStatus: GamblerGuessStatus;
+  onSubmitGamblerGuess: (
+    targetPlayerId: string,
+    guessedRoleId: string,
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 export function NightPhase({
@@ -29,6 +39,9 @@ export function NightPhase({
   onSubmitNightAction,
   philosopherGrantedRoleId,
   onChoosePhilosopherRole,
+  gamblerRoles,
+  gamblerGuessStatus,
+  onSubmitGamblerGuess,
 }: NightPhaseProps) {
   const isDead = !usePlayerStore((s) => s.isAlive);
   if (!visible) return null;
@@ -50,6 +63,9 @@ export function NightPhase({
           onSubmit={onSubmitNightAction}
           philosopherGrantedRoleId={philosopherGrantedRoleId}
           onChoosePhilosopherRole={onChoosePhilosopherRole}
+          gamblerRoles={gamblerRoles}
+          gamblerGuessStatus={gamblerGuessStatus}
+          onSubmitGamblerGuess={onSubmitGamblerGuess}
         />
       )}
     </View>

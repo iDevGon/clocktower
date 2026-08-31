@@ -3,6 +3,7 @@ import type {
   DeathReason,
   ExecutionAnnouncement,
   ExecutionStatus,
+  GamblerGuessStatus,
   GameResult,
   GameSettings,
   NightFeedbackPayload,
@@ -96,6 +97,8 @@ interface PlayerState {
   hasNominatedToday: boolean;
   deadVoteUsed: boolean;
   nightActionSubmitted: boolean;
+  gamblerGuessStatus: GamblerGuessStatus;
+  gamblerGuessRequestId: string | null;
   drunkAs: string | null;
   nightFeedback: NightFeedbackPayload | null;
   feedbackHistory: FeedbackHistoryEntry[];
@@ -251,7 +254,8 @@ export type RejoinStateSnapshot = Pick<
   | 'slayerFizzle'
   | 'rolePromotion'
   | 'pendingRolePromotion'
->;
+> &
+  Partial<Pick<PlayerState, 'nightWakeUp' | 'nightActionSubmitted'>>;
 
 export type RejoinStatePatch = Pick<
   PlayerState,
@@ -279,6 +283,10 @@ export type RejoinStatePatch = Pick<
   | 'slayerFizzle'
   | 'rolePromotion'
   | 'pendingRolePromotion'
+  | 'gamblerGuessStatus'
+  | 'gamblerGuessRequestId'
+  | 'nightWakeUp'
+  | 'nightActionSubmitted'
 >;
 
 const initialState = {
@@ -296,6 +304,8 @@ const initialState = {
   hasNominatedToday: false,
   deadVoteUsed: false,
   nightActionSubmitted: false,
+  gamblerGuessStatus: 'idle' as GamblerGuessStatus,
+  gamblerGuessRequestId: null as string | null,
   drunkAs: null,
   nightFeedback: null,
   feedbackHistory: [],

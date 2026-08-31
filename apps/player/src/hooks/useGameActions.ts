@@ -4,6 +4,8 @@ import { useConnectionStore } from '../stores/connectionStore';
 import { usePlayerStore } from '../stores/playerStore';
 import { getOptimisticConsentReadyIds } from './voteConsentOptimistic';
 
+const GAMBLER_GUESS_ACK_TIMEOUT_MS = 5000;
+
 export function useGameActions() {
   const castVote = useCallback(() => {
     const socket = useConnectionStore.getState().socket;
@@ -49,6 +51,50 @@ export function useGameActions() {
       });
     }
   }, []);
+
+  const submitGamblerGuess = useCallback(
+    (
+      targetPlayerId: string,
+      guessedRoleId: string,
+    ): Promise<{ success: boolean; error?: string }> => {
+      return new Promise((resolve) => {
+        const socket = useConnectionStore.getState().socket;
+        if (!socket || !socket.connected) {
+          resolve({ success: false, error: '연결되어 있지 않습니다' });
+          return;
+        }
+
+        let settled = false;
+        socket
+          .timeout(GAMBLER_GUESS_ACK_TIMEOUT_MS)
+          .emit(
+            'gambler:submitGuess',
+            { targetPlayerId, guessedRoleId },
+            (error, res) => {
+              if (settled) return;
+              settled = true;
+              if (error || !res) {
+                resolve({
+                  success: false,
+                  error: '제출 응답 시간이 초과되었습니다. 다시 시도하세요.',
+                });
+                return;
+              }
+              if (!res.success) {
+                resolve(res);
+                return;
+              }
+              usePlayerStore.getState().set({
+                gamblerGuessStatus: 'pending',
+                gamblerGuessRequestId: res.requestId,
+              });
+              resolve({ success: true });
+            },
+          );
+      });
+    },
+    [],
+  );
 
   const sendWhisper = useCallback(
     (params: {
@@ -334,6 +380,7 @@ export function useGameActions() {
     castVote,
     preselectVote,
     submitNightAction,
+    submitGamblerGuess,
     sendWhisper,
     sendChatToStoryteller,
     nominatePlayer,

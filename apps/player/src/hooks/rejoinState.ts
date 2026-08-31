@@ -26,6 +26,14 @@ export function buildRejoinStatePatch(
   previous: RejoinStateSnapshot,
   response: SuccessfulRejoinResponse,
 ): RejoinStatePatch {
+  const gamblerGuessStatus = response.gamblerGuessStatus ?? 'idle';
+  const hasReviewState =
+    gamblerGuessStatus === 'pending' || gamblerGuessStatus === 'rejected';
+  const isEffectiveGambler =
+    response.roleId === 'gambler' ||
+    (response.roleId === 'philosopher' &&
+      response.philosopherGrantedRole === 'gambler');
+
   return {
     playerId: previous.playerId,
     playerName: response.playerName ?? previous.playerName,
@@ -51,5 +59,19 @@ export function buildRejoinStatePatch(
     slayerFizzle: null,
     rolePromotion: null,
     pendingRolePromotion: null,
+    gamblerGuessStatus,
+    gamblerGuessRequestId: hasReviewState
+      ? (response.gamblerGuessRequestId ?? null)
+      : null,
+    nightWakeUp: hasReviewState
+      ? 'gambler'
+      : isEffectiveGambler
+        ? null
+        : (previous.nightWakeUp ?? null),
+    nightActionSubmitted: hasReviewState
+      ? false
+      : isEffectiveGambler
+        ? gamblerGuessStatus === 'approved'
+        : (previous.nightActionSubmitted ?? false),
   };
 }

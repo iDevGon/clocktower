@@ -8,6 +8,8 @@ export function attachNightListeners(socket: AppSocket) {
       nightProgress: { activeRoleId: roleId, activeIndex, order, players },
       gamePlayers: players,
       nightActionSubmitted: false,
+      gamblerGuessStatus: 'idle',
+      gamblerGuessRequestId: null,
       nightFeedback: null,
       // 새 역할 턴 시작 시 wakeUp 초기화 (서버가 개별 night:wakeUp으로 차례 알림)
       nightWakeUp: null,
@@ -20,11 +22,31 @@ export function attachNightListeners(socket: AppSocket) {
     usePlayerStore.getState().set({
       nightWakeUp: roleId,
       nightActionSubmitted: false,
+      gamblerGuessStatus: 'idle',
+      gamblerGuessRequestId: null,
       nightFeedback: null,
       // 승계 오버레이가 밤 행동 UI를 가리지 않도록 즉시 해제
       ...(store.rolePromotion ? { rolePromotion: null } : {}),
     });
     vibrateAlert();
+  });
+
+  socket.on('gambler:guessReviewed', ({ requestId, status }) => {
+    const store = usePlayerStore.getState();
+    if (store.gamblerGuessRequestId !== requestId) return;
+
+    store.set(
+      status === 'approved'
+        ? {
+            gamblerGuessStatus: 'approved',
+            nightActionSubmitted: true,
+          }
+        : {
+            gamblerGuessStatus: 'rejected',
+            gamblerGuessRequestId: null,
+            nightActionSubmitted: false,
+          },
+    );
   });
 
   socket.on('night:feedback', ({ feedback }) => {

@@ -1,4 +1,9 @@
-import { getRoleById, getRolesForEdition, type Role } from '@clocktower/shared';
+import {
+  getActiveRoles,
+  getRoleById,
+  getRolesForEdition,
+  type Role,
+} from '@clocktower/shared';
 import {
   BaseToast,
   buildDictionarySetup,
@@ -77,6 +82,7 @@ export default function GameScreen() {
   const voteResult = usePlayerStore((s) => s.voteResult);
   const nightProgress = usePlayerStore((s) => s.nightProgress);
   const nightActionSubmitted = usePlayerStore((s) => s.nightActionSubmitted);
+  const gamblerGuessStatus = usePlayerStore((s) => s.gamblerGuessStatus);
   const nightFeedback = usePlayerStore((s) => s.nightFeedback);
   const hasNominatedToday = usePlayerStore((s) => s.hasNominatedToday);
   const gamePlayers = usePlayerStore((s) => s.gamePlayers);
@@ -142,6 +148,30 @@ export default function GameScreen() {
     gameSettings?.additionalRoleIds,
     role,
   ]);
+  const gamblerRoleOptions = useMemo(() => {
+    const roleById = new Map(
+      getActiveRoles({
+        editionId:
+          gameSettings?.setupEditionId ?? role?.edition ?? 'trouble_brewing',
+        additionalRoleIds: gameSettings?.additionalRoleIds,
+        excludedRoleIds: gameSettings?.excludedRoleIds,
+      }).map((option) => [option.id, option]),
+    );
+
+    for (const player of gamePlayers) {
+      if (!player.travellerRoleId) continue;
+      const travellerRole = getRoleById(player.travellerRoleId);
+      if (travellerRole) roleById.set(travellerRole.id, travellerRole);
+    }
+
+    return [...roleById.values()];
+  }, [
+    gamePlayers,
+    gameSettings?.setupEditionId,
+    gameSettings?.additionalRoleIds,
+    gameSettings?.excludedRoleIds,
+    role?.edition,
+  ]);
   const executionHappenedToday = usePlayerStore(
     (s) => s.executionHappenedToday,
   );
@@ -155,6 +185,7 @@ export default function GameScreen() {
   const dismissEventToast = usePlayerStore((s) => s.dismissEventToast);
   const {
     submitNightAction,
+    submitGamblerGuess,
     sendWhisper,
     sendChatToStoryteller,
     nominatePlayer,
@@ -598,6 +629,9 @@ export default function GameScreen() {
           nightActionSubmitted={nightActionSubmitted}
           nightFeedback={nightFeedback}
           onSubmitNightAction={submitNightAction}
+          gamblerRoles={gamblerRoleOptions}
+          gamblerGuessStatus={gamblerGuessStatus}
+          onSubmitGamblerGuess={submitGamblerGuess}
           philosopherGrantedRoleId={philosopherGrantedRole}
           onChoosePhilosopherRole={async (roleId) => {
             const result = await choosePhilosopherRole(roleId);

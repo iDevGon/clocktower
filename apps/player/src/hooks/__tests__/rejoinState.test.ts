@@ -151,4 +151,113 @@ describe('buildRejoinStatePatch', () => {
 
     expect(patch).toMatchObject({ gameSettings });
   });
+
+  it.each([
+    ['pending', 'pending-request'],
+    ['rejected', 'rejected-request'],
+  ] as const)('도박사 %s 검토 상태를 재제출 가능한 밤 차례로 복원한다', (gamblerGuessStatus, gamblerGuessRequestId) => {
+    const patch = buildRejoinStatePatch(
+      {
+        playerId: 'p1',
+        playerName: 'Player1',
+        nightCount: 2,
+        gamePlayers: [],
+        justDied: false,
+        deathReason: null,
+        executionAnnouncement: null,
+        nightDeathAnnouncement: null,
+        slayerFizzle: null,
+        rolePromotion: null,
+        pendingRolePromotion: null,
+        nightWakeUp: null,
+        nightActionSubmitted: true,
+      },
+      {
+        success: true,
+        playerName: 'Player1',
+        roleId: 'gambler',
+        phase: 'night',
+        gamblerGuessStatus,
+        gamblerGuessRequestId,
+      },
+    );
+
+    expect(patch).toMatchObject({
+      gamblerGuessStatus,
+      gamblerGuessRequestId,
+      nightWakeUp: 'gambler',
+      nightActionSubmitted: false,
+    });
+    expect(patch).not.toHaveProperty('targetPlayerId');
+    expect(patch).not.toHaveProperty('guessedRoleId');
+    expect(patch).not.toHaveProperty('correct');
+  });
+
+  it('도박사 idle 재접속은 오래된 요청과 wakeUp을 제거한다', () => {
+    const patch = buildRejoinStatePatch(
+      {
+        playerId: 'p1',
+        playerName: 'Player1',
+        nightCount: 2,
+        gamePlayers: [],
+        justDied: false,
+        deathReason: null,
+        executionAnnouncement: null,
+        nightDeathAnnouncement: null,
+        slayerFizzle: null,
+        rolePromotion: null,
+        pendingRolePromotion: null,
+        nightWakeUp: 'gambler',
+        nightActionSubmitted: true,
+      },
+      {
+        success: true,
+        playerName: 'Player1',
+        roleId: 'gambler',
+        phase: 'night',
+        gamblerGuessStatus: 'idle',
+      },
+    );
+
+    expect(patch).toMatchObject({
+      gamblerGuessStatus: 'idle',
+      gamblerGuessRequestId: null,
+      nightWakeUp: null,
+      nightActionSubmitted: false,
+    });
+  });
+
+  it('도박사가 아닌 재접속은 기존 밤 행동 상태를 보존한다', () => {
+    const patch = buildRejoinStatePatch(
+      {
+        playerId: 'p2',
+        playerName: 'Player2',
+        nightCount: 2,
+        gamePlayers: [],
+        justDied: false,
+        deathReason: null,
+        executionAnnouncement: null,
+        nightDeathAnnouncement: null,
+        slayerFizzle: null,
+        rolePromotion: null,
+        pendingRolePromotion: null,
+        nightWakeUp: 'ravenkeeper',
+        nightActionSubmitted: true,
+      },
+      {
+        success: true,
+        playerName: 'Player2',
+        roleId: 'ravenkeeper',
+        phase: 'night',
+        gamblerGuessStatus: 'idle',
+      },
+    );
+
+    expect(patch).toMatchObject({
+      gamblerGuessStatus: 'idle',
+      gamblerGuessRequestId: null,
+      nightWakeUp: 'ravenkeeper',
+      nightActionSubmitted: true,
+    });
+  });
 });

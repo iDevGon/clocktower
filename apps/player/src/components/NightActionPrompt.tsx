@@ -1,4 +1,5 @@
 import type {
+  GamblerGuessStatus,
   NightActionDef,
   NightFeedbackPayload,
   PlayerInfo,
@@ -8,6 +9,7 @@ import { getRoleById, NIGHT_ACTIONS } from '@clocktower/shared';
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { FeedbackDisplay } from './FeedbackDisplay';
+import { GamblerGuessPrompt } from './GamblerGuessPrompt';
 import { styles } from './NightActionPrompt.styles';
 import { PhilosopherRolePicker } from './PhilosopherRolePicker';
 
@@ -22,6 +24,12 @@ interface NightActionPromptProps {
   philosopherGrantedRoleId?: string | null;
   /** 철학자 첫 밤에 부여받을 역할 선택 콜백 */
   onChoosePhilosopherRole?: (roleId: string) => Promise<void> | void;
+  gamblerRoles: Role[];
+  gamblerGuessStatus: GamblerGuessStatus;
+  onSubmitGamblerGuess: (
+    targetPlayerId: string,
+    guessedRoleId: string,
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 export function NightActionPrompt({
@@ -33,6 +41,9 @@ export function NightActionPrompt({
   onSubmit,
   philosopherGrantedRoleId,
   onChoosePhilosopherRole,
+  gamblerRoles,
+  gamblerGuessStatus,
+  onSubmitGamblerGuess,
 }: NightActionPromptProps) {
   const [selected, setSelected] = useState<string[]>([]);
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -77,6 +88,17 @@ export function NightActionPrompt({
   const effectiveRole: Role =
     effectiveRoleId === role.id ? role : (getRoleById(effectiveRoleId) ?? role);
   const actionDef: NightActionDef | undefined = NIGHT_ACTIONS[effectiveRoleId];
+
+  if (effectiveRoleId === 'gambler') {
+    return (
+      <GamblerGuessPrompt
+        players={players}
+        roles={gamblerRoles}
+        status={gamblerGuessStatus}
+        onSubmit={onSubmitGamblerGuess}
+      />
+    );
+  }
 
   if (!actionDef) return null;
 
