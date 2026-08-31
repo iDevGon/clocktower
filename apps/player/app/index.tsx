@@ -23,6 +23,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { QrScannerModal } from '../src/components/QrScannerModal';
+import { subscribeToPersistHydration } from '../src/hooks/persistHydration';
 import { useConnection } from '../src/hooks/useConnection';
 import { useConnectionStore } from '../src/stores/connectionStore';
 import { usePlayerStore } from '../src/stores/playerStore';
@@ -72,22 +73,10 @@ export default function JoinScreen() {
   }));
 
   useEffect(() => {
-    const updateHydrationState = () => {
-      setStoresHydrated(
-        useConnectionStore.persist.hasHydrated() &&
-          usePlayerStore.persist.hasHydrated(),
-      );
-    };
-    updateHydrationState();
-    const unsubscribeConnection =
-      useConnectionStore.persist.onFinishHydration(updateHydrationState);
-    const unsubscribePlayer =
-      usePlayerStore.persist.onFinishHydration(updateHydrationState);
-
-    return () => {
-      unsubscribeConnection();
-      unsubscribePlayer();
-    };
+    return subscribeToPersistHydration(
+      [useConnectionStore.persist, usePlayerStore.persist],
+      setStoresHydrated,
+    );
   }, []);
 
   // 이전 세션 정보가 있으면 자동 재접속 시도

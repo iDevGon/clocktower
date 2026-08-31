@@ -8,10 +8,8 @@ describe('JoinScreen automatic rejoin hydration gate', () => {
     'utf8',
   );
 
-  it('두 persist store의 hydration 완료를 기다린 뒤 재접속을 시도한다', () => {
-    expect(source).toContain('useConnectionStore.persist.hasHydrated()');
-    expect(source).toContain('usePlayerStore.persist.hasHydrated()');
-    expect(source).toContain('onFinishHydration');
+  it('공통 hydration 구독 helper로 두 persist store의 완료를 기다린다', () => {
+    expect(source).toContain('subscribeToPersistHydration');
     expect(source).toContain('storesHydrated');
   });
 
