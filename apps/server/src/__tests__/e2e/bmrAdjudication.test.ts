@@ -1,3 +1,4 @@
+import type { GameState } from '@clocktower/shared';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   setupGameWithRoles,
@@ -5,6 +6,89 @@ import {
   type TestContext,
   waitForEvent,
 } from './helpers.js';
+
+type GamblerSubmitResult =
+  | { success: true; requestId: string }
+  | { success: false; error: string };
+
+type GamblerReviewResult =
+  | { success: true }
+  | { success: false; error: string };
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs = 1000): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error('Timed out waiting for socket callback')),
+      timeoutMs,
+    );
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
+async function activateGambler(
+  ctx: TestContext,
+  playerIndex = 0,
+): Promise<void> {
+  const wakePromise = waitForEvent<{ roleId: string }>(
+    ctx.players[playerIndex],
+    'night:wakeUp',
+  );
+  ctx.storyteller.emit('night:setActiveRole', 'gambler');
+  await expect(wakePromise).resolves.toEqual({ roleId: 'gambler' });
+}
+
+function submitGamblerGuess(
+  ctx: TestContext,
+  playerIndex: number,
+  targetPlayerId: string,
+  guessedRoleId: string,
+): Promise<GamblerSubmitResult> {
+  return withTimeout(
+    new Promise((resolve) => {
+      ctx.players[playerIndex].emit(
+        'gambler:submitGuess',
+        { targetPlayerId, guessedRoleId },
+        resolve,
+      );
+    }),
+  );
+}
+
+function reviewGamblerGuess(
+  ctx: TestContext,
+  data:
+    | { requestId: string; decision: 'reject' }
+    | {
+        requestId: string;
+        decision: 'approve';
+        targetPlayerId: string;
+        guessedRoleId: string;
+      },
+): Promise<GamblerReviewResult> {
+  return withTimeout(
+    new Promise((resolve) => {
+      ctx.storyteller.emit('gambler:reviewGuess', data, resolve);
+    }),
+  );
+}
+
+function expectNoGamblerGuessSecrets(data: Record<string, unknown>): void {
+  expect(data).not.toHaveProperty('targetPlayerId');
+  expect(data).not.toHaveProperty('guessedRoleId');
+  expect(data).not.toHaveProperty('correct');
+  expect(data).not.toHaveProperty('editedTargetPlayerId');
+  expect(data).not.toHaveProperty('editedGuessedRoleId');
+  expect(data).not.toHaveProperty('killedTargetId');
+}
 
 describe('E2E: 피로물든달 판정 보조', () => {
   let ctx: TestContext;
@@ -1107,7 +1191,7 @@ describe('E2E: 피로물든달 판정 보조', () => {
     expect(wakeTargets.candidateIds).not.toContain(playerIds[0]);
   });
 
-  it('이야기꾼이 도박사 추측을 앱에서 처리할 수 있다', async () => {
+  it('도박사 제출은 승인 전에 판정하지 않고 수정된 값으로 승인한다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [
       { roleId: 'gambler' },
       { roleId: 'grandmother' },
@@ -1116,19 +1200,60 @@ describe('E2E: 피로물든달 판정 보조', () => {
       { roleId: 'po' },
     ]);
 
-    const statePromise = waitForEvent(ctx.storyteller, 'game:state');
-    ctx.storyteller.emit('gambler:guess', {
+    await activateGambler(ctx);
+    const pendingStatePromise = waitForEvent<GameState>(
+      ctx.storyteller,
+      'game:state',
+    );
+    const submitted = await submitGamblerGuess(ctx, 0, playerIds[1], 'sailor');
+    const pendingState = await pendingStatePromise;
+
+    expect(submitted.success).toBe(true);
+    if (!submitted.success) return;
+    expect(pendingState.pendingGamblerGuess).toEqual({
+      requestId: submitted.requestId,
       gamblerId: playerIds[0],
       targetPlayerId: playerIds[1],
       guessedRoleId: 'sailor',
     });
-    await statePromise;
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(true);
+    expect(ctx.app.game.hasPendingNightKill(playerIds[0])).toBe(false);
 
-    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
-    expect(ctx.app.game.hasPendingNightKill(playerIds[0])).toBe(true);
-  });
+    let otherPlayerReviewed = false;
+    ctx.players[1].once('gambler:guessReviewed', () => {
+      otherPlayerReviewed = true;
+    });
+    const reviewedPromise = waitForEvent<Record<string, unknown>>(
+      ctx.players[0],
+      'gambler:guessReviewed',
+    );
+    const reviewedStatePromise = waitForEvent<GameState>(
+      ctx.storyteller,
+      'game:state',
+    );
+    const approved = await reviewGamblerGuess(ctx, {
+      requestId: submitted.requestId,
+      decision: 'approve',
+      targetPlayerId: playerIds[1],
+      guessedRoleId: 'grandmother',
+    });
+    const reviewed = await reviewedPromise;
+    const reviewedState = await reviewedStatePromise;
 
-  it('도박사 밤 사망은 낮 전환 전까지 플레이어 상태에 공개되지 않는다', async () => {
+    expect(approved).toEqual({ success: true });
+    expect(reviewed).toEqual({
+      requestId: submitted.requestId,
+      status: 'approved',
+    });
+    expectNoGamblerGuessSecrets(reviewed);
+    expect(reviewedState.pendingGamblerGuess).toBeUndefined();
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(true);
+    expect(ctx.app.game.hasPendingNightKill(playerIds[0])).toBe(false);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(otherPlayerReviewed).toBe(false);
+  }, 15000);
+
+  it('도박사 제출 반려는 다음 플레이어를 깨우지 않고 새 ID로 재제출한다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [
       { roleId: 'gambler' },
       { roleId: 'grandmother' },
@@ -1136,24 +1261,471 @@ describe('E2E: 피로물든달 판정 보조', () => {
       { roleId: 'godfather' },
       { roleId: 'po' },
     ]);
+    ctx.app.game.setPlayerStatuses(playerIds[0], ['barista_acts_twice']);
+    await activateGambler(ctx);
 
-    let playerStateReceived = false;
-    ctx.players[1].once('game:state', () => {
-      playerStateReceived = true;
-    });
+    const firstStatePromise = waitForEvent<GameState>(
+      ctx.storyteller,
+      'game:state',
+    );
+    const first = await submitGamblerGuess(ctx, 0, playerIds[1], 'grandmother');
+    await firstStatePromise;
+    expect(first.success).toBe(true);
+    if (!first.success) return;
 
-    const storytellerStatePromise = waitForEvent(ctx.storyteller, 'game:state');
-    ctx.storyteller.emit('gambler:guess', {
-      gamblerId: playerIds[0],
-      targetPlayerId: playerIds[1],
-      guessedRoleId: 'sailor',
+    let secondWakeReceived = false;
+    ctx.players[0].once('night:wakeUp', () => {
+      secondWakeReceived = true;
     });
-    await storytellerStatePromise;
+    const reviewedPromise = waitForEvent<Record<string, unknown>>(
+      ctx.players[0],
+      'gambler:guessReviewed',
+    );
+    const rejected = await reviewGamblerGuess(ctx, {
+      requestId: first.requestId,
+      decision: 'reject',
+    });
+    const reviewed = await reviewedPromise;
     await new Promise((resolve) => setTimeout(resolve, 50));
 
+    expect(rejected).toEqual({ success: true });
+    expect(reviewed).toEqual({
+      requestId: first.requestId,
+      status: 'rejected',
+    });
+    expect(secondWakeReceived).toBe(false);
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(true);
+
+    const secondStatePromise = waitForEvent<GameState>(
+      ctx.storyteller,
+      'game:state',
+    );
+    const second = await submitGamblerGuess(
+      ctx,
+      0,
+      playerIds[1],
+      'grandmother',
+    );
+    await secondStatePromise;
+
+    expect(second.success).toBe(true);
+    if (second.success) expect(second.requestId).not.toBe(first.requestId);
+  }, 15000);
+
+  it('틀린 도박사 승인은 밤 사망만 예약하고 낮 전까지 공개하지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'gambler' },
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'godfather' },
+      { roleId: 'po' },
+    ]);
+    await activateGambler(ctx);
+
+    const pendingStatePromise = waitForEvent<GameState>(
+      ctx.storyteller,
+      'game:state',
+    );
+    const submitted = await submitGamblerGuess(ctx, 0, playerIds[1], 'sailor');
+    await pendingStatePromise;
+    expect(submitted.success).toBe(true);
+    if (!submitted.success) return;
+
+    let publicStateReceived = false;
+    let playerUpdateReceived = false;
+    let nightDeathsReceived = false;
+    ctx.players[1].once('game:state', () => {
+      publicStateReceived = true;
+    });
+    ctx.players[1].once('game:playerUpdate', () => {
+      playerUpdateReceived = true;
+    });
+    ctx.players[1].once('night:deaths', () => {
+      nightDeathsReceived = true;
+    });
+
+    const reviewedStatePromise = waitForEvent<GameState>(
+      ctx.storyteller,
+      'game:state',
+    );
+    const approved = await reviewGamblerGuess(ctx, {
+      requestId: submitted.requestId,
+      decision: 'approve',
+      targetPlayerId: playerIds[1],
+      guessedRoleId: 'sailor',
+    });
+    await reviewedStatePromise;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(approved).toEqual({ success: true });
     expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
-    expect(playerStateReceived).toBe(false);
-  });
+    expect(ctx.app.game.hasPendingNightKill(playerIds[0])).toBe(true);
+    expect(publicStateReceived).toBe(false);
+    expect(playerUpdateReceived).toBe(false);
+    expect(nightDeathsReceived).toBe(false);
+  }, 15000);
+
+  it('밤 사망 대기 중 재접속한 플레이어는 낮 전까지 살아있는 상태로 보인다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'gambler' },
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'godfather' },
+      { roleId: 'po' },
+    ]);
+    await activateGambler(ctx);
+
+    const pendingStatePromise = waitForEvent<GameState>(
+      ctx.storyteller,
+      'game:state',
+    );
+    const submitted = await submitGamblerGuess(ctx, 0, playerIds[1], 'sailor');
+    await pendingStatePromise;
+    expect(submitted.success).toBe(true);
+    if (!submitted.success) return;
+
+    const reviewedStatePromise = waitForEvent<GameState>(
+      ctx.storyteller,
+      'game:state',
+    );
+    expect(
+      await reviewGamblerGuess(ctx, {
+        requestId: submitted.requestId,
+        decision: 'approve',
+        targetPlayerId: playerIds[1],
+        guessedRoleId: 'sailor',
+      }),
+    ).toEqual({ success: true });
+    await reviewedStatePromise;
+    expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(false);
+    expect(ctx.app.game.hasPendingNightKill(playerIds[0])).toBe(true);
+
+    ctx.players[0].disconnect();
+    const reconnectedPlayer = await ctx.connectPlayer();
+    const publicStatePromise = waitForEvent<GameState>(
+      reconnectedPlayer,
+      'game:state',
+    );
+    const rejoin = await withTimeout(
+      new Promise<Record<string, unknown>>((resolve) => {
+        reconnectedPlayer.emit(
+          'game:rejoin',
+          { playerId: playerIds[0] },
+          resolve,
+        );
+      }),
+    );
+    const publicState = await publicStatePromise;
+    const gamePlayers = rejoin.gamePlayers as Array<{
+      id: string;
+      isAlive: boolean;
+    }>;
+
+    expect(rejoin.isAlive).toBe(true);
+    expect(
+      gamePlayers.find((player) => player.id === playerIds[0])?.isAlive,
+    ).toBe(true);
+    expect(
+      publicState.players.find((player) => player.id === playerIds[0])?.isAlive,
+    ).toBe(true);
+    expectNoGamblerGuessSecrets(rejoin);
+  }, 15000);
+
+  it.each([
+    ['poisoned', { roleId: 'gambler' }, true],
+    ['drunk-as', { roleId: 'drunk', drunkAs: 'gambler' }, false],
+  ] as const)(
+    '%s 도박사의 승인된 틀린 추측은 사망 없이 완료된다',
+    async (_caseName, gamblerRole, poisonPlayer) => {
+      const { playerIds } = await setupGameWithRoles(ctx, [
+        gamblerRole,
+        { roleId: 'grandmother' },
+        { roleId: 'sailor' },
+        { roleId: 'godfather' },
+        { roleId: 'po' },
+      ]);
+      ctx.app.game.setRoleSetup('bad_moon_rising');
+      if (poisonPlayer) {
+        ctx.app.game.setPlayerStatuses(playerIds[0], ['poisoned']);
+      }
+      await activateGambler(ctx);
+
+      const pendingStatePromise = waitForEvent<GameState>(
+        ctx.storyteller,
+        'game:state',
+      );
+      const submitted = await submitGamblerGuess(
+        ctx,
+        0,
+        playerIds[1],
+        'sailor',
+      );
+      await pendingStatePromise;
+      expect(submitted.success).toBe(true);
+      if (!submitted.success) return;
+
+      const reviewedStatePromise = waitForEvent<GameState>(
+        ctx.storyteller,
+        'game:state',
+      );
+      const approved = await reviewGamblerGuess(ctx, {
+        requestId: submitted.requestId,
+        decision: 'approve',
+        targetPlayerId: playerIds[1],
+        guessedRoleId: 'sailor',
+      });
+      await reviewedStatePromise;
+
+      expect(approved).toEqual({ success: true });
+      expect(ctx.app.game.getPlayer(playerIds[0])?.isAlive).toBe(true);
+      expect(ctx.app.game.hasPendingNightKill(playerIds[0])).toBe(false);
+    },
+    15000,
+  );
+
+  it('오래된 도박사 검토는 실패하고 현재 요청을 유지한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'gambler' },
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'godfather' },
+      { roleId: 'po' },
+    ]);
+    await activateGambler(ctx);
+
+    const pendingStatePromise = waitForEvent<GameState>(
+      ctx.storyteller,
+      'game:state',
+    );
+    const submitted = await submitGamblerGuess(
+      ctx,
+      0,
+      playerIds[1],
+      'grandmother',
+    );
+    await pendingStatePromise;
+    expect(submitted.success).toBe(true);
+    if (!submitted.success) return;
+
+    const stale = await reviewGamblerGuess(ctx, {
+      requestId: 'stale-request',
+      decision: 'reject',
+    });
+
+    expect(stale.success).toBe(false);
+    expect(ctx.app.game.getPendingGamblerGuess()?.requestId).toBe(
+      submitted.requestId,
+    );
+  }, 15000);
+
+  it('바리스타 2회 기상은 두 요청만 순차적으로 승인한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'gambler' },
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'godfather' },
+      { roleId: 'po' },
+    ]);
+    ctx.app.game.setPlayerStatuses(playerIds[0], ['barista_acts_twice']);
+    await activateGambler(ctx);
+
+    const firstStatePromise = waitForEvent<GameState>(
+      ctx.storyteller,
+      'game:state',
+    );
+    const first = await submitGamblerGuess(ctx, 0, playerIds[1], 'grandmother');
+    await firstStatePromise;
+    expect(first.success).toBe(true);
+    if (!first.success) return;
+
+    const secondWakePromise = waitForEvent<{ roleId: string }>(
+      ctx.players[0],
+      'night:wakeUp',
+    );
+    const firstReviewedStatePromise = waitForEvent<GameState>(
+      ctx.storyteller,
+      'game:state',
+    );
+    expect(
+      await reviewGamblerGuess(ctx, {
+        requestId: first.requestId,
+        decision: 'approve',
+        targetPlayerId: playerIds[1],
+        guessedRoleId: 'grandmother',
+      }),
+    ).toEqual({ success: true });
+    await firstReviewedStatePromise;
+    await expect(secondWakePromise).resolves.toEqual({ roleId: 'gambler' });
+
+    const secondStatePromise = waitForEvent<GameState>(
+      ctx.storyteller,
+      'game:state',
+    );
+    const second = await submitGamblerGuess(
+      ctx,
+      0,
+      playerIds[1],
+      'grandmother',
+    );
+    await secondStatePromise;
+    expect(second.success).toBe(true);
+    if (!second.success) return;
+    expect(second.requestId).not.toBe(first.requestId);
+
+    const secondReviewedStatePromise = waitForEvent<GameState>(
+      ctx.storyteller,
+      'game:state',
+    );
+    expect(
+      await reviewGamblerGuess(ctx, {
+        requestId: second.requestId,
+        decision: 'approve',
+        targetPlayerId: playerIds[1],
+        guessedRoleId: 'grandmother',
+      }),
+    ).toEqual({ success: true });
+    await secondReviewedStatePromise;
+
+    expect(
+      await submitGamblerGuess(ctx, 0, playerIds[1], 'grandmother'),
+    ).toMatchObject({ success: false });
+  }, 15000);
+
+  it('도박사 승인으로 게임이 종료되면 다음 밤 플레이어를 깨우지 않는다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'gambler' },
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'godfather' },
+      { roleId: 'po' },
+    ]);
+    ctx.app.game.kill(playerIds[1]);
+    ctx.app.game.kill(playerIds[2]);
+    ctx.app.game.setPlayerStatuses(playerIds[0], ['barista_acts_twice']);
+    await activateGambler(ctx);
+
+    const pendingStatePromise = waitForEvent<GameState>(
+      ctx.storyteller,
+      'game:state',
+    );
+    const submitted = await submitGamblerGuess(ctx, 0, playerIds[1], 'sailor');
+    await pendingStatePromise;
+    expect(submitted.success).toBe(true);
+    if (!submitted.success) return;
+
+    let secondWakeReceived = false;
+    ctx.players[0].once('night:wakeUp', () => {
+      secondWakeReceived = true;
+    });
+    const gameEndPromise = waitForEvent<{ winningTeam: 'good' | 'evil' }>(
+      ctx.players[0],
+      'game:end',
+    );
+    const endedPhasePromise = waitForEvent<string>(
+      ctx.players[0],
+      'game:phase',
+    );
+
+    expect(
+      await reviewGamblerGuess(ctx, {
+        requestId: submitted.requestId,
+        decision: 'approve',
+        targetPlayerId: playerIds[1],
+        guessedRoleId: 'sailor',
+      }),
+    ).toEqual({ success: true });
+    expect(await gameEndPromise).toMatchObject({ winningTeam: 'evil' });
+    expect(await endedPhasePromise).toBe('ended');
+    expect(ctx.app.game.getState().phase).toBe('ended');
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(secondWakeReceived).toBe(false);
+  }, 15000);
+
+  it('도박사와 이야기꾼 재접속은 비밀 누출 없이 대기·반려 상태를 복원한다', async () => {
+    const { playerIds } = await setupGameWithRoles(ctx, [
+      { roleId: 'gambler' },
+      { roleId: 'grandmother' },
+      { roleId: 'sailor' },
+      { roleId: 'godfather' },
+      { roleId: 'po' },
+    ]);
+    await activateGambler(ctx);
+
+    const pendingStatePromise = waitForEvent<GameState>(
+      ctx.storyteller,
+      'game:state',
+    );
+    const submitted = await submitGamblerGuess(
+      ctx,
+      0,
+      playerIds[1],
+      'grandmother',
+    );
+    await pendingStatePromise;
+    expect(submitted.success).toBe(true);
+    if (!submitted.success) return;
+
+    const rejoinedPlayer = await ctx.connectPlayer();
+    const publicStatePromise = waitForEvent<GameState>(
+      rejoinedPlayer,
+      'game:state',
+    );
+    const pendingRejoin = await withTimeout(
+      new Promise<Record<string, unknown>>((resolve) => {
+        rejoinedPlayer.emit('game:rejoin', { playerId: playerIds[0] }, resolve);
+      }),
+    );
+    const publicState = await publicStatePromise;
+
+    expect(pendingRejoin).toMatchObject({
+      success: true,
+      gamblerGuessStatus: 'pending',
+      gamblerGuessRequestId: submitted.requestId,
+    });
+    expectNoGamblerGuessSecrets(pendingRejoin);
+    expect(publicState.pendingGamblerGuess).toBeUndefined();
+
+    const otherPlayerRejoin = await withTimeout(
+      new Promise<Record<string, unknown>>((resolve) => {
+        ctx.players[1].emit('game:rejoin', { playerId: playerIds[1] }, resolve);
+      }),
+    );
+    expect(otherPlayerRejoin.gamblerGuessStatus).toBe('idle');
+    expect(otherPlayerRejoin.gamblerGuessRequestId).toBeUndefined();
+
+    ctx.storyteller.disconnect();
+    const reconnectStatePromise = waitForEvent<GameState>(
+      ctx.storyteller,
+      'game:state',
+    );
+    ctx.storyteller.connect();
+    const reconnectState = await reconnectStatePromise;
+    expect(reconnectState.pendingGamblerGuess).toEqual({
+      requestId: submitted.requestId,
+      gamblerId: playerIds[0],
+      targetPlayerId: playerIds[1],
+      guessedRoleId: 'grandmother',
+    });
+
+    expect(
+      await reviewGamblerGuess(ctx, {
+        requestId: submitted.requestId,
+        decision: 'reject',
+      }),
+    ).toEqual({ success: true });
+
+    const rejectedRejoin = await withTimeout(
+      new Promise<Record<string, unknown>>((resolve) => {
+        rejoinedPlayer.emit('game:rejoin', { playerId: playerIds[0] }, resolve);
+      }),
+    );
+    expect(rejectedRejoin).toMatchObject({
+      success: true,
+      gamblerGuessStatus: 'rejected',
+      gamblerGuessRequestId: submitted.requestId,
+    });
+    expectNoGamblerGuessSecrets(rejectedRejoin);
+  }, 15000);
 
   it('플레이어가 제출한 BMR 밤 사망도 낮 전환 전까지 플레이어 상태에 공개되지 않는다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [

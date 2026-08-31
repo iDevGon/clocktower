@@ -103,6 +103,14 @@ function isPubliclyAlive(player: Player): boolean {
   return player.isAlive && !player.statuses.includes('zombuul_registers_dead');
 }
 
+function isAliveOnRejoin(
+  phase: string,
+  hasPendingNightKill: boolean,
+  isAlive: boolean,
+): boolean {
+  return isAlive || (phase === 'night' && hasPendingNightKill);
+}
+
 function validateNightActionTargets(
   game: GameManager,
   actorId: string,
@@ -426,7 +434,14 @@ export function registerPlayerHandlers(
             ? player.lunaticAs
             : player.role?.id;
 
-      const gamePlayers = getOrderedPlayerInfoList(game);
+      const gamePlayers = getOrderedPlayerInfoList(game).map((gamePlayer) => ({
+        ...gamePlayer,
+        isAlive: isAliveOnRejoin(
+          state.phase,
+          game.hasPendingNightKill(gamePlayer.id),
+          gamePlayer.isAlive,
+        ),
+      }));
 
       // 밤 페이즈일 때 진행 상태 포함
       let nightProgress:
@@ -508,7 +523,11 @@ export function registerPlayerHandlers(
         roleId: roleIdForPlayer,
         philosopherGrantedRole: player.philosopherGrantedRole ?? undefined,
         phase: state.phase,
-        isAlive: isPubliclyAlive(player),
+        isAlive: isAliveOnRejoin(
+          state.phase,
+          game.hasPendingNightKill(playerId),
+          isPubliclyAlive(player),
+        ),
         daySubPhase: state.daySubPhase,
         hasNominatedToday: player.hasNominatedToday,
         deadVoteUsed: player.deadVoteUsed,
@@ -520,10 +539,23 @@ export function registerPlayerHandlers(
         executionCandidate,
         evilInfo: getEvilInfoForPlayer(game, player),
         gameSettings: state.settings,
+        gamblerGuessStatus: game.getGamblerGuessStatus(playerId),
+        gamblerGuessRequestId: game.getGamblerGuessRequestId(playerId),
       });
       // 설정 + 전체 상태 전송 (백그라운드 복귀 시 놓친 이벤트 보상)
       socket.emit('game:settings', state.settings);
-      socket.emit('game:state', toPublicGameState(state));
+      const publicState = toPublicGameState(state);
+      socket.emit('game:state', {
+        ...publicState,
+        players: publicState.players.map((publicPlayer) => ({
+          ...publicPlayer,
+          isAlive: isAliveOnRejoin(
+            state.phase,
+            game.hasPendingNightKill(publicPlayer.id),
+            publicPlayer.isAlive,
+          ),
+        })),
+      });
 
       // 추방 투표 진행 중이면 상태 복원
       const exileVote = game.getExileVote();
@@ -547,6 +579,30 @@ export function registerPlayerHandlers(
       }
       console.log(`Player rejoined: ${player.name}`);
     });
+
+    socket.on(
+      'gambler:submitGuess',
+      ({ targetPlayerId, guessedRoleId }, callback) => {
+        const playerId = getPlayerIdFromSocket(socket);
+        if (!playerId) {
+          callback({ success: false, error: '플레이어를 찾을 수 없습니다' });
+          return;
+        }
+
+        const result = game.submitGamblerGuess(
+          playerId,
+          targetPlayerId,
+          guessedRoleId,
+        );
+        if (!result.success) {
+          callback({ success: false, error: result.reason });
+          return;
+        }
+
+        storytellerIo.emit('game:state', game.getStorytellerState());
+        callback({ success: true, requestId: result.requestId });
+      },
+    );
 
     socket.on('nominate:request', ({ nomineeId }, callback) => {
       const playerId = getPlayerIdFromSocket(socket);

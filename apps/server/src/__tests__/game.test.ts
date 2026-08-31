@@ -2208,6 +2208,45 @@ describe('GameManager', () => {
       if (second.success) expect(second.requestId).not.toBe(first.requestId);
     });
 
+    it('도박사 추측 요청 ID는 대기·반려 상태의 해당 플레이어에게만 제공한다', () => {
+      const { gm, players } = createBmrAssistGame();
+
+      expect(gm.getGamblerGuessRequestId(players[1].id)).toBeUndefined();
+      startGamblerTurn(gm, players);
+      const submitted = gm.submitGamblerGuess(
+        players[1].id,
+        players[5].id,
+        'grandmother',
+      );
+      expect(submitted.success).toBe(true);
+      if (!submitted.success) return;
+
+      expect(gm.getGamblerGuessRequestId(players[1].id)).toBe(
+        submitted.requestId,
+      );
+      expect(gm.getGamblerGuessRequestId(players[0].id)).toBeUndefined();
+
+      gm.reviewGamblerGuess(submitted.requestId, { decision: 'reject' });
+      expect(gm.getGamblerGuessRequestId(players[1].id)).toBe(
+        submitted.requestId,
+      );
+
+      const resubmitted = gm.submitGamblerGuess(
+        players[1].id,
+        players[5].id,
+        'grandmother',
+      );
+      expect(resubmitted.success).toBe(true);
+      if (!resubmitted.success) return;
+      gm.reviewGamblerGuess(resubmitted.requestId, {
+        decision: 'approve',
+        targetPlayerId: players[5].id,
+        guessedRoleId: 'grandmother',
+      });
+
+      expect(gm.getGamblerGuessRequestId(players[1].id)).toBeUndefined();
+    });
+
     it('보류 중 중복 제출과 오래된 검토는 현재 요청을 바꾸지 않는다', () => {
       const { gm, players } = createBmrAssistGame();
       startGamblerTurn(gm, players);

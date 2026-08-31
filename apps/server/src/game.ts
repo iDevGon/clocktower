@@ -1618,6 +1618,11 @@ export class GameManager {
     return this.gamblerGuessReview.status;
   }
 
+  getGamblerGuessRequestId(playerId: string): string | undefined {
+    if (this.gamblerGuessReview?.request.gamblerId !== playerId) return;
+    return this.gamblerGuessReview.request.requestId;
+  }
+
   revive(playerId: string): void {
     const player = this.getPlayer(playerId);
     if (player) {

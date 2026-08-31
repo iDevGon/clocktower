@@ -617,6 +617,21 @@ export function registerStorytellerHandlers(
       }
     });
 
+    const wakeNextNightPlayer = () => {
+      const next = game.popNightWakeUp();
+      if (!next) return;
+
+      const role = getRoleById(next.roleId);
+      const roleName = role?.name ?? next.roleId;
+      sendPushNotification(
+        next.playerId,
+        '🌙 당신의 차례입니다',
+        `${roleName}, 행동을 수행하세요`,
+      );
+      game.markNightWakeUp(next.playerId);
+      playerIo.to(next.playerId).emit('night:wakeUp', { roleId: next.roleId });
+    };
+
     socket.on('night:sendFeedback', ({ playerId, feedback }, callback) => {
       const targetPlayer = game.getPlayer(playerId);
       if (!targetPlayer) {
@@ -657,26 +672,12 @@ export function registerStorytellerHandlers(
       }
       callback?.({ success: true });
 
-      // 대기열에 다음 플레이어가 있으면 순차 wakeUp
-      const next = game.popNightWakeUp();
-      if (next) {
-        const role = getRoleById(next.roleId);
-        const roleName = role?.name ?? next.roleId;
-        sendPushNotification(
-          next.playerId,
-          '🌙 당신의 차례입니다',
-          `${roleName}, 행동을 수행하세요`,
-        );
-        game.markNightWakeUp(next.playerId);
-        playerIo
-          .to(next.playerId)
-          .emit('night:wakeUp', { roleId: next.roleId });
-      }
+      wakeNextNightPlayer();
     });
 
-    const emitBmrAssistResult = (killedTargetId?: string) => {
+    const emitBmrAssistResult = (killedTargetId?: string): boolean => {
       storytellerIo.emit('game:state', game.getStorytellerState());
-      if (!killedTargetId) return;
+      if (!killedTargetId) return false;
 
       const killedPlayer = game.getPlayer(killedTargetId);
       emitDeathTriggers(game, killedPlayer, storytellerIo, { isNight: true });
@@ -686,9 +687,10 @@ export function registerStorytellerHandlers(
         playerIo.emit('game:phase', 'ended');
         storytellerIo.emit('game:end', winResult);
         storytellerIo.emit('game:state', game.getStorytellerState());
-        return;
+        return true;
       }
       emitPromotionIfAny(game, playerIo, storytellerIo);
+      return false;
     };
 
     socket.on('night:setActiveRole', (roleId) => {
@@ -1136,22 +1138,34 @@ export function registerStorytellerHandlers(
       callback?.({ success: true });
     });
 
-    socket.on(
-      'gambler:guess',
-      ({ gamblerId, targetPlayerId, guessedRoleId }, callback) => {
-        const result = game.resolveGamblerGuess(
-          gamblerId,
-          targetPlayerId,
-          guessedRoleId,
-        );
-        if (!result.success) {
-          callback?.({ success: false, error: result.reason });
-          return;
-        }
-        emitBmrAssistResult(result.killedTargetId);
-        callback?.({ success: true });
-      },
-    );
+    socket.on('gambler:reviewGuess', (data, callback) => {
+      const result = game.reviewGamblerGuess(
+        data.requestId,
+        data.decision === 'approve'
+          ? {
+              decision: 'approve',
+              targetPlayerId: data.targetPlayerId,
+              guessedRoleId: data.guessedRoleId,
+            }
+          : { decision: 'reject' },
+      );
+      if (!result.success) {
+        callback({ success: false, error: result.reason });
+        return;
+      }
+
+      playerIo.to(result.gamblerId).emit('gambler:guessReviewed', {
+        requestId: result.requestId,
+        status: result.decision === 'approve' ? 'approved' : 'rejected',
+      });
+      if (result.decision === 'approve') {
+        const gameEnded = emitBmrAssistResult(result.killedTargetId);
+        if (!gameEnded) wakeNextNightPlayer();
+      } else {
+        storytellerIo.emit('game:state', game.getStorytellerState());
+      }
+      callback({ success: true });
+    });
 
     socket.on('gossip:kill', ({ gossipId, targetPlayerId }, callback) => {
       const result = game.resolveGossipKill(gossipId, targetPlayerId);
