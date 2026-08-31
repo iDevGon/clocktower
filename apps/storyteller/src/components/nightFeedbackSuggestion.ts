@@ -47,7 +47,7 @@ export function getNightFeedbackSuggestion({
           }
         : null;
     case 'chef':
-      return isValidCount(chefEvilPairCount)
+      return isValidCount(chefEvilPairCount, 3)
         ? {
             type: 'number',
             value: chefEvilPairCount,
@@ -76,7 +76,7 @@ export function getNightFeedbackSuggestion({
       return isValidRoleName(revealedRoleName)
         ? {
             type: 'role',
-            roleName: revealedRoleName,
+            roleName: revealedRoleName.trim(),
             reason: '어젯밤 처형된 역할',
           }
         : null;
@@ -84,7 +84,7 @@ export function getNightFeedbackSuggestion({
       return isValidRoleName(revealedRoleName)
         ? {
             type: 'role',
-            roleName: revealedRoleName,
+            roleName: revealedRoleName.trim(),
             reason: '선택한 플레이어의 역할',
           }
         : null;

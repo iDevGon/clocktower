@@ -111,6 +111,39 @@ describe('getNightFeedbackSuggestion', () => {
     expect(getNightFeedbackSuggestion(input)).toEqual(expected);
   });
 
+  it('선택 가능한 최댓값인 요리사 3쌍을 추천한다', () => {
+    expect(
+      getNightFeedbackSuggestion({
+        roleId: 'chef',
+        isMalfunctioning: false,
+        chefEvilPairCount: 3,
+      }),
+    ).toEqual({ type: 'number', value: 3, reason: '인접 악한 쌍 3개' });
+  });
+
+  it('숫자 컨트롤에서 선택할 수 없는 요리사 4쌍은 추천하지 않는다', () => {
+    expect(
+      getNightFeedbackSuggestion({
+        roleId: 'chef',
+        isMalfunctioning: false,
+        chefEvilPairCount: 4,
+      }),
+    ).toBeNull();
+  });
+
+  it.each([
+    { roleId: 'undertaker', reason: '어젯밤 처형된 역할' },
+    { roleId: 'ravenkeeper', reason: '선택한 플레이어의 역할' },
+  ])('$roleId 역할 이름의 바깥쪽 공백을 제거한다', ({ roleId, reason }) => {
+    expect(
+      getNightFeedbackSuggestion({
+        roleId,
+        isMalfunctioning: false,
+        revealedRoleName: '  임프  ',
+      }),
+    ).toEqual({ type: 'role', roleName: '임프', reason });
+  });
+
   it.each([
     {
       roleId: 'empath',
