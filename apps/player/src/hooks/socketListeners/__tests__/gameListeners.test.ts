@@ -23,6 +23,7 @@ class FakeSocket {
   connected = true;
   handlers = new Map<string, (data: unknown) => void>();
   rejoinResponse: unknown = { success: false };
+  rejoinEmitCount = 0;
 
   on(event: string, handler: (data: unknown) => void) {
     this.handlers.set(event, handler);
@@ -34,6 +35,7 @@ class FakeSocket {
 
   emit(event: string, _data: unknown, callback?: (res: unknown) => void) {
     if (event === 'game:rejoin') {
+      this.rejoinEmitCount += 1;
       callback?.(this.rejoinResponse);
     }
   }
@@ -42,6 +44,23 @@ class FakeSocket {
 describe('attachGameListeners', () => {
   beforeEach(() => {
     usePlayerStore.getState().reset();
+  });
+
+  it('초기 연결은 자동 rejoin을 건너뛰고 이후 reconnect마다 한 번만 요청한다', () => {
+    const socket = new FakeSocket();
+    socket.connected = false;
+    usePlayerStore.getState().set({ playerId: 'persisted-player' });
+    attachGameListeners(socket as unknown as AppSocket);
+
+    socket.connected = true;
+    socket.emitEvent('connect', undefined);
+    expect(socket.rejoinEmitCount).toBe(0);
+
+    socket.connected = false;
+    socket.emitEvent('disconnect', undefined);
+    socket.connected = true;
+    socket.emitEvent('connect', undefined);
+    expect(socket.rejoinEmitCount).toBe(1);
   });
 
   it('매춘부 본인에게는 동의한 대상의 역할명을 표시한다', () => {

@@ -30,7 +30,12 @@ function handleRejoin(socket: AppSocket) {
 
 export function attachGameListeners(socket: AppSocket) {
   // 소켓 재연결 시 상태 동기화
+  let hasConnectedOnce = socket.connected;
   socket.on('connect', () => {
+    if (!hasConnectedOnce) {
+      hasConnectedOnce = true;
+      return;
+    }
     handleRejoin(socket);
   });
 
