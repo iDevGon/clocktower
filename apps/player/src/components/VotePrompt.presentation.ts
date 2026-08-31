@@ -17,3 +17,23 @@ export function getVoteUnavailableMessage({
   if (hasPassed) return '투표 완료. 결과를 기다리는 중…';
   return '다른 플레이어의 투표를 기다리는 중…';
 }
+
+export function shouldShowVoteControl({
+  isDefensePhase,
+  isCountingDown,
+  canVote,
+  hasPassed,
+  isVoteUnavailable,
+  hasActiveVoteClock,
+}: {
+  isDefensePhase: boolean;
+  isCountingDown: boolean;
+  canVote: boolean;
+  hasPassed: boolean;
+  isVoteUnavailable: boolean;
+  hasActiveVoteClock: boolean;
+}) {
+  if (isDefensePhase) return false;
+  if (isVoteUnavailable) return isCountingDown || hasActiveVoteClock;
+  return !hasPassed && (isCountingDown || canVote);
+}

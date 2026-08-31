@@ -18,6 +18,7 @@ import { acknowledgeSlayerFizzle } from './slayerAcknowledgement';
 import { VoteClockRing } from './VoteClockRing';
 import {
   getVoteUnavailableMessage,
+  shouldShowVoteControl,
   VOTE_CONSENT_READY_ICON,
 } from './VotePrompt.presentation';
 import { styles } from './VotePrompt.styles';
@@ -209,8 +210,14 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
     deadVoteUsed,
     hasPassed,
   });
-  const showVoteControl =
-    isCountingDown || canVote || (voteClock !== null && isVoteUnavailable);
+  const showVoteControl = shouldShowVoteControl({
+    isDefensePhase,
+    isCountingDown,
+    canVote,
+    hasPassed,
+    isVoteUnavailable,
+    hasActiveVoteClock: voteClock !== null,
+  });
 
   // 카운트다운 숫자 변경 시 진동
   const prevCountdownRef = useRef(0);
@@ -347,7 +354,7 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
       {!isDefensePhase && !isCountingDown && <VoteClockRing />}
 
       {/* Vote buttons — available during countdown AND active voting (not during defense) */}
-      {!isDefensePhase && showVoteControl && !hasPassed ? (
+      {showVoteControl ? (
         <>
           <Text style={styles.description}>
             {isVoteUnavailable

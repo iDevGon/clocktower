@@ -9,6 +9,7 @@ import {
 } from '../VoteClockRing.presentation';
 import {
   getVoteUnavailableMessage,
+  shouldShowVoteControl,
   VOTE_CONSENT_READY_ICON,
 } from '../VotePrompt.presentation';
 
@@ -87,6 +88,98 @@ describe('player vote clock presentation', () => {
     ).toBe('다른 플레이어의 투표를 기다리는 중…');
   });
 
+  it.each([
+    {
+      label: '변론 중인 사용한 유령표',
+      input: {
+        isDefensePhase: true,
+        isCountingDown: false,
+        canVote: false,
+        hasPassed: true,
+        isVoteUnavailable: true,
+        hasActiveVoteClock: true,
+      },
+      expected: false,
+    },
+    {
+      label: '카운트다운 중인 일반 투표',
+      input: {
+        isDefensePhase: false,
+        isCountingDown: true,
+        canVote: false,
+        hasPassed: false,
+        isVoteUnavailable: false,
+        hasActiveVoteClock: false,
+      },
+      expected: true,
+    },
+    {
+      label: '투표 순서가 지나지 않은 일반 투표',
+      input: {
+        isDefensePhase: false,
+        isCountingDown: false,
+        canVote: true,
+        hasPassed: false,
+        isVoteUnavailable: false,
+        hasActiveVoteClock: true,
+      },
+      expected: true,
+    },
+    {
+      label: '투표 순서가 지난 일반 투표',
+      input: {
+        isDefensePhase: false,
+        isCountingDown: false,
+        canVote: false,
+        hasPassed: true,
+        isVoteUnavailable: false,
+        hasActiveVoteClock: true,
+      },
+      expected: false,
+    },
+    {
+      label: '카운트다운 중인 사용한 유령표',
+      input: {
+        isDefensePhase: false,
+        isCountingDown: true,
+        canVote: false,
+        hasPassed: false,
+        isVoteUnavailable: true,
+        hasActiveVoteClock: false,
+      },
+      expected: true,
+    },
+    {
+      label: '투표 순서가 지난 사용한 유령표',
+      input: {
+        isDefensePhase: false,
+        isCountingDown: false,
+        canVote: false,
+        hasPassed: true,
+        isVoteUnavailable: true,
+        hasActiveVoteClock: true,
+      },
+      expected: true,
+    },
+    {
+      label: '투표 종료 후 사용한 유령표',
+      input: {
+        isDefensePhase: false,
+        isCountingDown: false,
+        canVote: false,
+        hasPassed: true,
+        isVoteUnavailable: true,
+        hasActiveVoteClock: false,
+      },
+      expected: false,
+    },
+  ])('$label에서 투표 컨트롤 표시를 $expected로 판단한다', ({
+    input,
+    expected,
+  }) => {
+    expect(shouldShowVoteControl(input)).toBe(expected);
+  });
+
   it('사용한 유령표는 비활성 안내로 표시하고 핸들러에서도 선행 투표를 차단한다', () => {
     expect(votePromptSource).toContain(
       'const isAlive = usePlayerStore((s) => s.isAlive);',
@@ -95,9 +188,7 @@ describe('player vote clock presentation', () => {
       'const deadVoteUsed = usePlayerStore((s) => s.deadVoteUsed);',
     );
     expect(votePromptSource).toContain('getVoteUnavailableMessage({');
-    expect(votePromptSource).toContain(
-      'isCountingDown || canVote || (voteClock !== null && isVoteUnavailable)',
-    );
+    expect(votePromptSource).toContain('shouldShowVoteControl({');
     expect(votePromptSource).toContain('disabled={isVoteUnavailable}');
     expect(votePromptSource).toMatch(
       /const handleToggle = \(\) => \{\s+if \(isVoteUnavailable\) return;\s+const newValue[\s\S]*?preselectVote\(newValue\);/,
