@@ -24,6 +24,7 @@ import {
 } from '../nightFeedback.js';
 import {
   clearPushTokens,
+  removePushToken,
   sendPushNotification,
   sendPushToAll,
 } from '../pushNotifications.js';
@@ -1902,6 +1903,7 @@ export function registerStorytellerHandlers(
       // 강퇴 대상에게 먼저 알린 뒤 상태에서 제거
       playerIo.to(playerId).emit('player:kicked');
       game.removePlayer(playerId);
+      removePushToken(playerId);
       playerIo.in(playerId).socketsLeave(playerId);
 
       // 나머지 플레이어와 이야기꾼에게 알림

@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { GameManager } from '../game.js';
+import { registerStorytellerHandlers } from '../handlers/storyteller.js';
 import {
   clearPushTokens,
   registerPushToken,
@@ -33,6 +35,56 @@ describe('pushNotifications', () => {
       registerPushToken('p2', 'token2');
       clearPushTokens();
       await sendPushNotification('p1', 'Test', 'Body');
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('강퇴된 플레이어의 토큰을 제거한다', async () => {
+      const game = new GameManager();
+      game.create();
+      const player = game.addPlayer('Player1');
+      expect(player).not.toBeNull();
+      registerPushToken(player?.id ?? '', 'token1');
+
+      let connectionHandler:
+        | ((socket: {
+            emit: ReturnType<typeof vi.fn>;
+            on: (event: string, handler: unknown) => void;
+          }) => void)
+        | undefined;
+      const storytellerIo = {
+        emit: vi.fn(),
+        on: vi.fn((_event: string, handler: typeof connectionHandler) => {
+          connectionHandler = handler;
+        }),
+      };
+      const roomOperator = {
+        emit: vi.fn(),
+        socketsLeave: vi.fn(),
+      };
+      const playerIo = {
+        emit: vi.fn(),
+        in: vi.fn(() => roomOperator),
+        to: vi.fn(() => roomOperator),
+      };
+      const socketHandlers = new Map<string, (...args: unknown[]) => void>();
+      const socket = {
+        emit: vi.fn(),
+        on: (event: string, handler: unknown) => {
+          socketHandlers.set(event, handler as (...args: unknown[]) => void);
+        },
+      };
+
+      registerStorytellerHandlers(
+        storytellerIo as never,
+        playerIo as never,
+        game,
+        {} as never,
+      );
+      connectionHandler?.(socket);
+      socketHandlers.get('player:kick')?.(player?.id ?? '', vi.fn());
+
+      await sendPushNotification(player?.id ?? '', 'Test', 'Body');
+
       expect(global.fetch).not.toHaveBeenCalled();
     });
   });
