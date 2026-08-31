@@ -22,8 +22,8 @@ function player(id: string, roleId: string, isTraveller = false): Player {
 
 const settings: GameSettings = {
   setupEditionId: 'trouble_brewing',
-  additionalRoleIds: ['sweetheart'],
-  excludedRoleIds: [],
+  additionalRoleIds: ['dreamer'],
+  excludedRoleIds: ['imp'],
   showVoteHistory: true,
   whisperMode: 'chat',
   votingMode: 'online',
@@ -35,21 +35,22 @@ const settings: GameSettings = {
 };
 
 describe('buildGameScriptRoles', () => {
-  it('현재 에디션, 추가 역할, 참가 여행자만 역할 후보로 반환한다', () => {
+  it('제외 역할을 빼고 다른 에디션 추가 역할과 참가 여행자를 중복 없이 반환한다', () => {
     const roles = buildGameScriptRoles(
       [
         player('p1', 'imp'),
-        player('p2', 'sweetheart'),
+        player('p2', 'dreamer'),
         player('t1', 'judge', true),
+        player('t2', 'judge', true),
       ],
       settings,
     );
     const roleIds = roles.map((role) => role.id);
 
-    expect(roleIds).toContain('imp');
-    expect(roleIds).toContain('sweetheart');
+    expect(roleIds).not.toContain('imp');
+    expect(roleIds).toContain('dreamer');
     expect(roleIds).toContain('judge');
-    expect(roleIds).not.toContain('dreamer');
+    expect(roleIds.filter((roleId) => roleId === 'judge')).toHaveLength(1);
   });
 });
 

@@ -1,8 +1,10 @@
 import type {
   NightAction,
   NightFeedbackPayload,
+  PendingGamblerGuess,
   Player,
   PlayerStatus,
+  StorytellerToServerEvents,
 } from '@clocktower/shared';
 import { getRoleById, NIGHT_ACTIONS, NIGHT_FEEDBACK } from '@clocktower/shared';
 import { colors } from '@clocktower/ui';
@@ -10,6 +12,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import type { createGrimoireStyles } from '../styles/grimoire.styles';
 import { useGameEditionRoles } from './feedback/useGameEditionRoles';
+import {
+  canSettleGamblerReview,
+  type GamblerGuessDraft,
+  isGamblerReviewPending,
+  syncGamblerGuessDraft,
+} from './gamblerGuessReview';
 import { NightActionLog, NightFeedbackPanel } from './NightActionLog';
 import { NightOrderPanel } from './NightOrderPanel';
 import {
@@ -117,10 +125,9 @@ interface NightPanelProps {
     roleId: string,
     callback?: (result: BmrAssistResult) => void,
   ) => void;
-  onGamblerGuess?: (
-    gamblerId: string,
-    targetPlayerId: string,
-    guessedRoleId: string,
+  pendingGamblerGuess: PendingGamblerGuess | null;
+  onReviewGamblerGuess?: (
+    data: Parameters<StorytellerToServerEvents['gambler:reviewGuess']>[0],
     callback?: (result: BmrAssistResult) => void,
   ) => void;
   onGossipKill?: (
@@ -177,7 +184,8 @@ export function NightPanel({
   onBoneCollectorRestore,
   onApplyBaristaEffect,
   onCourtierChooseRole,
-  onGamblerGuess,
+  pendingGamblerGuess,
+  onReviewGamblerGuess,
   onGossipKill,
   onShabalothRegurgitate,
   onMoonchildChoose,
@@ -196,12 +204,25 @@ export function NightPanel({
   const [nightElapsed, setNightElapsed] = useState(0);
   const [baristaTargetId, setBaristaTargetId] = useState<string | null>(null);
   const [courtierRoleId, setCourtierRoleId] = useState<string | null>(null);
-  const [gamblerTargetId, setGamblerTargetId] = useState<string | null>(null);
-  const [gamblerRoleId, setGamblerRoleId] = useState<string | null>(null);
+  const [gamblerDraft, setGamblerDraft] = useState<GamblerGuessDraft>({
+    requestId: null,
+    targetPlayerId: null,
+    guessedRoleId: null,
+  });
+  const [gamblerReviewPendingRequestId, setGamblerReviewPendingRequestId] =
+    useState<string | null>(null);
+  const [gamblerReviewError, setGamblerReviewError] = useState<string | null>(
+    null,
+  );
+  const gamblerReviewPendingRequestIdRef = useRef<string | null>(null);
+  const currentGamblerRequestIdRef = useRef<string | null>(null);
+  const syncedGamblerRequestIdRef = useRef<string | null>(null);
   const [bmrAssistTargetId, setBmrAssistTargetId] = useState<string | null>(
     null,
   );
   const nightTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const currentGamblerRequestId = pendingGamblerGuess?.requestId ?? null;
+  currentGamblerRequestIdRef.current = currentGamblerRequestId;
 
   // Track elapsed time per active night role
   useEffect(() => {
@@ -224,11 +245,20 @@ export function NightPanel({
       setFeedbackSentForRole(null);
       setBaristaTargetId(null);
       setCourtierRoleId(null);
-      setGamblerTargetId(null);
-      setGamblerRoleId(null);
       setBmrAssistTargetId(null);
     }
   }, [activeNightRoleId]);
+
+  useEffect(() => {
+    setGamblerDraft((current) =>
+      syncGamblerGuessDraft(current, pendingGamblerGuess),
+    );
+    const requestId = pendingGamblerGuess?.requestId ?? null;
+    if (syncedGamblerRequestIdRef.current !== requestId) {
+      syncedGamblerRequestIdRef.current = requestId;
+      setGamblerReviewError(null);
+    }
+  }, [pendingGamblerGuess]);
 
   const isFeedbackSent = feedbackSentForRole === activeNightRoleId;
 
@@ -273,7 +303,10 @@ export function NightPanel({
     ? players.find(
         (p) =>
           p.role?.id === activeNightRoleId ||
-          (p.role?.id === 'drunk' && p.drunkAs === activeNightRoleId),
+          (p.role?.id === 'drunk' && p.drunkAs === activeNightRoleId) ||
+          (activeNightRoleId === 'gambler' &&
+            p.role?.id === 'philosopher' &&
+            p.philosopherGrantedRole === activeNightRoleId),
       )
     : undefined;
   const livingPlayers = useMemo(
@@ -327,17 +360,75 @@ export function NightPanel({
     setFeedbackSentForRole(activeNightRoleId);
   };
 
-  const bmrAssistPanelRoleIds = new Set([
-    'courtier',
-    'gambler',
-    'gossip',
-    'moonchild',
-  ]);
+  const handleGamblerReview = (decision: 'approve' | 'reject') => {
+    if (!pendingGamblerGuess || !onReviewGamblerGuess) {
+      return;
+    }
+    const { targetPlayerId, guessedRoleId } = gamblerDraft;
+    if (decision === 'approve' && (!targetPlayerId || !guessedRoleId)) {
+      return;
+    }
+
+    const requestId = pendingGamblerGuess.requestId;
+    if (
+      isGamblerReviewPending(
+        gamblerReviewPendingRequestIdRef.current,
+        requestId,
+      )
+    ) {
+      return;
+    }
+    gamblerReviewPendingRequestIdRef.current = requestId;
+    setGamblerReviewPendingRequestId(requestId);
+    setGamblerReviewError(null);
+    const data: Parameters<
+      StorytellerToServerEvents['gambler:reviewGuess']
+    >[0] =
+      decision === 'approve'
+        ? {
+            requestId,
+            decision,
+            targetPlayerId: targetPlayerId as string,
+            guessedRoleId: guessedRoleId as string,
+          }
+        : { requestId, decision };
+    onReviewGamblerGuess(data, (result) => {
+      if (
+        !canSettleGamblerReview(
+          gamblerReviewPendingRequestIdRef.current,
+          currentGamblerRequestIdRef.current,
+          requestId,
+        )
+      ) {
+        return;
+      }
+      gamblerReviewPendingRequestIdRef.current = null;
+      setGamblerReviewPendingRequestId(null);
+      if (!result.success) {
+        setGamblerReviewError(
+          result.error ?? '도박사 추측을 검토할 수 없습니다',
+        );
+      }
+    });
+  };
+
+  const bmrAssistPanelRoleIds = new Set(['courtier', 'gossip', 'moonchild']);
+  const showGamblerAssistPanel =
+    activeNightRoleId === 'gambler' && activeRolePlayer != null;
+  const hasPendingGamblerGuess =
+    activeNightRoleId === 'gambler' && pendingGamblerGuess != null;
+  const gamblerReviewPending =
+    currentGamblerRequestId != null &&
+    isGamblerReviewPending(
+      gamblerReviewPendingRequestId,
+      currentGamblerRequestId,
+    );
   const showBmrAssistPanel =
-    activeNightRoleId != null &&
-    bmrAssistPanelRoleIds.has(activeNightRoleId) &&
-    activeRolePlayer != null &&
-    !isFeedbackSent;
+    showGamblerAssistPanel ||
+    (activeNightRoleId != null &&
+      bmrAssistPanelRoleIds.has(activeNightRoleId) &&
+      activeRolePlayer != null &&
+      !isFeedbackSent);
   const showShabalothRegurgitationPanel =
     activeNightRoleId === 'shabaloth' &&
     activeRolePlayer != null &&
@@ -668,58 +759,119 @@ export function NightPanel({
                 </>
               )}
 
-              {activeNightRoleId === 'gambler' && (
-                <>
+              {activeNightRoleId === 'gambler' &&
+                (!hasPendingGamblerGuess ? (
                   <Text style={{ color: '#a9a29a' }}>
-                    도박사가 선언한 플레이어와 역할을 선택하세요.
+                    플레이어 제출 대기 중
                   </Text>
-                  <View
-                    style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
-                  >
-                    {gamblerCandidatePlayers.map((player) =>
-                      renderChip(
-                        player.id,
-                        player.name,
-                        gamblerTargetId === player.id,
-                        () => setGamblerTargetId(player.id),
-                      ),
-                    )}
-                  </View>
-                  <View
-                    style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
-                  >
-                    {gameRoles.map((role) =>
-                      renderChip(
-                        role.id,
-                        role.name,
-                        gamblerRoleId === role.id,
-                        () => setGamblerRoleId(role.id),
-                      ),
-                    )}
-                  </View>
-                  {gamblerTargetId && gamblerRoleId && (
-                    <Pressable
-                      onPress={() => {
-                        onGamblerGuess?.(
-                          activeRolePlayer.id,
-                          gamblerTargetId,
-                          gamblerRoleId,
-                          handleBmrAssistResult,
-                        );
-                      }}
+                ) : (
+                  <>
+                    <Text style={{ color: '#a9a29a' }}>
+                      제출된 플레이어와 역할을 확인하거나 수정하세요.
+                    </Text>
+                    <View
                       style={{
-                        backgroundColor: '#3c2c2f',
-                        paddingVertical: 10,
-                        alignItems: 'center',
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        gap: 8,
                       }}
                     >
-                      <Text style={{ color: '#dda3a8', fontWeight: '700' }}>
-                        도박사 판정
+                      {gamblerCandidatePlayers.map((player) =>
+                        renderChip(
+                          player.id,
+                          player.name,
+                          gamblerDraft.targetPlayerId === player.id,
+                          () =>
+                            setGamblerDraft((current) => ({
+                              ...current,
+                              targetPlayerId: player.id,
+                            })),
+                        ),
+                      )}
+                    </View>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        gap: 8,
+                      }}
+                    >
+                      {gameRoles.map((role) =>
+                        renderChip(
+                          role.id,
+                          role.name,
+                          gamblerDraft.guessedRoleId === role.id,
+                          () =>
+                            setGamblerDraft((current) => ({
+                              ...current,
+                              guessedRoleId: role.id,
+                            })),
+                        ),
+                      )}
+                    </View>
+                    {gamblerReviewError && (
+                      <Text
+                        accessibilityRole="alert"
+                        style={{ color: '#dda3a8' }}
+                      >
+                        {gamblerReviewError}
                       </Text>
-                    </Pressable>
-                  )}
-                </>
-              )}
+                    )}
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="도박사 추측 반려"
+                        accessibilityState={{
+                          disabled: gamblerReviewPending,
+                        }}
+                        disabled={gamblerReviewPending}
+                        onPress={() => handleGamblerReview('reject')}
+                        style={{
+                          flex: 1,
+                          minHeight: 48,
+                          justifyContent: 'center',
+                          backgroundColor: '#3c2c2f',
+                          paddingVertical: 10,
+                          alignItems: 'center',
+                          opacity: gamblerReviewPending ? 0.5 : 1,
+                        }}
+                      >
+                        <Text style={{ color: '#dda3a8', fontWeight: '700' }}>
+                          반려
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="도박사 추측 승인"
+                        accessibilityState={{
+                          disabled:
+                            gamblerReviewPending ||
+                            !gamblerDraft.targetPlayerId ||
+                            !gamblerDraft.guessedRoleId,
+                        }}
+                        disabled={
+                          gamblerReviewPending ||
+                          !gamblerDraft.targetPlayerId ||
+                          !gamblerDraft.guessedRoleId
+                        }
+                        onPress={() => handleGamblerReview('approve')}
+                        style={{
+                          flex: 1,
+                          minHeight: 48,
+                          justifyContent: 'center',
+                          backgroundColor: '#293b2f',
+                          paddingVertical: 10,
+                          alignItems: 'center',
+                          opacity: gamblerReviewPending ? 0.5 : 1,
+                        }}
+                      >
+                        <Text style={{ color: '#9bd3a8', fontWeight: '700' }}>
+                          승인
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </>
+                ))}
 
               {(activeNightRoleId === 'gossip' ||
                 activeNightRoleId === 'moonchild') && (

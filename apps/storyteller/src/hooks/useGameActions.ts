@@ -4,9 +4,12 @@ import type {
   NightFeedbackPayload,
   Phase,
   PlayerStatus,
+  StorytellerToServerEvents,
 } from '@clocktower/shared';
 import { useCallback } from 'react';
 import { useConnectionStore } from '../stores/connectionStore';
+
+const GAMBLER_REVIEW_ACK_TIMEOUT_MS = 5000;
 
 function getSocket() {
   return useConnectionStore.getState().socket;
@@ -373,22 +376,35 @@ export function useGameActions() {
     [socket],
   );
 
-  const gamblerGuess = useCallback(
+  const reviewGamblerGuess = useCallback(
     (
-      gamblerId: string,
-      targetPlayerId: string,
-      guessedRoleId: string,
+      data: Parameters<StorytellerToServerEvents['gambler:reviewGuess']>[0],
       callback?: BmrAssistCallback,
-    ) =>
-      socket?.emit(
-        'gambler:guess',
-        {
-          gamblerId,
-          targetPlayerId,
-          guessedRoleId,
-        },
-        callback,
-      ),
+    ) => {
+      if (!socket?.connected) {
+        callback?.({
+          success: false,
+          error: '서버와 연결되어 있지 않습니다. 다시 연결한 뒤 시도하세요.',
+        });
+        return;
+      }
+
+      let settled = false;
+      socket
+        .timeout(GAMBLER_REVIEW_ACK_TIMEOUT_MS)
+        .emit('gambler:reviewGuess', data, (error, result) => {
+          if (settled) return;
+          settled = true;
+          if (error || !result) {
+            callback?.({
+              success: false,
+              error: '검토 응답 시간이 초과되었습니다. 다시 시도하세요.',
+            });
+            return;
+          }
+          callback?.(result);
+        });
+    },
     [socket],
   );
 
@@ -582,7 +598,7 @@ export function useGameActions() {
     boneCollectorRestore,
     applyBaristaEffect,
     courtierChooseRole,
-    gamblerGuess,
+    reviewGamblerGuess,
     gossipKill,
     shabalothRegurgitate,
     moonchildChoose,

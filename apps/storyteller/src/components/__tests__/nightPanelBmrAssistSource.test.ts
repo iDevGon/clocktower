@@ -16,6 +16,14 @@ const actionsSource = readFileSync(
   'utf8',
 );
 
+const grimoireSource = readFileSync(
+  join(
+    dirname(fileURLToPath(import.meta.url)),
+    '../../../app/game/grimoire.tsx',
+  ),
+  'utf8',
+);
+
 describe('NightPanel BMR assist callbacks', () => {
   it('BMR 판정 보조 액션은 서버 성공 콜백을 받은 뒤에만 완료 처리한다', () => {
     expect(actionsSource).toContain(
@@ -24,7 +32,8 @@ describe('NightPanel BMR assist callbacks', () => {
     expect(actionsSource).toContain(
       "socket?.emit('courtier:chooseRole', { courtierId, roleId }, callback)",
     );
-    expect(actionsSource).toContain("'gambler:guess'");
+    expect(actionsSource).toContain(".emit('gambler:reviewGuess'");
+    expect(actionsSource).not.toContain("'gambler:guess'");
     expect(actionsSource).toContain('callback,');
     expect(actionsSource).toContain(
       "socket?.emit('gossip:kill', { gossipId, targetPlayerId }, callback)",
@@ -46,6 +55,46 @@ describe('NightPanel BMR assist callbacks', () => {
   it('도박사 판정 보조는 사망 플레이어도 대상 후보로 보여준다', () => {
     expect(componentSource).toContain('gamblerCandidatePlayers');
     expect(componentSource).toContain('gamblerCandidatePlayers.map');
+  });
+
+  it('철학자 fallback은 도박사에만 적용하고 다른 BMR 판정 패널은 유지한다', () => {
+    expect(componentSource).toMatch(
+      /activeNightRoleId === 'gambler' &&\s+p\.role\?\.id === 'philosopher' &&\s+p\.philosopherGrantedRole === activeNightRoleId/,
+    );
+    expect(componentSource).not.toMatch(
+      /\(p\.role\?\.id === 'philosopher' &&\s+p\.philosopherGrantedRole === activeNightRoleId\)/,
+    );
+  });
+
+  it('도박사 제출을 편집해 승인하거나 반려할 수 있도록 pending 요청을 연결한다', () => {
+    expect(grimoireSource).toContain(
+      'pendingGamblerGuess={gameState.pendingGamblerGuess ?? null}',
+    );
+    expect(grimoireSource).toContain(
+      'onReviewGamblerGuess={reviewGamblerGuess}',
+    );
+    expect(componentSource).toContain('플레이어 제출 대기 중');
+    expect(componentSource).toContain('accessibilityLabel="도박사 추측 승인"');
+    expect(componentSource).toContain('accessibilityLabel="도박사 추측 반려"');
+    expect(componentSource).toContain('승인');
+    expect(componentSource).toContain('반려');
+  });
+
+  it('도박사 승인과 반려 버튼은 모두 48px 이상의 터치 영역을 가진다', () => {
+    const reviewButtons = componentSource.match(
+      /accessibilityLabel="도박사 추측 (?:승인|반려)"[\s\S]{0,700}?minHeight: 48/g,
+    );
+
+    expect(reviewButtons).toHaveLength(2);
+  });
+
+  it('도박사 검토는 역할 전체 완료 처리 대신 요청 단위 pending 상태로 제어한다', () => {
+    expect(componentSource).toContain(
+      "activeNightRoleId === 'gambler' && pendingGamblerGuess != null",
+    );
+    expect(componentSource).not.toMatch(
+      /onReviewGamblerGuess[\s\S]{0,500}handleBmrAssistResult/,
+    );
   });
 
   it('사발로스가 깨어나지 않아도 토해내기 후보를 밤 패널에서 처리할 수 있다', () => {

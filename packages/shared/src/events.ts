@@ -769,11 +769,6 @@ export interface StorytellerToServerEvents {
     data: { courtierId: string; roleId: string },
     callback?: (res: { success: boolean; error?: string }) => void,
   ) => void;
-  /** 도박사 추측을 앱 안에서 판정 */
-  'gambler:guess': (
-    data: { gamblerId: string; targetPlayerId: string; guessedRoleId: string },
-    callback?: (res: { success: boolean; error?: string }) => void,
-  ) => void;
   /** 가십 발언이 사실일 때 이야기꾼이 사망 대상을 지정 */
   'gossip:kill': (
     data: { gossipId: string; targetPlayerId: string },

@@ -260,7 +260,7 @@ export default function GrimoireScreen() {
     boneCollectorRestore,
     applyBaristaEffect,
     courtierChooseRole,
-    gamblerGuess,
+    reviewGamblerGuess,
     gossipKill,
     shabalothRegurgitate,
     moonchildChoose,
@@ -1890,7 +1890,8 @@ export default function GrimoireScreen() {
         onBoneCollectorRestore={boneCollectorRestore}
         onApplyBaristaEffect={applyBaristaEffect}
         onCourtierChooseRole={courtierChooseRole}
-        onGamblerGuess={gamblerGuess}
+        pendingGamblerGuess={gameState.pendingGamblerGuess ?? null}
+        onReviewGamblerGuess={reviewGamblerGuess}
         onGossipKill={gossipKill}
         onShabalothRegurgitate={shabalothRegurgitate}
         onMoonchildChoose={moonchildChoose}

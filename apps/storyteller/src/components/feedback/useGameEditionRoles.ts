@@ -1,24 +1,21 @@
 import type { GameSettings, Player, Role } from '@clocktower/shared';
-import { EDITION_ROLES, getRoleById } from '@clocktower/shared';
+import { getActiveRoles } from '@clocktower/shared';
 import { useMemo } from 'react';
 import { useGameStore } from '../../stores/gameStore';
 
 export function buildGameScriptRoles(
   players: Player[],
-  settings?: Pick<GameSettings, 'setupEditionId' | 'additionalRoleIds'> | null,
+  settings?: Pick<
+    GameSettings,
+    'setupEditionId' | 'additionalRoleIds' | 'excludedRoleIds'
+  > | null,
 ): Role[] {
-  const roleById = new Map<string, Role>();
-  const setupEditionId = settings?.setupEditionId ?? 'trouble_brewing';
-
-  for (const role of EDITION_ROLES[setupEditionId] ??
-    EDITION_ROLES.trouble_brewing) {
-    roleById.set(role.id, role);
-  }
-
-  for (const roleId of settings?.additionalRoleIds ?? []) {
-    const role = getRoleById(roleId);
-    if (role) roleById.set(role.id, role);
-  }
+  const roles = getActiveRoles({
+    editionId: settings?.setupEditionId ?? 'trouble_brewing',
+    additionalRoleIds: settings?.additionalRoleIds ?? [],
+    excludedRoleIds: settings?.excludedRoleIds ?? [],
+  });
+  const roleById = new Map(roles.map((role) => [role.id, role]));
 
   for (const player of players) {
     if (!player.isTraveller || !player.role) continue;
