@@ -16,7 +16,10 @@ import { usePlayerStore } from '../stores/playerStore';
 import { EdgeVignette } from './EdgeVignette';
 import { acknowledgeSlayerFizzle } from './slayerAcknowledgement';
 import { VoteClockRing } from './VoteClockRing';
-import { VOTE_CONSENT_READY_ICON } from './VotePrompt.presentation';
+import {
+  getVoteUnavailableMessage,
+  VOTE_CONSENT_READY_ICON,
+} from './VotePrompt.presentation';
 import { styles } from './VotePrompt.styles';
 
 type EVColors = ComponentProps<typeof EdgeVignette>['colors'];
@@ -164,6 +167,8 @@ interface VotePromptProps {
 export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
   const { preselectVote, consentReady } = useGameActions();
   const playerId = usePlayerStore((s) => s.playerId);
+  const isAlive = usePlayerStore((s) => s.isAlive);
+  const deadVoteUsed = usePlayerStore((s) => s.deadVoteUsed);
   const voteClock = usePlayerStore((s) => s.voteClock);
   const voteCountdown = usePlayerStore((s) => s.voteCountdown);
   const daySubPhase = usePlayerStore((s) => s.daySubPhase);
@@ -198,6 +203,14 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
   })();
 
   const isCountingDown = voteCountdown !== null && countdownRemaining > 0;
+  const isVoteUnavailable = !isAlive && deadVoteUsed;
+  const voteUnavailableMessage = getVoteUnavailableMessage({
+    isAlive,
+    deadVoteUsed,
+    hasPassed,
+  });
+  const showVoteControl =
+    isCountingDown || canVote || (voteClock !== null && isVoteUnavailable);
 
   // 카운트다운 숫자 변경 시 진동
   const prevCountdownRef = useRef(0);
@@ -229,6 +242,7 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
   const myPreselection = votePreselections[playerId] ?? null;
 
   const handleToggle = () => {
+    if (isVoteUnavailable) return;
     const newValue = myPreselection === true ? null : true;
     preselectVote(newValue);
   };
@@ -333,41 +347,57 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
       {!isDefensePhase && !isCountingDown && <VoteClockRing />}
 
       {/* Vote buttons — available during countdown AND active voting (not during defense) */}
-      {!isDefensePhase && (isCountingDown || canVote) && !hasPassed ? (
+      {!isDefensePhase && showVoteControl && !hasPassed ? (
         <>
           <Text style={styles.description}>
-            {isCountingDown
-              ? '손을 들어 투표에 참여하세요.'
-              : isMyTurn
-                ? '시계 바늘이 지나가기 전에 손을 드세요!'
-                : '투표 버튼을 눌러 투표 의사를 밝힐 수 있습니다.'}
+            {isVoteUnavailable
+              ? voteUnavailableMessage
+              : isCountingDown
+                ? '손을 들어 투표에 참여하세요.'
+                : isMyTurn
+                  ? '시계 바늘이 지나가기 전에 손을 드세요!'
+                  : '투표 버튼을 눌러 투표 의사를 밝힐 수 있습니다.'}
           </Text>
           <Pressable
             style={[
               styles.guiltyButton,
-              myPreselection === true && styles.guiltyButtonSelected,
+              !isVoteUnavailable &&
+                myPreselection === true &&
+                styles.guiltyButtonSelected,
             ]}
             onPress={handleToggle}
-            accessibilityLabel="찬성 투표"
+            disabled={isVoteUnavailable}
+            accessibilityLabel={
+              isVoteUnavailable ? voteUnavailableMessage : '찬성 투표'
+            }
             accessibilityRole="button"
+            accessibilityState={{ disabled: isVoteUnavailable }}
           >
             <View style={styles.voteButtonContent}>
-              <Image
-                source={myPreselection === true ? voteHandRaised : voteHandDown}
-                style={styles.voteHandImage}
-                resizeMode="contain"
-              />
-              <Text
-                style={[
-                  styles.guiltyText,
-                  myPreselection === true && styles.guiltyTextSelected,
-                ]}
-              >
-                {myPreselection === true ? '손 내리기' : '손 들기'}
-              </Text>
+              {isVoteUnavailable ? (
+                <Text style={styles.guiltyText}>{voteUnavailableMessage}</Text>
+              ) : (
+                <>
+                  <Image
+                    source={
+                      myPreselection === true ? voteHandRaised : voteHandDown
+                    }
+                    style={styles.voteHandImage}
+                    resizeMode="contain"
+                  />
+                  <Text
+                    style={[
+                      styles.guiltyText,
+                      myPreselection === true && styles.guiltyTextSelected,
+                    ]}
+                  >
+                    {myPreselection === true ? '손 내리기' : '손 들기'}
+                  </Text>
+                </>
+              )}
             </View>
           </Pressable>
-          {myPreselection == null && (
+          {!isVoteUnavailable && myPreselection == null && (
             <Text style={styles.noSelectionHint}>
               미선택 시 불참으로 처리됩니다
             </Text>
@@ -375,11 +405,7 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
         </>
       ) : !isCountingDown ? (
         <View style={styles.votedContainer}>
-          <Text style={styles.votedSubtext}>
-            {hasPassed
-              ? '투표 완료. 결과를 기다리는 중…'
-              : '다른 플레이어의 투표를 기다리는 중…'}
-          </Text>
+          <Text style={styles.votedSubtext}>{voteUnavailableMessage}</Text>
         </View>
       ) : null}
     </View>
