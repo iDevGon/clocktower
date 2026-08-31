@@ -15,8 +15,17 @@ vi.mock('react-native', () => ({
   },
 }));
 
+vi.mock('../../../notifications', () => ({
+  vibrateAlert: vi.fn(),
+}));
+
+import {
+  dismissPersonalDeathPresentation,
+  selectGameOverlay,
+} from '../../../components/gameOverlayPresentation';
 import { usePlayerStore } from '../../../stores/playerStore';
 import { attachGameListeners } from '../gameListeners';
+import { attachNightListeners } from '../nightListeners';
 import type { AppSocket } from '../types';
 
 class FakeSocket {
@@ -212,5 +221,57 @@ describe('attachGameListeners', () => {
     expect(usePlayerStore.getState().deadVoteUsed).toBe(false);
     expect(usePlayerStore.getState().gamePlayers[0]?.isAlive).toBe(true);
     expect(usePlayerStore.getState().gamePlayers[0]?.deadVoteUsed).toBe(false);
+  });
+
+  it('본인의 밤 사망은 단체 사망 발표보다 우선하고 해제 시 중복 발표도 지운다', () => {
+    const socket = new FakeSocket();
+    attachGameListeners(socket as unknown as AppSocket);
+    attachNightListeners(socket as unknown as AppSocket);
+    usePlayerStore.getState().set({
+      playerId: 'dead-player',
+      isAlive: true,
+      gamePlayers: [
+        {
+          id: 'dead-player',
+          name: 'Dead Player',
+          isAlive: true,
+          deadVoteUsed: false,
+        },
+      ],
+    });
+
+    socket.emitEvent('night:deaths', {
+      deaths: [{ id: 'dead-player', name: 'Dead Player' }],
+    });
+    socket.emitEvent('game:playerUpdate', {
+      id: 'dead-player',
+      name: 'Dead Player',
+      isAlive: false,
+      deadVoteUsed: false,
+      statuses: [],
+    });
+
+    let state = usePlayerStore.getState();
+    expect(
+      selectGameOverlay({
+        justDied: state.justDied,
+        nightDeaths: state.nightDeathAnnouncement !== null,
+      }),
+    ).toBe('death');
+
+    dismissPersonalDeathPresentation(usePlayerStore.getState().set);
+
+    state = usePlayerStore.getState();
+    expect(state).toMatchObject({
+      justDied: false,
+      deathReason: null,
+      nightDeathAnnouncement: null,
+    });
+    expect(
+      selectGameOverlay({
+        justDied: state.justDied,
+        nightDeaths: state.nightDeathAnnouncement !== null,
+      }),
+    ).toBe('none');
   });
 });

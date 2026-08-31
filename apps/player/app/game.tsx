@@ -26,6 +26,7 @@ import { GameOverlays } from '../src/components/GameOverlays';
 import { GossipAnnouncementOverlay } from '../src/components/GossipAnnouncementOverlay';
 import { GossipDeclareModal } from '../src/components/GossipDeclareModal';
 import { GunslingerFiredOverlay } from '../src/components/GunslingerFiredOverlay';
+import { dismissPersonalDeathPresentation } from '../src/components/gameOverlayPresentation';
 import { HarlotConsentModal } from '../src/components/HarlotConsentModal';
 import { JugglerAnnouncementOverlay } from '../src/components/JugglerAnnouncementOverlay';
 import { JugglerDeclareModal } from '../src/components/JugglerDeclareModal';
@@ -269,6 +270,28 @@ export default function GameScreen() {
     () => dismissDeath({ rolePromotion: null }),
     [dismissDeath],
   );
+  const dismissPersonalDeath = useCallback(
+    () => dismissPersonalDeathPresentation(dismissDeath),
+    [dismissDeath],
+  );
+  const dismissExecution = useCallback(
+    () => dismissDeath({ executionAnnouncement: null }),
+    [dismissDeath],
+  );
+  const dismissNightFall = useCallback(() => setShowNightFall(false), []);
+  const dismissRavenkeeper = useCallback(
+    () => setRavenkeeperOverlay(false),
+    [],
+  );
+  const dismissNightDeath = useCallback(
+    () => dismissDeath({ nightDeathAnnouncement: null }),
+    [dismissDeath],
+  );
+  const dismissSlayerFizzle = useCallback(
+    () => dismissDeath({ slayerFizzle: null }),
+    [dismissDeath],
+  );
+  const dismissGameEnd = useCallback(() => setGameEndDismissed(true), []);
 
   const nightWakeUp = usePlayerStore((s) => s.nightWakeUp);
   // 서버가 night:wakeUp을 개별 전송하므로, wakeUp 수신 시에만 차례로 인정
@@ -835,30 +858,22 @@ export default function GameScreen() {
         onDismissRolePromotion={dismissRolePromotion}
         justDied={justDied}
         deathReason={deathReason}
-        onDismissDeath={() =>
-          dismissDeath({
-            justDied: false,
-            deathReason: null,
-            nightDeathAnnouncement: null,
-          })
-        }
+        onDismissDeath={dismissPersonalDeath}
         executionAnnouncement={executionAnnouncement}
         currentPhase={currentPhase}
         gameResult={gameResult}
-        onDismissExecution={() => dismissDeath({ executionAnnouncement: null })}
+        onDismissExecution={dismissExecution}
         showNightFall={showNightFall}
-        onDismissNightFall={() => setShowNightFall(false)}
+        onDismissNightFall={dismissNightFall}
         showRavenkeeper={ravenkeeperOverlay}
-        onDismissRavenkeeper={() => setRavenkeeperOverlay(false)}
+        onDismissRavenkeeper={dismissRavenkeeper}
         nightDeathAnnouncement={nightDeathAnnouncement}
-        onDismissNightDeath={() =>
-          dismissDeath({ nightDeathAnnouncement: null })
-        }
+        onDismissNightDeath={dismissNightDeath}
         slayerFizzle={slayerFizzle}
-        onDismissSlayerFizzle={() => dismissDeath({ slayerFizzle: null })}
+        onDismissSlayerFizzle={dismissSlayerFizzle}
         gameEndDismissed={gameEndDismissed}
         myTeam={role?.team}
-        onDismissGameEnd={() => setGameEndDismissed(true)}
+        onDismissGameEnd={dismissGameEnd}
       />
 
       <WhisperToast
