@@ -160,6 +160,12 @@ export function createNightActionLogStyles(scale: number) {
       gap: s(4),
     },
     // Number
+    numberChoices: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: s(8),
+      marginTop: s(8),
+    },
     numberButton: {
       backgroundColor: '#1e2038',
       borderWidth: 1,

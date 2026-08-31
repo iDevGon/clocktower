@@ -76,6 +76,14 @@ describe('recommended night feedback controls', () => {
     expectStyle('numberButton', 'minWidth: Math\\.max\\(52, s\\(52\\)\\)');
   });
 
+  it('wraps number choices in their own row so six choices remain reachable on phones', () => {
+    expect(numberSource).toContain('<View style={styles.numberChoices}>');
+    expectStyle('numberChoices', "flexDirection: 'row'");
+    expectStyle('numberChoices', "flexWrap: 'wrap'");
+    expectStyle('numberChoices', 'gap: s\\(8\\)');
+    expectStyle('numberChoices', 'marginTop: s\\(8\\)');
+  });
+
   it('uses gold border, background, shadow, and glow on every recommended choice', () => {
     for (const styleName of [
       'numberButtonSuggested',

@@ -26,7 +26,7 @@ export function NumberFeedback({
   const hasSuggestion = suggestedNumber !== undefined;
   const numbers = Array.from({ length: maxNumber + 1 }, (_, i) => i);
   return (
-    <View style={styles.composerRow}>
+    <View style={styles.numberChoices}>
       {numbers.map((n) => {
         const isSuggested = hasSuggestion && n === suggestedNumber;
         const isDimmed = hasSuggestion && n !== suggestedNumber;
