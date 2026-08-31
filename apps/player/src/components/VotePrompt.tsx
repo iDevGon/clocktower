@@ -1,14 +1,7 @@
 import { CountdownTimer, useReducedMotion } from '@clocktower/ui';
 import type { ComponentProps } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import {
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  Vibration,
-  View,
-} from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -16,6 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { voteHandDown, voteHandRaised } from '../assets/ui';
+import { hapticAlert, hapticSelection } from '../haptics';
 import { useGameActions } from '../hooks/useGameActions';
 import { useVoteProgress } from '../hooks/useVoteProgress';
 import { usePlayerStore } from '../stores/playerStore';
@@ -208,7 +202,7 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
       countdownRemaining > 0 &&
       countdownRemaining !== prevCountdownRef.current
     ) {
-      Vibration.vibrate(80);
+      hapticSelection(80);
       prevCountdownRef.current = countdownRemaining;
     }
     if (countdownRemaining === 0) {
@@ -220,7 +214,7 @@ export function VotePrompt({ nominatorName, nomineeName }: VotePromptProps) {
   const hasVibratedRef = useRef(false);
   useEffect(() => {
     if (canVote && !hasVibratedRef.current) {
-      Vibration.vibrate([0, 200, 100, 200]);
+      hapticAlert([0, 200, 100, 200]);
       hasVibratedRef.current = true;
     }
     if (!canVote && !voteClock) {

@@ -1,6 +1,6 @@
 import { FullScreenVignette, useReducedMotion } from '@clocktower/ui';
 import { useEffect } from 'react';
-import { Text, Vibration, View } from 'react-native';
+import { Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -13,6 +13,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { hapticAlert } from '../haptics';
 import { BaseOverlay } from './BaseOverlay';
 import { styles as s } from './RavenkeeperOverlay.styles';
 
@@ -154,7 +155,7 @@ const AUTO_DISMISS_MS = 4500;
 
 export function RavenkeeperOverlay({ onDismiss }: RavenkeeperOverlayProps) {
   useEffect(() => {
-    Vibration.vibrate([0, 200, 100, 400, 150, 300]);
+    hapticAlert([0, 200, 100, 400, 150, 300]);
   }, []);
 
   return (

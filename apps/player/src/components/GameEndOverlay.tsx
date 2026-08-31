@@ -1,7 +1,8 @@
 import type { GameResult, Team } from '@clocktower/shared';
 import { useEffect, useMemo } from 'react';
-import { Text, Vibration, View } from 'react-native';
+import { Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { hapticNotification } from '../haptics';
 import { BaseOverlay } from './BaseOverlay';
 import { DefeatEffects, SlayerEffects, VictoryEffects } from './GameEndEffects';
 import { styles as s } from './GameEndOverlay.styles';
@@ -101,12 +102,14 @@ export function GameEndOverlay({
 
   useEffect(() => {
     if (isSlayerKill) {
-      Vibration.vibrate([0, 50, 50, 50, 50, 600]);
-    } else if (isVictory) {
-      Vibration.vibrate([0, 100, 80, 100, 80, 300]);
-    } else {
-      Vibration.vibrate([0, 400, 200, 400]);
+      hapticNotification('success', [0, 50, 50, 50, 50, 600]);
+      return;
     }
+    if (isVictory) {
+      hapticNotification('success', [0, 100, 80, 100, 80, 300]);
+      return;
+    }
+    hapticNotification('error', [0, 400, 200, 400]);
   }, [isVictory, isSlayerKill]);
 
   const theme: 'victory' | 'defeat' | 'slayer' = isSlayerKill

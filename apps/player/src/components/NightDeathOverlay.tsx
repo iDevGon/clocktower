@@ -1,7 +1,7 @@
 import { getRandomGameTip } from '@clocktower/shared';
 import { FullScreenVignette, GameTip, useReducedMotion } from '@clocktower/ui';
 import { useEffect, useMemo } from 'react';
-import { Text, Vibration, View } from 'react-native';
+import { Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -14,6 +14,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { hapticNotification } from '../haptics';
 import { usePlayerStore } from '../stores/playerStore';
 import { BaseOverlay } from './BaseOverlay';
 import { styles as s } from './NightDeathOverlay.styles';
@@ -163,7 +164,7 @@ export function NightDeathOverlay({
   );
 
   useEffect(() => {
-    Vibration.vibrate([0, 200, 100, 300]);
+    hapticNotification('warning', [0, 200, 100, 300]);
   }, []);
 
   const noDeaths = deaths.length === 0;

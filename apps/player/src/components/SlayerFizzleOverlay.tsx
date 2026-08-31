@@ -1,7 +1,7 @@
 import { getRandomGameTip } from '@clocktower/shared';
 import { FullScreenVignette, GameTip, useReducedMotion } from '@clocktower/ui';
 import { useEffect, useMemo, useState } from 'react';
-import { Dimensions, Pressable, Text, Vibration, View } from 'react-native';
+import { Dimensions, Pressable, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -14,6 +14,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { hapticNotification } from '../haptics';
 import { useConnectionStore } from '../stores/connectionStore';
 import { usePlayerStore } from '../stores/playerStore';
 import { BaseOverlay } from './BaseOverlay';
@@ -241,8 +242,7 @@ export function SlayerFizzleOverlay({
   const [acked, setAcked] = useState(false);
 
   useEffect(() => {
-    // Muffled vibration — a dull thud, not a sharp crack
-    Vibration.vibrate([0, 60, 80, 40]);
+    hapticNotification('warning', [0, 60, 80, 40]);
   }, []);
 
   const handleConfirm = () => {

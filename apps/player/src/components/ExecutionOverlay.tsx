@@ -4,7 +4,7 @@ import {
 } from '@clocktower/shared';
 import { FullScreenVignette, GameTip } from '@clocktower/ui';
 import { useEffect, useMemo } from 'react';
-import { Dimensions, Text, Vibration, View } from 'react-native';
+import { Dimensions, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -17,6 +17,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { hapticNotification } from '../haptics';
 import { usePlayerStore } from '../stores/playerStore';
 import { BaseOverlay } from './BaseOverlay';
 import { styles as s } from './ExecutionOverlay.styles';
@@ -199,7 +200,7 @@ export function ExecutionOverlay({
   );
 
   useEffect(() => {
-    Vibration.vibrate([0, 150, 100, 250]);
+    hapticNotification('warning', [0, 150, 100, 250]);
   }, []);
 
   const icon = REASON_ICONS[announcement.reason] ?? '\u2696\uFE0F';

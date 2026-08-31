@@ -5,13 +5,7 @@ import {
 } from '@clocktower/shared';
 import { GameTip, useReducedMotion } from '@clocktower/ui';
 import { useEffect, useMemo } from 'react';
-import {
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  Vibration,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -23,6 +17,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import { hapticNotification } from '../haptics';
 import { usePlayerStore } from '../stores/playerStore';
 import { BaseOverlay } from './BaseOverlay';
 import { styles as s } from './DeathOverlay.styles';
@@ -154,7 +149,7 @@ export function DeathOverlay({ onDismiss, reason }: DeathOverlayProps) {
   );
 
   useEffect(() => {
-    Vibration.vibrate([0, 300, 150, 500]);
+    hapticNotification('error', [0, 300, 150, 500]);
   }, []);
 
   return (

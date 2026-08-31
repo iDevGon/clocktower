@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
-import { Platform, Vibration } from 'react-native';
+import { Platform } from 'react-native';
+import { hapticAlert } from './haptics';
 
 const isExpoGo = Constants.appOwnership === 'expo';
 
@@ -62,5 +63,5 @@ export async function registerForPushNotifications(): Promise<string | null> {
 }
 
 export function vibrateAlert(): void {
-  Vibration.vibrate([0, 200, 100, 200]);
+  hapticAlert();
 }
