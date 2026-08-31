@@ -55,4 +55,27 @@ describe('SeatingChart role picker source', () => {
       /tokenGhostSpent: \{[\s\S]*?shadowOpacity: 0,[\s\S]*?elevation: 0,/,
     );
   });
+
+  it('preserves alive badge geometry and widens only ghost badges', () => {
+    const aliveBadgeStyle = seatingStylesSource.match(
+      /voteRightBadge: \{([\s\S]*?)\n {2}\},/,
+    )?.[1];
+    const ghostBadgeStyle = seatingStylesSource.match(
+      /voteRightGhostBadge: \{([\s\S]*?)\n {2}\},/,
+    )?.[1];
+
+    expect(aliveBadgeStyle).toContain('width: 58,');
+    expect(aliveBadgeStyle).toContain('paddingHorizontal: 6,');
+    expect(aliveBadgeStyle).toContain('transform: [{ translateX: -29 }]');
+    expect(aliveBadgeStyle).not.toContain('flexDirection');
+    expect(aliveBadgeStyle).not.toContain('gap:');
+    expect(ghostBadgeStyle).toContain('width: 64,');
+    expect(ghostBadgeStyle).toContain('paddingHorizontal: 4,');
+    expect(ghostBadgeStyle).toContain("flexDirection: 'row'");
+    expect(ghostBadgeStyle).toContain('gap: 2,');
+    expect(ghostBadgeStyle).toContain('transform: [{ translateX: -32 }]');
+    expect(seatingSource).toContain(
+      "voteRight.state !== 'alive' && s.voteRightGhostBadge",
+    );
+  });
 });

@@ -339,6 +339,7 @@ export function SeatingChart({
           <View
             style={[
               s.voteRightBadge,
+              voteRight.state !== 'alive' && s.voteRightGhostBadge,
               voteRight.state === 'alive'
                 ? s.voteRightAlive
                 : voteRight.state === 'ghost_spent'
