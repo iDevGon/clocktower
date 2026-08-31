@@ -36,8 +36,7 @@ describe('SeatingChart role picker source', () => {
     expect(seatingSource).not.toContain('autoFocus');
   });
 
-  it('uses the vote-right presentation helper for seating badges', () => {
-    expect(seatingSource).toContain('getVoteRightPresentation');
+  it('uses the derived vote-right presentation for seating badges', () => {
     expect(seatingSource).toContain('voteRight.label');
     expect(seatingSource).toContain('voteRight.state');
     expect(seatingSource).toMatch(
@@ -77,5 +76,18 @@ describe('SeatingChart role picker source', () => {
     expect(seatingSource).toContain(
       "voteRight.state !== 'alive' && s.voteRightGhostBadge",
     );
+  });
+
+  it('uses one public seating presentation and captures deaths only on night entry', () => {
+    expect(seatingSource).toContain('getSeatingPlayerPresentation');
+    expect(seatingSource).toContain(
+      'const { showDeath, voteRight } = getSeatingPlayerPresentation({',
+    );
+    expect(seatingSource).toContain('shouldCaptureDeadBeforeNightSnapshot');
+    expect(seatingSource).toContain('useLayoutEffect');
+    expect(seatingSource).toContain(
+      'wasDeadBeforeNight: deadBeforeNight.has(player.id)',
+    );
+    expect(seatingSource).not.toContain('getVoteRightPresentation({');
   });
 });

@@ -1,6 +1,13 @@
 import type { Phase, PlayerInfo, Role, Team } from '@clocktower/shared';
 import { colors } from '@clocktower/ui';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Image,
   Modal,
@@ -14,7 +21,10 @@ import {
 import { voteHandDown, voteHandRaised } from '../assets/ui';
 import type { VoteHistoryEntry } from '../stores/playerStore';
 import { styles as s } from './SeatingChart.styles';
-import { getVoteRightPresentation } from './seatingPresentation';
+import {
+  getSeatingPlayerPresentation,
+  shouldCaptureDeadBeforeNightSnapshot,
+} from './seatingPresentation';
 import { resolveSelectedVote } from './seatingVoteSelection';
 
 interface SeatingChartProps {
@@ -65,19 +75,22 @@ export function SeatingChart({
   onSetPlayerNote,
   onClose,
 }: SeatingChartProps) {
-  // 밤 진입 시점의 사망자 ID를 스냅샷으로 저장
-  const deadBeforeNight = useRef<Set<string>>(new Set());
+  const [deadBeforeNight, setDeadBeforeNight] = useState<Set<string>>(
+    new Set(),
+  );
+  const previousPhase = useRef<Phase | null>(null);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [roleSearch, setRoleSearch] = useState('');
   const [selectedVoteId, setSelectedVoteId] = useState<string | null>(null);
   const { width: windowWidth } = useWindowDimensions();
 
-  useEffect(() => {
-    if (phase === 'night') {
-      deadBeforeNight.current = new Set(
-        players.filter((p) => !p.isAlive).map((p) => p.id),
+  useLayoutEffect(() => {
+    if (shouldCaptureDeadBeforeNightSnapshot(previousPhase.current, phase)) {
+      setDeadBeforeNight(
+        new Set(players.filter((p) => !p.isAlive).map((p) => p.id)),
       );
     }
+    previousPhase.current = phase;
   }, [phase, players]);
 
   const areaSize = useMemo(() => {
@@ -243,16 +256,11 @@ export function SeatingChart({
       const note = roleNotes[player.id];
       const playerNote = playerNotes[player.id];
 
-      // 밤에는 밤 진입 전 이미 죽었던 사람만 사망 표시
-      // 그 외 페이즈에서는 서버 상태 그대로 표시
-      const showDeath =
-        phase === 'night'
-          ? deadBeforeNight.current.has(player.id)
-          : !player.isAlive && phase !== 'setup';
-
-      const voteRight = getVoteRightPresentation({
+      const { showDeath, voteRight } = getSeatingPlayerPresentation({
+        phase,
         isAlive: player.isAlive,
         deadVoteUsed: player.deadVoteUsed === true,
+        wasDeadBeforeNight: deadBeforeNight.has(player.id),
       });
       const hasGhostVote = voteRight.state === 'ghost_available';
       const hasSpentGhostVote = voteRight.state === 'ghost_spent';
@@ -380,6 +388,7 @@ export function SeatingChart({
     },
     [
       myId,
+      deadBeforeNight,
       openNoteEditor,
       playerNotes,
       positions,
