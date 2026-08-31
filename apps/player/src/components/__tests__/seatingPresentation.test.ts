@@ -41,7 +41,7 @@ describe('getSeatingPlayerPresentation', () => {
         phase: 'night',
         isAlive: false,
         deadVoteUsed: false,
-        wasDeadBeforeNight: false,
+        deadVoteUsedBeforeNight: null,
       }),
     ).toEqual({
       showDeath: false,
@@ -49,17 +49,31 @@ describe('getSeatingPlayerPresentation', () => {
     });
   });
 
-  it('shows a player who was dead before the night as dead', () => {
+  it('keeps an unused pre-night dead player available during the night', () => {
     expect(
       getSeatingPlayerPresentation({
         phase: 'night',
         isAlive: false,
         deadVoteUsed: false,
-        wasDeadBeforeNight: true,
+        deadVoteUsedBeforeNight: false,
       }),
     ).toEqual({
       showDeath: true,
       voteRight: { label: '유령표 보유', state: 'ghost_available' },
+    });
+  });
+
+  it('keeps a spent pre-night dead player spent after a night resurrection', () => {
+    expect(
+      getSeatingPlayerPresentation({
+        phase: 'night',
+        isAlive: true,
+        deadVoteUsed: false,
+        deadVoteUsedBeforeNight: true,
+      }),
+    ).toEqual({
+      showDeath: true,
+      voteRight: { label: '유령표 사용', state: 'ghost_spent' },
     });
   });
 
@@ -69,7 +83,7 @@ describe('getSeatingPlayerPresentation', () => {
         phase: 'day',
         isAlive: false,
         deadVoteUsed: true,
-        wasDeadBeforeNight: false,
+        deadVoteUsedBeforeNight: false,
       }),
     ).toEqual({
       showDeath: true,
@@ -83,7 +97,7 @@ describe('getSeatingPlayerPresentation', () => {
         phase: 'setup',
         isAlive: false,
         deadVoteUsed: true,
-        wasDeadBeforeNight: false,
+        deadVoteUsedBeforeNight: true,
       }),
     ).toEqual({
       showDeath: false,

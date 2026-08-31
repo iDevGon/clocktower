@@ -75,9 +75,9 @@ export function SeatingChart({
   onSetPlayerNote,
   onClose,
 }: SeatingChartProps) {
-  const [deadBeforeNight, setDeadBeforeNight] = useState<Set<string>>(
-    new Set(),
-  );
+  const [deadVoteStateBeforeNight, setDeadVoteStateBeforeNight] = useState<
+    Map<string, boolean>
+  >(new Map());
   const previousPhase = useRef<Phase | null>(null);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [roleSearch, setRoleSearch] = useState('');
@@ -86,8 +86,14 @@ export function SeatingChart({
 
   useLayoutEffect(() => {
     if (shouldCaptureDeadBeforeNightSnapshot(previousPhase.current, phase)) {
-      setDeadBeforeNight(
-        new Set(players.filter((p) => !p.isAlive).map((p) => p.id)),
+      setDeadVoteStateBeforeNight(
+        new Map(
+          players
+            .filter((player) => !player.isAlive)
+            .map(
+              (player) => [player.id, player.deadVoteUsed === true] as const,
+            ),
+        ),
       );
     }
     previousPhase.current = phase;
@@ -260,7 +266,8 @@ export function SeatingChart({
         phase,
         isAlive: player.isAlive,
         deadVoteUsed: player.deadVoteUsed === true,
-        wasDeadBeforeNight: deadBeforeNight.has(player.id),
+        deadVoteUsedBeforeNight:
+          deadVoteStateBeforeNight.get(player.id) ?? null,
       });
       const hasGhostVote = voteRight.state === 'ghost_available';
       const hasSpentGhostVote = voteRight.state === 'ghost_spent';
@@ -388,7 +395,7 @@ export function SeatingChart({
     },
     [
       myId,
-      deadBeforeNight,
+      deadVoteStateBeforeNight,
       openNoteEditor,
       playerNotes,
       positions,

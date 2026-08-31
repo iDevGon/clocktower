@@ -25,7 +25,7 @@ interface SeatingPlayerPresentationInput {
   phase: Phase;
   isAlive: boolean;
   deadVoteUsed: boolean;
-  wasDeadBeforeNight: boolean;
+  deadVoteUsedBeforeNight: boolean | null;
 }
 
 interface SeatingPlayerPresentation {
@@ -37,16 +37,21 @@ export function getSeatingPlayerPresentation({
   phase,
   isAlive,
   deadVoteUsed,
-  wasDeadBeforeNight,
+  deadVoteUsedBeforeNight,
 }: SeatingPlayerPresentationInput): SeatingPlayerPresentation {
+  const wasDeadBeforeNight = deadVoteUsedBeforeNight !== null;
   const presentedAlive =
     phase === 'night' ? !wasDeadBeforeNight : phase === 'setup' || isAlive;
+  const presentedDeadVoteUsed =
+    phase === 'night' && wasDeadBeforeNight
+      ? deadVoteUsedBeforeNight
+      : deadVoteUsed;
 
   return {
     showDeath: !presentedAlive,
     voteRight: getVoteRightPresentation({
       isAlive: presentedAlive,
-      deadVoteUsed,
+      deadVoteUsed: presentedDeadVoteUsed,
     }),
   };
 }

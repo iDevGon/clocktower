@@ -78,16 +78,21 @@ describe('SeatingChart role picker source', () => {
     );
   });
 
-  it('uses one public seating presentation and captures deaths only on night entry', () => {
+  it('uses one public presentation and atomically snapshots night ghost votes', () => {
     expect(seatingSource).toContain('getSeatingPlayerPresentation');
     expect(seatingSource).toContain(
       'const { showDeath, voteRight } = getSeatingPlayerPresentation({',
     );
     expect(seatingSource).toContain('shouldCaptureDeadBeforeNightSnapshot');
     expect(seatingSource).toContain('useLayoutEffect');
+    expect(seatingSource).toContain('deadVoteUsedBeforeNight:');
     expect(seatingSource).toContain(
-      'wasDeadBeforeNight: deadBeforeNight.has(player.id)',
+      'deadVoteStateBeforeNight.get(player.id) ?? null',
     );
+    expect(seatingSource).toContain(
+      '[player.id, player.deadVoteUsed === true]',
+    );
+    expect(seatingSource).not.toContain('deadBeforeNight');
     expect(seatingSource).not.toContain('getVoteRightPresentation({');
   });
 });
