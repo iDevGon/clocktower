@@ -881,7 +881,6 @@ export default function LobbyScreen() {
               }
               scale={scale}
             />
-            {mode === 'desktop' && <View style={styles.settingsDivider} />}
             <SettingToggle
               label="온라인 투표"
               value={gameState.settings.votingMode === 'online'}
@@ -892,7 +891,6 @@ export default function LobbyScreen() {
               }
               scale={scale}
             />
-            {mode === 'desktop' && <View style={styles.settingsDivider} />}
             <SettingToggle
               label="이전 투표 기록"
               value={gameState.settings.showVoteHistory}

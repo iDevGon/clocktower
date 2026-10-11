@@ -740,7 +740,8 @@ export function createLobbyStyles(scale: number) {
     },
     settingsToggleRow: {
       flexDirection: 'row',
-      justifyContent: 'space-around',
+      flexWrap: 'wrap',
+      gap: s(8),
       backgroundColor: arcane.surface.apparatus,
       borderRadius: 6,
       paddingVertical: s(10),
@@ -753,10 +754,6 @@ export function createLobbyStyles(scale: number) {
       alignItems: 'stretch',
       justifyContent: 'flex-start',
       gap: s(8),
-    },
-    settingsDivider: {
-      width: 1,
-      backgroundColor: arcane.border.parchment,
     },
     clockSettingContainer: {
       backgroundColor: arcane.surface.apparatus,
