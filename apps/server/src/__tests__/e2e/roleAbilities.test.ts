@@ -627,28 +627,48 @@ describe('E2E: 시장 특수 승리', () => {
     await ctx.cleanup();
   });
 
-  it('3인 생존 + 처형 없음 → 선 진영 승리', async () => {
+  it('밤에 3명이 남아도 계속 진행하고 처형 없이 낮을 마쳐야 시장이 승리한다', async () => {
     const { playerIds } = await setupGameWithRoles(ctx, [
-      { roleId: 'mayor' }, // p0
+      { roleId: 'mayor' },
       { roleId: 'empath' },
       { roleId: 'fortune_teller' },
       { roleId: 'poisoner' },
       { roleId: 'imp' },
     ]);
 
-    // 2명 사살 → 3명 생존
-    ctx.storyteller.emit('game:kill', playerIds[1]);
-    ctx.storyteller.emit('game:kill', playerIds[2]);
+    for (const playerId of [playerIds[1], playerIds[2]]) {
+      const statePromise = waitForEvent(
+        ctx.storyteller as Socket,
+        'game:state',
+      );
+      ctx.storyteller.emit('game:kill', playerId);
+      await statePromise;
+    }
+    expect(ctx.app.game.getState().phase).toBe('night');
+    expect(
+      ctx.app.game.getState().players.filter((p) => p.isAlive),
+    ).toHaveLength(3);
 
-    // game:end 리스너 등록
-    const endPromise = waitForEvent<{
-      winningTeam: string;
-    }>(ctx.players[0] as Socket, 'game:end');
+    // 같은 밤으로 다시 전환해도 낮 종료로 취급하지 않는다.
+    const nightStatePromise = waitForEvent(
+      ctx.storyteller as Socket,
+      'game:state',
+    );
+    ctx.storyteller.emit('game:setPhase', 'night');
+    await nightStatePromise;
+    expect(ctx.app.game.getState().phase).toBe('night');
 
-    // 승리 조건은 checkWinCondition에서 체크됨
-    // game:kill 후 자동으로 체크되므로 이벤트 대기
+    await advanceToDay(ctx);
+    expect(ctx.app.game.getState().phase).toBe('day');
+
+    const endPromise = waitForEvent<{ winningTeam: string }>(
+      ctx.players[0] as Socket,
+      'game:end',
+    );
+    ctx.storyteller.emit('game:setPhase', 'night');
     const endResult = await endPromise;
     expect(endResult.winningTeam).toBe('good');
+    expect(ctx.app.game.getState().phase).toBe('ended');
   }, 15000);
 
   it('시장 밤 사망 리다이렉트로 악마가 죽으면 즉시 선 진영 승리로 종료한다', async () => {

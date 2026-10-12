@@ -756,6 +756,7 @@ describe('GameManager - 여행자 시스템', () => {
 
     it('뼈 수집가는 죽은 플레이어 1명에게 오늘 능력을 되돌려준다', () => {
       const { gm, players } = createStartedGame();
+      gm.setPhase('day');
       const collector = gm.addTraveller('Bone Collector');
       expect(collector).not.toBeNull();
       gm.assignTravellerRole(collector?.id ?? '', 'bone_collector', 'good');

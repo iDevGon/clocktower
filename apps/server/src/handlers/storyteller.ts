@@ -17,7 +17,7 @@ import {
   NIGHT_ACTIONS,
 } from '@clocktower/shared/logic';
 import type { Namespace } from 'socket.io';
-import type { GameManager } from '../game.js';
+import { type GameManager, isPoisonedOrDrunk } from '../game.js';
 import {
   buildTrueGrimoireFeedback,
   shouldAutoSendSpyGrimoire,
@@ -404,6 +404,10 @@ export function registerStorytellerHandlers(
     });
 
     socket.on('game:setPhase', (phase, options) => {
+      if (game.getState().phase === phase) {
+        storytellerIo.emit('game:state', game.getStorytellerState());
+        return;
+      }
       // 밤 전환 시 → 최다 투표 후보 처형 실행
       if (phase === 'night') {
         const candidate = game.getExecutionCandidate();
@@ -475,6 +479,20 @@ export function registerStorytellerHandlers(
           const result = game.checkWinCondition();
           if (result) {
             result.cause = 'execution';
+            playerIo.emit('game:end', result);
+            playerIo.emit('game:phase', 'ended');
+            storytellerIo.emit('game:end', result);
+            storytellerIo.emit('game:state', game.getStorytellerState());
+            return;
+          }
+        }
+
+        // 시장: 처형 없이 낮을 마친 경우에만 특수 승리 판정
+        if (game.getState().phase === 'day' && !game.hadExecutionToday()) {
+          const result = game.checkWinCondition(undefined, undefined, {
+            endOfDay: true,
+          });
+          if (result) {
             playerIo.emit('game:end', result);
             playerIo.emit('game:phase', 'ended');
             storytellerIo.emit('game:end', result);
@@ -1251,6 +1269,13 @@ export function registerStorytellerHandlers(
         return;
       }
       callback?.({ success: true });
+      const winResult = game.checkWinCondition();
+      if (winResult) {
+        playerIo.emit('game:end', winResult);
+        playerIo.emit('game:phase', 'ended');
+        storytellerIo.emit('game:end', winResult);
+      }
+      storytellerIo.emit('game:state', game.getStorytellerState());
     });
 
     socket.on('game:sweetheartDrunk', (playerId, callback) => {
@@ -1695,7 +1720,7 @@ export function registerStorytellerHandlers(
         return;
       }
       const isEvil = game.getPlayerAlignment(chosenPlayerId) === 'evil';
-      if (isEvil) {
+      if (isEvil && !isPoisonedOrDrunk(klutz)) {
         // 얼뜨기가 악한 플레이어를 선택 → 악 팀 승리
         const winResult = game.checkWinCondition();
         if (!winResult) {

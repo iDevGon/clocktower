@@ -124,7 +124,7 @@ function isDrunkStatus(status: PlayerStatus): boolean {
 }
 
 /** 플레이어가 중독 또는 취함 상태인지 확인 (능력 무효화 판정용) */
-function isPoisonedOrDrunk(player: Player): boolean {
+export function isPoisonedOrDrunk(player: Player): boolean {
   if (isSoberHealthy(player)) return false;
   return (
     hasPoisonStatus(player.statuses) || player.statuses.some(isDrunkStatus)
@@ -299,6 +299,10 @@ export class GameManager {
   private fortuneTellerRedHerring: string | null = null;
   // 탕녀 승계로 역할이 변경된 플레이어 (checkWinCondition 호출 후 소비)
   private lastPromotedPlayer: Player | null = null;
+  private pendingScarletWomanPromotion: {
+    playerId: string;
+    demonRole: Role;
+  } | null = null;
   // 임프 자해 시 지연된 승계 (밤→낮 전환 시 실행)
   private pendingImpPromotion: { minionId: string } | null = null;
   // 밤 역할 겹침 시 순차 wakeUp 대기열 (다음 night:wakeUp 대상 플레이어 ID)
@@ -774,6 +778,7 @@ export class GameManager {
     this.pendingMayorRedirectId = null;
     this.nightAwakenedPlayerIds.clear();
     this.mastermindFinalDayActive = false;
+    this.pendingScarletWomanPromotion = null;
     this.minstrelDrunkUntilDuskDay = null;
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
@@ -885,6 +890,7 @@ export class GameManager {
     this.shabalothRegurgitatedTonight = false;
     this.nightAwakenedPlayerIds.clear();
     this.mastermindFinalDayActive = false;
+    this.pendingScarletWomanPromotion = null;
     this.minstrelDrunkUntilDuskDay = null;
     this.currentNightRoleId = null;
     this.currentNightOrder = [];
@@ -1252,6 +1258,7 @@ export class GameManager {
   }
 
   setPhase(phase: Phase): void {
+    if (this.state.phase === phase) return;
     if (this.state.phase !== phase) {
       this.currentNightWakeUpPlayerId = null;
       this.gamblerGuessReview = null;
@@ -1390,6 +1397,22 @@ export class GameManager {
     const player = this.getPlayer(playerId);
     if (player) {
       const wasAlive = player.isAlive;
+      if (
+        wasAlive &&
+        player.role?.team === 'demon' &&
+        this.getEffectiveAlignment(player) === 'evil'
+      ) {
+        const aliveRegularPlayers = this.state.players.filter(
+          (p) => p.isAlive && !p.isTraveller,
+        );
+        const scarletWoman = aliveRegularPlayers.find(
+          (p) => p.role?.id === 'scarlet_woman' && !isPoisonedOrDrunk(p),
+        );
+        this.pendingScarletWomanPromotion =
+          aliveRegularPlayers.length >= 5 && scarletWoman
+            ? { playerId: scarletWoman.id, demonRole: player.role }
+            : null;
+      }
       player.isAlive = false;
       if (wasAlive && this.state.phase === 'day') {
         this.dayDeathToday = true;
@@ -4630,8 +4653,14 @@ export class GameManager {
   checkWinCondition(
     executedRoleId?: string,
     executedPlayerId?: string,
+    options: { endOfDay?: boolean } = {},
   ): GameResult | null {
-    if (!this.state.started || this.state.phase === 'ended') return null;
+    if (
+      !this.state.started ||
+      this.state.phase === 'ended' ||
+      this.pendingMayorRedirectId
+    )
+      return null;
 
     const alivePlayers = this.state.players.filter((p) => p.isAlive);
     // 여행자는 생존자 수 계산에서 제외 (승리 조건 판정용)
@@ -4699,7 +4728,24 @@ export class GameManager {
       (p) =>
         p.role?.team === 'demon' && this.getEffectiveAlignment(p) === 'evil',
     );
+    const scarletPromotion = this.pendingScarletWomanPromotion;
+    this.pendingScarletWomanPromotion = null;
     if (!aliveDemon) {
+      // 사망 직전 5명 이상에서 능력이 유효했던 탕녀가 같은 악마를 승계합니다.
+      const scarletWoman = scarletPromotion
+        ? this.getPlayer(scarletPromotion.playerId)
+        : undefined;
+      if (
+        scarletPromotion &&
+        scarletWoman?.isAlive &&
+        scarletWoman.role?.id === 'scarlet_woman'
+      ) {
+        scarletWoman.role = scarletPromotion.demonRole;
+        this.lastPromotedPlayer = scarletWoman;
+        this.pendingImpPromotion = null;
+        this.syncContinuousPoisoning();
+        return null;
+      }
       // 임프 자해 승계가 예약되어 있으면 게임 계속
       if (this.pendingImpPromotion) {
         return null;
@@ -4716,19 +4762,6 @@ export class GameManager {
         }
       }
 
-      // 탕녀 승계: 생존자 5명 이상이고 살아있는 (중독되지 않은) 탕녀가 있으면 게임 계속
-      const aliveScarletWoman = alivePlayers.find(
-        (p) => p.role?.id === 'scarlet_woman' && !isPoisonedOrDrunk(p),
-      );
-      if (aliveScarletWoman && aliveCount >= 5) {
-        // 탕녀를 임프로 자동 승계
-        const impRole = getRoleById('imp');
-        if (impRole) {
-          aliveScarletWoman.role = impRole;
-          this.lastPromotedPlayer = aliveScarletWoman;
-        }
-        return null;
-      }
       if (
         !this.mastermindFinalDayActive &&
         this.wasExecutedDemonDeath(executedRoleId, executedPlayerId) &&
@@ -4748,8 +4781,13 @@ export class GameManager {
       return buildResult('evil', '악마가 마을을 장악했습니다');
     }
 
-    // 시장(Mayor): 생존자 3명 + 오늘 처형 없음 + 살아있는 (중독되지 않은) 시장
-    if (aliveCount === 3 && !this.executionToday) {
+    // 시장(Mayor): 낮 종료 시 생존자 3명 + 처형 없음 + 살아있는 (중독되지 않은) 시장
+    if (
+      options.endOfDay &&
+      this.state.phase === 'day' &&
+      aliveCount === 3 &&
+      !this.executionToday
+    ) {
       const aliveMayor = alivePlayers.find(
         (p) => p.role?.id === 'mayor' && !isPoisonedOrDrunk(p),
       );

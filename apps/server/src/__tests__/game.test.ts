@@ -155,6 +155,7 @@ describe('GameManager', () => {
   describe('페이즈 전환', () => {
     it('night 전환 시 중독/보호 상태가 제거된다', () => {
       const { gm, players } = createStartedGame();
+      gm.setPhase('day');
       gm.setPlayerStatuses(players[0].id, ['poisoned', 'protected']);
       gm.setPhase('night');
       const p = gm.getPlayer(players[0].id);
@@ -164,6 +165,7 @@ describe('GameManager', () => {
 
     it('night 전환 시 drunk 상태는 유지된다', () => {
       const { gm, players } = createStartedGame();
+      gm.setPhase('day');
       gm.setPlayerStatuses(players[0].id, ['drunk', 'poisoned']);
       gm.setPhase('night');
       const p = gm.getPlayer(players[0].id);
@@ -779,20 +781,46 @@ describe('GameManager', () => {
       expect(result).toBeNull();
     });
 
-    it('시장: 3인 + 처형 없음 → 선 승리', () => {
-      const { gm, players } = createTestGame(5);
+    it.each([
+      'night',
+      'day',
+    ] as const)('시장: %s 도중 3명이 남아도 승리하지 않는다', (phase) => {
+      const { gm, players } = createStartedGame();
       gm.assignRole(players[0].id, 'mayor');
-      gm.assignRole(players[1].id, 'empath');
-      gm.assignRole(players[2].id, 'fortune_teller');
-      gm.assignRole(players[3].id, 'poisoner');
-      gm.assignRole(players[4].id, 'imp');
-      gm.start();
-
+      gm.setPhase(phase);
       gm.kill(players[1].id);
       gm.kill(players[2].id);
-      const result = gm.checkWinCondition();
-      expect(result).not.toBeNull();
-      expect(result?.winningTeam).toBe('good');
+
+      expect(gm.checkWinCondition()).toBeNull();
+      expect(gm.getState().phase).toBe(phase);
+    });
+
+    it.each([
+      { statuses: [], executed: false, winningTeam: 'good' },
+      { statuses: ['poisoned'], executed: false, winningTeam: null },
+      { statuses: ['drunk'], executed: false, winningTeam: null },
+      { statuses: [], executed: true, winningTeam: null },
+    ] as const)('시장: 낮 종료 시 상태 $statuses, 처형 $executed → $winningTeam', ({
+      statuses,
+      executed,
+      winningTeam,
+    }) => {
+      const { gm, players } = createStartedGame();
+      gm.assignRole(players[0].id, 'mayor');
+      gm.kill(players[1].id);
+      gm.kill(players[2].id);
+      gm.setPhase('day');
+      gm.setPlayerStatuses(players[0].id, [...statuses]);
+      if (executed) gm.markExecution();
+
+      const result = gm.checkWinCondition(undefined, undefined, {
+        endOfDay: true,
+      });
+      if (winningTeam) {
+        expect(result?.winningTeam).toBe(winningTeam);
+      } else {
+        expect(result).toBeNull();
+      }
     });
 
     it('주모자가 살아있으면 악마 처형 직후 게임을 하루 더 진행한다', () => {

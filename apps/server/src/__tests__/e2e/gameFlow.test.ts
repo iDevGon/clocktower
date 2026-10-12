@@ -541,7 +541,13 @@ describe('E2E: 승리 조건', () => {
   });
 
   it('악마 사망 → 선 진영 승리', async () => {
-    await setupFullGame(ctx);
+    await setupGameWithRoles(ctx, [
+      { roleId: 'washerwoman' },
+      { roleId: 'empath' },
+      { roleId: 'chef' },
+      { roleId: 'poisoner' },
+      { roleId: 'imp' },
+    ]);
 
     const state = ctx.app.game.getState();
     const demon = state.players.find((p) => p.role?.team === 'demon');

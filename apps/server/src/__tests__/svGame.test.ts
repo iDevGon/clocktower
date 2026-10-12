@@ -131,6 +131,7 @@ describe('S&V GameManager', () => {
 
     it('밤 전환 시 저주가 초기화된다', () => {
       const { gm, players } = createStartedSVGame();
+      gm.setPhase('day');
       gm.setWitchCursedTarget(players[0].id);
       gm.setPhase('night');
       expect(gm.getWitchCursedTarget()).toBeNull();
