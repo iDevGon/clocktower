@@ -7,7 +7,7 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.arcane.surface.base,
   },
   backgroundGradient: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   content: {
     flex: 1,
@@ -142,7 +142,7 @@ export const styles = StyleSheet.create({
     borderColor: colors.arcane.border.brass,
   },
   joinButtonGradient: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   joinButtonPressed: {
     opacity: 0.8,
@@ -165,7 +165,7 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   overlayMask: {
     flex: 1,

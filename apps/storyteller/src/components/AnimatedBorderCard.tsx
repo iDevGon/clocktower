@@ -294,11 +294,11 @@ const s = StyleSheet.create({
     overflow: 'hidden',
   },
   glowLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     elevation: 8,
   },
   borderBase: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   inner: {
     position: 'relative',

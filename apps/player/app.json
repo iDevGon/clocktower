@@ -2,17 +2,11 @@
   "expo": {
     "name": "player",
     "slug": "player",
-    "sdkVersion": "54.0.0",
     "scheme": "player",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#1a1a2e"
-    },
     "ios": {
       "supportsTablet": true
     },
@@ -38,6 +32,14 @@
         "expo-notifications",
         {
           "sounds": []
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#1a1a2e"
         }
       ]
     ]

@@ -65,14 +65,14 @@ export const styles = StyleSheet.create({
     overflow: 'visible',
   },
   clockFaceImage: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     width: RING_SIZE,
     height: RING_SIZE,
     opacity: 0.34,
     zIndex: PLAYER_VOTE_CLOCK_LAYER.face,
   },
   clockFaceVeil: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     width: RING_SIZE,
     height: RING_SIZE,
     borderRadius: RING_SIZE / 2,
@@ -153,7 +153,7 @@ export const styles = StyleSheet.create({
   },
   // Smoke layer
   smokeLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     overflow: 'visible',
     zIndex: PLAYER_VOTE_CLOCK_LAYER.smoke,
   },

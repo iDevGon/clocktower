@@ -61,7 +61,7 @@ export const styles = StyleSheet.create({
     position: 'relative',
   },
   voteOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1,
   },
   nominationArrow: {

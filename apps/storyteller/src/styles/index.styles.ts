@@ -9,7 +9,7 @@ export function createIndexStyles(scale: number) {
       backgroundColor: colors.arcane.surface.base,
     },
     backgroundGradient: {
-      ...StyleSheet.absoluteFillObject,
+      ...StyleSheet.absoluteFill,
     },
     content: {
       flex: 1,
@@ -162,7 +162,7 @@ export function createIndexStyles(scale: number) {
       borderColor: colors.arcane.border.brass,
     },
     buttonGradient: {
-      ...StyleSheet.absoluteFillObject,
+      ...StyleSheet.absoluteFill,
     },
     buttonPressed: {
       opacity: 0.8,

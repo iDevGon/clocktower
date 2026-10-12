@@ -2,17 +2,11 @@
   "expo": {
     "name": "storyteller",
     "slug": "storyteller",
-    "sdkVersion": "54.0.0",
     "scheme": "storyteller",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0d0d1a"
-    },
     "ios": {
       "supportsTablet": true
     },
@@ -32,6 +26,14 @@
         "expo-camera",
         {
           "cameraPermission": "서버 QR 코드를 스캔하려면 카메라 권한이 필요합니다."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#0d0d1a"
         }
       ]
     ]
