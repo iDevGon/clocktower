@@ -7,7 +7,13 @@ import {
 } from '@clocktower/shared';
 import { AbilityText, colors } from '@clocktower/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  type ScrollViewInstance,
+  Text,
+  View,
+} from 'react-native';
 import { useResponsive } from '../hooks/useResponsive';
 import {
   createNightOrderPanelStyles,
@@ -115,7 +121,7 @@ export function NightOrderPanel({
 
   const [elapsed, setElapsed] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const chipWidths = useRef<number[]>([]);
   const lastAdvanceRequestRef = useRef(advanceRequestId ?? 0);
 

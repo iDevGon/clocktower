@@ -1,5 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const appState = vi.hoisted(() => ({
+  currentState: 'active' as string | null | undefined,
+  addEventListener: vi.fn(
+    (_event: string, _handler: (state: string) => void) => ({
+      remove: vi.fn(),
+    }),
+  ),
+}));
+
 vi.mock('@react-native-async-storage/async-storage', () => ({
   default: {
     getItem: vi.fn(() => Promise.resolve(null)),
@@ -9,10 +18,7 @@ vi.mock('@react-native-async-storage/async-storage', () => ({
 }));
 
 vi.mock('react-native', () => ({
-  AppState: {
-    currentState: 'active',
-    addEventListener: vi.fn(() => ({ remove: vi.fn() })),
-  },
+  AppState: appState,
 }));
 
 vi.mock('../../../notifications', () => ({
@@ -53,6 +59,26 @@ class FakeSocket {
 describe('attachGameListeners', () => {
   beforeEach(() => {
     usePlayerStore.getState().reset();
+    appState.currentState = 'active';
+    appState.addEventListener.mockClear();
+  });
+
+  it.each([
+    null,
+    undefined,
+  ])('초기 앱 상태가 %s여도 복귀 리스너가 정상 작동한다', (initialState) => {
+    appState.currentState = initialState;
+    const socket = new FakeSocket();
+    usePlayerStore.getState().set({ playerId: 'persisted-player' });
+    attachGameListeners(socket as unknown as AppSocket);
+    const onChange = appState.addEventListener.mock.calls[0][1];
+
+    expect(() => onChange('active')).not.toThrow();
+    expect(socket.rejoinEmitCount).toBe(0);
+
+    onChange('background');
+    onChange('active');
+    expect(socket.rejoinEmitCount).toBe(1);
   });
 
   it('초기 연결은 자동 rejoin을 건너뛰고 이후 reconnect마다 한 번만 요청한다', () => {

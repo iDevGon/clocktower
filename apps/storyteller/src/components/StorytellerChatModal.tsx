@@ -13,6 +13,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  type ScrollViewInstance,
   Text,
   TextInput,
   View,
@@ -162,7 +163,7 @@ function ChatView({
   onSend: (playerId: string, message: string) => void;
 }) {
   const [text, setText] = useState('');
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const insets = useSafeAreaInsets();
   const messages = useGameStore((s) => s.chatMessages[playerId]) ?? [];
   const player = useGameStore((s) =>

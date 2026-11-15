@@ -79,7 +79,7 @@ export function DrunkFakeRoleModal({
                 >
                   <Text style={st.randomButtonText}>랜덤 배정</Text>
                 </Pressable>
-              ) : null
+              ) : undefined
             }
             renderItem={({ item }) => {
               const isCurrentFake = drunkModalPlayer?.drunkAs === item.id;

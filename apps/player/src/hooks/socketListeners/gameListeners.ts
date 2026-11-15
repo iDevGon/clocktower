@@ -44,7 +44,7 @@ export function attachGameListeners(socket: AppSocket) {
   const appStateSubscription = AppState.addEventListener(
     'change',
     (nextState) => {
-      if (appState.match(/inactive|background/) && nextState === 'active') {
+      if (appState?.match(/inactive|background/) && nextState === 'active') {
         handleRejoin(socket);
       }
       appState = nextState;

@@ -383,7 +383,7 @@ export default function AssignRoleScreen() {
             >
               <Text style={styles.randomButtonText}>랜덤 배정</Text>
             </Pressable>
-          ) : null
+          ) : undefined
         }
         renderSectionHeader={({ section }) => (
           <View
@@ -444,7 +444,7 @@ export default function AssignRoleScreen() {
         ListEmptyComponent={
           searchQuery !== '' ? (
             <Text style={styles.listEmptyText}>검색 결과가 없습니다</Text>
-          ) : null
+          ) : undefined
         }
       />
 
@@ -507,7 +507,7 @@ export default function AssignRoleScreen() {
                   >
                     <Text style={styles.randomButtonText}>랜덤 배정</Text>
                   </Pressable>
-                ) : null
+                ) : undefined
               }
               renderItem={({ item }) => (
                 <Pressable
