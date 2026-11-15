@@ -2,6 +2,7 @@ import { colors, SpriteIcon } from '@clocktower/ui';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { arcaneUiSprite, uiIcon } from '../assets/ui';
 import type { createGrimoireStyles } from '../styles/grimoire.styles';
+import { PublicDisplayButton } from './PublicDisplayButton';
 
 interface GrimoireTopBarProps {
   day: number;
@@ -44,16 +45,20 @@ export function GrimoireTopBar({
       <Text style={styles.dayText}>
         {day}일차 · {phaseLabel}
       </Text>
-      {onMenuPress && (
-        <Pressable onPress={onMenuPress} style={localStyles.menuButton}>
-          <SpriteIcon source={arcaneUiSprite} index={uiIcon.menu} size={30} />
-        </Pressable>
-      )}
+      <View style={localStyles.actions}>
+        <PublicDisplayButton />
+        {onMenuPress && (
+          <Pressable onPress={onMenuPress} style={localStyles.menuButton}>
+            <SpriteIcon source={arcaneUiSprite} index={uiIcon.menu} size={30} />
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }
 
 const localStyles = StyleSheet.create({
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   menuButton: {
     width: 42,
     height: 42,

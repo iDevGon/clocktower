@@ -6,6 +6,7 @@ import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
 import { DevSettings, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { PublicDisplayBridge } from '../src/components/PublicDisplayBridge';
 import { useSocketConnection } from '../src/hooks/useSocketConnection';
 import { useConnectionStore } from '../src/stores/connectionStore';
 import { useGameStore } from '../src/stores/gameStore';
@@ -90,6 +91,7 @@ export default function RootLayout() {
           ...(Platform.OS === 'web' ? { userSelect: 'none' as const } : {}),
         }}
       >
+        <PublicDisplayBridge />
         <Stack
           screenOptions={{
             headerStyle: { backgroundColor: '#1a1a1e' },

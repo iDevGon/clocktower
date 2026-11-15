@@ -29,6 +29,7 @@ import {
 } from '../../src/components/DraggablePlayerToken';
 import { DrunkFakeRoleModal } from '../../src/components/DrunkFakeRoleModal';
 import { formatDurationOption } from '../../src/components/durationInput';
+import { PublicDisplayButton } from '../../src/components/PublicDisplayButton';
 import { RoleExcludeModal } from '../../src/components/RoleExcludeModal';
 import { RoleMixModal } from '../../src/components/RoleMixModal';
 import { SettingToggle } from '../../src/components/SettingToggle';
@@ -143,13 +144,23 @@ export default function LobbyScreen() {
     () => [...additionalRoleIds],
     [additionalRoleIds],
   );
+  const excludedRoleIdList = useMemo(
+    () => [...excludedRoleIds],
+    [excludedRoleIds],
+  );
 
   useEffect(() => {
     setGameSettings({
       setupEditionId: selectedEditionId,
       additionalRoleIds: additionalRoleIdList,
+      excludedRoleIds: excludedRoleIdList,
     });
-  }, [additionalRoleIdList, selectedEditionId, setGameSettings]);
+  }, [
+    additionalRoleIdList,
+    excludedRoleIdList,
+    selectedEditionId,
+    setGameSettings,
+  ]);
 
   const toggleExcludedRole = useCallback((roleId: string) => {
     setExcludedRoleIds((prev) => {
@@ -991,6 +1002,7 @@ export default function LobbyScreen() {
               </Text>
             </View>
             <View style={styles.desktopStats}>
+              <PublicDisplayButton />
               <View style={styles.desktopStatCell}>
                 <Text style={styles.desktopStatValue}>
                   {assignedRegularCount}
