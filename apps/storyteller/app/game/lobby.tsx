@@ -22,6 +22,7 @@ import { arcaneUiSprite, uiIcon } from '../../src/assets/ui';
 import { BluffSelectModal } from '../../src/components/BluffSelectModal';
 import { ClockSpeedSetting } from '../../src/components/ClockSpeedSetting';
 import { CollapsibleSection } from '../../src/components/CollapsibleSection';
+import { ConfirmModal } from '../../src/components/ConfirmModal';
 import {
   type CircularPosition,
   DraggablePlayerToken,
@@ -59,6 +60,7 @@ export default function LobbyScreen() {
     unassignAllRoles,
     setPlayerOrder: syncPlayerOrder,
   } = useGameActions();
+  const [kickTarget, setKickTarget] = useState<Player | null>(null);
   const [distributing, setDistributing] = useState(false);
   const [selectedEditionId, setSelectedEditionId] = useState('trouble_brewing');
   const [excludedRoleIds, setExcludedRoleIds] = useState<Set<string>>(
@@ -643,28 +645,20 @@ export default function LobbyScreen() {
     </ScrollView>
   );
 
-  const confirmKickPlayer = (item: Player) => {
-    Alert.alert(
-      `${item.name} 강퇴`,
-      '이 플레이어를 게임에서 제거하시겠습니까?',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '강퇴',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await kickPlayer(item.id);
-            } catch (e) {
-              Alert.alert(
-                '오류',
-                e instanceof Error ? e.message : '강퇴에 실패했습니다.',
-              );
-            }
-          },
-        },
-      ],
-    );
+  const confirmKickPlayer = (item: Player) => setKickTarget(item);
+
+  const handleConfirmKick = async () => {
+    if (!kickTarget) return;
+    const playerId = kickTarget.id;
+    setKickTarget(null);
+    try {
+      await kickPlayer(playerId);
+    } catch (e) {
+      Alert.alert(
+        '오류',
+        e instanceof Error ? e.message : '강퇴에 실패했습니다.',
+      );
+    }
   };
 
   const confirmConvertTravellerToRegular = (item: Player) => {
@@ -1291,6 +1285,16 @@ export default function LobbyScreen() {
           </View>
         </>
       )}
+
+      <ConfirmModal
+        visible={!!kickTarget}
+        title={`${kickTarget?.name ?? ''} 강퇴`}
+        message="이 플레이어를 게임에서 제거하시겠습니까?"
+        confirmText="강퇴"
+        confirmStyle="destructive"
+        onConfirm={handleConfirmKick}
+        onCancel={() => setKickTarget(null)}
+      />
 
       {/* 악마 블러프 직업 변경 모달 */}
       <BluffSelectModal

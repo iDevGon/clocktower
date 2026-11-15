@@ -511,6 +511,25 @@ export default function GrimoireScreen() {
   const voteConfirmed = useGameStore((s) => s.voteConfirmed);
   const exileVote = useGameStore((s) => s.exileVote);
 
+  const [kickTarget, setKickTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  const handleConfirmKick = async () => {
+    if (!kickTarget) return;
+    const playerId = kickTarget.id;
+    setKickTarget(null);
+    try {
+      await kickPlayer(playerId);
+    } catch (e) {
+      Alert.alert(
+        '오류',
+        e instanceof Error ? e.message : '강퇴에 실패했습니다.',
+      );
+    }
+  };
+
   // Modal state
   const [modal, setModal] = useState<{
     visible: boolean;
@@ -1027,29 +1046,7 @@ export default function GrimoireScreen() {
     const kickOption: ActionModalOption = {
       text: '강퇴',
       style: 'destructive',
-      onPress: () => {
-        Alert.alert(
-          `${playerName} 강퇴`,
-          '이 플레이어를 게임에서 제거하시겠습니까?',
-          [
-            { text: '취소', style: 'cancel' },
-            {
-              text: '강퇴',
-              style: 'destructive',
-              onPress: async () => {
-                try {
-                  await kickPlayer(playerId);
-                } catch (e) {
-                  Alert.alert(
-                    '오류',
-                    e instanceof Error ? e.message : '강퇴에 실패했습니다.',
-                  );
-                }
-              },
-            },
-          ],
-        );
-      },
+      onPress: () => setKickTarget({ id: playerId, name: playerName }),
     };
 
     const player = players?.find((p) => p.id === playerId);
@@ -2218,6 +2215,16 @@ export default function GrimoireScreen() {
             }
           })
         }
+      />
+
+      <ConfirmModal
+        visible={!!kickTarget}
+        title={`${kickTarget?.name ?? ''} 강퇴`}
+        message="이 플레이어를 게임에서 제거하시겠습니까?"
+        confirmText="강퇴"
+        confirmStyle="destructive"
+        onConfirm={handleConfirmKick}
+        onCancel={() => setKickTarget(null)}
       />
 
       <ActionModal
